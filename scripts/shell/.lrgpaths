@@ -26,3 +26,10 @@ JINGPATH=
 
 # Export the variables
 export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH 
+
+# Define a shell function for grabbing the HGNC symbol from a LRG XML record
+function lrg_gene_name() { 
+  grep lrg_gene_name "$@" | sed -re 's/[^>]+>([^<]+).*/\1/'; 
+}
+
+
