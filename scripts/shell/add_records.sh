@@ -10,11 +10,22 @@
 cvspath=${CVSROOTDIR}/xml/
 pubpath=${PUBFTP}
 pvtpath=${PVTFTP}
-relnotes=${CVSROOTDIR}/ftp/public/relnotes.txt
+relnotes=${CVSROOTDIR}/ftp/public/relnotes.txt.new
 
 echo -n "Do you have all the required xml files checked out and present in ${cvspath} (y/n)? "
 read -e go
 [ "$go" == "y" ] || exit
+
+# Write the relnotes 
+d=`date +%d-%b-%Y`
+echo "LRG release n.n.n.n (${d})
+
+There are PUBLIC LRG entries
+There are PENDING pending LRG entries
+
+### Notes
+
+" > ${relnotes}
 
 # Loop over the LRG records in the CVS path. Skip them in case they exist in the published or pending directories
 for path in ${cvspath}/LRG_*.xml
@@ -36,3 +47,9 @@ do
     echo "# Pending LRG record ${lrgid} (${hgnc}) added" >> ${relnotes}
   fi
 done
+
+# Grab the number of entries and edit it into the relnotes file
+pub=`ls ${pubpath}/LRG_*.xml | wc -l`
+pend=`ls ${pubpath}/pending/LRG_*.xml | wc -l`
+sed -rei "s/PUBLIC/${pub}/" ${relnotes}
+sed -rei "s/PENDING/${pend}/" ${relnotes}
