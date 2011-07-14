@@ -24,7 +24,6 @@ There are PUBLIC LRG entries
 There are PENDING pending LRG entries
 
 ### Notes
-
 " > ${relnotes}
 
 # Loop over the LRG records in the CVS path. Skip them in case they exist in the published or pending directories
@@ -51,5 +50,5 @@ done
 # Grab the number of entries and edit it into the relnotes file
 pub=`ls ${pubpath}/LRG_*.xml | wc -l`
 pend=`ls ${pubpath}/pending/LRG_*.xml | wc -l`
-sed -rei "s/PUBLIC/${pub}/" ${relnotes}
-sed -rei "s/PENDING/${pend}/" ${relnotes}
+sed -rie "s/PUBLIC/${pub}/" ${relnotes}
+sed -rie "s/PENDING/${pend}/" ${relnotes}
