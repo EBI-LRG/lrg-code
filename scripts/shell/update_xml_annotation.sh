@@ -5,8 +5,8 @@
 perldir=${CVSROOTDIR}/code/scripts/
 
 xmlfile=$1
-registryfile=$2
-mapping=$3
+registryfile=${REGISTRYFILE}
+mapping=$2
 
 filename=`basename ${xmlfile}`
 lrgid=${filename/.xml/}
