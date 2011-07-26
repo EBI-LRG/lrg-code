@@ -461,7 +461,7 @@ sub create_updatable_annotation {
 	if (!$use_existing_mapping) {
 		
 		# Clear the old mapping from db
-		LRG::LRGMapping::clear_mapping($LRGMapping::lrg_name,'lrg');
+		LRG::LRGMapping::clear_mapping($LRG::LRGMapping::lrg_name,'lrg');
 		
 		# Run ssaha2 to map and the result is a reference to a hash
 		$mapping = LRG::LRGMapping::mapping($genomic_sequence);
