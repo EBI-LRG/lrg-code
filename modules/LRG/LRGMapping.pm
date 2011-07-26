@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-package LRGMapping;
+package LRG::LRGMapping;
 
 use Bio::EnsEMBL::LRGSlice;
 use Bio::EnsEMBL::MappedSliceContainer;

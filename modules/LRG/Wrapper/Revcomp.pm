@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use LRG::Wrapper::Executable;
 
-package Revcomp;
+package LRG::Wrapper::Revcomp;
 
 our @ISA = "LRG::Wrapper::Executable";
 

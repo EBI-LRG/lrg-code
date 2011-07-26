@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use LRG::Wrapper::Executable;
 
-package Exonerate;
+package LRG::Wrapper::Exonerate;
 
 our @ISA = "LRG::Wrapper::Executable";
 

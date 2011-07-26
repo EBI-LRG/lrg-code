@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use LWP::UserAgent;
 
-package LRGImport;
+package LRG::LRGImport;
 
 our $dbCore;
 

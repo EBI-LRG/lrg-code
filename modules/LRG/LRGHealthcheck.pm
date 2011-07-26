@@ -7,7 +7,7 @@ use POSIX qw(getcwd);
 use List::Util qw(min max);
 use Bio::Seq;
 
-package LRGHealthcheck;
+package LRG::LRGHealthcheck;
 
 # The java executable (needed for validation of the schema).
 our $JAVA = 'java';

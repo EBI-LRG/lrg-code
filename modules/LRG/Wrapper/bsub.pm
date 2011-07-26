@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use LRG::Wrapper::Executable;
 
-package bsub;
+package LRG::Wrapper::bsub;
 
 our @ISA = "LRG::Wrapper::Executable";
 

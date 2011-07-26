@@ -7,7 +7,7 @@
 use strict;
 use warnings;
 
-package Mapper;
+package LRG::Mapper;
 
 use LRG::Wrapper::SMALT;
 use LRG::Wrapper::Samtools;

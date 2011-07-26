@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use LRG::Wrapper::Executable;
 
-package Samtools;
+package LRG::Wrapper::Samtools;
 
 our @ISA = "LRG::Wrapper::Executable";
 

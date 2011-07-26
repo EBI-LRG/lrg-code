@@ -7,9 +7,9 @@
 use strict;
 use warnings;
 
-package Executable;
+package LRG::Wrapper::Executable;
 
-#ÊUse autoload for get/set methods
+# Use autoload for get/set methods
 our $AUTOLOAD;
 
 sub DESTROY { }
@@ -35,7 +35,7 @@ sub AUTOLOAD {
     my $self = shift;
     my $type = ref($self) or die("$self is not an object");
 
-    #ÊThe name of the called subroutine
+    # The name of the called subroutine
     my $name = $AUTOLOAD;
     # Strip away the pre-pended package info
     $name =~ s/.*://;
@@ -49,7 +49,7 @@ sub AUTOLOAD {
     return $self->_get_set('_' . $name,@_);
 }
 
-#ÊConstructor
+# Constructor
 sub new {
     
     my $class = shift;
@@ -66,18 +66,18 @@ sub initialize {
     my $self = shift;
     my %vals = @_;
     
-    #ÊThe get/set methods that exist in this module
+    # The get/set methods that exist in this module
     my $permitted = $self->permitted();
     $self->_get_set('_permitted',$permitted);
 
     # Set the pid of this process
     $self->pid($$);
 
-    #ÊSet the default values
+    # Set the default values
     my %DEFAULTS = %{$self->defaults()};
     map { $self->$_($DEFAULTS{$_}) } keys(%DEFAULTS);
     
-    #ÊSet any field passed in via the parameter hash
+    # Set any field passed in via the parameter hash
     map { $self->$_($vals{$_}) } keys(%vals);
      
 }

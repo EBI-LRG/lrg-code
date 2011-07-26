@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use LRG::Wrapper::Executable;
 
-package SMALT;
+package LRG::Wrapper::SMALT;
 
 our @ISA = "LRG::Wrapper::Executable";
 
