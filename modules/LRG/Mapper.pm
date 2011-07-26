@@ -130,12 +130,12 @@ sub do_mapping {
     my %alignments;
     
     # Create wrappers for the pipeline components
-    my $smalt = SMALT->new('hash' => $self->hash());
+    my $smalt = LRG::Wrapper::SMALT->new('hash' => $self->hash());
     # Set additional parameters for SMALT
     $smalt->extra_parameters(['-f','cigar']);
     
-    my $samtools = Samtools->new('program' => 'faidx');
-    my $exonerate = Exonerate->new('model' => 'affine:bestfit', 'extra_parameters' => ['--bestn','1','--showalignment','yes','--showvulgar','no','--ryo',q{"=QMATCH=%qi,%qab,%qae,%qS\n=TMATCH=%ti,%tab,%tae,%tS\n=VULGAROUT=%V\n=SCORE=%s\n"},'--refine','region']);
+    my $samtools = LRG::Wrapper::Samtools->new('program' => 'faidx');
+    my $exonerate = LRG::Wrapper::Exonerate->new('model' => 'affine:bestfit', 'extra_parameters' => ['--bestn','1','--showalignment','yes','--showvulgar','no','--ryo',q{"=QMATCH=%qi,%qab,%qae,%qS\n=TMATCH=%ti,%tab,%tae,%tS\n=VULGAROUT=%V\n=SCORE=%s\n"},'--refine','region']);
     
     # Process each query seq
     my $seqs = $self->from_fasta($self->query()); 
@@ -177,7 +177,7 @@ sub do_mapping {
         # Wrap the SMALT process up in a bsub and execute
         printf("\tAnchoring sequence \%s to reference genome...\n",$id);
         my $logprefix = $self->logprefix() || $self->tmpdir() . "/mapper_" . $self->pid() . "_" . $short_id;
-        my $bsub = bsub->new('logout' => qq{$logprefix\.out}, 'logerr' => qq{$logprefix\.err}, 'jobname' => 'smalt_' . $self->pid() . "_$short_id", 'job' => $smalt);
+        my $bsub = LRG::Wrapper::bsub->new('logout' => qq{$logprefix\.out}, 'logerr' => qq{$logprefix\.err}, 'jobname' => 'smalt_' . $self->pid() . "_$short_id", 'job' => $smalt);
         $bsub->execute();
         
         # Parse the SMALT output and determine the most promising genomic region where the anchors map in a sensible way

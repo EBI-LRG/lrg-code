@@ -74,7 +74,7 @@ sub mapping {
   
   my $mainmap;
   if ($use_mapper) {
-    my $mapper = Mapper->new('query' => $lrg_seq, 'hash' => "$target_dir/hash/$SMALT_HASH", 'target' => "$target_dir/$MAPPER_REFERENCE_GENOME", 'tmpdir' => $input_dir);
+    my $mapper = LRG::Mapper->new('query' => $lrg_seq, 'hash' => "$target_dir/hash/$SMALT_HASH", 'target' => "$target_dir/$MAPPER_REFERENCE_GENOME", 'tmpdir' => $input_dir);
     $mapper->do_mapping();
     my $maps = $mapper->mappings(); 
     my @keys = keys(%{$maps});
