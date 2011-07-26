@@ -79,9 +79,9 @@ sub add_annotation {
   my $analysis_logic_name = shift;
   
   # Get the coord_system_id, seq_region_id and analysis_id
-  my $cs_id = LRGImport::get_coord_system_id($lrg_coord_system_name);
-  my $seq_region_id = LRGImport::get_seq_region_id($lrg_name,$cs_id);
-  my $analysis_id = LRGImport::get_analysis_id($analysis_logic_name);
+  my $cs_id = get_coord_system_id($lrg_coord_system_name);
+  my $seq_region_id = get_seq_region_id($lrg_name,$cs_id);
+  my $analysis_id = get_analysis_id($analysis_logic_name);
   
   my $gene_id;
   my $sth;
@@ -103,19 +103,19 @@ sub add_annotation {
     my $cds_end = $cds_node->data->{'end'};
   
     # Insert transcript entry into db
-    my $transcript_id = LRGImport::add_transcript(undef,$gene_id,$analysis_id,$seq_region_id,$transcript_start,$transcript_end,1,$biotype,1);
+    my $transcript_id = add_transcript(undef,$gene_id,$analysis_id,$seq_region_id,$transcript_start,$transcript_end,1,$biotype,1);
 
     # Insert transcript_stable_id (we already know what it should be)
     my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
-    LRGImport::add_stable_id($transcript_id,$transcript_stable_id,'transcript');
+    add_stable_id($transcript_id,$transcript_stable_id,'transcript');
     
     # If we are processing the first transcript of the gene, the gene needs to be added to the database
     if (!defined($gene_id)) {
-      $gene_id = LRGImport::add_gene($biotype,$analysis_id,$seq_region_id,$transcript_start,$transcript_end,1,'LRG database',$transcript_id);
+      $gene_id = add_gene($biotype,$analysis_id,$seq_region_id,$transcript_start,$transcript_end,1,'LRG database',$transcript_id);
       # For genes, use the LRG identifier as gene name
       my $gene_stable_id = $lrg_name;
       # Insert gene stable id into gene_stable_id table
-      LRGImport::add_stable_id($gene_id,$gene_stable_id,'gene');
+      add_stable_id($gene_id,$gene_stable_id,'gene');
       
       print "Gene:\t" . $gene_id . "\t" . $gene_stable_id . "\n";
     }
@@ -123,7 +123,7 @@ sub add_annotation {
     print "\tTranscript:\t" . $transcript_id . "\t" . $transcript_stable_id . "\n";
   
     # Update transcript table to insert the gene id
-    LRGImport::add_transcript($transcript_id,$gene_id);
+    add_transcript($transcript_id,$gene_id);
       
     my $start_exon_id;
     my $end_exon_id;
@@ -157,12 +157,12 @@ sub add_annotation {
 	my $exon_start = $lrg_coords->data->{'start'};
 	my $exon_end = $lrg_coords->data->{'end'};
 	my $exon_length = ($exon_end-$exon_start+1);
-	$exon_id = LRGImport::add_exon($seq_region_id,$exon_start,$exon_end,1);
+	$exon_id = add_exon($seq_region_id,$exon_start,$exon_end,1);
 	
 	# Get the next free exon stable id for this transcript
-	my $exon_stable_id = LRGImport::get_next_stable_id('exon_stable_id',$transcript_stable_id . '_e');
+	my $exon_stable_id = get_next_stable_id('exon_stable_id',$transcript_stable_id . '_e');
 	# Insert exon stable id into exon_stable_id table
-	LRGImport::add_stable_id($exon_id,$exon_stable_id,'exon');
+	add_stable_id($exon_id,$exon_stable_id,'exon');
 	
 	print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
       
@@ -182,9 +182,9 @@ sub add_annotation {
 	}
 	
 	# Update the exon with the phases
-	LRGImport::update_rows([qq{phase = '$phase'},qq{end_phase = '$end_phase'}],[qq{exon_id = '$exon_id'}],['exon']);
+	update_rows([qq{phase = '$phase'},qq{end_phase = '$end_phase'}],[qq{exon_id = '$exon_id'}],['exon']);
 	#ÊLink the transcript and the exon
-	LRGImport::add_exon_transcript($exon_id,$transcript_id,$exon_count);
+	add_exon_transcript($exon_id,$transcript_id,$exon_count);
 	
 	print "\t" . $phase . "\t" . $end_phase . "\n";
       }
@@ -192,16 +192,16 @@ sub add_annotation {
   
     # Insert translation into db (if available, the gene could be non-protein coding)
     if ($exon_count > 0) {
-      my $translation_id = LRGImport::add_translation($transcript_id,$cds_start,$start_exon_id,$cds_end,$end_exon_id);
+      my $translation_id = add_translation($transcript_id,$cds_start,$start_exon_id,$cds_end,$end_exon_id);
       
       # Get the next free translation stable_id
-      my $translation_stable_id = LRGImport::get_next_stable_id('translation_stable_id',$transcript_stable_id . '_p');
+      my $translation_stable_id = get_next_stable_id('translation_stable_id',$transcript_stable_id . '_p');
       # Insert translation stable id into translation_stable_id table
-      LRGImport::add_stable_id($translation_id,$translation_stable_id,'translation');
+      add_stable_id($translation_id,$translation_stable_id,'translation');
       print "\tTranslation:\t" . $translation_id . "\t" . $translation_stable_id . "\n";
       
       # Set the translation_id as the canonical_translation_id in transcript table
-      LRGImport::update_rows([qq{canonical_translation_id = '$translation_id'}],[qq{transcript_id = '$transcript_id'}],['transcript']);
+      update_rows([qq{canonical_translation_id = '$translation_id'}],[qq{transcript_id = '$transcript_id'}],['transcript']);
     }
   }
   
@@ -236,9 +236,9 @@ sub add_annotation {
   
   #ÊIf necessary, update meta_coord entries for maximum lengths of tables
   foreach my $table (('gene','transcript','exon')) {
-    my $max_length = LRGImport::get_max_length($seq_region_id,$table);
+    my $max_length = get_max_length($seq_region_id,$table);
     if (defined($max_length)) {
-      LRGImport::add_meta_coord($table,$cs_id,$max_length);
+      add_meta_coord($table,$cs_id,$max_length);
     }
   }
 }
@@ -283,9 +283,9 @@ sub add_attrib_type {
     my $name = shift;
     my $description = shift;
     
-    my $attrib_type_id = LRGImport::get_attrib_type_id($code);
+    my $attrib_type_id = get_attrib_type_id($code);
     if (!defined($attrib_type_id)) {
-	$attrib_type_id = LRGImport::insert_row({'code' => $code, 'name' => $name, 'description' => $description},'attrib_type');
+	$attrib_type_id = insert_row({'code' => $code, 'name' => $name, 'description' => $description},'attrib_type');
     }
     
     return $attrib_type_id;
@@ -593,15 +593,15 @@ sub add_mapping {
   
     #ÊAdd a seq_region_attrib indicating that it is toplevel
     my $attrib_type_id = get_attrib_type_id('toplevel') or warn("Could not get attrib_type_id for toplevel attribute!\n");
-    LRGImport::insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
+    insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
     
     #ÊAdd a seq_region_attrib indicating that it is non-reference
     $attrib_type_id = get_attrib_type_id('non_ref') or warn("Could not get attrib_type_id for non_ref attribute!\n");
-    LRGImport::insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
+    insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
     
     #ÊAdd a seq_region_attrib indicating that it is a LRG
     $attrib_type_id = get_attrib_type_id('LRG') or warn("Could not get attrib_type_id for LRG attribute!\n");
-    LRGImport::insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
+    insert_row({'seq_region_id' => $q_seq_region_id, 'attrib_type_id' => $attrib_type_id, 'value' => 1},'seq_region_attrib',1);
     
     # Get the seq_region_id for the target contig
     my $ctg_cs_id = get_coord_system_id('contig');
@@ -1570,7 +1570,7 @@ sub purge_db {
 		    };
 		    $dbCore->dbc->do($stmt);
 		    
-		    my $translation_id = LRGImport::get_translation_id($oid);
+		    my $translation_id = get_translation_id($oid);
 		    # Remove from object_xref
 		    remove_row([qq{ensembl_object_type = 'Translation'}, qq{ensembl_id = $translation_id}],'object_xref') if defined($translation_id);
 		    #ÊRemove entries in the exon_transcript table

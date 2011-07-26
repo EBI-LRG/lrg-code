@@ -714,8 +714,8 @@ sub clear_mapping {
   my $lrg_name = shift;
   my $lrg_coord_system_name = shift;
   
-  $LRGImport::dbCore = $dbCore_rw;
-  LRGImport::purge_db($lrg_name,$lrg_coord_system_name);
+  $LRG::LRGImport::dbCore = $dbCore_rw;
+  LRG::LRGImport::purge_db($lrg_name,$lrg_coord_system_name);
 }
 
 sub get_annotations {
@@ -750,8 +750,8 @@ sub get_annotations {
     
     # Add a mapping between the LRG and chromosome to the core db
     # For consistency in the annotations, do transfer between LRG and chromosome coord systemsÊeven if there is a perfect match
-    $LRGImport::dbCore = $dbCore_rw;
-    LRGImport::add_mapping($lrg_name,$lrg_coord_system_name,$lrg_len,$mapping);
+    $LRG::LRGImport::dbCore = $dbCore_rw;
+    LRG::LRGImport::add_mapping($lrg_name,$lrg_coord_system_name,$lrg_len,$mapping);
     
     # Reload the db connections to get rid of any caching (is this necessary?)
     Bio::EnsEMBL::Registry->clear();
