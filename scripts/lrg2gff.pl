@@ -35,7 +35,7 @@ if (!defined($xmlfile) && defined($lrgid)) {
     
     print STDOUT localtime() . "\tNo input XML file specified for $lrgid, attempting to get it from the LRG server\n";
     
-    my $result = LRGImport::fetch_remote_lrg($lrgid,$urls);
+    my $result = LRG::LRGImport::fetch_remote_lrg($lrgid,$urls);
     if ($result->{'success'}) {
         $xmlfile = $result->{'xmlfile'};
         print STDOUT localtime() . "\tSuccessfully downloaded XML file for $lrgid and stored it in $xmlfile\n";

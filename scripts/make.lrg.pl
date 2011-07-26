@@ -81,30 +81,30 @@ $registry_file ||= 'ensembl.registry';
 $output_file ||= 'make.lrg.xml';
 	
 
-$LRGMapping::current_assembly = $CURRENT_ASSEMBLY;
-$LRGMapping::input_dir = $tmpdir;
-$LRGMapping::output_dir = $tmpdir;
-$LRGMapping::SSAHA_BIN = $ssaha2_bin;
-$LRGMapping::EXONERATE_BIN = $exonerate_bin;
+$LRG::LRGMapping::current_assembly = $CURRENT_ASSEMBLY;
+$LRG::LRGMapping::input_dir = $tmpdir;
+$LRG::LRGMapping::output_dir = $tmpdir;
+$LRG::LRGMapping::SSAHA_BIN = $ssaha2_bin;
+$LRG::LRGMapping::EXONERATE_BIN = $exonerate_bin;
 
 # we need an ID
 die "No LRG ID supplied (-id) or ID in wrong format (LRG_[0-9]+)\n" unless $lrg_id =~ /LRG_[0-9]+|tmp_.+/;
-$LRGMapping::lrg_name = $lrg_id;
+$LRG::LRGMapping::lrg_name = $lrg_id;
 
 # This must correspond to the assembly used to map the LRG and where annotations are fetched
 my $assembly = $CURRENT_ASSEMBLY;
 
 if (!$skip_updatable) {
 # set the target dir
-	$LRGMapping::target_dir = $target_dir if defined $target_dir;
+	$LRG::LRGMapping::target_dir = $target_dir if defined $target_dir;
 
 # get registry and a gene adaptor
-	$LRGMapping::registry_file = $registry_file;
+	$LRG::LRGMapping::registry_file = $registry_file;
 	Bio::EnsEMBL::Registry->load_all( $registry_file, 1 );
-	$LRGMapping::dbCore_ro = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','core_ro');
-	$LRGMapping::dbCore_rw = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','core_rw');
-	$LRGMapping::dbFuncGen = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','funcgen');
-	my $host = $LRGMapping::dbCore_rw->dbc->host();
+	$LRG::LRGMapping::dbCore_ro = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','core_ro');
+	$LRG::LRGMapping::dbCore_rw = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','core_rw');
+	$LRG::LRGMapping::dbFuncGen = Bio::EnsEMBL::Registry->get_DBAdaptor('homo_sapiens','funcgen');
+	my $host = $LRG::LRGMapping::dbCore_rw->dbc->host();
 	if ($host !~ m/variation/ && !$skip_host_check) {
 		die('Host is ' . $host . '! Changes will be written to the database, make sure you want to use the database on this host. If so, skip this check by using -skip_host_check on command line');
 	}
@@ -132,15 +132,15 @@ create_fixed_annotation($root,$lrg_id,$genomic_file,$exon_file,$cdna_file,$pepti
 if (!$skip_updatable) {
 
 	# This will always be called to update the modification date and Ensembl version info. If $use_existing_mapping is true and $replace_annotations is false, immediately returns
-	create_updatable_annotation($root,$use_existing_mapping,$replace_annotations,$LRGMapping::dbCore_rw->get_SliceAdaptor());
+	create_updatable_annotation($root,$use_existing_mapping,$replace_annotations,$LRG::LRGMapping::dbCore_rw->get_SliceAdaptor());
 
 	# Move annotations that should be "unbranded" to the LRG section and do consistency checking between these NCBI and Ensembl annotations
 	move_to_unbranded($root) unless $skip_unbranded;
 	
-	# align_updatable_to_fixed_transcripts($root,$LRGMapping::dbCore_ro->get_TranscriptAdaptor()) unless $skip_transcript_matching;
+	# align_updatable_to_fixed_transcripts($root,$LRG::LRGMapping::dbCore_ro->get_TranscriptAdaptor()) unless $skip_transcript_matching;
 	
 	# Find transcripts in the updatable section that correspond to transcripts in the fixed section (only for Ensembl annotations for now)
-	match_fixed_annotation_transcripts($root,$LRGMapping::dbCore_ro->get_TranscriptAdaptor()) if $do_transcript_matching;
+	match_fixed_annotation_transcripts($root,$LRG::LRGMapping::dbCore_ro->get_TranscriptAdaptor()) if $do_transcript_matching;
 
 }
 
@@ -443,7 +443,7 @@ sub create_updatable_annotation {
 	$current = $annotation_set_ensembl;
 	
 # Update the comment field to indicate which Ensembl release was used
-	$annotation_set_ensembl->findOrAdd('comment')->content('Annotation is based on Ensembl release ' . $LRGMapping::dbCore_ro->get_MetaContainerAdaptor()->get_schema_version());
+	$annotation_set_ensembl->findOrAdd('comment')->content('Annotation is based on Ensembl release ' . $LRG::LRGMapping::dbCore_ro->get_MetaContainerAdaptor()->get_schema_version());
 	
 # Update the modification date
 	$annotation_set_ensembl->findOrAdd('modification_date')->content($root->date);
@@ -461,10 +461,10 @@ sub create_updatable_annotation {
 	if (!$use_existing_mapping) {
 		
 		# Clear the old mapping from db
-		LRGMapping::clear_mapping($LRGMapping::lrg_name,'lrg');
+		LRG::LRGMapping::clear_mapping($LRGMapping::lrg_name,'lrg');
 		
 		# Run ssaha2 to map and the result is a reference to a hash
-		$mapping = LRGMapping::mapping($genomic_sequence);
+		$mapping = LRG::LRGMapping::mapping($genomic_sequence);
 		my $pairs = $mapping->{'pairs'};
 		$chr_id = $mapping->{'chr_name'};
 		
@@ -472,7 +472,7 @@ sub create_updatable_annotation {
 		warn("*** WARNING *** Could not map the entire LRG region to the $CURRENT_ASSEMBLY assembly!") if ($mapping->{'lrg_start'} > 1 || $mapping->{'lrg_end'} < length($genomic_sequence));
 		
 		# Create a mapping node from the pairs array
-		my $new_node = LRGMapping::pairs_2_mapping($pairs,$assembly,$chr_id,($assembly eq $CURRENT_ASSEMBLY));
+		my $new_node = LRG::LRGMapping::pairs_2_mapping($pairs,$assembly,$chr_id,($assembly eq $CURRENT_ASSEMBLY));
 		
 		# Remove the old one and replce it with the newly created one
 		$mapping_node->remove() if (defined($mapping_node));
@@ -481,7 +481,7 @@ sub create_updatable_annotation {
 	#ÊElse, get the already existing one, corresponding to the db assembly and parse it
 	else {
 		# Die if no existing mapping could be found
-		die("Could not find any pre-existing genomic mapping for " . $LRGMapping::lrg_name . " to $assembly assembly") unless (defined($mapping_node));
+		die("Could not find any pre-existing genomic mapping for " . $LRG::LRGMapping::lrg_name . " to $assembly assembly") unless (defined($mapping_node));
 		
 		# Else, parse the mapping
 		$chr_id = $mapping_node->data->{'chr_name'};
@@ -489,7 +489,7 @@ sub create_updatable_annotation {
 		my $chr_end = $mapping_node->data->{'chr_end'};
 		my $chr_slice = $slice_adaptor->fetch_by_region('chromosome',$chr_id);
 		my $chr_seq = $chr_slice->subseq($chr_start,$chr_end);
-		$mapping = LRGMapping::mapping_2_pairs($mapping_node,$genomic_sequence,$chr_seq);
+		$mapping = LRG::LRGMapping::mapping_2_pairs($mapping_node,$genomic_sequence,$chr_seq);
 	}
 	
 	# Add alternative amino acid numbering element
@@ -499,7 +499,7 @@ sub create_updatable_annotation {
 	return if (!$replace_annotations);
 	
 	# Get annotations
-	my @feature_nodes = @{LRGMapping::get_annotations($LRGMapping::lrg_name,'lrg',$chr_id,length($genomic_sequence),$mapping)};
+	my @feature_nodes = @{LRG::LRGMapping::get_annotations($LRG::LRGMapping::lrg_name,'lrg',$chr_id,length($genomic_sequence),$mapping)};
 
 	# add features node
 	my $feat_node = $annotation_set_ensembl->findNode('features');
@@ -607,12 +607,12 @@ sub align_updatable_to_fixed_transcripts {
 		foreach my $t_transcript (@{$fixed_transcripts}) {
 			my $t_seq = $t_transcript->findNode('cdna/sequence')->content();
 			
-			my $o_file = LRGMapping::exonerate_align($q_seq,$t_seq);
-			my $data = LRGMapping::parse_exonerate($o_file);
+			my $o_file = LRG::LRGMapping::exonerate_align($q_seq,$t_seq);
+			my $data = LRG::LRGMapping::parse_exonerate($o_file);
 			#unlink($o_file);
 			$data->{'chr_name'} = $t_transcript->data()->{'name'};
 			$data->{'lrg_id'} = $stable_id;
-			my $alignment = LRGMapping::pairs_2_alignment($data);
+			my $alignment = LRG::LRGMapping::pairs_2_alignment($data);
 			$q_transcript->addExisting($alignment);
 		}
 	}

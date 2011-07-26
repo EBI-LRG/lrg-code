@@ -144,7 +144,7 @@ die("Supplied LRG id is not in the correct format ('LRG_NNN')") if (grep($_ !~ m
 if ((defined($import) || defined($clean) || defined($overlap) || defined($verify) || defined($add_xrefs)) && !scalar(@lrg_ids)) {
   
   print STDOUT localtime() . "\tNo input XML file and no LRG id specified, fetching a LRG listing from the LRG server\n" if ($verbose);
-  my $result = LRGImport::fetch_remote_lrg_ids([$LRG_EXTERNAL_XML]);
+  my $result = LRG::LRGImport::fetch_remote_lrg_ids([$LRG_EXTERNAL_XML]);
   
   if ($result->{$LRG_EXTERNAL_XML}{'success'}) {
     my @available = @{$result->{$LRG_EXTERNAL_XML}{'lrg_id'}};
@@ -191,7 +191,7 @@ my $dbCore = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor to $coredb on $host:$port");
 print STDOUT localtime() . "\tConnected to $coredb on $host:$port\n" if ($verbose);
 
-$LRGImport::dbCore = $dbCore;
+$LRG::LRGImport::dbCore = $dbCore;
 
 # If specified, connect to otherfeatures and cdna database
 my $dbOther;
@@ -252,7 +252,7 @@ my $sa = $dbCore->get_SliceAdaptor();
 
 # Get the maximum key field values if required and print them
 if ($max_values) {
-  my $max_values = LRGImport::get_max_key();
+  my $max_values = LRG::LRGImport::get_max_key();
   while (my ($field,$value) = each(%{$max_values})) {
     my ($table,$fld) = split(/\./,$field);
     print $table . "\t" . $fld . "\t" . $value . "\n";
@@ -266,7 +266,7 @@ if ($revert) {
   while (<MV>) {
     chomp;
     my ($table,$field,$max_value) = split();
-    LRGImport::remove_row([qq{$field > $max_value}],$table);
+    LRG::LRGImport::remove_row([qq{$field > $max_value}],$table);
   }
   close(MV);
 }
@@ -328,20 +328,20 @@ while (my $lrg_id = shift(@lrg_ids)) {
       next unless(defined($dba));
 	
       # Set the dbCore variable in LRGImport to the current db adaptor
-      $LRGImport::dbCore = $dba;
+      $LRG::LRGImport::dbCore = $dba;
       
       print STDOUT localtime() . "\tCleaning $lrg_id from " . $dba->dbc()->dbname() . "\n" if ($verbose);
-      LRGImport::purge_db($lrg_id,$LRG_COORD_SYSTEM_NAME,$purge);
+      LRG::LRGImport::purge_db($lrg_id,$LRG_COORD_SYSTEM_NAME,$purge);
     }
     # Set the db adaptor in LRGImport back to the core adaptor
-    $LRGImport::dbCore = $dbCore;
+    $LRG::LRGImport::dbCore = $dbCore;
   }
   
   # Annotate Ensembl genes that overlap this LRG region
   if ($overlap) {
     # Set the db adaptors in the LRGMapping module
-    $LRGMapping::dbCore_rw = $dbCore;
-    $LRGMapping::dbCore_ro = $dbCore;
+    $LRG::LRGMapping::dbCore_rw = $dbCore;
+    $LRG::LRGMapping::dbCore_ro = $dbCore;
     
     #ÊGet a LRG slice
     print STDOUT localtime() . "\tGetting a slice for $lrg_id\n" if ($verbose);
@@ -349,13 +349,13 @@ while (my $lrg_id = shift(@lrg_ids)) {
     
     # Get genes that overlap this LRG
     print STDOUT localtime() . "\tGetting genes overlapping $lrg_id\n" if ($verbose);
-    my $genes = LRGMapping::get_overlapping_genes($lrg_slice);
+    my $genes = LRG::LRGMapping::get_overlapping_genes($lrg_slice);
     
     # For each overlapping gene, create an XML feature node and check if the overlap is partial or not
     foreach my $gene (@{$genes}) {
-      my $feature_node = LRGMapping::gene_2_feature($gene,$lrg_slice);
+      my $feature_node = LRG::LRGMapping::gene_2_feature($gene,$lrg_slice);
       print STDOUT localtime() . "\tAdding $lrg_id " . (defined($feature_node->findNode('partial')) ? 'partial ' : '') . "overlap attribute for gene " . $gene->stable_id . " (" . $gene->description . ")\n" if ($verbose);
-      LRGImport::add_lrg_overlap($gene->stable_id,$lrg_id,defined($feature_node->findNode('partial')));
+      LRG::LRGImport::add_lrg_overlap($gene->stable_id,$lrg_id,defined($feature_node->findNode('partial')));
     }
   }
   
@@ -365,7 +365,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
     if (!defined($input_file)) {
     
       print STDOUT localtime() . "\tNo input XML file specified for $lrg_id, attempting to get it from the LRG server\n" if ($verbose);
-      my $result = LRGImport::fetch_remote_lrg($lrg_id,[$LRG_EXTERNAL_XML]);
+      my $result = LRG::LRGImport::fetch_remote_lrg($lrg_id,[$LRG_EXTERNAL_XML]);
       if ($result->{'success'}) {
 	$input_file = $result->{'xmlfile'};
 	print STDOUT localtime() . "\tSuccessfully downloaded XML file for $lrg_id and stored it in $input_file\n" if ($verbose);
@@ -392,8 +392,8 @@ while (my $lrg_id = shift(@lrg_ids)) {
     if ($import) {
       
       # Check if the LRG already exists in the database (if the seq_region exists), in which case it should first be deleted
-      my $cs_id = LRGImport::add_coord_system($LRG_COORD_SYSTEM_NAME);
-      my $seq_region_id = LRGImport::get_seq_region_id($lrg_id,$cs_id);
+      my $cs_id = LRG::LRGImport::add_coord_system($LRG_COORD_SYSTEM_NAME);
+      my $seq_region_id = LRG::LRGImport::get_seq_region_id($lrg_id,$cs_id);
       if (defined($seq_region_id)) {
 	warn("$lrg_id already exists in $coredb\. If you want to replace it, delete it first using the -clean parameter. Will skip it for now");
 	#ÊUndefine the input_file so that the next one will be fetched
@@ -404,7 +404,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Get the assembly that the database uses
       print STDOUT localtime() . "\tGetting assembly name from core db\n" if ($verbose);
-      my $db_assembly = LRGImport::get_assembly();
+      my $db_assembly = LRG::LRGImport::get_assembly();
       print STDOUT localtime() . "\tcore db assembly is $db_assembly\n" if ($verbose);
       
       # Find the mapping in the XML file corresponding to the core assembly
@@ -442,7 +442,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Create pairs array based on the data in the mapping node
       print STDOUT localtime() . "\tCreating pairs from mapping\n" if ($verbose);
-      my $mapping = LRGMapping::mapping_2_pairs(
+      my $mapping = LRG::LRGMapping::mapping_2_pairs(
 	$mapping_node,
 	$lrg_seq,
 	$chr_seq
@@ -451,9 +451,9 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Insert entries for the analysis
       print STDOUT localtime() . "\tAdding analysis data for LRG to $coredb\n" if ($verbose);
-      my $analysis_id = LRGImport::add_analysis($LRG_ANALYSIS_LOGIC_NAME);
+      my $analysis_id = LRG::LRGImport::add_analysis($LRG_ANALYSIS_LOGIC_NAME);
 	
-      LRGImport::add_analysis_description(
+      LRG::LRGImport::add_analysis_description(
         $analysis_id,
         $LRG_ANALYSIS_DESCRIPTION,
         $LRG_ANALYSIS_DISPLAY_LABEL,
@@ -466,13 +466,13 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	next unless(defined($dba));
 	
 	# Set the dbCore variable in LRGImport to the current db adaptor
-	$LRGImport::dbCore = $dba;
+	$LRG::LRGImport::dbCore = $dba;
 	
 	my $dbname = $dba->dbc()->dbname();
 	
 	#ÊAdd mapping between the LRG and chromosome coordinate systems to the core db
 	print STDOUT localtime() . "\tAdding mapping between $LRG_COORD_SYSTEM_NAME and chromosome coordinate system to $dbname for $lrg_name\n" if ($verbose);
-	LRGImport::add_mapping(
+	LRG::LRGImport::add_mapping(
 	  $lrg_name,
 	  $LRG_COORD_SYSTEM_NAME,
 	  length($lrg_seq),
@@ -481,11 +481,11 @@ while (my $lrg_id = shift(@lrg_ids)) {
       }
       
       # Set the dbCore variable in LRGImport back to the db adaptor for the core db
-      $LRGImport::dbCore = $dbCore;
+      $LRG::LRGImport::dbCore = $dbCore;
       
       # Add the transcripts to the core db
       print STDOUT localtime() . "\tAdding transcripts for $lrg_name to core db\n" if ($verbose);
-      LRGImport::add_annotation(
+      LRG::LRGImport::add_annotation(
 	$lrg,
 	$lrg_name,
 	$LRG_COORD_SYSTEM_NAME,
@@ -501,7 +501,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       #Êdie("Adding xrefs is no longer done from this script. Exiting!");
       
       #ÊGet the Ensembl gene_id for the LRG gene
-      my $gene_id = LRGImport::get_object_id_by_stable_id('gene',$lrg_name);
+      my $gene_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$lrg_name);
       if (!$gene_id) {
 	warn("Could not find gene with stable id $lrg_name in core database! Skipping $lrg_name");
 	#ÊUndefine the input_file so that the next one will be fetched
@@ -538,15 +538,15 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       if (defined($hgnc_accession)) {
 	# Add HGNC entry to xref table (or get xref_id if it already exists)
-	$xref_id = LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name);
+	$xref_id = LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name);
 	# Add an object_xref for the HGNC xref
-	$object_xref_id = LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
       }
       
 =head
 Skip this, this is done by the external data files 
       #ÊAdd the LRG website as an external db (if not already present)
-      LRGImport::add_external_db(
+      LRG::LRGImport::add_external_db(
 	$LRG_EXTERNAL_DB_NAME,
 	$LRG_EXTERNAL_STATUS,
 	$LRG_EXTERNAL_PRIORITY,
@@ -559,7 +559,7 @@ Skip this, this is done by the external data files
       
       #ÊAdd the Ensembl LRG display as an external db (if not already present). One each for Gene, Transcript
       foreach my $type (('gene','transcript')) {
-	LRGImport::add_external_db(
+	LRG::LRGImport::add_external_db(
 	  $LRG_ENSEMBL_DB_NAME . '_' . $type,
 	  $LRG_ENSEMBL_STATUS,
 	  $LRG_ENSEMBL_PRIORITY,
@@ -572,13 +572,13 @@ Skip this, this is done by the external data files
       }
 =cut      
       # Add external LRG link to xref table
-      my $ext_xref_id = LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
+      my $ext_xref_id = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
       
       #ÊAdd an object_xref for the LRG xref
-      $object_xref_id = LRGImport::add_object_xref($gene_id,'Gene',$ext_xref_id);
+      $object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$ext_xref_id);
       
       #ÊUpdate the gene table to set the display_xref_id to the LRG xref
-      LRGImport::update_rows([qq{display_xref_id = $ext_xref_id}],[qq{gene_id = $gene_id}],['gene']);
+      LRG::LRGImport::update_rows([qq{display_xref_id = $ext_xref_id}],[qq{gene_id = $gene_id}],['gene']);
       
       #ÊAdd xrefs to the Ensembl coordinate system for the LRG gene
       
@@ -589,19 +589,19 @@ Skip this, this is done by the external data files
       foreach my $lrg_gene_xref (@{$lrg_gene_xrefs}) {
 	my $stable_id = $lrg_gene_xref->data->{'accession'};
 	
-	$xref_id = LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
+	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
 	#ÊAdd an object_xref for the LRG xref
-	$object_xref_id = LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
 	
 	my $core_stable_id = $lrg_name;
 	
 	#ÊDo the same for the Ensembl gene to the Ensembl LRG display
-	$xref_id = LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$core_stable_id,$lrg_name);
+	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$core_stable_id,$lrg_name);
 	# Get the gene_id for the Ensembl gene
-	my $core_id = LRGImport::get_object_id_by_stable_id('gene',$stable_id);
-	$object_xref_id = LRGImport::add_object_xref($core_id,'Gene',$xref_id);
+	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$stable_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$xref_id);
 	# Add xref to the external LRG database
-	$object_xref_id = LRGImport::add_object_xref($core_id,'Gene',$ext_xref_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$ext_xref_id);
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
@@ -613,29 +613,29 @@ Skip this, this is done by the external data files
 	
 	# Get the core db LRG transcript_id for this transcript
 	my $core_stable_id = $lrg_name . '_' . $fixed_id;
-	my $core_id = LRGImport::get_object_id_by_stable_id('transcript',$core_stable_id);
+	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_stable_id);
 	next unless(defined($core_id));
 	
-	$xref_id = LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
+	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
 	#ÊAdd an object_xref for the LRG xref
-	$object_xref_id = LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
 	
 	#ÊDo the same for the Ensembl transcript to the Ensembl LRG display
-	$xref_id = LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
+	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
 	# Get the gene_id for the Ensembl gene
-	my $core_id = LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
-	$object_xref_id = LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
+	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
 	
 	# Do the same for the translation
 	my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
 	next unless(defined($lrg_protein));
 	$core_accession = $lrg_protein->{'data'}{'accession'};
 	next unless(defined($core_accession));
-	$core_id = LRGImport::get_translation_id($core_id);
+	$core_id = LRG::LRGImport::get_translation_id($core_id);
 	
-	$xref_id = LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
+	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
 	#ÊAdd an object_xref for the LRG xref
-	$object_xref_id = LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
 	
       }
       
