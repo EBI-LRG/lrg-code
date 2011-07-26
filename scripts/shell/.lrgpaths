@@ -16,6 +16,9 @@ LRGDBADMUSER=
 LRGDBROUSER=
 LRGDBNAME=
 
+# The registry configuration file used for mappings and annotations
+REGISTRYFILE=
+
 # The path to where the genome sequences required for mapping are located
 SEQDIR=
 # A temporary directory where output from the LRG mapping process can be written
@@ -25,7 +28,7 @@ TMPDIR=
 JINGPATH=
 
 # Export the variables
-export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH 
+export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH REGISTRYFILE
 
 # Define a shell function for grabbing the HGNC symbol from a LRG XML record
 function lrg_gene_name() { 
