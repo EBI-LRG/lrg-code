@@ -62,14 +62,14 @@ if ($list) {
     exit(0);
 }
 
-@checks = @LRGHealthcheck::CHECKS if (!defined(@checks));
-$LRGHealthcheck::JAVA = $java_executable if (defined($java_executable));
-$LRGHealthcheck::JING_JAR = $jing_jar if (defined($jing_jar));
-$LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
+@checks = @LRG::LRGHealthcheck::CHECKS if (!defined(@checks));
+$LRG::LRGHealthcheck::JAVA = $java_executable if (defined($java_executable));
+$LRG::LRGHealthcheck::JING_JAR = $jing_jar if (defined($jing_jar));
+$LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
 
-my $hc = LRGHealthcheck::new($xml_file);
+my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
-    if (!grep(/^$check$/,@LRGHealthcheck::CHECKS)) {
+    if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS)) {
         print "Unknown healthcheck '$check'\n";
         next;
     }

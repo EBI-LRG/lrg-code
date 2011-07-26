@@ -57,7 +57,7 @@ sub new {
     }
     
     # Bless and return
-    bless $hc, 'LRGHealthcheck';
+    bless $hc, 'LRG::LRGHealthcheck';
     return $hc;
 }
 
