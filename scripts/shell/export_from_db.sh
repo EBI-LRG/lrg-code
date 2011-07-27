@@ -1,5 +1,4 @@
 #! /bin/bash
-. ~/.bashrc
 . ~/.lrgpaths
 
 host=${LRGDBHOST}
@@ -8,16 +7,8 @@ user=${LRGDBROUSER}
 dbname=${LRGDBNAME}
 perldir=${CVSROOTDIR}/code/scripts/
 lrgid=$1
-hgnc_symbol=$2
-outfile=$3
-
-if [ -z ${lrgid} ]
-then
-  spec="-hgnc_symbol ${hgnc_symbol}"
-  lrgid=${hgnc_symbol}
-else
-  spec="-lrg_id ${lrgid}"
-fi
+outfile=$2
+spec="-lrg_id ${lrgid}"
 
 if [ -z ${outfile} ]
 then
