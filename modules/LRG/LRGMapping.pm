@@ -1138,7 +1138,7 @@ sub attach_transcripts {
       next if $entry->dbname =~ /RefSeq_peptide/;
 	
       # Get the long name from RefSeq if it's available    
-      if ($entry->dbname() eq 'RefSeq_dna' && defined($entry->description())) {
+      if ($entry->dbname() =~ /^RefSeq_/ && defined($entry->description())) {
 	$name_content = $entry->description();
       }
       
