@@ -860,7 +860,7 @@ sub lift_coordinate {
   
   my $source_slice;
   # If the source slice is fetched from the read-only database, get the corresponding slice from the read-write db instead
-  if ($input_slice->adaptor->dbc->host() eq $dbCore_rw->dbc->host() && $input_slice->adaptor->dbc->dbname() eq $dbCore_rw->dbc->dbname()) {
+  if ($input_slice->adaptor->dbc->host() eq $dbCore_rw->dbc->host() && $input_slice->adaptor->dbc->port() eq $dbCore_rw->dbc->port() && $input_slice->adaptor->dbc->dbname() eq $dbCore_rw->dbc->dbname()) {
     $source_slice = $input_slice;
   }
   else {
