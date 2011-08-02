@@ -246,7 +246,7 @@ if (defined($rnaseqdb)) {
 # Put the db adaptors into an array
 my @db_adaptors = ($dbCore,$dbOther,$dbcDNA,$dbVega,$dbRNAseq);
 
-#ÊGet a slice adaptor
+# Get a slice adaptor
 print STDOUT localtime() . "\tGetting slice adaptor\n" if ($verbose);
 my $sa = $dbCore->get_SliceAdaptor();
 
@@ -271,7 +271,7 @@ if ($revert) {
   close(MV);
 }
 
-#ÊIf doing an import, check that the tables affected for adding the mapping information are sync'd across the relevant databases
+# If doing an import, check that the tables affected for adding the mapping information are sync'd across the relevant databases
 if ($import) {
   my %max_increment = (
   'seq_region'		=> 0
@@ -279,7 +279,7 @@ if ($import) {
   foreach my $table (keys(%max_increment)) {
   
     print STDOUT localtime() . "\tChecking Auto_increment value for $table\n" if ($verbose);
-    #ÊCheck each db adaptor
+    # Check each db adaptor
     my $do_sync = 0;
     foreach my $dba (@db_adaptors) {
       # Skip this db adaptor if it's not defined
@@ -315,7 +315,7 @@ if ($import) {
   }
 }
   
-#ÊLoop over the specified LRG identifiers and process each one
+# Loop over the specified LRG identifiers and process each one
 while (my $lrg_id = shift(@lrg_ids)) {
   
   print localtime() . "\tProcessing $lrg_id\n";
@@ -343,7 +343,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
     $LRG::LRGMapping::dbCore_rw = $dbCore;
     $LRG::LRGMapping::dbCore_ro = $dbCore;
     
-    #ÊGet a LRG slice
+    # Get a LRG slice
     print STDOUT localtime() . "\tGetting a slice for $lrg_id\n" if ($verbose);
     my $lrg_slice = $sa->fetch_by_region($LRG_COORD_SYSTEM_NAME,$lrg_id) or die("Could not fetch a slice object for " . $LRG_COORD_SYSTEM_NAME . ":" . $lrg_id);
     
@@ -396,9 +396,9 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $seq_region_id = LRG::LRGImport::get_seq_region_id($lrg_id,$cs_id);
       if (defined($seq_region_id)) {
 	warn("$lrg_id already exists in $coredb\. If you want to replace it, delete it first using the -clean parameter. Will skip it for now");
-	#ÊUndefine the input_file so that the next one will be fetched
+	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
-	#ÊNote, this will also skip xref and verify methods for this LRG
+	# Note, this will also skip xref and verify methods for this LRG
         next;
       }
       
@@ -420,13 +420,13 @@ while (my $lrg_id = shift(@lrg_ids)) {
       # Warn and skip if the correct mapping could not be fetched
       if (!defined($mapping_node)) {
 	warn("Could not find the LRG->Genome mapping corresponding to the core assembly ($db_assembly) for $lrg_id Skipping!");
-	#ÊUndefine the input_file so that the next one will be fetched
+	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
-	#ÊNote, this will also skip xref and verify methods for this LRG
+	# Note, this will also skip xref and verify methods for this LRG
 	next;
       }
       
-      #ÊWarn if the assembly used is not flagged as the most recent
+      # Warn if the assembly used is not flagged as the most recent
       warn("Assembly $db_assembly is currently not flagged as the most recent in the $lrg_id XML file!") unless ($mapping_node->{'data'}{'most_recent'} == 1);
       
       my $assembly = $mapping_node->data->{'assembly'};
@@ -434,7 +434,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Extract the genomic LRG sequence
       my $lrg_seq = $lrg->findNode('fixed_annotation/sequence')->content();
-      #ÊGet the reference genomic sequence from database
+      # Get the reference genomic sequence from database
       my $chr_name = $mapping_node->data->{'chr_name'};
       my $chr_start = $mapping_node->data->{'start'};
       my $chr_end = $mapping_node->data->{'end'}; 
@@ -460,7 +460,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
         0
       );
       
-      #ÊLoop over the db adaptors where information will be mirrored and insert in the ones that are defined
+      # Loop over the db adaptors where information will be mirrored and insert in the ones that are defined
       foreach my $dba (@db_adaptors) {
 	# Skip this db adaptor if it's not defined
 	next unless(defined($dba));
@@ -470,7 +470,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	
 	my $dbname = $dba->dbc()->dbname();
 	
-	#ÊAdd mapping between the LRG and chromosome coordinate systems to the core db
+	# Add mapping between the LRG and chromosome coordinate systems to the core db
 	print STDOUT localtime() . "\tAdding mapping between $LRG_COORD_SYSTEM_NAME and chromosome coordinate system to $dbname for $lrg_name\n" if ($verbose);
 	LRG::LRGImport::add_mapping(
 	  $lrg_name,
@@ -498,15 +498,15 @@ while (my $lrg_id = shift(@lrg_ids)) {
     if ($add_xrefs) {
       
       # This should no longer be done from this script but be included in the main core xref mapping. Will allow it for now.
-      #Êdie("Adding xrefs is no longer done from this script. Exiting!");
+      # die("Adding xrefs is no longer done from this script. Exiting!");
       
-      #ÊGet the Ensembl gene_id for the LRG gene
+      # Get the Ensembl gene_id for the LRG gene
       my $gene_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$lrg_name);
       if (!$gene_id) {
 	warn("Could not find gene with stable id $lrg_name in core database! Skipping $lrg_name");
-	#ÊUndefine the input_file so that the next one will be fetched
+	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
-	#ÊNote, this will also skip verify method for this LRG
+	# Note, this will also skip verify method for this LRG
         next;
       }
       
@@ -514,9 +514,9 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $lrg_gene_name_node = $lrg->findNode("updatable_annotation/annotation_set/lrg_gene_name",{'source' => 'HGNC'});
       if (!$lrg_gene_name_node) {
 	warn("Could not find HGNC identifier in XML file! Skipping $lrg_name");
-	#ÊUndefine the input_file so that the next one will be fetched
+	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
-	#ÊNote, this will also skip xref and verify methods for this LRG
+	# Note, this will also skip xref and verify methods for this LRG
         next;
       }
       my $hgnc_name = $lrg_gene_name_node->content();
@@ -545,7 +545,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
 =head
 Skip this, this is done by the external data files 
-      #ÊAdd the LRG website as an external db (if not already present)
+      # Add the LRG website as an external db (if not already present)
       LRG::LRGImport::add_external_db(
 	$LRG_EXTERNAL_DB_NAME,
 	$LRG_EXTERNAL_STATUS,
@@ -557,7 +557,7 @@ Skip this, this is done by the external data files
 	$LRG_EXTERNAL_TYPE
       );
       
-      #ÊAdd the Ensembl LRG display as an external db (if not already present). One each for Gene, Transcript
+      # Add the Ensembl LRG display as an external db (if not already present). One each for Gene, Transcript
       foreach my $type (('gene','transcript')) {
 	LRG::LRGImport::add_external_db(
 	  $LRG_ENSEMBL_DB_NAME . '_' . $type,
@@ -574,15 +574,15 @@ Skip this, this is done by the external data files
       # Add external LRG link to xref table
       my $ext_xref_id = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
       
-      #ÊAdd an object_xref for the LRG xref
+      # Add an object_xref for the LRG xref
       $object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$ext_xref_id);
       
-      #ÊUpdate the gene table to set the display_xref_id to the LRG xref
+      # Update the gene table to set the display_xref_id to the LRG xref
       LRG::LRGImport::update_rows([qq{display_xref_id = $ext_xref_id}],[qq{gene_id = $gene_id}],['gene']);
       
-      #ÊAdd xrefs to the Ensembl coordinate system for the LRG gene
+      # Add xrefs to the Ensembl coordinate system for the LRG gene
       
-      #ÊGet the annotated Ensembl xrefs from the XML file for the LRG gene
+      # Get the annotated Ensembl xrefs from the XML file for the LRG gene
       my $lrg_gene_xrefs = $lrg_gene->findNodeArray('db_xref',{'source' => 'Ensembl'});
       
       # Add or get xref_ids for the Ensembl xrefs, the external_db name is Ens_Hs_gene
@@ -590,12 +590,12 @@ Skip this, this is done by the external data files
 	my $stable_id = $lrg_gene_xref->data->{'accession'};
 	
 	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
-	#ÊAdd an object_xref for the LRG xref
+	# Add an object_xref for the LRG xref
 	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
 	
 	my $core_stable_id = $lrg_name;
 	
-	#ÊDo the same for the Ensembl gene to the Ensembl LRG display
+	# Do the same for the Ensembl gene to the Ensembl LRG display
 	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$core_stable_id,$lrg_name);
 	# Get the gene_id for the Ensembl gene
 	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$stable_id);
@@ -617,10 +617,10 @@ Skip this, this is done by the external data files
 	next unless(defined($core_id));
 	
 	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
-	#ÊAdd an object_xref for the LRG xref
+	# Add an object_xref for the LRG xref
 	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
 	
-	#ÊDo the same for the Ensembl transcript to the Ensembl LRG display
+	# Do the same for the Ensembl transcript to the Ensembl LRG display
 	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
 	# Get the gene_id for the Ensembl gene
 	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
@@ -634,14 +634,14 @@ Skip this, this is done by the external data files
 	$core_id = LRG::LRGImport::get_translation_id($core_id);
 	
 	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
-	#ÊAdd an object_xref for the LRG xref
+	# Add an object_xref for the LRG xref
 	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
 	
       }
       
     }
     
-    #ÊCheck that the mapping stored in the database give the same sequences as those stored in the XML file
+    # Check that the mapping stored in the database give the same sequences as those stored in the XML file
     if ($verify) {
       
       my $msg;
@@ -649,7 +649,7 @@ Skip this, this is done by the external data files
       # Needs to flush the db adaptor when doing an import before verifying content. Not sure how to do this, so will only print a warning
       warn("Verifying the import now will probably tell you that there are inconsistencies because the db adaptor haven't been flushed. You should re-run the script doing verification after the import has finished") if ($import);
       
-      #ÊA flag to inddicate if everything is ok
+      # A flag to inddicate if everything is ok
       my $passed = 1;
       
       # Get the genomic sequence from the XML file
@@ -675,13 +675,13 @@ Skip this, this is done by the external data files
 	  $passed = 0;  
 	}
 	
-	#ÊCompare each transcript
+	# Compare each transcript
 	my $transcripts_xml = $lrg->findNodeArray('fixed_annotation/transcript');
 	my $transcripts_db = $lrg_slice->get_all_Transcripts(undef,$LRG_ANALYSIS_LOGIC_NAME);
 	foreach my $transcript_xml (@{$transcripts_xml}) {
 	  # Get the fixed id
 	  my $fixed_id = $transcript_xml->{'data'}{'name'};
-	  #ÊThe expected transcript_stable_id based on the XML fixed id
+	  # The expected transcript_stable_id based on the XML fixed id
 	  my $stable_id = $lrg_id . '_' . $fixed_id;
 	  # Get the ensembl transcript with the corresponding stable_id
 	  my @db_tr = grep {$_->stable_id() eq $stable_id} @{$transcripts_db};
@@ -696,7 +696,7 @@ Skip this, this is done by the external data files
 	  
 	  my $transcript_db = $db_tr[0];
 	  
-	  #ÊGet the cDNA sequence from the XML file
+	  # Get the cDNA sequence from the XML file
 	  my $cDNA_xml = $transcript_xml->findNode('cdna/sequence')->content();
 	  # Get the cDNA sequence from the db
 	  my $cDNA_db = $transcript_db->spliced_seq();
@@ -710,9 +710,9 @@ Skip this, this is done by the external data files
 	    next;
 	  }
 	  
-	  #ÊGet the translation from the XML file
+	  # Get the translation from the XML file
 	  my $translation_xml = $transcript_xml->findNode('coding_region/translation/sequence')->content();
-	  #ÊGet the translation from the db
+	  # Get the translation from the db
 	  my $translation_db = $transcript_db->translation()->seq();
 	  # Remove any terminal stop codons
 	  $translation_xml =~ s/\*$//;
@@ -738,7 +738,7 @@ Skip this, this is done by the external data files
       }
     }
   }
-  #ÊUndefine the input_file so that the next one will be fetched
+  # Undefine the input_file so that the next one will be fetched
   undef($input_file);
 }
 
