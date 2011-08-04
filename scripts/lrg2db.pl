@@ -393,10 +393,11 @@ my $transcripts = $fixed->findNodeArray('transcript') or die ("ERROR: Could not 
 # Parse and add each transcript to the database separately
 while (my $transcript = shift(@{$transcripts})) {
     
-    # Transcript name and LRG coords
+    # Transcript name
     my $name = $transcript->data()->{'name'};
-    my $lrg_start = $transcript->data()->{'start'};
-    my $lrg_end = $transcript->data()->{'end'};
+    
+    # Get LRG coords
+    my [undef,$lrg_start,$lrg_end] = parse_coordinates($transcript->findNode('coordinates'));
     
     # Insert the transcript into db
     $tr_ins_sth->bind_param(1,$name,SQL_VARCHAR);
@@ -421,9 +422,8 @@ while (my $transcript = shift(@{$transcripts})) {
     # Get the cds
     my $cds_node = $transcript->findNode('coding_region') or warn("Could not get coding region for transcript $name\, skipping this transcript");
     next unless ($cds_node);
-    $lrg_start = $cds_node->data()->{'start'};
-    $lrg_end = $cds_node->data()->{'end'};
     my $codon_start = $cds_node->data()->{'codon_start'};
+    [undef,$lrg_start,$lrg_end] = parse_coordinates($cds_node->findNode('coordinates'));
     
     $node = $cds_node->findNode('translation/sequence') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
     next unless ($node);
@@ -472,22 +472,25 @@ while (my $transcript = shift(@{$transcripts})) {
             my $peptide_start;
             my $peptide_end;
             
-            $node = $child->findNode('lrg_coords') or warn("Could not get LRG coordinates for one or more exons in $name");
-            if ($node) {
-                $exon_lrg_start = $node->data()->{'start'};
-                $exon_lrg_end = $node->data()->{'end'};
+            # Get the coordinates
+            foreach my $node (@{$child->findNodeArray('coordinates') || []}) {
+              my [$cs,$start,$end] = parse_coordinates($node);
+              if ($cs =~ m/^LRG_\d+$/) {
+                $exon_lrg_start = $start;
+                $exon_lrg_end = $end;
+              }
+              elsif ($cs =~ m/^LRG_\d+_?t\d+$/) {
+                $cdna_start = $start;
+                $cdna_end = $end;
+              }
+              elsif ($cs =~ m/^LRG_\d+_?p\d+$/) {
+                $peptide_start = $start;
+                $peptide_end = $end;
+              }
             }
-            $node = $child->findNode('cdna_coords') or warn("Could not get cDNA coordinates for one or more exons in $name"); 
-            if ($node) {
-                $cdna_start = $node->data()->{'start'};
-                $cdna_end = $node->data()->{'end'};
-            }
-            $node = $child->findNode('peptide_coords'); 
-            if ($node) {
-                $peptide_start = $node->data()->{'start'};
-                $peptide_end = $node->data()->{'end'};
-            }
-            
+            warn("Could not get LRG coordinates for one or more exons in $name") unless (defined($lrg_start) && defined($lrg_end));
+            warn("Could not get cDNA coordinates for one or more exons in $name") unless (defined($cdna_start) && defined($cdna_end));
+
             # Insert the exon into db
             $exon_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
             $exon_ins_sth->bind_param(2,$exon_lrg_start,SQL_INTEGER);
@@ -610,7 +613,7 @@ sub parse_annotation_set {
     my $xml_out;
     
     # Get the xml for the rest of the annotation_set
-    foreach my $name (('other_exon_naming','alternate_amino_acid_numbering','features')) {
+    foreach my $name (('fixed_transcript_annotation','features')) {
         my $node = $annotation_set->findNode($name);
         if (defined($node)) {
             my $xml = new XML::Writer(OUTPUT => \$xml_out, DATA_INDENT => 2, DATA_MODE => 1);
@@ -711,11 +714,11 @@ sub parse_mapping {
     my $ms_ins_sth = $db_adaptor->dbc->prepare($ms_ins_stmt);
     my $diff_ins_sth = $db_adaptor->dbc->prepare($diff_ins_stmt);
     
-    my $assembly = $mapping->data()->{'assembly'} or die ("Could not find assembly attribute in mapping tag of $xmlfile");
-    my $chr_name = $mapping->data()->{'chr_name'} or die ("Could not find chr_name attribute in mapping tag of $xmlfile");
-    my $chr_start = $mapping->data()->{'chr_start'} or die ("Could not find chr_start attribute in mapping tag of $xmlfile");
-    my $chr_end = $mapping->data()->{'chr_end'} or die ("Could not find chr_end attribute in mapping tag of $xmlfile");
-    my $chr_id = $mapping->data()->{'chr_id'};
+    my $assembly = $mapping->data()->{'coord_system'} or die ("Could not find assembly attribute in mapping tag of $xmlfile");
+    my $chr_name = $mapping->data()->{'other_name'} or die ("Could not find chr_name attribute in mapping tag of $xmlfile");
+    my $chr_start = $mapping->data()->{'other_start'} or die ("Could not find chr_start attribute in mapping tag of $xmlfile");
+    my $chr_end = $mapping->data()->{'other_end'} or die ("Could not find chr_end attribute in mapping tag of $xmlfile");
+    my $chr_id = $mapping->data()->{'other_id'};
     my $most_recent = $mapping->data()->{'most_recent'};
     my $lrg_start;
     my $lrg_end;
@@ -735,8 +738,8 @@ sub parse_mapping {
     while (my $span = shift(@{$spans})) {
         $lrg_start = $span->data()->{'lrg_start'} or die ("Could not find lrg_start attribute in mapping span of $xmlfile");
         $lrg_end = $span->data()->{'lrg_end'} or die ("Could not find lrg_end attribute in mapping span of $xmlfile");
-        $chr_start = $span->data()->{'start'} or die ("Could not find start attribute in mapping span of $xmlfile");
-        $chr_end = $span->data()->{'end'} or die ("Could not find end attribute in mapping span of $xmlfile");
+        $chr_start = $span->data()->{'other_start'} or die ("Could not find start attribute in mapping span of $xmlfile");
+        $chr_end = $span->data()->{'other_end'} or die ("Could not find end attribute in mapping span of $xmlfile");
         $strand = $span->data()->{'strand'} or die ("Could not find strand attribute in mapping span of $xmlfile");
         
 #        #$ms_ins_sth->bind_param(1,$mapping_id,SQL_INTEGER);
@@ -754,10 +757,10 @@ sub parse_mapping {
             my $diff_type = $diff->data()->{'type'} or die ("Could not find type attribute in diff of $xmlfile");
             $lrg_start = $diff->data()->{'lrg_start'} or die ("Could not find lrg_start attribute in diff of $xmlfile");
             $lrg_end = $diff->data()->{'lrg_end'} or die ("Could not find lrg_end attribute in diff of $xmlfile");
-            $chr_start = $diff->data()->{'start'} or die ("Could not find start attribute in diff of $xmlfile");
-            $chr_end = $diff->data()->{'end'} or die ("Could not find end attribute in diff of $xmlfile");
+            $chr_start = $diff->data()->{'other_start'} or die ("Could not find start attribute in diff of $xmlfile");
+            $chr_end = $diff->data()->{'other_end'} or die ("Could not find end attribute in diff of $xmlfile");
             my $lrg_seq = $diff->data()->{'lrg_sequence'};
-            my $chr_seq = $diff->data()->{'genomic_sequence'};
+            my $chr_seq = $diff->data()->{'other_sequence'};
             
             $diff_ins_sth->bind_param(1,$span_id,SQL_INTEGER);
             $diff_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
@@ -1054,4 +1057,25 @@ sub lrg_id {
     }
     
     return $lrg_id;
+}
+
+# Parse a coordinates element tag
+sub parse_coordinates {
+  my $element = shift;
+  
+  my $attribs = [];
+  
+  if (defined($element) && $element->name() eq 'coordinates') {
+  
+    $attribs[] = $element->data()->{coord_system};
+    $attribs[] = $element->data()->{start};
+    $attribs[] = $element->data()->{end};
+    $attribs[] = $element->data()->{start_ext};
+    $attribs[] = $element->data()->{end_ext};
+    $attribs[] = $element->data()->{strand};
+    $attribs[] = $element->data()->{mapped_from};
+    
+  }
+  
+  return $attribs;
 }
