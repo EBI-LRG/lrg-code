@@ -185,9 +185,10 @@ sub do_mapping {
         my $best_span = parse_anchors($outfile,$anchors,$anchor_length,$anchor_spacing) or die ("Could not identify the genomic region where the query sequence, $id, should be anchored");
         
         # Extract the genomic region, including some wiggle room on the flanks
-        printf("\tDetermined the best location to be \%s:\%d-\%d:\%d, extracting sequence, including \%d bp flanking...\n",$best_span->[0],$best_span->[1],$best_span->[2],$best_span->[3],$anchor_spacing);
-        my $genomic_start = $best_span->[1] - $anchor_spacing;
-        my $genomic_end = $best_span->[2] + $anchor_spacing;
+        my $flanking_distance = 2*$anchor_spacing;
+        printf("\tDetermined the best location to be \%s:\%d-\%d:\%d, extracting sequence, including \%d bp flanking...\n",$best_span->[0],$best_span->[1],$best_span->[2],$best_span->[3],$flanking_distance);
+        my $genomic_start = $best_span->[1] - $flanking_distance;
+        my $genomic_end = $best_span->[2] + $flanking_distance;
         $samtools->extra_parameters([$self->target(),$best_span->[0] . ":" . $genomic_start . "-" . $genomic_end]);
         my $genomic_seq = $samtools->execute();
         # Dump the sequence to a file
@@ -228,13 +229,15 @@ sub parse_anchors {
     my $anchor_spacing = shift;
     
     my $max_anchor_spacing = 3*$anchor_spacing;
-    my $max_length_tolerance = $anchor_spacing;
+    my $max_length_tolerance = 2*$anchor_spacing;
     
     # Determine the location of the anchors
     my @locations;
     open (FH,"<",$outfile) or die ("Could not open SMALT output file: $outfile for parsing");
     while (<FH>) {
         chomp;
+        
+        next unless (m/^cigar\:S\:\d+\s+(\S+)\s+(\d+)\s+(\d+)\s+([\-\+])\s+(\S+)\s+(\d+)\s+(\d+)\s+([\-\+])/);
         my ($q,$qs,$qe,$qo,$sn,$ss,$se,$so) = $_ =~ m/^\S+\s+(\S+)\s+(\d+)\s+(\d+)\s+([\-\+])\s+(\S+)\s+(\d+)\s+(\d+)\s+([\-\+])/;
             
         # Replace the orientations with integers
