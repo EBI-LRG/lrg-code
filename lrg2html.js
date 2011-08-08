@@ -3,14 +3,12 @@
 function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);
   
-  if(lyrobj.style.height == "0px") {
-	lyrobj.style.height = "";
-	lyrobj.style.display = "";
+  if(lyrobj.className == "hidden") {
+	lyrobj.className = "unhidden";
   }
   
   else {
-	lyrobj.style.height = "0px";
-	lyrobj.style.display = "none";
+	lyrobj.className = "hidden";
   }
 }
 
@@ -20,6 +18,7 @@ function show(lyr) {
   
   lyrobj.style.height = "";
   lyrobj.style.display = "";
+
 }
 
 // function to highlight paired transcripts and protein products
@@ -54,7 +53,7 @@ function highlight_exon(num) {
   
   
   if(tableobj) {
-	if(tableobj.className.length &gt; 11) {
+	if(tableobj.className.length > 11) {
 	  tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
 	  if(num.substr(0,2) == 't1') {
 		genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon' : 'intron');

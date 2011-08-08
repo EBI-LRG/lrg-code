@@ -39,6 +39,15 @@ th {
   padding: 5px;
 }
 
+th.exon_label {
+	background:#2266BB;
+}
+
+th.exon_separator {
+	background:#000000;
+	border-color:#000000;
+}
+
 table {
   font-size: 100%;
   border-collapse: collapse;
@@ -49,17 +58,46 @@ td {
   padding: 5px;
 }
 
+td.quicklink_cell {
+  border: 0px;
+}
+
+td.sequence_cell {
+  border: 0px;
+}
+
+td.gene_info_cell {
+  border: 0px;
+}
+
+td.gene_transcript_cell {
+	padding:0px; 
+	border:0px;
+}
+
 ul{
   margin-left:10px;
   padding-left:5px;
 }
 
-.quicklinks {
+td.quicklinks {
   border: 0px;
   padding-top: 0px;
   padding-bottom: 0px;
   padding-right: 0px;
   padding-left: 10px;
+}
+
+.pending_banner {
+  text-align:center;
+	background-color:#FF0000;
+	color:#FFFFFF;
+	font-size:40pt;
+	font-weight:bold;
+}
+
+.pending_subtitle {
+	font-style:italic;
 }
 
 .contact_lbl {
@@ -210,8 +248,9 @@ ul{
   border-top-width: 1px;
   border-bottom-style: solid;
   border-bottom-width: 1px;
-     }
-     .evenDiv {
+}
+     
+.evenDiv {
   background: #FFFFFF;
   margin: 5px;
   border-top-style: solid;
@@ -219,4 +258,31 @@ ul{
   border-bottom-style: solid;
   border-bottom-width: 1px;
 }
-   
+
+.hidden {
+	height: 0px;
+	display: none;
+}
+
+.unhidden {
+	height: 100px;
+	display: inline;
+}
+
+div.requester_source {
+	background-color: #E0E0E0; 
+	border-style: dashed; 
+	border-width: 1px; 
+	padding-left: 5px; 
+	padding-bottom: 10px
+}
+
+div.external_source {
+	background-color: #F0F0F0; 
+	padding-left: 5px;
+}
+
+div.lrg_source {
+	background-color: #F0F0F0; 
+	padding-left: 5px;
+}
