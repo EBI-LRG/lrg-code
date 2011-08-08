@@ -432,8 +432,6 @@
 <xsl:template match="fixed_annotation">
   <xsl:param name="lrg_id" />
   
-  <xsl:message>Matched fixed annotation</xsl:message>
-  
   <div id="fixed_annotation_div" class="oddDiv">
     <a name="fixed_annotation_anchor" />
     <h2>FIXED ANNOTATION</h2>
@@ -471,8 +469,6 @@
     <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
   </xsl:call-template>
 
-  <xsl:message>Exited genomic sequence</xsl:message>
-  
 <!-- LRG TRANSCRIPTS -->
 
     <a name="transcripts_anchor"/>
@@ -491,8 +487,6 @@
 <xsl:template name="genomic_sequence">
   <xsl:param name="lrg_id" />
         
-  <xsl:message>Matched genomic sequence</xsl:message>
-  
   <table>
   
     <tr>
@@ -670,8 +664,6 @@
   <xsl:variable name="transname" select="@name"/>
   <xsl:variable name="first_exon_start" select="exon/lrg_coords/@start"/>
     
-  <xsl:message>Matched fixed transcript</xsl:message>
-  
   <p>
     <a>
   <xsl:attribute name="name">transcript_<xsl:value-of select="$transname"/></xsl:attribute>
@@ -1402,8 +1394,6 @@
 <xsl:template match="updatable_annotation">
   <xsl:param name="lrg_id" />
   <xsl:param name="lrg_gene_name" />
-  
-  <xsl:message>Matched updatable annotation</xsl:message>
   
   <div id="updatable_annotation_div" class="evenDiv">
   <a name="updatable_annotation_anchor" />
