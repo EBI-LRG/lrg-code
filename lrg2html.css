@@ -1,0 +1,288 @@
+body {
+  font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;
+  font-size: 90%;
+}
+
+a {
+  text-decoration: none;
+  color: #48a726;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1 {
+  color: #FFFFFF;
+  background: #003399;
+  border: 1px dotted black;
+  padding: 10px;
+}
+
+h2 {
+  color: #48a726;
+}
+
+h3 {
+  color: #003399;
+}
+
+h4 {
+  color: #003399;
+  font-style: italic;
+}
+
+th {
+  color: #FFFFFF;
+  background: #003399;
+  border: 1px solid #003399;
+  padding: 5px;
+}
+
+th.exon_label {
+	background:#2266BB;
+}
+
+th.exon_separator {
+	background:#000000;
+	border-color:#000000;
+}
+
+table {
+  font-size: 100%;
+  border-collapse: collapse;
+}
+
+td {
+  border: 1px solid black;
+  padding: 5px;
+}
+
+td.quicklink_cell {
+  border: 0px;
+}
+
+td.sequence_cell {
+  border: 0px;
+}
+
+td.gene_info_cell {
+  border: 0px;
+}
+
+td.gene_transcript_cell {
+	padding:0px; 
+	border:0px;
+}
+
+ul{
+  margin-left:10px;
+  padding-left:5px;
+}
+
+td.quicklinks {
+  border: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  padding-right: 0px;
+  padding-left: 10px;
+}
+
+.pending_banner {
+  text-align:center;
+	background-color:#FF0000;
+	color:#FFFFFF;
+	font-size:40pt;
+	font-weight:bold;
+}
+
+.pending_subtitle {
+	font-style:italic;
+}
+
+.contact_lbl {
+  border: 0px;
+  padding: 0px;
+  font-weight: bold;
+}
+
+.contact_val {
+  border: 0px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  padding-right: 0px;
+  padding-left: 10px;
+}
+
+.sequence {
+  font-family: monospace;
+  border: 0px;
+  padding: 0px;
+}
+
+.coord {
+  padding: 0px;
+  padding-right: 12px;
+  text-align: right;
+  color: #666666;
+  border: 0px;
+}
+
+.showhide {
+  border: 0px;
+}
+
+.partial {
+  background: #FAE5AA;
+}
+
+.upstream {
+  text-transform: lowercase;
+  font-family: monospace;
+  color: #000000;
+}
+.downstream {
+  text-transform: lowercase;
+  font-family: monospace;
+  color: #000000;
+}
+.intron {
+  font-family: monospace;
+  text-transform: lowercase;
+  color: #000000;
+}
+
+.intronselect {
+  font-family: monospace;
+  color: #000000;
+  background: #68C746;
+}
+
+.exon {
+  font-family: monospace;
+  color: #003399;
+}
+
+.exon_odd {
+  font-family: monospace;
+  color: #003399;
+}
+
+.exon_even {
+  font-family: monospace;
+  color: #000000;
+}
+
+.exonselect {
+  font-family: monospace;
+  color: #003399;
+  background: #A8FF86;
+}
+
+.exontable {
+  background: #ffffff;
+}
+
+.introntable {
+  background: #ffffff;
+}
+
+.exontableselect {
+  background: #A8FF86;
+}
+
+.introntableselect {
+  background: #68C746;
+}
+
+.utr {
+  font-family: monospace;
+  text-transform: lowercase;
+  color: #666666;
+  background: #CCCCCC;
+}
+
+.startcodon {
+  background: #FFFF00;
+}
+
+.stopcodon {
+  background: #FF6600;
+  color: white;
+}
+
+.outphase {
+  font-family: monospace;
+  color: white;
+  background: red;
+}
+
+.exonkey {
+  color: #003399;
+}
+
+.outphasekey {
+  color: white;
+  background: red;
+}
+
+.hardbreak {
+  -moz-binding: url('./wordwrap.xml#wordwrap');
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
+  border: 0px;
+  padding: 0px;
+  width: 624px;
+}
+
+.trans_prot {
+  background: #FFFFFF;
+}
+.trans_prot_hl {
+  background: #FFFF99;
+}
+
+.oddDiv {
+  background: #F8F8F8;
+  margin: 5px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+     
+.evenDiv {
+  background: #FFFFFF;
+  margin: 5px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+}
+
+.hidden {
+	height: 0px;
+	display: none;
+}
+
+.unhidden {
+	height: 100px;
+	display: inline;
+}
+
+div.requester_source {
+	background-color: #E0E0E0; 
+	border-style: dashed; 
+	border-width: 1px; 
+	padding-left: 5px; 
+	padding-bottom: 10px
+}
+
+div.external_source {
+	background-color: #F0F0F0; 
+	padding-left: 5px;
+}
+
+div.lrg_source {
+	background-color: #F0F0F0; 
+	padding-left: 5px;
+}
