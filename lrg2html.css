@@ -286,3 +286,8 @@ div.lrg_source {
 	background-color: #F0F0F0; 
 	padding-left: 5px;
 }
+
+div.fixed_transcript_annotation {
+  padding-left: 5px;
+  clear: both;
+}

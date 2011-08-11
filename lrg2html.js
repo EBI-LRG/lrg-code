@@ -1,4 +1,17 @@
 
+// function to add to element content
+function append(id,content,clear) {
+	var e = document.getElementById(id);
+	if (!e) {
+		return;
+	}
+	var curr = '';
+	if (!clear) {
+		curr = e.innerHTML;
+	}
+	e.innerHTML = curr + content;
+}
+
 // function to show/hide layers
 function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);

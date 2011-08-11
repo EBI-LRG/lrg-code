@@ -47,7 +47,7 @@
 		  <xsl:value-of select="$lrg_gene_name"/>
 		</xsl:when>
 		<xsl:otherwise>
-      <xsl:value-of select="updatable_annotation/annotation_set/features/gene/@symbol"/>
+      <xsl:value-of select="updatable_annotation/annotation_set/features/gene/symbol[1]"/>
       <xsl:if test="updatable_annotation/annotation_set/features/gene/long_name">
          : <xsl:value-of select="updatable_annotation/annotation_set/features/gene/long_name"/>
       </xsl:if>
@@ -642,15 +642,15 @@
   <xsl:param name="lrg_id" />
     
   <xsl:variable name="transname" select="@name"/>
-  <xsl:variable name="first_exon_start" select="exon[position() = 1]/coordinates[@coord_system = $lrg_id]/@start"/>
-  <xsl:variable name="t_start" select="coordinates[coord_system = $lrg_id]/@start" />
-  <xsl:variable name="t_end" select="coordinates[coord_system = $lrg_id]/@end" />
-  <xsl:variable name="cds_start" select="coding_region/coordinates[coord_system = $lrg_id]/@start" />
-  <xsl:variable name="cds_end" select="coding_region/coordinates[coord_system = $lrg_id]/@end" />
   <xsl:variable name="lrg_coord_system" select="$lrg_id" />
   <xsl:variable name="cdna_coord_system" select="concat($lrg_id,'_',$transname)" />
-  <xsl:variable name="peptide_coord_system" select="concat($lrg_id,'_p1')" />
-    
+  <xsl:variable name="peptide_coord_system" select="translate($cdna_coord_system,'t','p')" />
+  <xsl:variable name="first_exon_start" select="exon[position() = 1]/coordinates[@coord_system = $lrg_coord_system]/@start"/>
+  <xsl:variable name="t_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+  <xsl:variable name="t_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+  <xsl:variable name="cds_start" select="coding_region/coordinates[@coord_system = $lrg_coord_system]/@start" />
+  <xsl:variable name="cds_end" select="coding_region/coordinates[@coord_system = $lrg_coord_system]/@end" />
+  
   <p>
     <a>
   <xsl:attribute name="name">transcript_<xsl:value-of select="$transname"/></xsl:attribute>
@@ -667,30 +667,35 @@
   </xsl:if>
       
 <!-- get comments and transcript info from the updatable layer-->
-  <xsl:for-each select="/*/updatable_annotation/annotation_set/features/gene/transcript[@fixed_id=$transname]">
+  <xsl:for-each select="/*/updatable_annotation/annotation_set">
+    <xsl:variable name="setnum" select="position()" />
+    <xsl:variable name="setname" select="source[1]/name" />
+    <xsl:variable name="comment" select="fixed_transcript_annotation[@name = $transname]/comment" />
+    <xsl:if test="$comment">
+      <strong> Comment: </strong>
+      <xsl:value-of select="$comment" />
+      <xsl:text> </xsl:text>(comment sourced from <a><xsl:attribute name="href">#set_<xsl:value-of select="$setnum" />_anchor</xsl:attribute><xsl:value-of select="$setname" /></a>)
+    </xsl:if>
+  </xsl:for-each>
       
 <!-- Display the NCBI accession for the transcript -->
-    <xsl:if test="../../../source/name='NCBI RefSeqGene' and string-length(comment) = 0">
-    <strong>  Comment: </strong>This transcript is based on RefSeq transcript 
+  <xsl:variable name="ncbi_source_name">NCBI RefSeqGene</xsl:variable>
+  <xsl:variable name="ref_transcript" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]" />
+  <xsl:if test="$ref_transcript">
+    <strong> Source: </strong>This transcript is based on RefSeq transcript 
     <a>
-      <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="@transcript_id" /></xsl:attribute>
-      <xsl:attribute name="target">_blank</xsl:attribute>
-      <xsl:value-of select="@transcript_id" />
+    <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="$ref_transcript/@accession" /></xsl:attribute>
+    <xsl:attribute name="target">_blank</xsl:attribute>
+    <xsl:value-of select="$ref_transcript/@accession" />
     </a> 
-      <xsl:if test="protein_product/long_name">
+    <xsl:variable name="long_name" select="$ref_transcript/protein_product/long_name" />
+    <xsl:if test="$long_name">
     (encodes 
-        <xsl:value-of select="protein_product/long_name" />
+       <xsl:value-of select="$long_name" />
     )
-      </xsl:if>
-    <br />
     </xsl:if>
-      
-    <xsl:for-each select="comment">
-      <xsl:if test="string-length(.) &gt; 0">
-    <strong>  Comment: </strong><xsl:value-of select="."/>  (comment sourced from <xsl:value-of select="../../../../source/name" />)<br/>
-      </xsl:if>
-    </xsl:for-each>
-  </xsl:for-each>
+    <br />
+  </xsl:if>
   </p>
 
 <!--  cDNA sequence -->
@@ -1072,6 +1077,7 @@
         <th>Phase</th>
   <xsl:for-each select="/*/updatable_annotation/annotation_set">
     <xsl:variable name="setnum" select="position()"/>
+    <xsl:variable name="setname" select="source[1]/name" />
     <xsl:for-each select="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
       <xsl:if test="position()=1">
         <th class="exon_separator"></th>
@@ -1082,8 +1088,8 @@
         <xsl:value-of select="@description"/>
       </xsl:attribute>
             <a>
-      <xsl:attribute name="href">#source_<xsl:value-of select="$setnum"/>_<xsl:value-of select="position()"/></xsl:attribute>
-              Source <xsl:value-of select="$setnum"/>:<xsl:value-of select="position()"/>
+      <xsl:attribute name="href">#fixed_transcript_annotation_aa_set_<xsl:value-of select="$setnum"/></xsl:attribute>
+      <xsl:value-of select="$setname"/>
             </a>
           </span>
         </th>
@@ -1110,7 +1116,7 @@
     <xsl:variable name="peptide_start" select="coordinates[@coord_system = $peptide_coord_system]/@start"/>
     <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/>
     <xsl:variable name="exon_number" select="position()"/>
-    
+  
       <tr align="right">
     <xsl:choose>
       <xsl:when test="round(position() div 2) = (position() div 2)">
@@ -1170,20 +1176,19 @@
         </td>
         
     <xsl:for-each select="/*/updatable_annotation/annotation_set">
+      <xsl:if test="position()=1">
+      <th class="exon_separator" />
+      </xsl:if>
       <xsl:variable name="setnum" select="position()"/>
-      <xsl:for-each select="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
-        <xsl:if test="position()=1">
-        <th class="exon_separator" />
-        </xsl:if>
+      <xsl:variable name="label" select="fixed_transcript_annotation[@name = $transname]/other_exon_naming/exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
         <td>
-        <xsl:choose>
-          <xsl:when test="exon/coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]">
-            <xsl:value-of select="exon/label"/>
-          </xsl:when>
-          <xsl:otherwise>-</xsl:otherwise>
-        </xsl:choose>
+      <xsl:choose>
+        <xsl:when test="$label">
+          <xsl:value-of select="$label"/>
+        </xsl:when>
+        <xsl:otherwise>-</xsl:otherwise>
+      </xsl:choose>
         </td>
-      </xsl:for-each>
     </xsl:for-each>
       </tr>
       
@@ -1487,30 +1492,55 @@
     <xsl:text>fixed_transcript_annotation_set_</xsl:text><xsl:value-of select="$setnum" />
   </xsl:attribute>
     <div>
+  <xsl:attribute name="class"><xsl:text>fixed_transcript_annotation</xsl:text></xsl:attribute>
   <xsl:attribute name="id">
     <xsl:text>fixed_transcript_annotation_comment_set_</xsl:text><xsl:value-of select="$setnum" />
   </xsl:attribute>
+  <xsl:if test="fixed_transcript_annotation/comment/*">
+      <h3>Comment</h3>
+    <xsl:for-each select="fixed_transcript_annotation/comment">
+      <xsl:call-template name="comment">
+        <xsl:with-param name="lrg_id" select="$lrg_id" />
+        <xsl:with-param name="transname" select="../@name" />
+        <xsl:with-param name="setnum" select="$setnum" />
+      </xsl:call-template>
+    </xsl:for-each>
+  </xsl:if>
     </div>
     <div>
-  <xsl:attribute name="id">
-    <xsl:text>fixed_transcript_annotation_exon_set_</xsl:text><xsl:value-of select="$setnum" />
-  </xsl:attribute>
-    </div>
-    <div>
+  <xsl:attribute name="class"><xsl:text>fixed_transcript_annotation</xsl:text></xsl:attribute>
   <xsl:attribute name="id">
     <xsl:text>fixed_transcript_annotation_aa_set_</xsl:text><xsl:value-of select="$setnum" />
   </xsl:attribute>
-    </div>  
-  </div> 
-  <xsl:if test="fixed_transcript_annotation/*">
-    <xsl:for-each select="fixed_transcript_annotation">
+  <xsl:if test="fixed_transcript_annotation/other_exon_naming/*">
+      <h3>Alternate exon naming</h3>
+    <xsl:for-each select="fixed_transcript_annotation/other_exon_naming">
       <xsl:apply-templates select=".">
-        <xsl:with-param name="lrg_id" select="$lrg_id"/>
-        <xsl:with-param name="setnum" select="$setnum"/>
+        <xsl:with-param name="lrg_id" select="$lrg_id" />
+        <xsl:with-param name="transname" select="../@name" />
+        <xsl:with-param name="setnum" select="$setnum" />
       </xsl:apply-templates>
     </xsl:for-each>
   </xsl:if>
-
+    </div>
+    <div>
+  <xsl:attribute name="class"><xsl:text>fixed_transcript_annotation</xsl:text></xsl:attribute>
+  <xsl:attribute name="id">
+    <xsl:text>fixed_transcript_annotation_aa_set_</xsl:text><xsl:value-of select="$setnum" />
+  </xsl:attribute>
+  <xsl:if test="fixed_transcript_annotation/alternate_amino_acid_numbering/*">
+      <h3>Amino acid mapping</h3>
+    <xsl:for-each select="fixed_transcript_annotation/alternate_amino_acid_numbering">
+      <xsl:apply-templates select=".">
+        <xsl:with-param name="lrg_id" select="$lrg_id" />
+        <xsl:with-param name="transname" select="../@name" />
+        <xsl:with-param name="setnum" select="$setnum" />
+      </xsl:apply-templates>
+    </xsl:for-each>
+  </xsl:if>
+    </div>  
+  </div> 
+  
 <!-- Insert the genomic mapping tables -->
   <xsl:for-each select="mapping">
     <xsl:apply-templates select=".">
@@ -1519,41 +1549,13 @@
   </xsl:for-each>
   
 <!-- Display the annotated features -->
-  <xsl:if test="features/* and features/gene/@start &gt; -1">
+  <xsl:if test="features/*">
     <xsl:apply-templates select="features">
       <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
       <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
     </xsl:apply-templates>
   </xsl:if>
 
-</xsl:template>
-
-<xsl:template match="fixed_transcript_annotation">
-  <xsl:param name="lrg_id" />
-  <xsl:param name="setnum" />
-  <xsl:variable name="transname" select="@name" />
-  
-<!-- Comment -->
-  <xsl:call-template name="comment">
-    <xsl:with-param name="lrg_id" select="$lrg_id" />
-    <xsl:with-param name="transname" select="$transname" />
-    <xsl:with-param name="setnum" select="$setnum" />
-  </xsl:call-template>
-  
-<!-- Other exon naming -->
-  <xsl:apply-templates select="other_exon_naming">
-    <xsl:with-param name="lrg_id" select="$lrg_id" />
-    <xsl:with-param name="transname" select="$transname" />
-    <xsl:with-param name="setnum" select="$setnum" />
-  </xsl:apply-templates>
-  
-<!-- Alternative aa numbering -->
-  <xsl:apply-templates select="alternate_amino_acid_numbering">
-    <xsl:with-param name="lrg_id" select="$lrg_id" />
-    <xsl:with-param name="transname" select="$transname" />
-    <xsl:with-param name="setnum" select="$setnum" />
-  </xsl:apply-templates>
-  
 </xsl:template>
 
 <!-- GENOMIC MAPPING -->
@@ -1706,7 +1708,6 @@
   <xsl:param name="transname"/>
   <xsl:param name="setnum"/>
   
-  <h3>Comment</h3>
   <p>
   <xsl:call-template name="urlify">
     <xsl:with-param name="input_str"><xsl:value-of select="." /></xsl:with-param>
@@ -1720,7 +1721,6 @@
   <xsl:param name="transname"/>
   <xsl:param name="setnum"/>
   
-  <h3>Alternate exon naming</h3>
   <p>
   <xsl:call-template name="urlify">
     <xsl:with-param name="input_str"><xsl:value-of select="description" /></xsl:with-param>
@@ -1764,7 +1764,6 @@
   <xsl:param name="transname"/>
   <xsl:param name="setnum"/>
     
-  <h3>Amino acid mapping</h3>
   <p>
   <xsl:call-template name="urlify">
     <xsl:with-param name="input_str"><xsl:value-of select="description" /></xsl:with-param>
