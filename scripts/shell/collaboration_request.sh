@@ -7,4 +7,15 @@ user=${LRGDBROUSER}
 dbname=${LRGDBNAME}
 perldir=${CVSROOTDIR}/code/scripts/
 
-perl ${perldir}/collaboration_request.pl -host ${host} -port ${port} -user ${user} -pass "" -dbname ${dbname} $*
+args=""
+for arg in $*
+do
+  if [[ ${arg} == -* ]]
+  then
+    let args="${args} ${arg}"
+  else
+    let args="${args} '${arg}'"
+  fi
+done
+
+echo ${perldir}/collaboration_request.pl -host ${host} -port ${port} -user ${user} -pass "" -dbname ${dbname} ${args}
