@@ -184,7 +184,7 @@ for my $g (@gene) {
 my @lens;
 for my $r (@table) {
   for (my $c=0; $c<scalar(@{$r}); $c++) {
-    $lens[$c] = max($lens[$c] || 0,length($r->[$c]));
+    $lens[$c] = max($lens[$c] || 0,length(($r->[$c] || "")));
   }
 }
 
@@ -192,7 +192,7 @@ my $gene_table = "";
 for my $r (@table) {
   for (my $c=0; $c<scalar(@{$r}); $c++) {
     my $pad = $lens[$c] + 2;
-    $gene_table .= sprintf("%-${pad}s",$r->[$c]);
+    $gene_table .= sprintf("%-${pad}s",($r->[$c] || ""));
   }
   $gene_table .= "\n  ";
 }

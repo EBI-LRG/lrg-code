@@ -7,15 +7,25 @@ user=${LRGDBROUSER}
 dbname=${LRGDBNAME}
 perldir=${CVSROOTDIR}/code/scripts/
 
-args=""
-for arg in $*
+addressee=""
+lrg_id=""
+symbol=""
+i=1
+
+for arg in "$@"
 do
-  if [[ ${arg} == -* ]]
+  if [[ ${i} == 1 ]]
   then
-    let args="${args} ${arg}"
+    addressee=${arg}
   else
-    let args="${args} '${arg}'"
+    if [[ ${arg} == LRG* ]]
+    then
+      lrg_id="${lrg_id}-lrg_id ${arg} "
+    else
+      symbol="${symbol}-symbol ${arg} "
+    fi
   fi
+  let i=i+1
 done
 
-echo ${perldir}/collaboration_request.pl -host ${host} -port ${port} -user ${user} -pass "" -dbname ${dbname} ${args}
+perl ${perldir}/collaboration_request.pl -host ${host} -port ${port} -user ${user} -pass '' -dbname ${dbname} -addressee "${addressee}" ${lrg_id} ${symbol}
