@@ -339,23 +339,22 @@ while (my $lrg_id = shift(@lrg_ids)) {
   
   # Annotate Ensembl genes that overlap this LRG region
   if ($overlap) {
-    # Set the db adaptors in the LRGMapping module
-    $LRG::LRGMapping::dbCore_rw = $dbCore;
-    $LRG::LRGMapping::dbCore_ro = $dbCore;
-    
+
     # Get a LRG slice
     print STDOUT localtime() . "\tGetting a slice for $lrg_id\n" if ($verbose);
     my $lrg_slice = $sa->fetch_by_region($LRG_COORD_SYSTEM_NAME,$lrg_id) or die("Could not fetch a slice object for " . $LRG_COORD_SYSTEM_NAME . ":" . $lrg_id);
     
     # Get genes that overlap this LRG
     print STDOUT localtime() . "\tGetting genes overlapping $lrg_id\n" if ($verbose);
-    my $genes = LRG::LRGMapping::get_overlapping_genes($lrg_slice);
+    my $genes = $lrg_slice->get_all_Genes_by_source('ensembl');
     
-    # For each overlapping gene, create an XML feature node and check if the overlap is partial or not
+    # For each overlapping gene, check if it only partially overlaps and annotate it accordingly
     foreach my $gene (@{$genes}) {
-      my $feature_node = LRG::LRGMapping::gene_2_feature($gene,$lrg_slice);
-      print STDOUT localtime() . "\tAdding $lrg_id " . (defined($feature_node->findNode('partial')) ? 'partial ' : '') . "overlap attribute for gene " . $gene->stable_id . " (" . $gene->description . ")\n" if ($verbose);
-      LRG::LRGImport::add_lrg_overlap($gene->stable_id,$lrg_id,defined($feature_node->findNode('partial')));
+    
+      my $partial = ($gene->start() < 0 || $gene->end() > $lrg_slice->length());
+      print STDOUT sprintf("\%s\tAdding \%s\%s overlap attribute for gene \%s (\%s)\n",localtime(),$lrg_id,($partial ? ' partial' : ''),$gene->stable_id(),$gene->description()) if ($verbose);
+      LRG::LRGImport::add_lrg_overlap($gene->stable_id,$lrg_id,$partial);
+      
     }
   }
   
