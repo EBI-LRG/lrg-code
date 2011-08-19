@@ -312,6 +312,9 @@ sub addExisting() {
 		$new_node->xml($self->xml) if defined $self->xml;
 	#}
 	
+	# This node is no longer empty
+	$self->empty(0);
+	
 	push @{$self->{'nodes'}}, $new_node;
 }
 
@@ -482,7 +485,7 @@ sub findNodeMultiArray {
     my $name = shift;
     my $data = shift if @_;
 
-    my @levels = split /\s*\/\s*/, $name;
+    my @levels = split(/\s*\/\s*/,$name);
 
     # if only one level given, do a normal findNode
     if(scalar @levels == 1) {
@@ -573,53 +576,164 @@ sub printNode {
 	# hash for putting key/value pairs in a nice order in the output
 	my %priority = (
 		
-		# mapping
-		'chromosome' => 1,
-		'type' => 1,
-		'strand' => 2,
-		'lrg_start' => 3,
-		'lrg_end' => 4,
-		'start' => 5,
-		'end' => 6,
-		'lrg_sequence' => 7,
-		'genomic_sequence' => 8,
-		'start_phase' => 9,
-		'end_phase' => 10,
-		'codon_start' => 11,
-		'codon_selenocysteine' => 12,
+    'align' =>  {
+      'lrg_start' =>  1,
+      'lrg_end' =>  2,
+      'start' =>  3,
+      'end' =>  4,
+    },
+    
+    'alternate_amino_acid_numbering'  =>  {
+      'description' =>  1
+    },
+    
+    'cdna_coords'  =>  {
+      'start' =>  1,
+      'end' =>  2
+    },
+    
+    'coding_region'  =>  {
+      'start' =>  1,
+      'end' =>  2,
+      'codon_start' =>  3
+    },
+    
+    'coordinates' =>  {
+      'coord_system'  =>  1,
+      'name'  =>  2,
+      'start' =>  3,
+      'end' =>  4,
+      'start_ext' =>  5,
+      'end_ext' =>  6,
+      'strand'  =>  7,
+      'mapped_from' =>  8
+    },
+    
+    'db_xref'  =>  {
+      'source'  =>  1,
+      'accession' =>  2,
+    },
+    
+    'diff'  =>  {
+      'type'  =>  1,
+      'lrg_start' =>  2,
+      'lrg_end' =>  3,
+      'other_start' =>  4,
+      'other_end' =>  5,
+      'start' =>  4,
+      'end' =>  5,
+      'lrg_sequence' =>  6,
+      'other_sequence' =>  7,
+      'genomic_sequence' =>  7
+    },
+    
+    'exon'  =>  {
+      'source'  =>  1,
+      'accession' =>  2,
+    },
+    
+    'fixed_transcript_annotation'  =>  {
+      'name' =>  1
+    },
+    
+    'gene'  =>  {
+      'source'  =>  1,
+      'accession' =>  2,
+      'symbol'  =>  1,
+      'strand' =>  2,
+      'start' =>  3,
+      'end' =>  4
+    },
+    
+    'intron'  =>  {
+      'phase' =>  1
+    },
+    
+    'lrg'  =>  {
+      'schema_version' =>  1
+    },
+    
+    'lrg_coords'  =>  {
+      'start' =>  1,
+      'end' =>  2
+    },
+    
+    'lrg_gene_name' =>  {
+      'source'  =>  1
+    },
+    
+    'lrg_locus' =>  {
+      'source'  =>  1
+    },
+    
+		'mapping' => {
+		  'coord_system'  => 1,
+      'other_name'  =>  2,
+      'other_id'  =>  3,
+      'other_start' =>  4,
+      'other_end' =>  5,
+      'assembly'  =>  1,
+      'chr_name'  =>  2,
+      'chr_id'  =>  3,
+      'chr_start' =>  4,
+      'chr_end' =>  5,
+      'most_recent' =>  6
+		},
 		
-		'assembly' => 1,
-		'chr_name' => 2,
-		'chr_id' => 3,
-		'chr_start' => 4,
-		'chr_end' => 5,
-		'most_recent' => 6,
+		'mapping_span'  =>  {
+		  'lrg_start' =>  1,
+		  'lrg_end' =>  2,
+      'other_start' =>  3,
+      'other_end' =>  4,
+      'start' =>  3,
+      'end' =>  4,
+		  'strand'  =>  5
+		},
 		
-		# gene
-		'symbol' => 1,
-		'name' => 1,
-		
-		# transcript
-		'fixed_id' => 7,
-		
-		# Alignment elements
-		'query_name' => 2,
-		'target_name' => 3,
-		'similarity' => 4,
-		'query_start' => 5,
-		'query_end' => 6,
-		'target_start' => 7,
-		'target_end' => 8,
-		'query_sequence' => 10,
-		'target_sequence' => 11,
-		'method' => 12,
-	
-		# other
-		'source' => 1,
-		'accession' => 2,
-		'transcript_id' => 2,
-		'cds_start' => 3,
-		'cds_end' => 4,
+    'organism'  =>  {
+      'taxon' =>  1
+    },
+    
+    'other_exon_naming'  =>  {
+      'description' =>  1
+    },
+    
+    'peptide_coords'  =>  {
+      'start' =>  1,
+      'end' =>  2
+    },
+    
+    'protein_product'  =>  {
+      'source'  =>  1,
+      'accession' =>  2,
+      'cds_start' =>  3,
+      'cds_end' =>  4,
+      'codon_start' =>  5
+    },
+    
+    'pyrrolysine'  =>  {
+      'codon' =>  1
+    },
+    
+    'selenocysteine'  =>  {
+      'codon' =>  1
+    },
+    
+    'source'  =>  {
+      'description' =>  1
+    },
+    
+    'transcript'  =>  {
+      'name'  =>  1,
+      'source'  =>  1,
+      'start' =>  2,
+      'end' =>  3,
+      'transcript_id' =>  4,
+      'source'  =>  1,
+      'accession' =>  2,
+      'fixed_id'  =>  5
+    },
+    
 	);
 
 	my @data_array;
@@ -630,14 +744,15 @@ sub printNode {
 		my @key_order;
 		
 		# we only need to order when there is more than one set
+		my $name = $self->name();
 		if(scalar keys %{$self->data} > 1) {
 # If the key is not listed in the priority hash, add it with the lowest priority		    
 			foreach my $key (keys %{$self->data}) {
-			    if (!$priority{$key}) {
-				$priority{$key} = List::Util::max(values(%priority))+1;
+			    if (!$priority{$name}{$key}) {
+				$priority{$name}{$key} = List::Util::max(values(%{$priority{$name} || {}}),0)+1;
 			    }
 			}
-			@key_order = sort {$priority{$a} <=> $priority{$b}} keys %{$self->data};
+			@key_order = sort {$priority{$name}{$a} <=> $priority{$name}{$b}} keys %{$self->data};
 		}
 		
 		else {
@@ -858,7 +973,10 @@ sub empty {
 sub content() {
     my $self = shift;
     
-    $self->{'content'} = shift if @_;
+    if (@_) {
+      $self->{'content'} = shift;
+      $self->empty(0);
+    }
 
     return $self->{'content'};
 }
