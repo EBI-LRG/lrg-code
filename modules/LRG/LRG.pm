@@ -351,7 +351,9 @@ sub addNodeMulti() {
 sub findNode {
     my $self = shift;
     my $name = shift;
-    my $data = shift if @_;
+    my $data = shift;
+    my $no_recursion = shift;
+
 
     # do a multi find if the name is delimited with "/"s
     return $self->findNodeMulti($name, $data) if $name =~ /\//;
@@ -391,17 +393,26 @@ sub findNode {
 		last if defined $found;
 	
 		# look recursively in any sub-nodes if not found
-		$found = $node->findNode($name, $data);
+		$found = $node->findNode($name, $data) unless ($no_recursion);
     }
 
     return $found;
 }
 
+# find a node among the current node's immediate children (no recursion)
+sub findNodeSingle {
+    my $self = shift;
+    my $name = shift;
+    my $data = shift if @_;
+    
+    return $self->findNode($name,$data,1);
+}
 # find multiple nodes
 sub findNodeArray {
     my $self = shift;
     my $name = shift;
-    my $data = shift if @_;
+    my $data = shift;
+    my $no_recursion = shift;
 
     # do a multi find if the name is delimited with "/"s
     return $self->findNodeMultiArray($name, $data) if $name =~ /\//;
@@ -438,26 +449,38 @@ sub findNodeArray {
 		}
 			
 		# look recursively in any sub-nodes if not found
-		my $rec = $node->findNodeArray($name, $data);
-		if (defined($rec)) {
+		unless ($no_recursion) {
+		  my $rec = $node->findNodeArray($name, $data);
+		  if (defined($rec)) {
 		    @found = (@found,@{$rec});
-		}
+		  }
+    }
     }
 
     return (scalar(@found) > 0 ? \@found : undef);
+}
+
+# find multiple nodes among the current node's immediate children (no recursion)
+sub findNodeArraySingle {
+    my $self = shift;
+    my $name = shift;
+    my $data = shift if @_;
+    
+    return $self->findNodeArray($name,$data,1);
 }
 
 # find node given multiple levels
 sub findNodeMulti {
     my $self = shift;
     my $name = shift;
-    my $data = shift if @_;
+    my $data = shift;
+    my $no_recursion = shift;
 
     my @levels = split /\s*\/\s*/, $name;
 
     # if only one level given, do a normal findNode
     if(scalar @levels == 1) {
-		return $self->findNode($name, $data);
+		return $self->findNode($name, $data, $no_recursion);
     }
 
     else {
@@ -467,11 +490,11 @@ sub findNodeMulti {
 			my $level = shift @levels;
 	
 			if(scalar @levels >= 1) {
-				$current = $current->findNode($level);
+				$current = $current->findNode($level, undef, $no_recursion);
 			}
 	
 			else {
-				$current = $current->findNode($level, $data);
+				$current = $current->findNode($level, $data, $no_recursion);
 			}
 		}
 	
@@ -483,13 +506,14 @@ sub findNodeMulti {
 sub findNodeMultiArray {
     my $self = shift;
     my $name = shift;
-    my $data = shift if @_;
+    my $data = shift;
+    my $no_recursion = shift;
 
     my @levels = split(/\s*\/\s*/,$name);
 
     # if only one level given, do a normal findNode
     if(scalar @levels == 1) {
-		return $self->findNodeArray($name, $data);
+		return $self->findNodeArray($name, $data, $no_recursion);
     }
 
     else {
@@ -500,14 +524,14 @@ sub findNodeMultiArray {
 			my @nodes;
 			if(scalar @levels >= 1) {
 			    foreach my $cur (@{$current}) {
-				my $arr = $cur->findNodeArray($level);
+				my $arr = $cur->findNodeArray($level, undef, $no_recursion);
 				push(@nodes,@{$arr}) if (defined($arr));
 			    }
 			}
 	
 			else {
 			    foreach my $cur (@{$current}) {
-				my $arr = $cur->findNodeArray($level, $data);
+				my $arr = $cur->findNodeArray($level, $data, $no_recursion);
 				push(@nodes,@{$arr}) if (defined($arr));
 			    }
 			}
