@@ -845,48 +845,146 @@ sub sort_nodes {
 	return 0;
     }
  
+  # Get the parent node name
+  my $parent = $a->parent->name();
+  
     # For tags that need to have their elements in a specific order
-    my %element_order = (
-        # Fixed annotation - exon
-        'lrg_coords' => 1,
-        'cdna_coords' => 2,
-        'peptide_coords' => 3,
-        
-	# Updatable annotation
-	'source' => 1,
-	'modification_date' => 5,
-	'other_exon_naming' => 6,
-	'mapping' => 7,
-	'alternate_amino_acid_numbering' => 8,
-	'lrg_gene_name' => 9,
-	'features' => 10,
+  my %element_order = (
+    'lrg' =>  {
+      'fixed_annotation'  =>  1,
+      'updatable_annotation'  =>  2
+    },
+    
+    'fixed_annotation'  =>  {
+      'id'  =>  1,
+      'organism'  =>  2,
+      'source'  =>  3,
+      'mol_type' =>  4,
+      'creation_date' =>  5,
+      'sequence'  =>  6,
+      'transcript'  =>  7
+    },
+    
+    'transcript'  =>  {
+      'coordinates' =>  1,
+      'cdna'  =>  2,
+      'coding_region' =>  3,
+      'partial' =>  5,
+      'long_name' =>  6,
+      'comment' =>  7,
+      'db_xref' =>  8,
+      'exon'  =>  9,
+      'protein_product' =>  10
+    },
+    
+    'coding_region' =>  {
+      'coordinates' =>  1,
+      'selenocysteine'  =>  2,
+      'pyrrolysine' =>  3,
+      'translation' =>  4
+    },
+    
+    'translation' =>  {
+      'sequence'  =>  1
+    },
+    
+    'exon'  =>  {
+      'coordinates' =>  1,
+      'lrg_coords'  =>  2,
+      'cdna_coords' =>  3,
+      'peptide_coords'  =>  4,
+      'partial' =>  5,
+      'comment' =>  6,
+      'label' =>  7
+    },
+
+    'updatable_annotation'  =>  {
+      'annotation_set'  =>  1
+    },
+    
+    'annotation_set'  =>  {
+      'source'  =>  1,
+      'comment' =>  2,
+      'modification_date' =>  3,
+      'fixed_transcript_annotation' =>  4,
+      'mapping' =>  5,
+      'lrg_locus' =>  6,
+      'features'  =>  7
+    },
+    
+    'source'  =>  {
+      'name'  =>  1,
+      'url' =>  2,
+      'contact' =>  3
+    },
+    
+    'contact' =>  {
+      'name'  =>  1,
+      'url' =>  2,
+      'address' =>  3,
+      'email' =>  4
+    },
+    
+    'fixed_transcript_annotation' =>  {
+      'comment' =>  1,
+      'other_exon_naming' =>  2,
+      'alternate_amino_acid_numbering'  =>  3
+    },
+    
+    'other_exon_naming' =>  {
+      'exon'  =>  1
+    },
+    
+    'alternate_amino_acid_numbering'  =>  {
+      'align' =>  1
+    },
+    
+    'mapping' =>  {
+      'mapping_span'  =>  1
+    },
+    
+    'mapping_span'  =>  {
+      'diff'  =>  1
+    },
+    
+    'features' =>  {
+      'gene'  =>  1
+    },
+    
+    'gene'  =>  {
+      'coordinates' =>  1,
+      'partial' =>  2,
+      'symbol'  =>  3,
+      'long_name' =>  4,
+      'comment' =>  5,
+      'db_xref' =>  6,
+      'transcript'  =>  7
+    },
+    
+    'protein_product' =>  {
+      'coordinates' =>  1,
+      'partial' =>  2,
+      'long_name' =>  3,
+      'comment' =>  4,
+      'db_xref' =>  5
+    },
+    
+    'db_xref' =>  {
+      'synonym' =>  1
+    }
+  ); 
+
+  # If a and b has the same element name we check if they have start and end attributes to sort them by
+  if ($a->name() eq $b->name()) {
 	
-        # Updatable annotation - gene
-        'partial' => 1,
-        'synonym' => 2,
-        'long_name' => 3,
-        'comment' => 4,
-        'db_xref' => 5,
-        'transcript' => 6,
-        
-        # Updatable annotation - transcript
-        'protein_product' => 6,
-        
-        # Updatable annotation - db_xref
-        'accession' => 2,
-    );
-   
-    # If a and b has the same element name we check if they have start and end attributes to sort them by
-    if ($a->name() eq $b->name()) {
+  	# However, first we need to check if they have a name attribute. If they do, they should be sorted by that instead
+	  # (this is to make sure fixed transcripts are sorted according to the order they are specified and not their coordinates)
+    if (defined($a->data->{'name'}) && defined($b->data->{'name'})) {
+      return ($a->data->{'name'} cmp $b->data->{'name'});
+    }
 	
-	# However, first we need to check if they have a name attribute. If they do, they should be sorted by that instead
-	# (this is to make sure fixed transcripts are sorted according to the order they are specified and not their coordinates)
-	if (defined($a->data->{'name'}) && defined($b->data->{'name'})) {
-	    return ($a->data->{'name'} cmp $b->data->{'name'});
-	}
-	
-	# If not, sort by position if applicable.
-	if ((defined($a->data->{'start'}) && defined($b->data->{'start'})) || (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'}))) {
+	  # If not, sort by position if applicable.
+    if ((defined($a->data->{'start'}) && defined($b->data->{'start'})) || (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'}))) {
    
 	    my $a_s;
 	    my $a_e;
@@ -895,34 +993,34 @@ sub sort_nodes {
 	    
 	    # Firstly by LRG coords if applicable
 	    if (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'})) {
-		$a_s = $a->data->{'lrg_start'};
-		$a_e = $a->data->{'lrg_end'};
-		$b_s = $b->data->{'lrg_start'};
-		$b_e = $b->data->{'lrg_end'};
+	      $a_s = $a->data->{'lrg_start'};
+	      $a_e = $a->data->{'lrg_end'};
+	      $b_s = $b->data->{'lrg_start'};
+	      $b_e = $b->data->{'lrg_end'};
 	    }
 	    # Otherwise by general start and end positions
 	    else {
-		$a_s = $a->data->{'start'};
-		$a_e = $a->data->{'end'};
-		$b_s = $b->data->{'start'};
-		$b_e = $b->data->{'end'};
+	      $a_s = $a->data->{'start'};
+	      $a_e = $a->data->{'end'};
+	      $b_s = $b->data->{'start'};
+	      $b_e = $b->data->{'end'};
 	    }
 	
 	    # Sort primarily by start and secondarily by end
 	    if ($a_s < $b_s || ($a_s == $b_s && $a_e <= $b_e)) {
-		return -1;
+	      return -1;
 	    }
 	
 	    return 1;
-	}
     }
+  }
     
-    # If a and b are both in the %element_order hash, order them accordingly. Otherwise do nothing (return 0)
-    if (exists($element_order{$a->name()}) && exists($element_order{$b->name()})) {
-	return ($element_order{$a->name()} <=> $element_order{$b->name()});
-    }
+  # If a and b are both in the %element_order hash, order them accordingly. Otherwise do nothing (return 0)
+  if (exists($element_order{$parent}->{$a->name()}) && exists($element_order{$parent}->{$b->name()})) {
+    return ($element_order{$parent}->{$a->name()} <=> $element_order{$parent}->{$b->name()});
+  }
     
-    return 0;
+  return 0;
 }
 
 # print all
