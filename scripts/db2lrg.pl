@@ -5,7 +5,6 @@ use strict;
 use Getopt::Long;
 use List::Util qw (min max);
 use LRG::LRG;
-use LRG::Node;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
 
@@ -265,13 +264,13 @@ my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg
 $sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end,\$cds_id,\$cds_lrg_start,\$cds_lrg_end,\$codon_start);
 while ($sth->fetch()) {
     my $transcript = $fixed->addNode('transcript',{'name' => $t_name});
-    my $coords = coords_node($lrg_id,$cdna_start,$cdna_end);
+    my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
     $transcript->addExisting($coords);
     
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
     my $cds = $transcript->addNode('coding_region',(defined($codon_start) ? {'codon_start' => $codon_start} : undef));
-    $coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end);
+    $coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end,1);
     $cds->addExisting($coords);
     
     # Check for non-standard codons
@@ -296,7 +295,7 @@ while ($sth->fetch()) {
     $e_sth->bind_columns(\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$e_peptide_start,\$e_peptide_end,\$phase);
     while ($e_sth->fetch()) {
         my $exon = $transcript->addNode('exon');
-        $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end);
+        $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
         $exon->addExisting($coords);
         
         # Add cDNA coordinates if defined
@@ -370,7 +369,7 @@ while ($sth->fetch()) {
     }
     
     # Add lrg_gene_name
-    $annotation_set->addNode('lrg_gene_name',{'source' => 'HGNC'})->content($lrg_gene_name) if (defined($lrg_gene_name));
+    $annotation_set->addNode('lrg_locus',{'source' => 'HGNC'})->content($lrg_gene_name) if (defined($lrg_gene_name));
     # Add the remaining XML
     my $lrg = LRG::LRG::newFromString($xml);
     while (my $node = shift(@{$lrg->{'nodes'}})) {
@@ -623,15 +622,15 @@ sub get_sequence {
 }
 
 sub coords_node {
-  my %data = {
+  my %data = (
     'coord_system' => shift,
     'start' => shift,
     'end' => shift,
+    'strand' => shift,
     'start_ext' => shift,
     'end_ext' => shift,
-    'strand' => shift,
     'mapped_from' => shift
-  };
+  );
   
   die ("coord_system, start and end attributes are required for the coords element") unless (defined($data{coord_system}) && defined($data{start}) && defined($data{end}));
   
