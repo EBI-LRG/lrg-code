@@ -174,13 +174,17 @@ sub objs_from_xml {
     
     my $start = $element->data->{$prefix . "start"};
     my $end = $element->data->{$prefix . "end"};
-    my $strand = $element->data->{"strand"};
+    my $strand = $element->data->{strand};
+    my $name = $element->data->{name};
+    my $start_ext = $element->data->{start_ext};
+    my $end_ext = $element->data->{end_ext};
+    my $mapped_from = $element->data->{mapped_from};
     
     next unless (defined($start) && defined($end));
     
     my $coordinate_system = $element->data->{coord_system} || 'LRG';
     
-    my $obj = LRG::API::Coordinates->new($coordinate_system,$start,$end,$strand);
+    my $obj = LRG::API::Coordinates->new($coordinate_system,$start,$end,$strand,$start_ext,$end_ext,$name,$mapped_from,$prefix);
     $obj->prefix($prefix); 
     push(@objs,$obj);
   }
@@ -202,6 +206,7 @@ sub xml_from_objs {
     $data{coord_system} = $obj->coordinate_system();
     $data{start} = $obj->start();
     $data{end} = $obj->end();
+    $data{name} = $obj->name() if (defined($obj->name()) && length($obj->name()));
     $data{start_ext} = $obj->start_ext() if (defined($obj->start_ext()) && $obj->start_ext());
     $data{end_ext} = $obj->end_ext() if (defined($obj->end_ext()) && $obj->end_ext());
     $data{strand} = $obj->strand() if (defined($obj->strand()) && $obj->strand() != 0);
