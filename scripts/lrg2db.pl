@@ -602,7 +602,7 @@ sub parse_annotation_set {
     }
     
     # Get the lrg_gene_name from the updatable section
-    my $lrg_gene_name = $annotation_set->findNode('lrg_gene_name');
+    my $lrg_gene_name = $annotation_set->findNode('lrg_locus');
     if (defined($lrg_gene_name)) {
         $lrg_gene_name = $lrg_gene_name->content();
         warn("HGNC symbol for $lrg_id as specified in XML file is different from corresponding symbol stored in db ($lrg_gene_name in xml vs $hgnc_symbol in db)") if ($lrg_gene_name ne $hgnc_symbol);
