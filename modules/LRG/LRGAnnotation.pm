@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use List::Util;
 use Bio::EnsEMBL::Utils::Scalar;
 use LRG::API::Coordinates;
 use LRG::API::Symbol;
@@ -79,7 +80,7 @@ sub gene {
     $gene = $gene->transfer($slice->seq_region_Slice());
     
     # Create a coordinates object
-    my $coords = $self->coords($gene);
+    my $coords = $self->coords($gene,$slice);
     
     # Symbols
     my $symbol = $self->symbol($gene);
@@ -102,7 +103,7 @@ sub gene {
     # Transcripts
     my $transcript = $self->transcript($slice,$gene);
     
-    push(@objs,LRG::API::GeneUp->new('Ensembl',$gene->stable_id(),$coords,$symbol,$xrefs,$meta,$transcript));
+    push(@objs,LRG::API::GeneUp->new('Ensembl',$gene->stable_id(),$coords,$xrefs,$meta,$symbol,$transcript));
     
   }
   
@@ -124,7 +125,7 @@ sub transcript {
     next if ($transcript->seq_region_start() > $slice->end() || $transcript->seq_region_end() < $slice->start());
     
     # Coords
-    my $coords = $self->coords($transcript);
+    my $coords = $self->coords($transcript,$slice);
     
     # Extract the meta data
     my $meta;
@@ -168,7 +169,7 @@ sub exon {
     next if ($exon->seq_region_start() > $slice->end() || $exon->seq_region_end() < $slice->start());
     
     # Coords
-    my $coords = $self->coords($exon);
+    my $coords = $self->coords($exon,$slice);
     
     # Extract the meta data
     my $meta;
@@ -179,7 +180,7 @@ sub exon {
     # Comments
     push(@{$meta},@{$self->comment($exon) || []});
     
-    push(@objs,LRG::API::ExonUp->new('Ensembl',$exon->stable_id(),$coords,$meta));
+    push(@objs,LRG::API::ExonUp->new('Ensembl',$exon->stable_id(),$coords,undef,$meta));
   }
   
   return \@objs;
@@ -197,8 +198,8 @@ sub translation {
     
   # Coords. Since the translation object is not an Ensembl Feature, get the coords for the transcript and update the start and end
   my $coords = $self->coords($transcript);
-  $coords->start($translation->genomic_start());
-  $coords->end($translation->genomic_end());
+  $coords->start(List::Util::max($translation->genomic_start(),$slice->start()));
+  $coords->end(List::Util::min($translation->genomic_end(),$slice->end()));
     
   # Get the phase of the start codon
   my $codon_start = $translation->start_Exon->phase() + 1;
@@ -218,7 +219,7 @@ sub translation {
   # DB xrefs
   my $xrefs = $self->xref($translation);
     
-  my $obj = LRG::API::TranslationUp->new('Ensembl',$translation->stable_id(),$codon_start,$coords,$xrefs,$meta);
+  my $obj = LRG::API::TranslationUp->new('Ensembl',$translation->stable_id(),$coords,$xrefs,$meta,$codon_start);
   
   return $obj;
 }
@@ -226,8 +227,15 @@ sub translation {
 sub coords {
   my $self = shift;
   my $feature = shift;
+  my $slice = shift;
   
-  my $coords = LRG::API::Coordinates->new($feature->slice->coord_system->version(),$feature->seq_region_start(),$feature->seq_region_end(),$feature->strand(),0,0,$feature->seq_region_name());
+  my $start = $feature->seq_region_start();
+  my $end = $feature->seq_region_end();
+  if ($slice) {
+    $start = List::Util::max($start,$slice->start());
+    $end = List::Util::min($end,$slice->end());
+  }
+  my $coords = LRG::API::Coordinates->new($feature->slice->coord_system->version(),$start,$end,$feature->strand(),0,0,$feature->seq_region_name());
   return $coords;
 }
 
@@ -399,6 +407,9 @@ sub xref {
     # Create a new xref object
     push(@xrefs,LRG::API::Xref->new($xref_source,$dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : ""),$dblink->get_all_synonyms()));
   }
+  
+  # Lastly, add an xref to Ensembl as well
+  push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
   
   return \@xrefs;
   
