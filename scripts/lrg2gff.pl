@@ -86,7 +86,6 @@ my $strand;
 my $lrg_start = 1e11;
 my $lrg_end = -1;
 # Get the extreme points of the LRG mapping
-my $spans = $mapping->findNodeArray('mapping_span');
 foreach my $span (@{$mapping->mapping_span() || []}) {
     $strand = $span->strand();
     $lrg_start = min($lrg_start,$span->lrg_coordinates->start());
@@ -115,15 +114,19 @@ my $gene_start = 1e11;
 my $gene_end = -1;
 my $transcripts = $lrg->fixed_annotation->transcript() or die("Could not get transcripts from $lrgid");
 foreach my $transcript (@{$transcripts}) {
-    $gene_start = min($gene_start,$transcript->coordinates->start());
-    $gene_end = max($gene_end,$transcript->coordinates->end());
+    $gene_start = min($gene_start,$transcript->lrg_coordinates->start());
+    $gene_end = max($gene_end,$transcript->lrg_coordinates->end());
     
     my $tr_name = $transcript->name();
     @row[2] = 'exon';
     @row[8] = $lrgid . '_' . $tr_name;
     
+    # Add a track line for this transcript
+    $track_line = "track name=\"$lrgid\_$tr_name\" description=\"Transcript $tr_name for gene of $lrgid\" color=128,128,255";
+    push(@output,$track_line);
+    
     # Loop over the exons and print them to the GFF
-    foreach my $exon (@{$transcript->exons() || [}]) {
+    foreach my $exon (@{$transcript->exons() || []}) {
       my $phase = $exon->start_phase();
       $phase = '.' unless (defined($phase) && $phase >= 0);
       
