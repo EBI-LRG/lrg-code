@@ -30,4 +30,34 @@ sub coordinates {
   
 }
 
+sub lrg_coordinates {
+  my $self = shift;
+  
+  foreach my $coords (@{$self->coordinates() || []}) {
+    next unless ($coords->coordinate_system() =~ m/^LRG_[0-9]+$/);
+    return $coords;
+  }
+  
+}
+
+sub cdna_coordinates {
+  my $self = shift;
+  
+  foreach my $coords (@{$self->coordinates() || []}) {
+    next unless ($coords->coordinate_system() =~ m/^LRG_\d+_?t\d+$/);
+    return $coords;
+  }
+  
+}
+
+sub peptide_coordinates {
+  my $self = shift;
+  
+  foreach my $coords (@{$self->coordinates() || []}) {
+    next unless ($coords->coordinate_system() =~ m/^LRG_\d+_?p\d+$/);
+    return $coords;
+  }
+  
+}
+
 1;

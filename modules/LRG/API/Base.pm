@@ -19,6 +19,13 @@ sub new {
   return $self;
 }
 
+sub dbid {
+  my $self = shift;
+  my $dbid = shift;
+  
+  return $self->_get_set('_dbid',$dbid);
+}
+
 # Permitted AUTOLOAD routines
 sub _permitted {
     return [];
