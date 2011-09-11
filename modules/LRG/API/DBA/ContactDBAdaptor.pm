@@ -22,7 +22,7 @@ sub fetch_by_dbid {
 
 sub fetch_all_by_source {
   my $self = shift;
-  my $source_dbid = $shift;
+  my $source_dbid = shift;
   
   return undef unless (defined($source_dbid));
   
@@ -40,6 +40,7 @@ sub fetch_all_by_source {
   
   my $dbid;
   $sth->bind_columns(\$dbid);
+  my @objs;
   while ($sth->fetch()) {
     push(@objs,$self->fetch_by_dbid($dbid));
   }
