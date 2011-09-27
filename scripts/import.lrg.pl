@@ -622,7 +622,7 @@ Skip this, this is done by the external data files
 	# Do the same for the Ensembl transcript to the Ensembl LRG display
 	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
 	# Get the gene_id for the Ensembl gene
-	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
+	$core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
 	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
 	
 	# Do the same for the translation
@@ -685,7 +685,7 @@ Skip this, this is done by the external data files
 	  # Get the ensembl transcript with the corresponding stable_id
 	  my @db_tr = grep {$_->stable_id() eq $stable_id} @{$transcripts_db};
 	  # Check that we got one transcript back
-	  if (!defined(@db_tr) || scalar(@db_tr) != 1) {
+	  if (!@db_tr || scalar(@db_tr) != 1) {
 	    $msg = "Could not unambiguously get the correct Ensembl transcript corresponding to $lrg_id $fixed_id";
 	    warn($msg);
 	    print STDOUT "$msg\n" if ($verbose);
