@@ -5,19 +5,27 @@
 perldir=${CVSROOTDIR}/code/scripts/
 
 xmlfile=$1
-locus=$2
-assembly=$3
+registryfile=${REGISTRYFILE}
+mapping=$2
 
-tmpfile=${xmlfile}.tmp
+filename=`basename ${xmlfile}`
+lrgid=${filename/.xml/}
 outfile=${xmlfile}.new
+target_dir=${SEQDIR}
+tmpdir=${TMPDIR}
 
-echo "Creating the LRG annotation set and moving ${assembly} assembly mappings"
-perl ${perldir}/add_LRG_annotation_set.pl -xmlfile ${xmlfile} -locus ${locus} -assembly ${assembly} -replace > ${tmpfile}
+echo "Ensembl annotations in ${xmlfile} will be re-generated using the registry configuration in ${registryfile} and perl scripts in ${perldir}..."  
 
-echo "Adding Ensembl annotation set to ${xmlfile}"
-perl ${perldir}/add_ensembl_annotation.pl -xmlfile ${tmpfile} -assembly ${assembly} -replace > ${outfile}
+command="perl ${perldir}/make.lrg.pl -xml_template ${xmlfile} -registry_file ${registryfile} -out ${outfile} -id ${lrgid} -skip_fixed -replace_annotations -skip_host_check"
 
-rm ${tmpfile}
+if [ -n "${mapping}" ]
+then
+  command=${command}" -target_dir ${target_dir} -tmpdir ${tmpdir}"
+else
+  command=${command}" -use_existing_mapping"
+fi
 
-echo "An updated LRG XML file has been written to ${outfile}"
+$command
+
+echo "An updated LRG XML file for ${lrgid} has been written to ${outfile}"
 
