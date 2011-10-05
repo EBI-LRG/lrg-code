@@ -1156,6 +1156,9 @@ sub attach_transcripts {
     }
 	  
     # Make sure to fill in something in the long_name element
+		if (!defined($transcript->description()) && defined($transcript->display_xref) && $transcript->stable_id =~ /^ENST/) {
+      $name_content = $transcript->display_xref->display_id();
+    }
     if (length($name_content) == 0 && defined($transcript->description())) {
       $name_content = $transcript->description();
     }
@@ -1211,7 +1214,7 @@ sub gene_2_feature {
   while(my $entry = shift(@{$entries})) {
     	
     # Skip if the xref source is not one of the allowed ones
-    next unless $entry->dbname =~ /GI|RefSeq|HGNC/;
+    next unless $entry->dbname =~ /EntrezGene|GI|RefSeq|HGNC/;
     next if $entry->dbname =~ /RefSeq_peptide/;
     
     # Get synonyms from HGNC entry
