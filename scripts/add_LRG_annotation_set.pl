@@ -19,7 +19,13 @@ my @option_defs = (
 );
 
 my %option;
+my %assembly_syn = ( 'GRCh37' => 'NCBI37' );
+
 GetOptions(\%option,@option_defs);
+
+foreach my $ass (@{$option{assembly}}) {
+	$ass = $assembly_syn{$ass} if ($assembly_syn{$ass});
+}
 
 # If not specified, assume the locus source is HGNC
 $option{locus_source} ||= 'HGNC';
