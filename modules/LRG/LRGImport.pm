@@ -916,40 +916,33 @@ sub add_object_attrib {
 }
 
 # Add stable id for a gene/transcript/translation. If one already exists, replace it
+
 sub add_stable_id {
   my $object_id        = shift;
   my $object_stable_id = shift;
   my $object_type      = shift;
   my $version          = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
+  
   $version ||= 1;
-
-  # Insert object stable id into object_stable_id table
-  my $stmt = qq{
-      INSERT INTO
-	$table (
-	  $key,
-	  stable_id,
-	  version,
-	  created_date,
-	  modified_date
-	)
-      VALUES (
-	$object_id,
-	'$object_stable_id',
-	$version,
-	NOW(),
-	NOW()
-      )
-      ON DUPLICATE KEY UPDATE
-	stable_id = '$object_stable_id',
-	version = $version,
-	modified_date = NOW()
-    };
-  $dbCore->dbc->do($stmt);
+  
+  my ($q_table, $q_field) = @{$dbCore->dbc()->quote_identifier(lc($object_type), lc($object_type).'_id')};
+  my $sql = qq{select count(*) from $q_table where $q_field =?};
+  my $count = $dbCore->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => [$object_stable_id]);
+  
+  my $dml;
+  my $params;
+  if($count) {
+    $dml = qq{UPDATE $q_table set stable_id =?, version =?, created_date =NOW(), modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $version, $object_id];
+  }
+  else {
+    $dml = qq{UPDATE $q_table set stable_id =?, modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $object_id];
+  }
+  
+  $dbCore->dbc()->sql_helper()->execute_update(-SQL => $dml, -PARAMS => $params);
+  
+  return;
 }
 
 # Add a transcript or update one with gene_id if a transcript_id is specified
@@ -1574,22 +1567,15 @@ sub get_rows {
 sub get_stable_id {
   my $object_id   = shift;
   my $object_type = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
-  my $stmt = qq{
-	SELECT
-	    stable_id
-	FROM
-	    $table
-	WHERE
-	    $key = $object_id
-	LIMIT 1
-    };
-  my $stable_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-
-  return $stable_id;
+  
+  #Produce e.g. `gene` and `gene_id` from $object_type eq 'gene'
+  my ($q_table, $q_field) = @{$dbCore->dbc()->quote_identifier(
+    lc($object_type), lc($object_type).'_id'
+  )};
+  my $sql = qq{select stable_id from $q_table where $q_field =? LIMIT 1};
+  my $ids = $dbCore->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$object_id]);
+  return $ids->[0] if @{$ids};
+  return;
 }
 
 # Get translation id for a transcript
