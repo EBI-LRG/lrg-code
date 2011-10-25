@@ -88,6 +88,7 @@ my $cdnadb;
 my $vegadb;
 my $rnaseqdb;
 my $purge;
+my $do_all;
 
 usage() if (!scalar(@ARGV));
 
@@ -110,6 +111,7 @@ GetOptions(
   'max!' 		=> \$max_values,
   'revert!' 		=> \$revert,
   'verify!'		=> \$verify,
+  'do_all!'             => \$do_all,
   'otherfeatures=s'	=> \$otherfeaturesdb,
   'cdna=s'		=> \$cdnadb,
   'vega=s'		=> \$vegadb,
@@ -148,23 +150,25 @@ if ((defined($import) || defined($clean) || defined($overlap) || defined($verify
   
   if ($result->{$LRG_EXTERNAL_XML}{'success'}) {
     my @available = @{$result->{$LRG_EXTERNAL_XML}{'lrg_id'}};
-    print "The following LRGs are available for import from the LRG public ftp server:\n";
-    print "\t" . join("\n\t",@available) . "\n";
     my %entered;
-    print "Enter the LRG ids you want to import (enter for all), enter a blank line when finished\n";
-    my $id = 1;
-    while ($id) {
-      print "\tLRG id: ";
-      $id = <>;
-      chomp($id);
-      if (grep($_ eq $id,@available)) {
-	$entered{$id} = 1;
-      }
-      elsif (length($id) > 0) {
-	print "\tLRG identifier not recognized!\n";
+    if(!defined $do_all) {
+      print "The following LRGs are available for import from the LRG public ftp server:\n";
+      print "\t" . join("\n\t",@available) . "\n";
+      print "Enter the LRG ids you want to import (enter for all), enter a blank line when finished\n";
+      my $id = 1;
+      while ($id) {
+        print "\tLRG id: ";
+        $id = <>;
+        chomp($id);
+        if (grep($_ eq $id,@available)) {
+	       $entered{$id} = 1;
+        }
+        elsif (length($id) > 0) {
+	       print "\tLRG identifier not recognized!\n";
+        }
       }
     }
-    
+
     if (scalar(keys(%entered)) == 0) {
       @lrg_ids = @available;
     }
@@ -823,6 +827,11 @@ sub usage {
 			added after the -max command was run, not necessarily just your own!
 			
       -verbose		Progress information is printed
+
+      -do_all           Same as hitting Enter when asked for a list of lrgs. That is all will be selected.
+                        This just save pressing enter but is useful if you redirect the output and forget
+                        you still have to do something
+
       -help		Print this message
       
   };
