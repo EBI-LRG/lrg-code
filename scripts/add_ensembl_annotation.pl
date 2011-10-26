@@ -24,6 +24,8 @@ my @option_defs = (
 );
 
 my %option;
+my %assembly_syn = ( 'GRCh37' => 'NCBI37' );
+
 GetOptions(\%option,@option_defs);
 
 # Use default database (public) unless otherwise specified
@@ -102,19 +104,21 @@ $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
 my $mapping;
+my $assembly = ($assembly_syn{$option{assembly}}) ? $assembly_syn{$option{assembly}} : $option{assembly};
+
 foreach my $aset (@{$asets}) {
   
   # Loop over the mappings to get the correct one
   foreach my $m (@{$aset->mapping() || []}) {
     
     # Skip if the assembly of the mapping does not correspond to the assembly we're interested in
-    next unless ($m->assembly() eq $option{assembly});
+    next unless ($m->assembly() eq $assembly);
     $mapping = $m;
     last;
     
   }
   
-  warn (sprintf("\%s mapping to \%s found in annotation set '\%s'\n",($mapping ? "Will use" : "No"),$option{assembly},$aset->source->name()));
+  warn (sprintf("\%s mapping to \%s found in annotation set '\%s'\n",($mapping ? "Will use" : "No"),$assembly,$aset->source->name()));
   
   # Quit the iteration if we have found the mapping we need
   last if ($mapping);
@@ -122,7 +126,7 @@ foreach my $aset (@{$asets}) {
 }
 
 # If no mapping could be found at all, exit the script
-die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n",$option{assembly})) unless ($mapping);
+die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n",$assembly)) unless ($mapping);
 
 # Get a SliceAdaptor and a Slice spanning the mapped region
 my $s_adaptor = $registry->get_adaptor($option{species},'core','slice');
