@@ -62,8 +62,8 @@ sub _meta {
   return $meta unless (defined($value));
   
   # Update the meta with the pre-existing and the new value
-  $self->meta([@keep,$value]);
-  
+  $self->meta([@keep,LRG::API::Meta->new($key,$value)]);
+
   return $value;
 }
 
