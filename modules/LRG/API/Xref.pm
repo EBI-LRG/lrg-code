@@ -11,7 +11,7 @@ our @ISA = "LRG::API::Base";
 sub initialize {
   my $self = shift;
   my ($source,$accession,$synonym) = @_;
-  
+  $synonym ||= [];
   $self->source($source);
   $self->accession($accession);
   $self->synonym($synonym);
