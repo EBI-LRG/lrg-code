@@ -71,8 +71,7 @@ else {
 }
 
 # Update the meta information for the annotation_set
-my $mod_date = LRG::API::Meta->new('modification_date',$date);
-$sets{$option{lrg_set_name}}->modification_date($mod_date);
+$sets{$option{lrg_set_name}}->modification_date($date);
 
 # Add the lrg locus information specified on the command line
 my $lrg_locus = LRG::API::Meta->new('lrg_locus',$option{locus},[LRG::API::Meta->new('source',$option{locus_source})]);
