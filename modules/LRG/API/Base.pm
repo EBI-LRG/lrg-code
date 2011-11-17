@@ -94,14 +94,14 @@ sub wrap_array {
 sub remap {
   my $self = shift;
   my $mapping = shift;
-  my %assembly_syn = ( 'NCBI37' => 'GRCh37' );
+	my $destination_coordinate_system = shift;
 
   return unless (grep {/^coordinates$/} @{$self->_permitted()});
   $self->assert_ref($mapping,'LRG::API::Mapping');
-  
+
 	my @remapped;
-	if ($assembly_syn{$mapping->assembly}) {
-  	@remapped = map {$_->transfer($mapping,$assembly_syn{$mapping->assembly})} @{$self->coordinates() || []};
+	if (defined($destination_coordinate_system)) {
+  	@remapped = map {$_->transfer($mapping,$destination_coordinate_system)} @{$self->coordinates() || []};
 	}
 	else {
 		@remapped = map {$_->transfer($mapping)} @{$self->coordinates() || []};
