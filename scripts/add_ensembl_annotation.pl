@@ -19,6 +19,7 @@ my @option_defs = (
   'xmlfile=s',
   'species=s',
   'assembly=s',
+  'lrg_id=s',
   'replace!',
   'help!'
 );
@@ -33,6 +34,10 @@ $option{host} ||= 'ensembldb.ensembl.org';
 $option{port} ||= 5306;
 $option{user} ||= 'anonymous';
 $option{species} ||= 'homo_sapiens';
+if (!defined($option{lrg_id})) {
+	$option{xmlfile} =~ /(LRG_\d+)/;
+	$option{lrg_id} = $1;
+}
 
 # Load the registry from the database
 my $registry = 'Bio::EnsEMBL::Registry';
@@ -138,7 +143,7 @@ my $lrga = LRG::LRGAnnotation->new($slice);
 my $feature = $lrga->feature();
 
 # Add coordinates in the LRG coordinate system
-map {$_->remap($mapping)} @{$feature};
+map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
 # Attach the features to the Ensembl annotation set
 $ensembl_aset->feature($feature);
