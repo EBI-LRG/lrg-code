@@ -74,8 +74,8 @@ sub mapping {
   
   my $mainmap;
   if ($use_mapper) {
-    my $mapper = LRG::Mapper->new('query' => $lrg_seq, 'hash' => "$target_dir/hash/$SMALT_HASH", 'target' => "$target_dir/$MAPPER_REFERENCE_GENOME", 'tmpdir' => $input_dir);
-    $mapper->do_mapping();
+    my $mapper = LRG::Mapper->new('query' => $lrg_seq, 'hash' => "$target_dir/hash/$SMALT_HASH", 'target' => "$target_dir/$MAPPER_REFERENCE_GENOME", 'tmpdir' => $input_dir);   
+		$mapper->do_mapping();
     my $maps = $mapper->mappings(); 
     my @keys = keys(%{$maps});
     warn ("Mapper module produced multiple alignments, just using the first one") if (scalar(@keys) > 1);
@@ -119,7 +119,7 @@ sub smalt_map {
 	my $bsub_cmd = "bsub -K -J smalt_$name -o $output_file -e $error_file $resource $smalt_cmd";
 	
 	# Submit the job to the farm and wait for it to finish
-	# print $bsub_cmd . "\n";
+	print $bsub_cmd . "\n";
 	system($bsub_cmd);
 
   	# Check the error file
@@ -714,6 +714,7 @@ sub clear_mapping {
   my $lrg_name = shift;
   my $lrg_coord_system_name = shift;
   
+	clear_ensembl_connection();
   $LRG::LRGImport::dbCore = $dbCore_rw;
   LRG::LRGImport::purge_db($lrg_name,$lrg_coord_system_name);
 }
@@ -730,7 +731,8 @@ sub get_annotations {
   my $lrg_len = shift;
   my $mapping = shift;
   my $pairs = $mapping->{'pairs'};
-  
+
+	clear_ensembl_connection();
   # Try to fetch a slice for the LRG (from the read-write db), this should be possible if an entry exists in the core db
   my $sa_rw = $dbCore_rw->get_SliceAdaptor();
   # Since this method dies if not successful, wrap it in an eval block
@@ -750,15 +752,14 @@ sub get_annotations {
     
     # Add a mapping between the LRG and chromosome to the core db
     # For consistency in the annotations, do transfer between LRG and chromosome coord systemsÊeven if there is a perfect match
-    $LRG::LRGImport::dbCore = $dbCore_rw;
+
+		# Mapping
+		clear_ensembl_connection();
+		$LRG::LRGImport::dbCore = $dbCore_rw;
     LRG::LRGImport::add_mapping($lrg_name,$lrg_coord_system_name,$lrg_len,$mapping);
-    
-    # Reload the db connections to get rid of any caching (is this necessary?)
-    Bio::EnsEMBL::Registry->clear();
-    Bio::EnsEMBL::Registry->load_all( $registry_file );
-    $dbCore_rw = Bio::EnsEMBL::Registry->get_DBAdaptor('human','core_rw');
-    
-    # Now, try again to fetch the LRG slice
+
+		# Slice adaptor
+		clear_ensembl_connection();
     $sa_rw = $dbCore_rw->get_SliceAdaptor();
     $lrg_slice = $sa_rw->fetch_by_region($lrg_coord_system_name,$lrg_name);
     
@@ -1825,6 +1826,14 @@ sub regulatory_feature_2_feature {
   }
   
   return $reg_feature_node;
+}
+
+# Method to force the deconnection and connection to the Ensembl database, in order to avoid the lost of the connection
+sub clear_ensembl_connection {
+   # Reload the db connections to get rid of any caching (is this necessary?)
+   Bio::EnsEMBL::Registry->clear();
+   Bio::EnsEMBL::Registry->load_all( $registry_file );
+   $dbCore_rw = Bio::EnsEMBL::Registry->get_DBAdaptor('human','core_rw');
 }
 
 1;
