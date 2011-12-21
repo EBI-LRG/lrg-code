@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
 # Version $Revision: 1.7 $
-# Last modified: 2011-08-17
+# Last modified: 2011-12-21
 
 start = LRG
 LRG = element lrg { 
@@ -131,7 +131,14 @@ CODING_REGION = element coding_region {
       attribute codon { xsd:integer }
    }*,
    
-   element translation { PEPTIDE_SEQUENCE } 
+   TRANSLATION
+}
+
+TRANSLATION = element translation {
+   attribute name {
+      text
+   }, # e.g. "p1", "p2"
+   PEPTIDE_SEQUENCE
 }
 
 PEPTIDE_SEQUENCE = element sequence {
@@ -219,11 +226,17 @@ FIXED_TRANSCRIPT_ANNOTATION = element fixed_transcript_annotation {
    attribute name { text },
    
    COMMENT?,
+
+   # Specific RefSeqGene_identifier.version used to generate this LRG
+   COMMENT_REFSEQGENE_ID?,
+
    OTHER_EXON_NAMING?,
    ALT_AA_NUMBERING?
 }
 
 COMMENT = element comment { text }
+
+COMMENT_REFSEQGENE_ID = element comment_refseqgene_id { text }
 
 OTHER_EXON_NAMING = element other_exon_naming {
 
