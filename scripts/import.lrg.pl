@@ -44,7 +44,7 @@ use Bio::EnsEMBL::Registry;
 my $SPECIES = q{human};
 my $LRG_COORD_SYSTEM_NAME = q{lrg};
 my $LRG_BIOTYPE = q{LRG_gene};
-my $LRG_ANALYSIS_LOGIC_NAME = q{LRG_import};
+my $LRG_ANALYSIS_LOGIC_NAME = q{lrg_import};
 my $LRG_ANALYSIS_DESCRIPTION = q{Data from LRG database};
 my $LRG_ANALYSIS_DISPLAY_LABEL = q{LRG Genes};
 my $LRG_ANALYSIS_WEB_DATA = qq{{'colour_key' => 'rna_[status]','caption' => 'LRG gene','label_key' => '[text_label] [display_label]','name' => 'LRG Genes','default' => {'MultiTop' => 'gene_label','contigviewbottom' => 'transcript_label','MultiBottom' => 'collapsed_label','contigviewtop' => 'gene_label','alignsliceviewbottom' => 'as_collapsed_label','cytoview' => 'gene_label'},'multi_caption' => 'LRG genes'}};
