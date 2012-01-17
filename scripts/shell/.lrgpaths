@@ -1,0 +1,38 @@
+# .lrgpaths
+
+# The path to the user's LRG CVS checkout top directory
+CVSROOTDIR=
+
+# The absolute path to the EBI public FTP on the filesystem
+PUBFTP=
+
+# The absolute path to the EBI private FTP on the filesystem
+PVTFTP=
+
+# The database credentials for the LRG database
+LRGDBHOST=
+LRGDBPORT=
+LRGDBADMUSER=
+LRGDBROUSER=
+LRGDBNAME=
+
+# The registry configuration file used for mappings and annotations
+REGISTRYFILE=
+
+# The path to where the genome sequences required for mapping are located
+SEQDIR=
+# A temporary directory where output from the LRG mapping process can be written
+TMPDIR=
+
+# Path to the jing jarfile, used for validating XMLs during healthcheck
+JINGPATH=
+
+# Export the variables
+export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH REGISTRYFILE
+
+# Define a shell function for grabbing the HGNC symbol from a LRG XML record
+function lrg_gene_name() { 
+  grep lrg_locus "$@" | sed -re 's/[^>]+>([^<]+).*/\1/'; 
+}
+
+
