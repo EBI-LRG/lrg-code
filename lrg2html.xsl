@@ -348,7 +348,7 @@
 
   <tr>
     <td class="sequence">
-  <xsl:value-of select="substring(fixed_annotation/sequence,$i,60)"/>
+  <xsl:value-of select="substring(sequence,$i,60)"/>
     </td>
   </tr>
   <xsl:if test="$i+$stepd1e144 &lt;= $tod1e144">
@@ -440,8 +440,15 @@
 
     <p>
       <strong>Creation date: </strong>
-  <xsl:value-of select="creation_date"/>
+      <xsl:value-of select="creation_date"/>
     </p>
+
+    <xsl:if test="sequence_source">
+      <p>
+        <strong>Sequence source: </strong>
+        <xsl:value-of select="sequence_source"/>
+      </p>
+    </xsl:if>
 
 <!-- LRG GENOMIC SEQUENCE -->
   <xsl:call-template name="genomic_sequence">
@@ -1179,16 +1186,18 @@
       <xsl:if test="position()=1">
       <th class="exon_separator" />
       </xsl:if>
-      <xsl:variable name="setnum" select="position()"/>
-      <xsl:variable name="label" select="fixed_transcript_annotation[@name = $transname]/other_exon_naming/exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
-        <td>
-      <xsl:choose>
-        <xsl:when test="$label">
-          <xsl:value-of select="$label"/>
-        </xsl:when>
+      <xsl:if test="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
+      	<xsl:variable name="setnum" select="position()"/>
+      	<xsl:variable name="label" select="fixed_transcript_annotation[@name = $transname]/other_exon_naming/exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
+      	<td>  
+      	<xsl:choose>
+        	<xsl:when test="$label">
+         	 	<xsl:value-of select="$label"/>
+        	</xsl:when>
         <xsl:otherwise>-</xsl:otherwise>
-      </xsl:choose>
-        </td>
+      	</xsl:choose>
+				</td>
+			</xsl:if>
     </xsl:for-each>
       </tr>
       
@@ -1222,7 +1231,7 @@
         <a>
   <xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
         </a>
-        <h4>- Translated sequence</h4>
+        <h4>- Translated sequence: <xsl:value-of select="coding_region/translation/@name"/></h4>
       </td>
       <td class="sequence_cell">
         <a>
@@ -1541,13 +1550,6 @@
     </div>  
   </div> 
   
-<!-- Insert the genomic mapping tables -->
-  <xsl:for-each select="mapping">
-    <xsl:apply-templates select=".">
-      <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-    </xsl:apply-templates>
-  </xsl:for-each>
-  
 <!-- Display the annotated features -->
   <xsl:if test="features/*">
     <xsl:apply-templates select="features">
@@ -1556,46 +1558,64 @@
     </xsl:apply-templates>
   </xsl:if>
 
+<!-- Insert the mapping tables -->
+<!--	<xsl:choose>-->
+	<!-- Insert the genomic mapping tables -->
+	<xsl:if test="source/name='LRG'">
+		<xsl:for-each select="mapping">
+			<xsl:call-template name="g_mapping">
+				<xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+			</xsl:call-template>
+		</xsl:for-each>
+	</xsl:if>
 </xsl:template>
 
+
 <!-- GENOMIC MAPPING -->
-<xsl:template match="mapping">
-  <xsl:param name="lrg_id" />
- 
-  <xsl:variable name="coord_system" select="@coord_system" />
+<xsl:template name="g_mapping">
+	<xsl:param name="lrg_id" />
+	
+	<xsl:variable name="coord_system" select="@coord_system" />
   <xsl:variable name="region_name" select="@other_name" />
   <xsl:variable name="region_id" select="@other_id" />
   <xsl:variable name="region_start" select="@other_start" />
   <xsl:variable name="region_end" select="@other_end" />
-  <xsl:variable name="ensembl_url">http://
+  <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
     <xsl:choose>  
-      <xsl:when test="$coord_system='GRCh37'">
-  www
-      </xsl:when>
+      <xsl:when test="($coord_system='GRCh37') or ($coord_system='NCBI37')">
+				<xsl:text>www</xsl:text>
+			</xsl:when>
       <xsl:when test="$coord_system='NCBI36'">
-  ncbi36
-      </xsl:when>
+				<xsl:text>ncbi36</xsl:text>
+			</xsl:when>
     </xsl:choose>
-  .ensembl.org/Homo_sapiens/Location/View?
+  	<xsl:text>.ensembl.org/Homo_sapiens/Location/View?</xsl:text>
   </xsl:variable>
-  <xsl:variable name="ensembl_region"><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
+  <xsl:variable name="ensembl_region"><xsl:text>r=</xsl:text><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>BEG=<xsl:value-of select="$region_start"/><xsl:text>&amp;</xsl:text>END=<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ucsc_url">http://genome.ucsc.edu/cgi-bin/hgTracks?</xsl:variable>
   <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
   
-  <h3>Mapping (assembly <xsl:value-of select="$coord_system"/>)</h3>
-  
+	<xsl:choose>
+		<xsl:when test="$coord_system='NCBI37'">
+  		<h3>Mapping (assembly GRCh37)</h3>
+		</xsl:when>
+		<xsl:otherwise>
+			<h3>Mapping (assembly <xsl:value-of select="$coord_system"/>)</h3>
+		</xsl:otherwise>
+  </xsl:choose>
+
   <p>
-    <strong>Region covered: <xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></strong>
+    <strong>Region covered: </strong><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/>
     
       <a>
   <xsl:attribute name="target">_blank</xsl:attribute>
   <xsl:attribute name="href">
     <xsl:value-of select="$ensembl_url" />
     <xsl:value-of select="$ensembl_region" />
-    <xsl:if test="$coord_system='GRCh37'">
-      <xsl:text>&amp;</xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/<xsl:value-of select="$lrg_id"/>.xml.gff=labels
+    <xsl:if test="($coord_system='GRCh37') or ($coord_system='NCBI37')">
+      <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text>
     </xsl:if>
   </xsl:attribute>
         [Ensembl]
@@ -1618,29 +1638,133 @@
   <xsl:attribute name="href">
     <xsl:value-of select="$ucsc_url" />
     <xsl:value-of select="$ucsc_region" />
-    <xsl:text>&amp;</xsl:text>db=hg
+    <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
     <xsl:choose>
-      <xsl:when test="$coord_system='GRCh37'">
-          19
+      <xsl:when test="($coord_system='GRCh37') or ($coord_system='NCBI37')">
+          <xsl:text>19</xsl:text>
       </xsl:when>
       <xsl:when test="$coord_system='NCBI36'">
-          18
+          <xsl:text>18</xsl:text>
       </xsl:when>
     </xsl:choose>
-    <xsl:text>&amp;</xsl:text>pix=800
+    <xsl:text>&amp;</xsl:text><xsl:text>pix=800</xsl:text>
   </xsl:attribute>
         [UCSC]
       </a>
       
-    </p>
+  </p>
+    
+	<table>
+		<tr>
+			<th>Strand</th>
+			<th>LRG start</th>
+			<th>LRG end</th>
+			<th>Start</th>
+			<th>End</th>
+			<th>Differences</th>
+		</tr>
+  	<xsl:for-each select="mapping_span">
+			<tr>
+				<td><xsl:value-of select="@strand"/></td>
+        <td><xsl:value-of select="@lrg_start"/></td>
+        <td><xsl:value-of select="@lrg_end"/></td>
+        <td><xsl:value-of select="@other_start"/></td>
+        <td><xsl:value-of select="@other_end"/></td>
+        <td>
+    		<xsl:for-each select="diff">
+          <strong><xsl:value-of select="@type"/>: </strong>
+          (Ref:<xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if>)
+      		<xsl:choose>
+        		<xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
+        		<xsl:otherwise>-</xsl:otherwise>
+      		</xsl:choose>
+          -&gt;
+      		<xsl:choose>
+        		<xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
+        		<xsl:otherwise>-</xsl:otherwise>
+      		</xsl:choose>
+          (LRG:<xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if>)
+          <br/>
+    		</xsl:for-each>
+        </td>
+      </tr>      
+  	</xsl:for-each>
+	</table>
+</xsl:template>
+
+
+<!-- TRANSCRIPT MAPPING -->
+<xsl:template name="t_mapping">
+	<xsl:param name="lrg_id" />
+  <xsl:param name="transcript_id" />
+	
+	<xsl:variable name="coord_system" select="@coord_system" />
+  <xsl:variable name="region_name" select="@other_name" />
+  <xsl:variable name="region_id" select="@other_id" />
+  <xsl:variable name="region_start" select="@other_start" />
+  <xsl:variable name="region_end" select="@other_end" />
+  <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
+    <xsl:choose>
+      <xsl:when test="$coord_system='NCBI36'">
+				<xsl:text>ncbi36</xsl:text>
+			</xsl:when>
+    	<xsl:otherwise>
+				<xsl:text>www</xsl:text>
+			</xsl:otherwise>
+		</xsl:choose>
+  	<xsl:text>.ensembl.org/Homo_sapiens/Transcript/Summary?t=</xsl:text><xsl:value-of select="$region_name"/>
+  </xsl:variable>
+  <xsl:variable name="ensembl_region"><xsl:text>r=</xsl:text><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
+  <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
+  <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>MAPS=ugHs,genes,rnaHs,rna-r<xsl:text>&amp;</xsl:text>query=<xsl:value-of select="$region_id"/></xsl:variable>
+  <h3>Mapping of transcript <xsl:value-of select="$region_name"/> to <xsl:value-of select="$lrg_id"/></h3>
+  
+  <p>
+    <strong>Region covered: <xsl:value-of select="$region_id"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></strong>
+    
+	<xsl:choose>
+		<xsl:when test="../source/name='Ensembl'">
+      <a>
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ensembl_url" />
+        </xsl:attribute>
+        [Ensembl]
+      </a>
+		</xsl:when>
+    <xsl:otherwise>
+      <a>
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ncbi_url" />
+          <xsl:value-of select="$ncbi_region" />
+          <xsl:if test="$coord_system='NCBI36'">
+            <xsl:text>&amp;</xsl:text>build=previous
+          </xsl:if>
+        </xsl:attribute>
+        [NCBI]
+      </a>
+    </xsl:otherwise> 
+  </xsl:choose>  
+  </p>
+  <p>
+  <span class="showhide"><a>
+    <xsl:attribute name="href">javascript:showhide('<xsl:value-of select="$region_name"/>');</xsl:attribute>show/hide
+  </a></span>
+  </p>
+
+  <div class="hidden">
+    <xsl:attribute name="id">
+      <xsl:value-of select="$region_name" />
+    </xsl:attribute>
     
     <table>
       <tr>
         <th>Strand</th>
         <th>LRG start</th>
         <th>LRG end</th>
-        <th>Start</th>
-        <th>End</th>
+        <th>Transcript start</th>
+        <th>Transcript end</th>
         <th>Differences</th>
       </tr>
   <xsl:for-each select="mapping_span">
@@ -1670,36 +1794,16 @@
       </tr>      
   </xsl:for-each>
     </table>
-    
+  </div>
+    <br /> 
 </xsl:template>
+
 
 <!-- Detect web addresses in a string and create hyperlinks -->
 <xsl:template name="urlify">
   <xsl:param name="input_str" />
   
   <xsl:value-of select="$input_str" />
-<!-- 
-  <xsl:variable name="tokens">
-    <xsl:call-template name="tokenize_str">
-      <xsl:with-param name="input_str"><xsl:value-of select="$input_str" /></xsl:with-param>    
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:for-each select="exsl:node-set($tokens)">
-    <xsl:variable name="word" select="." />
-    <xsl:choose> 
-      <xsl:when test="contains($word,'http') or contains($word,'www') or contains($word,'.com')">
-        <xsl:call-template name="url">
-          <xsl:with-param name="url"><xsl:value-of select="$word" /></xsl:with-param>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:value-of select="$word" />
-      </xsl:otherwise>
-    </xsl:choose>
-    <xsl:text> </xsl:text>
-  </xsl:for-each>
--->  
 </xsl:template>
 
 <!-- COMMENT -->
@@ -1803,18 +1907,44 @@
   
 <!--  Display the genes -->
   <xsl:if test="gene/*">
-  <h4>Genes</h4> 
-  <table>
+  <h4>Genes</h4>
+		<table>
     <xsl:for-each select="gene">
+			<xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
+
       <xsl:call-template name="updatable_gene">
         <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
         <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
         <xsl:with-param name="gene_idx"><xsl:value-of select="position()" /></xsl:with-param>
+				<xsl:with-param name="mapping_anchor">#<xsl:value-of select="$mapping_anchor" /></xsl:with-param>
       </xsl:call-template>
-    </xsl:for-each>
-  </table>  
-  </xsl:if>
 
+			<!-- Insert the transcript mapping tables -->
+			<xsl:if test="transcript/*">
+				<tr><td class="gene_info_cell" colspan="2">
+					<h4><xsl:attribute name="id"><xsl:value-of select="$mapping_anchor"/></xsl:attribute>Mappings</h4>
+				</td></tr>
+
+				<xsl:for-each select="transcript">
+					<xsl:variable name="transcript_id" select="@accession" />
+						<xsl:for-each select="../../../mapping">
+							<xsl:variable name="other_name_no_version" select="substring-before(@other_name,'.')" />
+					  	<xsl:if test="(@other_name=$transcript_id) or ($other_name_no_version=$transcript_id)">
+							 	<tr><td class="gene_info_cell" colspan="2">
+    					 			<xsl:call-template name="t_mapping">
+											<xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+											<xsl:with-param name="transcript_id"><xsl:value-of select="$transcript_id" /></xsl:with-param>
+										</xsl:call-template>
+               	</td></tr>
+            	</xsl:if>
+						</xsl:for-each>
+				</xsl:for-each>
+			</xsl:if>
+		
+    </xsl:for-each>
+		</table>
+		
+  </xsl:if>
 </xsl:template>
 
 <!--  UPDATABLE GENE -->
@@ -1823,6 +1953,7 @@
   <xsl:param name="lrg_id" />
   <xsl:param name="setnum" />
   <xsl:param name="gene_idx" />
+	<xsl:param name="mapping_anchor" />
   
   <xsl:variable name="source" select="@source" />
   <xsl:variable name="accession" select="@accession" />
@@ -1909,7 +2040,15 @@
       </xsl:if>
     </xsl:for-each>
           <br/>
-            
+
+    <strong>Mappings: </strong>
+		<a>
+			<xsl:attribute name="href">
+				<xsl:value-of select="$mapping_anchor"/>
+			</xsl:attribute>
+			Detailed mapping of transcripts to LRG
+		</a>
+        
     <xsl:if test="comment">
           <strong>Comments: </strong>
       <xsl:for-each select="comment">
@@ -1943,6 +2082,7 @@
             <xsl:with-param name="gene_idx"><xsl:value-of select="$gene_idx" /></xsl:with-param>
             <xsl:with-param name="transcript_idx"><xsl:value-of select="position()" /></xsl:with-param>
           </xsl:call-template>
+
         </xsl:for-each>
       
         <xsl:choose>
@@ -1980,6 +2120,7 @@
           </tr>
           
         </table>
+
      </xsl:when>
     <xsl:otherwise>No transcripts identified for this gene in this source</xsl:otherwise>
     </xsl:choose>
@@ -1987,19 +2128,27 @@
     </tr>
 </xsl:template>
 
+
 <!-- UPDATABLE TRANSCRIPT -->
 <xsl:template name="updatable_transcript">
   <xsl:param name="lrg_id" />
   <xsl:param name="setnum" />
   <xsl:param name="gene_idx" />
   <xsl:param name="transcript_idx" />
+
   
   <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/nuccore/</xsl:variable>
   <xsl:variable name="ensembl_url">http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=</xsl:variable>
   <xsl:variable name="lrg_coord_system" select="$lrg_id" />
-  <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+
+	<xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+  <xsl:variable name="lrg_end_a" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+ 	<xsl:variable name="lrg_start_b" select="coordinates[@coord_system = 'LRG']/@start" />
+  <xsl:variable name="lrg_end_b" select="coordinates[@coord_system = 'LRG']/@end" />
   
+  <xsl:variable name="lrg_start"><xsl:value-of select="$lrg_start_a"/><xsl:value-of select="$lrg_start_b"/></xsl:variable>
+  <xsl:variable name="lrg_end"><xsl:value-of select="$lrg_end_a"/><xsl:value-of select="$lrg_end_b"/></xsl:variable>
+
   <tr valign="top">
   <xsl:attribute name="class">trans_prot</xsl:attribute>
   <xsl:attribute name="id">up_trans_<xsl:value-of select="$setnum"/>_<xsl:value-of select="$gene_idx"/>_<xsl:value-of select="$transcript_idx"/></xsl:attribute>
@@ -2081,9 +2230,15 @@
   <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/protein/</xsl:variable>
   <xsl:variable name="ensembl_url">http://www.ensembl.org/Homo_sapiens/Transcript/ProteinSummary?db=core;protein=</xsl:variable>
   <xsl:variable name="lrg_coord_system" select="$lrg_id" />
-  <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-                
+
+	<xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+  <xsl:variable name="lrg_end_a" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+ 	<xsl:variable name="lrg_start_b" select="coordinates[@coord_system = 'LRG']/@start" />
+  <xsl:variable name="lrg_end_b" select="coordinates[@coord_system = 'LRG']/@end" />
+  
+  <xsl:variable name="lrg_start"><xsl:value-of select="$lrg_start_a"/><xsl:value-of select="$lrg_start_b"/></xsl:variable>
+  <xsl:variable name="lrg_end"><xsl:value-of select="$lrg_end_a"/><xsl:value-of select="$lrg_end_b"/></xsl:variable>
+
   <tr valign="top">
   <xsl:attribute name="class">trans_prot</xsl:attribute>
   <xsl:attribute name="id">up_prot_<xsl:value-of select="$setnum"/>_<xsl:value-of select="$gene_idx"/>_<xsl:value-of select="$transcript_idx"/></xsl:attribute>

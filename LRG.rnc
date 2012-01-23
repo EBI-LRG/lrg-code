@@ -22,6 +22,9 @@ FIXED_ANNOTATION = element fixed_annotation {
          pattern = 'LRG_[0-9]+'
       }
    },
+   element sequence_source {
+      text #seq-id of the sequence that LRG is based on, normally RefSeqGene
+   }?,  
    element organism { 
       attribute taxon {
          xsd:integer
@@ -80,7 +83,7 @@ FX_TRANSCRIPT = element transcript {
    }, # e.g. "t1", "t2"
 
    LRG_COORDS, # location of transcript in LRG coordinates
-
+	
    element cdna {
       DNA_SEQUENCE
    },
@@ -227,16 +230,11 @@ FIXED_TRANSCRIPT_ANNOTATION = element fixed_transcript_annotation {
    
    COMMENT?,
 
-   # Specific RefSeqGene_identifier.version used to generate this LRG
-   COMMENT_REFSEQGENE_ID?,
-
    OTHER_EXON_NAMING?,
    ALT_AA_NUMBERING?
 }
 
 COMMENT = element comment { text }
-
-COMMENT_REFSEQGENE_ID = element comment_refseqgene_id { text }
 
 OTHER_EXON_NAMING = element other_exon_naming {
 
