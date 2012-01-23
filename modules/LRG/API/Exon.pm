@@ -15,8 +15,8 @@ sub initialize {
   # Use -1 as the default phase
   $start_phase = -1 unless (defined($start_phase));
   $end_phase = -1 unless (defined($end_phase));
-  
-  $self->coordinates($coordinates,'LRG::API::Coordinates',1);
+
+	$self->coordinates($coordinates,'LRG::API::Coordinates',1);
   $self->start_phase($start_phase);
   $self->end_phase($end_phase);
 }

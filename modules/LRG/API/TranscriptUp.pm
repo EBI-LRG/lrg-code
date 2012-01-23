@@ -44,10 +44,11 @@ sub translation {
 sub remap {
   my $self = shift;
   my $mapping = shift;
+	my $destination_coordinate_system = shift;
   
-  $self->SUPER::remap($mapping);
-  map {$_->remap($mapping)} @{$self->exon() || []};
-  $self->translation->remap($mapping) if (defined($self->translation()));
+  $self->SUPER::remap($mapping,$destination_coordinate_system);
+  map {$_->remap($mapping,$destination_coordinate_system)} @{$self->exon() || []};
+  $self->translation->remap($mapping,$destination_coordinate_system) if (defined($self->translation()));
 } 
 
 1;

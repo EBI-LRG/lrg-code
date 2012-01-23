@@ -17,10 +17,11 @@ sub initialize {
   }
   
   $self->type($type);
-  $self->lrg_coordinates($lrg_coordinates,'LRG::API::Coordinates');
-  $self->other_coordinates($other_coordinates,'LRG::API::Coordinates');
-  $self->lrg_sequence($lrg_sequence,'LRG::API::Sequence');
-  $self->other_sequence($other_sequence,'LRG::API::Sequence');
+  $self->lrg_coordinates($lrg_coordinates,'LRG::API::Coordinates') if ($lrg_coordinates);
+   
+  $self->other_coordinates($other_coordinates,'LRG::API::Coordinates') if ($other_coordinates);
+  $self->lrg_sequence($lrg_sequence,'LRG::API::Sequence') if ($lrg_sequence);
+  $self->other_sequence($other_sequence,'LRG::API::Sequence') if ($other_sequence);
 }
 
 sub _permitted {

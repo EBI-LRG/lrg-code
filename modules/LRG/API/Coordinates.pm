@@ -145,7 +145,7 @@ sub transfer {
   
   # Create a new coordinates object
   my $obj = LRG::API::Coordinates->new($destination_coordinate_system,$transferred{start},$transferred{end},($strand * $self->strand()),$transferred{start_ext},$transferred{end_ext},$transferred{name},$self->coordinate_system());
-  
+
   return $obj;
 }
 

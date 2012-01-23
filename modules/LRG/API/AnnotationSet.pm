@@ -65,7 +65,7 @@ sub _meta {
 
   $self->meta([@keep,LRG::API::Meta->new($key,$value)]);
   #$self->meta([@keep,$value]);
-  
+
   return $value;
 }
 

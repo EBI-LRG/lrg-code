@@ -16,7 +16,7 @@ sub initialize {
   unless (defined($name) && length($name)) {
     die ("A transcript name was not supplied in the $self constructor");
   }
-  
+
   $self->coordinates($coordinates,'LRG::API::Coordinates');
   $self->name($name);
   $self->cdna($cdna);

@@ -10,7 +10,7 @@ our @ISA = "LRG::API::Base";
 
 sub initialize {
   my $self = shift;
-  my ($assembly,$other_coordinates,$most_recent,$mapping_span) = @_;
+  my ($assembly,$other_coordinates,$most_recent,$mapping_span,$name) = @_;
   
   unless (defined($assembly)) {
     die ("Assembly must be specified in call to $self constructor");
@@ -21,8 +21,8 @@ sub initialize {
   unless (defined($mapping_span)) {
     die ("At least one mapping span must be specified in call to $self constructor");
   }
-  
-  $self->assembly($assembly);
+
+	$self->assembly($assembly);
   $self->most_recent($most_recent);
   $self->other_coordinates($other_coordinates,'LRG::API::Coordinates');
   $self->mapping_span($mapping_span,'LRG::API::MappingSpan',1);

@@ -107,7 +107,6 @@ sub remap {
 		@remapped = map {$_->transfer($mapping)} @{$self->coordinates() || []};
 	}
   $self->coordinates([@{$self->coordinates()},@remapped]) if (@remapped);
-
 }
 
 1;
