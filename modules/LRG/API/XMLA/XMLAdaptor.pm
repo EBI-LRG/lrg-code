@@ -30,6 +30,7 @@ use LRG::API::XMLA::SymbolXMLAdaptor;
 use LRG::API::XMLA::TranscriptXMLAdaptor;
 use LRG::API::XMLA::TranscriptAnnotationXMLAdaptor;
 use LRG::API::XMLA::TranscriptUpXMLAdaptor;
+use LRG::API::XMLA::TranslationXMLAdaptor;
 use LRG::API::XMLA::TranslationUpXMLAdaptor;
 use LRG::API::XMLA::UpdatableAnnotationXMLAdaptor;
 use LRG::API::XMLA::UpdatableFeatureXMLAdaptor;
@@ -63,6 +64,7 @@ our %XML_ADAPTORS = (
   'Transcript' => 'LRG::API::XMLA::TranscriptXMLAdaptor',
   'TranscriptAnnotation' => 'LRG::API::XMLA::TranscriptAnnotationXMLAdaptor', 
   'TranscriptUp' => 'LRG::API::XMLA::TranscriptUpXMLAdaptor', 
+	'Translation' => 'LRG::API::XMLA::TranslationXMLAdaptor',
   'TranslationUp' => 'LRG::API::XMLA::TranslationUpXMLAdaptor', 
   'UpdatableAnnotation' => 'LRG::API::XMLA::UpdatableAnnotationXMLAdaptor',
   'UpdatableFeature' => 'LRG::API::XMLA::UpdatableFeatureXMLAdaptor',

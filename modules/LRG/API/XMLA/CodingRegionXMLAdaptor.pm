@@ -33,7 +33,8 @@ sub objs_from_xml {
   
   my $c_adaptor = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
   my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
-  my $s_adaptor = $self->xml_adaptor->get_SequenceXMLAdaptor();
+  my $t_adaptor = $self->xml_adaptor->get_TranslationXMLAdaptor();
+
   my @objs;
   foreach my $coding_region (@{$xml}) {
     
@@ -43,9 +44,9 @@ sub objs_from_xml {
     my $coords = $c_adaptor->fetch_by_coding_region($coding_region);
     # Get the meta attributes
     my $meta = $m_adaptor->fetch_all_by_coding_region($coding_region);
-    # Get the translation object if prsent
-    my $translation = $s_adaptor->fetch_by_coding_region($coding_region);
-    
+    # Get the translation object if present
+    my $translation = $t_adaptor->fetch_by_coding_region($coding_region);
+
     my $obj = LRG::API::CodingRegion->new($coords,$meta,$translation);
     push(@objs,$obj);
   }
@@ -62,7 +63,7 @@ sub xml_from_objs {
   
   my $c_adaptor = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
   my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
-  my $s_adaptor = $self->xml_adaptor->get_SequenceXMLAdaptor();
+  my $t_adaptor = $self->xml_adaptor->get_TranslationXMLAdaptor();
   my @xml;
   
   foreach my $obj (@{$objs}) {
@@ -78,9 +79,7 @@ sub xml_from_objs {
     
     # Add a translation node if present
     if (defined($obj->translation())) {
-      my $translation = LRG::Node::newEmpty('translation');
-      map{$translation->addExisting($_)} @{$s_adaptor->xml_from_objs($obj->translation())};
-      $coding_region->addExisting($translation);
+			map {$coding_region->addExisting($_)} @{$t_adaptor->xml_from_objs($obj->translation())};
     }
     
     push(@xml,$coding_region);
