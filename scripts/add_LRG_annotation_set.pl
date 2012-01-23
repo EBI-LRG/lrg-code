@@ -67,7 +67,6 @@ else {
   
   # Attach the LRG annotation set to the LRG object
   $lrg->updatable_annotation->annotation_set([values(%sets)]);
-  
 }
 
 # Update the meta information for the annotation_set
@@ -75,7 +74,7 @@ $sets{$option{lrg_set_name}}->modification_date($date);
 
 # Add the lrg locus information specified on the command line
 my $lrg_locus = LRG::API::Meta->new('lrg_locus',$option{locus},[LRG::API::Meta->new('source',$option{locus_source})]);
-$sets{$option{lrg_set_name}}->lrg_locus($lrg_locus);
+$sets{$option{lrg_set_name}}->lrg_locus($lrg_locus->value);
 # Loop over the other sets and remove any locus element. At the same time make sure that it matches the one in the LRG annotation set
 while (my ($name,$obj) = each(%sets)) {
   next if ($name eq $option{lrg_set_name});
