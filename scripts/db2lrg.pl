@@ -158,7 +158,8 @@ $stmt = qq{
         organism,
         taxon_id,
         moltype,
-        creation_date
+        creation_date,
+				sequence_source
     FROM
         lrg_data
     WHERE
@@ -168,8 +169,8 @@ $stmt = qq{
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 
-my ($organism,$taxon_id,$moltype,$creation_date);
-$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date);
+my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source);
+$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source);
 $sth->fetch();
 
 # Create LRG root elements and fixed_annotation element
@@ -179,6 +180,9 @@ my $fixed = $lrg->addNode('fixed_annotation');
 
 # Set the data
 $fixed->addNode('id')->content($lrg_id);
+if (defined($sequence_source)) {
+	$fixed->addNode('sequence_source')->content($sequence_source);
+}
 $fixed->addNode('organism',{'taxon' => $taxon_id})->content($organism);
 
 $stmt = qq{
@@ -235,6 +239,15 @@ my $e_stmt = qq{
     ORDER BY
         e.lrg_start ASC
 };
+my $p_stmt = qq{
+		SELECT
+			peptide_id,
+			peptide_name
+		FROM
+			lrg_peptide
+		WHERE 
+			cds_id = ?
+};
 $stmt = qq{
     SELECT
         lt.transcript_id,
@@ -258,6 +271,7 @@ $stmt = qq{
 
 my $c_sth = $db_adaptor->dbc->prepare($c_stmt);
 my $e_sth = $db_adaptor->dbc->prepare($e_stmt);
+my $p_sth = $db_adaptor->dbc->prepare($p_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start);
@@ -283,11 +297,15 @@ while ($sth->fetch()) {
     }
     
     # Add translation element
-    my $cds_seq = get_sequence($cds_id,'peptide',$db_adaptor);
-    $cds->addNode('translation/sequence')->content($cds_seq);
-    
-    my $p_name = $t_name;
-    $p_name =~ s/^t/p/;
+		my ($pep_id,$pep_name);
+		$p_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    $p_sth->execute();
+		$p_sth->bind_columns(\$pep_id,\$pep_name);
+		while ($p_sth->fetch()) {
+			my $pep = $cds->addNode('translation',{'name' => $pep_name});
+    	my $pep_seq = get_sequence($pep_id,'peptide',$db_adaptor);
+    	$pep->addNode('sequence')->content($pep_seq);
+		}
      
     $e_sth->bind_param(1,$t_id,SQL_INTEGER);
     $e_sth->execute();
@@ -306,7 +324,7 @@ while ($sth->fetch()) {
         
         # Add peptide coordinates if defined
         if (defined($e_peptide_start) && defined($e_peptide_end)) {
-          $coords = coords_node("${lrg_id}_${p_name}",$e_peptide_start,$e_peptide_end);
+          $coords = coords_node("${lrg_id}_${pep_name}",$e_peptide_start,$e_peptide_end);
           $exon->addExisting($coords);
         }
         
@@ -475,8 +493,17 @@ sub get_mapping {
         ORDER BY
             lrg_start ASC
     };
-    my $ms_sth = $db_adaptor->dbc->prepare($ms_stmt);
-    my $md_sth = $db_adaptor->dbc->prepare($md_stmt);
+		 my $mdc_stmt = qq{
+        SELECT
+					count(mapping_diff_id)
+        FROM
+            lrg_mapping_diff
+        WHERE
+            mapping_span_id = ?
+    };
+    my $ms_sth  = $db_adaptor->dbc->prepare($ms_stmt);
+    my $md_sth  = $db_adaptor->dbc->prepare($md_stmt);
+		my $mdc_sth = $db_adaptor->dbc->prepare($mdc_stmt);
     
     my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end,$most_recent) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
     my $mapping = LRG::Node::new('mapping');
@@ -488,12 +515,25 @@ sub get_mapping {
     my ($mapping_span_id,$lrg_start,$lrg_end,$strand);
     $ms_sth->bind_columns(\$mapping_span_id,\$lrg_start,\$lrg_end,\$chr_start,\$chr_end,\$strand);
     while ($ms_sth->fetch()) {
-        my $span = $mapping->addNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
+        my $span;
         
+				$mdc_sth->bind_param(1,$mapping_span_id,SQL_INTEGER);
+        $mdc_sth->execute();
+				# No diff for this mapping_span
+				if (!$mdc_sth->fetchrow_array()) {
+					$span = $mapping->addEmptyNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
+					next;
+				}
+
+				$span = $mapping->addNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
+
         $md_sth->bind_param(1,$mapping_span_id,SQL_INTEGER);
         $md_sth->execute();
         my ($md_type,$md_chr_start,$md_chr_end,$md_lrg_start,$md_lrg_end,$md_lrg_sequence,$md_chr_sequence);
         $md_sth->bind_columns(\$md_type,\$md_chr_start,\$md_chr_end,\$md_lrg_start,\$md_lrg_end,\$md_lrg_sequence,\$md_chr_sequence);
+
+				
+
         while ($md_sth->fetch()) {
             my $diff = $span->addEmptyNode('diff',{'type' => $md_type, 'lrg_start' => $md_lrg_start, 'lrg_end' => $md_lrg_end, 'other_start' => $md_chr_start, 'other_end' => $md_chr_end});
             $diff->addData({'lrg_sequence' => $md_lrg_sequence}) if (defined($md_lrg_sequence));
@@ -598,10 +638,10 @@ sub get_sequence {
             SELECT
                 ls.sequence
             FROM
-                lrg_peptide_sequence lps JOIN
+                new_lrg_peptide_sequence lps JOIN
                 lrg_sequence ls USING (sequence_id)
             WHERE
-                lps.cds_id = '$id'
+                lps.peptide_id = '$id'
             ORDER BY
                 ls.sequence_id
         };

@@ -166,7 +166,8 @@ if ($purge) {
             lp,
             lgs,
             lcs,
-            lps,
+            lpp,
+						lps,
             ls,
             le,
             li,
@@ -178,7 +179,8 @@ if ($purge) {
             lrg_cds lp USING (transcript_id) LEFT JOIN
             lrg_genomic_sequence lgs USING (gene_id) LEFT JOIN
             lrg_cdna_sequence lcs USING (cdna_id) LEFT JOIN
-            lrg_peptide_sequence lps USING (cds_id) LEFT JOIN
+						lrg_peptide lpp USING (cds_id) LEFT JOIN
+            new_lrg_peptide_sequence lps USING (peptide_id) LEFT JOIN
             lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id) LEFT JOIN
             lrg_exon le USING (transcript_id) LEFT JOIN
             lrg_intron li ON li.exon_5 = le.exon_id LEFT JOIN
@@ -220,6 +222,15 @@ my $moltype = $node->content();
 # Get the creation date
 $node = $fixed->findNode('creation_date') or die ("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
+
+# Get the RefSeqGene ID
+$node = $fixed->findNode('sequence_source');
+my $sequence_source_val;
+my $sequence_source_col;
+if (defined($node)) {
+	$sequence_source_val = ",'".$node->content()."'";
+	$sequence_source_col = ",sequence_source";
+}
 
 # Get the LRG sequence
 $node = $fixed->findNode('sequence') or die ("ERROR: Could not find LRG sequence tag");
@@ -270,6 +281,7 @@ $stmt = qq{
             taxon_id,
             moltype,
             creation_date
+						$sequence_source_col
         )
     VALUES (
         '$gene_id',
@@ -277,6 +289,7 @@ $stmt = qq{
         $taxon_id,
         '$moltype',
         '$creation_date'
+				$sequence_source_val
     )
 };
 print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
@@ -325,6 +338,19 @@ my $cds_ins_stmt = qq{
         ?
     )
 };
+
+my $pep_ins_stmt = qq{
+    INSERT INTO
+        lrg_peptide (
+            cds_id,
+						peptide_name
+        )
+    VALUES (
+        ?,
+        ?
+    )
+};
+
 my $cc_ins_stmt = qq{
     INSERT INTO
         lrg_cds_codon (
@@ -376,6 +402,7 @@ my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
 my $cc_ins_sth = $db_adaptor->dbc->prepare($cc_ins_stmt);
 my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
+my $pep_ins_sth = $db_adaptor->dbc->prepare($pep_ins_stmt);
 my $exon_ins_sth = $db_adaptor->dbc->prepare($exon_ins_stmt);
 my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 
@@ -397,7 +424,7 @@ while (my $transcript = shift(@{$transcripts})) {
     my $name = $transcript->data()->{'name'};
     
     # Get LRG coords
-    my [undef,$lrg_start,$lrg_end] = parse_coordinates($transcript->findNode('coordinates'));
+    my (undef,$lrg_start,$lrg_end) = parse_coordinates($transcript->findNode('coordinates'));
     
     # Insert the transcript into db
     $tr_ins_sth->bind_param(1,$name,SQL_VARCHAR);
@@ -423,10 +450,13 @@ while (my $transcript = shift(@{$transcripts})) {
     my $cds_node = $transcript->findNode('coding_region') or warn("Could not get coding region for transcript $name\, skipping this transcript");
     next unless ($cds_node);
     my $codon_start = $cds_node->data()->{'codon_start'};
-    [undef,$lrg_start,$lrg_end] = parse_coordinates($cds_node->findNode('coordinates'));
+    (undef,$lrg_start,$lrg_end) = parse_coordinates($cds_node->findNode('coordinates'));
     
-    $node = $cds_node->findNode('translation/sequence') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
-    next unless ($node);
+		my $pep_node = $cds_node->findNode('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
+		next unless ($pep_node);
+		my $pep_name = $pep_node->data()->{'name'};
+    $node = $pep_node->findNode('sequence');
+    
     $seq = $node->content();
     
     # Insert the cds into db
@@ -437,8 +467,14 @@ while (my $transcript = shift(@{$transcripts})) {
     $cds_ins_sth->execute();
     my $cds_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
     
+		# Insert the peptide into db
+		$pep_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    $pep_ins_sth->bind_param(2,$pep_name,SQL_VARCHAR);
+    $pep_ins_sth->execute();
+    my $pep_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+
     # Insert the peptide sequence
-    add_sequence($cds_id,'peptide',$db_adaptor,$seq);
+    add_sequence($pep_id,'peptide',$db_adaptor,$seq);
     
     # Get any non-standard codons
     $node = $cds_node->findNodeArray('selenocysteine');
@@ -474,7 +510,7 @@ while (my $transcript = shift(@{$transcripts})) {
             
             # Get the coordinates
             foreach my $node (@{$child->findNodeArray('coordinates') || []}) {
-              my [$cs,$start,$end] = parse_coordinates($node);
+              my ($cs,$start,$end) = parse_coordinates($node);
               if ($cs =~ m/^LRG_\d+$/) {
                 $exon_lrg_start = $start;
                 $exon_lrg_end = $end;
@@ -1003,8 +1039,8 @@ sub add_sequence {
     elsif ($type =~ m/^peptide$/i) {
         $stmt = qq{
             INSERT IGNORE INTO
-                lrg_peptide_sequence (
-                    cds_id,
+                new_lrg_peptide_sequence (
+                    peptide_id,
                     sequence_id
                 )
             VALUES (
@@ -1063,19 +1099,22 @@ sub lrg_id {
 sub parse_coordinates {
   my $element = shift;
   
-  my $attribs = [];
+  #my $attribs = [];
+	my @attribs;
   
   if (defined($element) && $element->name() eq 'coordinates') {
   
-    $attribs[] = $element->data()->{coord_system};
-    $attribs[] = $element->data()->{start};
-    $attribs[] = $element->data()->{end};
-    $attribs[] = $element->data()->{start_ext};
-    $attribs[] = $element->data()->{end_ext};
-    $attribs[] = $element->data()->{strand};
-    $attribs[] = $element->data()->{mapped_from};
-    
+    #$attribs[] = $element->data()->{coord_system};
+    #$attribs[] = $element->data()->{start};
+    #$attribs[] = $element->data()->{end};
+    #$attribs[] = $element->data()->{start_ext};
+    #$attribs[] = $element->data()->{end_ext};
+    #$attribs[] = $element->data()->{strand};
+    #$attribs[] = $element->data()->{mapped_from};
+    push(@attribs,$element->data()->{coord_system});
+		push(@attribs,$element->data()->{start});
+		push(@attribs,$element->data()->{end});
   }
   
-  return $attribs;
+  return @attribs;
 }
