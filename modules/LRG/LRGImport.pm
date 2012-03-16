@@ -168,9 +168,9 @@ sub add_annotation {
         my $exon_length = ( $exon_end - $exon_start + 1 );
         $exon_id = add_exon( $seq_region_id, $exon_start, $exon_end, 1 );
 
-        # Get the next free exon stable id for this transcript
-        my $exon_stable_id =
-          get_next_stable_id( 'exon_stable_id', $transcript_stable_id . '_e' );
+        # Used to be a query to the DB but we can do the same thing in memory
+        # by using the exon_count & producing something like LRG_1_t1_e1
+        my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
 
         # Insert exon stable id into exon_stable_id table
         add_stable_id( $exon_id, $exon_stable_id, 'exon' );
@@ -217,10 +217,9 @@ sub add_annotation {
         add_translation( $transcript_id, $cds_start, $start_exon_id, $cds_end,
         $end_exon_id );
 
-      # Get the next free translation stable_id
-      my $translation_stable_id =
-        get_next_stable_id( 'translation_stable_id',
-        $transcript_stable_id . '_p' );
+      # Translation stable id is the replacement of t with p in the transcript stable id
+      my $translation_stable_id = $transcript_stable_id;
+      $translation_stable_id =~ s/t(\d+)$/p$1/;
 
       # Insert translation stable id into translation_stable_id table
       add_stable_id( $translation_id, $translation_stable_id, 'translation' );
@@ -1410,32 +1409,6 @@ sub get_max_length {
   return $max_length;
 }
 
-# Get the next free stable id for a *_stable_id table.
-sub get_next_stable_id {
-  my $table  = shift;
-  my $prefix = shift;
-
-  my $stable_id;
-  my $suflength = 9;
-  my $prelength = length($prefix);
-
-  my $stmt = qq{
-    SELECT
-      MAX(CONVERT(SUBSTR(stable_id,$prelength+1),UNSIGNED INTEGER))
-    FROM
-      $table
-    WHERE
-      stable_id LIKE '$prefix%'
-  };
-  my $max = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-  $max ||= 0;
-
-  $max++;
-  $stable_id = $prefix . sprintf( "%u", $max );
-
-  return $stable_id;
-}
-
 sub get_object_ids_by_seq_region_id {
   my $object_type   = shift;
   my $seq_region_id = shift;
@@ -1561,21 +1534,6 @@ sub get_rows {
   my $fields = \@_;
 
   return fetch_rows( $fields, [$table], ["$key = '$id'"] );
-}
-
-# Get stable id for an object type and object id
-sub get_stable_id {
-  my $object_id   = shift;
-  my $object_type = shift;
-  
-  #Produce e.g. `gene` and `gene_id` from $object_type eq 'gene'
-  my ($q_table, $q_field) = @{$dbCore->dbc()->quote_identifier(
-    lc($object_type), lc($object_type).'_id'
-  )};
-  my $sql = qq{select stable_id from $q_table where $q_field =? LIMIT 1};
-  my $ids = $dbCore->dbc()->sql_helper()->execute_simple(-SQL => $sql, -PARAMS => [$object_id]);
-  return $ids->[0] if @{$ids};
-  return;
 }
 
 # Get translation id for a transcript
