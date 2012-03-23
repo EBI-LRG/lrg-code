@@ -108,7 +108,7 @@ sub add_annotation {
       1
     );
 
-    # Insert transcript_stable_id (we already know what it should be)
+    # Update transcript stable_id (we already know what it should be)
     my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
     add_stable_id( $transcript_id, $transcript_stable_id, 'transcript' );
 
@@ -121,7 +121,7 @@ sub add_annotation {
       # For genes, use the LRG identifier as gene name
       my $gene_stable_id = $lrg_name;
 
-      # Insert gene stable id into gene_stable_id table
+      # Update gene stable id
       add_stable_id( $gene_id, $gene_stable_id, 'gene' );
 
       print "Gene:\t" . $gene_id . "\t" . $gene_stable_id . "\n";
@@ -172,7 +172,7 @@ sub add_annotation {
         # by using the exon_count & producing something like LRG_1_t1_e1
         my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
 
-        # Insert exon stable id into exon_stable_id table
+        # Update exon stable id
         add_stable_id( $exon_id, $exon_stable_id, 'exon' );
 
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
@@ -221,7 +221,7 @@ sub add_annotation {
       my $translation_stable_id = $transcript_stable_id;
       $translation_stable_id =~ s/t(\d+)$/p$1/;
 
-      # Insert translation stable id into translation_stable_id table
+      # Update translation stable id 
       add_stable_id( $translation_id, $translation_stable_id, 'translation' );
       print "\tTranslation:\t"
         . $translation_id . "\t"
@@ -1357,21 +1357,17 @@ sub get_max_key {
     'coord_system'          => 'coord_system_id',
     'dna'                   => 'seq_region_id',
     'exon'                  => 'exon_id',
-    'exon_stable_id'        => 'exon_id',
     'exon_transcript'       => 'exon_id',
     'external_db'           => 'external_db_id',
     'gene'                  => 'gene_id',
     'gene_attrib'           => 'gene_id',
-    'gene_stable_id'        => 'gene_id',
     'meta'                  => 'meta_id',
     'meta_coord'            => 'coord_system_id',
     'object_xref'           => 'object_xref_id',
     'seq_region'            => 'seq_region_id',
     'seq_region_attrib'     => 'seq_region_id',
     'transcript'            => 'transcript_id',
-    'transcript_stable_id'  => 'transcript_id',
     'translation'           => 'translation_id',
-    'translation_stable_id' => 'translation_id',
     'xref'                  => 'xref_id'
   };
 
@@ -1441,7 +1437,7 @@ sub get_object_id_by_stable_id {
   my $stable_id   = shift;
 
   my $key      = 'stable_id';
-  my $table    = $object_type . '_stable_id';
+  my $table    = $object_type;
   my $id_field = $object_type . '_id';
 
   my $rows = get_rows( $stable_id, $key, $table, $id_field );
@@ -1601,14 +1597,9 @@ sub purge_db {
         if ( $object_type eq 'transcript' ) {
           my $stmt = qq{
 		    DELETE FROM
-			t,
-			tsi
-		    USING
-			translation t,
-			translation_stable_id tsi
+			translation
 		    WHERE
-			tsi.translation_id = t.translation_id AND
-			t.transcript_id = $oid
+			transcript_id = $oid
 		    };
           $dbCore->dbc->do($stmt);
 
@@ -1628,10 +1619,8 @@ sub purge_db {
           remove_row( [qq{transcript_id = '$oid'}], 'exon_transcript' );
         }
 
-        # Remove rows with this object id (also from associated stable_id table)
+        # Remove rows with this object id
         remove_row( [ $object_type . '_id' . qq{ = $oid} ], $object_type );
-        remove_row( [ $object_type . '_id' . qq{ = $oid} ],
-          $object_type . '_stable_id' );
 
 #ÊRemove xref objects linked to this object id. Does not remove the xref itself, just the row in object_xref
         remove_row(
