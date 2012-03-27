@@ -9,13 +9,13 @@ use LRG::API::ExonNaming;
 # Inherit from Base adaptor class
 our @ISA = "LRG::API::XMLA::BaseXMLAdaptor";
 
-sub fetch_by_annotation {
+sub fetch_all_by_annotation {
   my $self = shift;
   my $annotation = shift;
   
   my $objs = $self->objs_from_xml($annotation->findNodeArraySingle('other_exon_naming'));
   return undef unless(scalar(@{$objs}));
-  return $objs->[0];
+  return $objs;
 }
 
 sub objs_from_xml {

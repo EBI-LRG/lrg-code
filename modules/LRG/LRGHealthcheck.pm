@@ -164,24 +164,23 @@ sub exon_labels {
         # Get the source/name for this annotation_set
         my $source = $annotation_set->findNode('source/name')->content();
         
-        # If present, get the other_exon_naming/source nodes
-        my $other_exon_namings = $annotation_set->findNodeArray('other_exon_naming/source');
-        
+				my $fixed_transcript_annotations = $annotation_set->findNodeArray('fixed_transcript_annotation');
+
+
         #ÊGo through all sources for alternative exon namings
-        foreach my $other_exon_naming (@{$other_exon_namings}) {
+        foreach my $fixed_transcript_annotation (@{$fixed_transcript_annotations}) {
             
-            #ÊGet the source description
-            my $source_description = $other_exon_naming->data()->{'description'};
+						my $tr_name = $fixed_transcript_annotation->data()->{'name'};
+
+						# If present, get the other_exon_naming/source nodes
+        		my $other_exon_namings = $fixed_transcript_annotation->findNodeArray('other_exon_naming');
             
-            # Get the transcripts
-            my $transcripts = $other_exon_naming->findNodeArray('transcript');
-            
-            # Go through all transcripts and fetch the corresponding transcript from the fixed section
-            foreach my $transcript (@{$transcripts}) {
+            # Go through all other_exon_naming and fetch the corresponding transcript from the fixed section
+            foreach my $other_exon_naming (@{$other_exon_namings}) {
                 
-                # Get the transcript name
-                my $tr_name = $transcript->data()->{'name'};
-                
+								#ÊGet the source description
+            		my $source_description = $other_exon_naming->data()->{'description'};
+
                 # Get the corresponding transcript from the fixed section
                 my $fixed_transcript = $self->{'lrg'}->findNode('fixed_annotation/transcript',{'name' => $tr_name});
                 
@@ -194,15 +193,15 @@ sub exon_labels {
                 
                 # Get the exons for the fixed and updatable transcript
                 my $fixed_exons = $self->get_exons($name,$fixed_transcript) or next;
-                my @updatable_exons = @{$self->get_exons($name,$transcript)} or next;
+                my @updatable_exons = @{$self->get_exons($name,$other_exon_naming)} or next;
                 my @orphan_labels;
-                
+               
                 #ÊGo through the fixed exons and shift the updatable exons off the array. The exons are sorted.
                 foreach my $fixed_exon (@{$fixed_exons}) {
                     # Get the coordinates
-                    my $fixed_start = $fixed_exon->findNode('lrg_coords')->data()->{'start'};
-                    my $fixed_end = $fixed_exon->findNode('lrg_coords')->data()->{'end'};
-                    
+                    my $fixed_start = $fixed_exon->findNode('coordinates')->data()->{'start'};
+                    my $fixed_end = $fixed_exon->findNode('coordinates')->data()->{'end'};
+             
                     # Get the corresponding updatable exon
                     my $updatable_exon;
                     my $updatable_start = 0;
@@ -214,10 +213,10 @@ sub exon_labels {
                         push(@orphan_labels,$updatable_exon) if (defined($updatable_exon));
                         
                         $updatable_exon = shift(@updatable_exons);
-                        $updatable_start = $updatable_exon->findNode('lrg_coords')->data()->{'start'};
-                        $updatable_end = $updatable_exon->findNode('lrg_coords')->data()->{'end'};
+                        $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
+                        $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
                     }
-                    
+                   
                     # If the coordinates of the updatable exon does not match the fixed exon, we have a fixed exon without label
                     if ($updatable_start != $fixed_start || $updatable_end != $fixed_end) {
                         $passed = 0;
@@ -230,8 +229,8 @@ sub exon_labels {
                 #ÊIf the updatable exon array is non-empty, the remaining elements are orphans
                 push(@orphan_labels,@updatable_exons);
                 while (my $updatable_exon = shift(@orphan_labels)) {
-                    my $updatable_start = $updatable_exon->findNode('lrg_coords')->data()->{'start'};
-                    my $updatable_end = $updatable_exon->findNode('lrg_coords')->data()->{'end'};
+                    my $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
+                    my $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
                     my $label = $updatable_exon->findNode('label')->content();
                     $passed = 0;
                     $self->{'check'}{$name}{'message'} .= "There is no corresponding fixed section exon for exon '$label' ($updatable_start - $updatable_end) in transcript '$tr_name' as specified in '$source' annotation set and '$source_description' other exon naming//";
@@ -489,7 +488,7 @@ sub mappings {
     # Define which data fields in the mapping tag should be compared
     my $mapping_fields = ['most_recent','chr_name','chr_start','chr_end'];
     my $span_fields = ['lrg_start','lrg_end','start','end','strand'];
-    my $diff_fields = ['type','lrg_start','lrg_end','start','end','lrg_sequence','genomic_sequence'];
+    my $diff_fields = ['type','lrg_start','lrg_end','start','end','lrg_sequence','other_sequence'];
     
     # Go over each assembly and check if the mappings differ in the relevant fields from the different sources
     while (my ($assembly,$mappings) = each(%mapping_hash)) {
@@ -833,22 +832,28 @@ sub translation {
         # Get the name
         my $tr_name = $transcript->data()->{'name'};
         
-        # Get translation
-        my $tr_translation = $transcript->findNode('coding_region/translation/sequence')->content();
+				# Get coding region(s)
+        my $tr_cds = $transcript->findNodeArray('coding_region');
+
+				foreach my $cds (@{$tr_cds}) {
+
+        	# Get translation
+        	my $tr_translation = $cds->findNode('translation/sequence')->content();
         
-        # Get the genomic features
-        my $features = $self->get_genomic_features($name,$transcript,$genomic_seq);
+        	# Get the genomic features
+        	my $features = $self->get_genomic_features($name,$transcript,$genomic_seq);
         
-        my $genomic_translation = $features->{'translation'};
-        # Strip any terminal codons from the translations
-        $genomic_translation =~ s/\*$//;
-        $tr_translation =~ s/\*$//;
-        if ($genomic_translation ne $tr_translation ) {
-            $passed = 0;
-            $self->{'check'}{$name}{'message'} .= "Transcript $tr_name translation defined by genomic sequence and exon coordinates is different from translation supplied in XML file//";
-            $self->{'check'}{$name}{'message'} .= "Genomic:\t$genomic_translation//";
-            $self->{'check'}{$name}{'message'} .= "Supplied:\t$tr_translation//";
-        }
+        	my $genomic_translation = $features->{'translation'};
+        	# Strip any terminal codons from the translations
+        	$genomic_translation =~ s/\*$//;
+        	$tr_translation =~ s/\*$//;
+        	if ($genomic_translation ne $tr_translation ) {
+            	$passed = 0;
+            	$self->{'check'}{$name}{'message'} .= "Transcript $tr_name translation defined by genomic sequence and exon coordinates is different from translation supplied in XML file//";
+            	$self->{'check'}{$name}{'message'} .= "Genomic:\t$genomic_translation//";
+            	$self->{'check'}{$name}{'message'} .= "Supplied:\t$tr_translation//";
+        	}
+			 }
     }
     $self->{'check'}{$name}{'passed'} = $passed;
     

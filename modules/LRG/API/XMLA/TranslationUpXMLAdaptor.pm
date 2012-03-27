@@ -17,12 +17,12 @@ sub fetch_all {
   my $self = shift;
 }
 
-sub fetch_by_transcript {
+sub fetch_all_by_transcript {
   my $self = shift;
   my $transcript = shift;
   
-  my $objs = $self->objs_from_xml($transcript->findNodeSingle('protein_product')) || return;
-  $objs = $objs->[0] if (scalar(@{$objs}));
+  my $objs = $self->objs_from_xml($transcript->findNodeArraySingle('protein_product')) || return;
+ 
   return $objs;
 }
 
@@ -37,12 +37,16 @@ sub objs_from_xml {
     
     # Get the codon_start attribute (if any)
     my $codon_start = $node->data->{codon_start};
+		# Get the cfixed_id attribute (if any)
+    my $fixed_id = $node->data->{fixed_id};
     
     # Call the superclass parser
     my $obj = $self->SUPER::obj_from_xml($node);
-    
+
     # Set the codon_start attribute
     $obj->codon_start($codon_start);
+		# Set the fixed_id attribute
+    $obj->fixed_id($fixed_id);
     
     push(@objs,$obj);
     
@@ -64,9 +68,8 @@ sub xml_from_objs {
     
     # Create the root node element
     my $node = $self->SUPER::xml_from_obj($obj);
-    if ($obj->codon_start()) {
-      $node->addData({'codon_start' => $obj->codon_start()});  
-    }
+    $node->addData({'codon_start' => $obj->codon_start()}) if ($obj->codon_start());  
+    $node->addData({'fixed_id' => $obj->fixed_id()}) if ($obj->fixed_id());  
     
     push(@xml,$node);    
       

@@ -36,9 +36,9 @@ sub objs_from_xml {
     # Get the comments
     my $comment = $m_adaptor->fetch_by_transcript_annotation($node);
     # Get the exon naming
-    my $exon_naming = $e_adaptor->fetch_by_annotation($node);
+    my $exon_naming = $e_adaptor->fetch_all_by_annotation($node);
     # Get the amino acid numbering
-    my $aa_numbering = $a_adaptor->fetch_by_annotation($node);
+    my $aa_numbering = $a_adaptor->fetch_all_by_annotation($node);
     
     # Create the annotation object
     my $obj = LRG::API::TranscriptAnnotation->new($name,$comment,$exon_naming,$aa_numbering);

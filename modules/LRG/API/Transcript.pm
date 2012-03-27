@@ -10,7 +10,7 @@ our @ISA = "LRG::API::BaseLRGFeature";
 
 sub initialize {
   my $self = shift;
-  my ($coordinates,$name,$cdna,$exons,$coding_region) = @_;
+  my ($coordinates,$name,$cdna,$exons,$coding_regions) = @_;
   
   # Check that a name string was passed
   unless (defined($name) && length($name)) {
@@ -21,7 +21,7 @@ sub initialize {
   $self->name($name);
   $self->cdna($cdna);
   $self->exons($exons,'LRG::API::Exon',1);
-  $self->coding_region($coding_region,'LRG::API::CodingRegion');
+  $self->coding_region($coding_regions,'LRG::API::CodingRegion',1);
 }
 
 sub _permitted {
