@@ -76,12 +76,18 @@ foreach my $check (@checks) {
     $hc->$check();
 }
 
+my $count_passed;
+my $count_total = scalar (@checks);
 foreach my $check (@checks) {
     print "$check\t" . ($hc->{'check'}{$check}{'passed'} ? "PASSED" : "FAILED") . "!\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
+		$count_passed ++ if ($hc->{'check'}{$check}{'passed'});
     if (exists($hc->{'check'}{$check}{'message'})) {
         print "\t" . join("\n\t\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
     }
 }
+
+print "\nHealthcheck ".($count_passed == $count_total ? 'PASSED' : 'FAILED')."\n";
+
 
 sub usage {
     
