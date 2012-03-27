@@ -210,26 +210,36 @@ $fixed->addNode('creation_date')->content($creation_date);
 my $sequence = get_sequence($gene_id,'genomic',$db_adaptor);
 $fixed->addNode('sequence')->content($sequence);
 
-my $c_stmt = qq{
+my $ce_stmt = qq{
     SELECT
-        c.codon,
-        c.type
+        lce.codon,
+        ls.sequence
     FROM
-        lrg_cds_codon c
+        lrg_cds_exception lce LEFT JOIN
+				lrg_sequence ls ON lce.sequence_id=ls.sequence_id
     WHERE
-        c.cds_id = ?
+        lce.cds_id = ?
     ORDER BY
-        c.type DESC,
-        c.codon ASC
+        lce.codon ASC
+};
+my $cfs_stmt = qq{
+    SELECT
+        cdna_pos,
+        frameshift
+    FROM
+        lrg_cds_frameshift
+    WHERE
+				cds_id = ?
+    ORDER BY
+        cdna_pos ASC
 };
 my $e_stmt = qq{
     SELECT
+				e.exon_id,
         e.lrg_start,
         e.lrg_end,
         e.cdna_start,
         e.cdna_end,
-        e.peptide_start,
-        e.peptide_end,
         i.phase
     FROM
         lrg_exon e LEFT JOIN
@@ -238,6 +248,18 @@ my $e_stmt = qq{
         e.transcript_id = ?
     ORDER BY
         e.lrg_start ASC
+};
+my $ep_stmt = qq{
+    SELECT
+				peptide_name,
+				peptide_start,
+				peptide_end
+    FROM
+        lrg_exon_peptide
+    WHERE
+        exon_id = ?
+    ORDER BY
+        peptide_start ASC
 };
 my $p_stmt = qq{
 		SELECT
@@ -248,34 +270,45 @@ my $p_stmt = qq{
 		WHERE 
 			cds_id = ?
 };
+my $cds_stmt = qq{
+    SELECT
+        cds_id,
+        lrg_start,
+        lrg_end,
+        codon_start
+    FROM
+        lrg_cds
+    WHERE
+        transcript_id = ?
+    ORDER BY
+        cds_id ASC
+};
 $stmt = qq{
     SELECT
         lt.transcript_id,
         lt.transcript_name,
         cdna.cdna_id,
         cdna.lrg_start,
-        cdna.lrg_end,
-        cds.cds_id,
-        cds.lrg_start,
-        cds.lrg_end,
-        cds.codon_start
+        cdna.lrg_end
     FROM
         lrg_transcript lt JOIN
-        lrg_cdna cdna USING (transcript_id) JOIN
-        lrg_cds cds USING (transcript_id)
+        lrg_cdna cdna USING (transcript_id)
     WHERE
         lt.gene_id = '$gene_id'
     ORDER BY
         lt.transcript_name ASC
 };
 
-my $c_sth = $db_adaptor->dbc->prepare($c_stmt);
-my $e_sth = $db_adaptor->dbc->prepare($e_stmt);
-my $p_sth = $db_adaptor->dbc->prepare($p_stmt);
+my $ce_sth   = $db_adaptor->dbc->prepare($ce_stmt);
+my $cfs_sth  = $db_adaptor->dbc->prepare($cfs_stmt);
+my $e_sth    = $db_adaptor->dbc->prepare($e_stmt);
+my $ep_sth   = $db_adaptor->dbc->prepare($ep_stmt);
+my $p_sth    = $db_adaptor->dbc->prepare($p_stmt);
+my $cds_sth  = $db_adaptor->dbc->prepare($cds_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start);
-$sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end,\$cds_id,\$cds_lrg_start,\$cds_lrg_end,\$codon_start);
+$sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end);
 while ($sth->fetch()) {
     my $transcript = $fixed->addNode('transcript',{'name' => $t_name});
     my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
@@ -283,48 +316,68 @@ while ($sth->fetch()) {
     
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
-    my $cds = $transcript->addNode('coding_region',(defined($codon_start) ? {'codon_start' => $codon_start} : undef));
-    $coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end,1);
-    $cds->addExisting($coords);
+
+		$cds_sth->bind_param(1,$t_id,SQL_INTEGER);
+		$cds_sth->execute();
+		$cds_sth->bind_columns(\$cds_id,\$cds_lrg_start,\$cds_lrg_end,\$codon_start);
+		while ($cds_sth->fetch()) {
+    	my $cds = $transcript->addNode('coding_region',(defined($codon_start) ? {'codon_start' => $codon_start} : undef));
+    	$coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end,1);
+    	$cds->addExisting($coords);
+
+			# Check for translation exception
+    	$ce_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    	$ce_sth->execute();
+    	my ($ce_codon,$ce_seq);
+    	$ce_sth->bind_columns(\$ce_codon,\$ce_seq);
+    	while ($ce_sth->fetch()) {
+    	  my $te = $cds->addNode('translation_exception',{'codon' => $ce_codon});
+				$te->addNode('sequence')->content($ce_seq);
+    	}
+
+			# Check for translation frameshift (ribosomal slippage)
+    	$cfs_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    	$cfs_sth->execute();
+    	my ($cfs_cdna_pos,$cfs_frameshift);
+    	$cfs_sth->bind_columns(\$cfs_cdna_pos,\$cfs_frameshift);
+    	while ($cfs_sth->fetch()) {
+    	  $cds->addEmptyNode('translation_frameshift',{'cdna_position' => $cfs_cdna_pos, 'shift' => $cfs_frameshift});
+    	}
     
-    # Check for non-standard codons
-    $c_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    $c_sth->execute();
-    my ($c_codon,$c_type);
-    $c_sth->bind_columns(\$c_codon,\$c_type);
-    while ($c_sth->fetch()) {
-        $cds->addEmptyNode($c_type,{'codon' => $c_codon});
+    	# Add translation element
+			my ($pep_id,$pep_name);
+			$p_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    	$p_sth->execute();
+			$p_sth->bind_columns(\$pep_id,\$pep_name);
+			while ($p_sth->fetch()) {
+				my $pep = $cds->addNode('translation',{'name' => $pep_name});
+    		my $pep_seq = get_sequence($pep_id,'peptide',$db_adaptor);
+    		$pep->addNode('sequence')->content($pep_seq);
+			}
     }
-    
-    # Add translation element
-		my ($pep_id,$pep_name);
-		$p_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    $p_sth->execute();
-		$p_sth->bind_columns(\$pep_id,\$pep_name);
-		while ($p_sth->fetch()) {
-			my $pep = $cds->addNode('translation',{'name' => $pep_name});
-    	my $pep_seq = get_sequence($pep_id,'peptide',$db_adaptor);
-    	$pep->addNode('sequence')->content($pep_seq);
-		}
-     
+ 
     $e_sth->bind_param(1,$t_id,SQL_INTEGER);
     $e_sth->execute();
-    my ($e_lrg_start,$e_lrg_end,$e_cdna_start,$e_cdna_end,$e_peptide_start,$e_peptide_end,$phase);
-    $e_sth->bind_columns(\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$e_peptide_start,\$e_peptide_end,\$phase);
+    my ($e_id,$e_lrg_start,$e_lrg_end,$e_cdna_start,$e_cdna_end,$e_peptide_name,$e_peptide_start,$e_peptide_end,$phase);
+    $e_sth->bind_columns(\$e_id,\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$phase);
     while ($e_sth->fetch()) {
-        my $exon = $transcript->addNode('exon');
+				my $exon = $transcript->addNode('exon');
+
+				# Add LRG coordinates
         $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
         $exon->addExisting($coords);
-        
-        # Add cDNA coordinates if defined
+
+				# Add cDNA coordinates if defined
         if (defined($e_cdna_start) && defined($e_cdna_end)) {
           $coords = coords_node("${lrg_id}_${t_name}",$e_cdna_start,$e_cdna_end);
           $exon->addExisting($coords);
         }
-        
-        # Add peptide coordinates if defined
-        if (defined($e_peptide_start) && defined($e_peptide_end)) {
-          $coords = coords_node("${lrg_id}_${pep_name}",$e_peptide_start,$e_peptide_end);
+
+				# Add peptide coordinates if defined
+				$ep_sth->execute($e_id);
+				$ep_sth->bind_columns(\$e_peptide_name,\$e_peptide_start,\$e_peptide_end);
+				while ($ep_sth->fetch()) {
+          $coords = coords_node("${lrg_id}_${e_peptide_name}",$e_peptide_start,$e_peptide_end);
           $exon->addExisting($coords);
         }
         
@@ -638,7 +691,7 @@ sub get_sequence {
             SELECT
                 ls.sequence
             FROM
-                new_lrg_peptide_sequence lps JOIN
+                lrg_peptide_sequence lps JOIN
                 lrg_sequence ls USING (sequence_id)
             WHERE
                 lps.peptide_id = '$id'

@@ -22,7 +22,7 @@ my $gene_id;
 my $keep_fixed;
 my $keep_mapping;
 my $keep_updatable;
-my $keep_request;
+my $delete_request;
 my @update_annotation_set;
 
 GetOptions(
@@ -39,7 +39,7 @@ GetOptions(
   'keep_fixed!'         => \$keep_fixed,
   'keep_mapping!'       => \$keep_mapping,
   'keep_updatable!'     => \$keep_updatable,
-  'keep_request!'       => \$keep_request,
+  'delete_request!'       => \$delete_request,
   'replace_updatable=s'   => \@update_annotation_set
 );
 
@@ -58,6 +58,9 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
   -dbname => $dbname
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbose);
+
+$lrg_id =~ /(LRG_\d+)/;
+$lrg_id = $1;
 
 # If the database should be purged of all LRG XML-related data, do that
 if ($purge) {
@@ -79,6 +82,7 @@ if ($purge) {
         $stmt .= qq{ symbol = '$hgnc_symbol'};
     }
     $stmt .= qq{ LIMIT 1};
+		print STDERR "LRG_ID: $lrg_id\n";
     ($gene_id,$hgnc_symbol,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
     
     # Delete the mapping data
@@ -149,7 +153,7 @@ if ($purge) {
         WHERE
             gene_id = $gene_id
     };
-    if (!$keep_request) {
+    if ($delete_request) {
         print STDOUT localtime() . "\tRemoving requester information for $lrg_id\n" if ($verbose);
         $db_adaptor->dbc->do($stmt);
     }
@@ -157,8 +161,10 @@ if ($purge) {
         print STDOUT localtime() . "\tKeeping LRG request data for $lrg_id\n" if ($verbose);
     }
     
-    # Delete the fixed annotation data
-    $stmt = qq{
+
+		if (!$keep_fixed) {
+			# Delete the fixed annotation data
+    	$stmt = qq{
         DELETE FROM
             ld,
             lt,
@@ -171,26 +177,29 @@ if ($purge) {
             ls,
             le,
             li,
-            lcc
+						lce,
+						lcf,
+						lep
         USING
             lrg_data ld LEFT JOIN
             lrg_transcript lt USING (gene_id) LEFT JOIN
             lrg_cdna lc USING (transcript_id) LEFT JOIN
             lrg_cds lp USING (transcript_id) LEFT JOIN
-            lrg_genomic_sequence lgs USING (gene_id) LEFT JOIN
-            lrg_cdna_sequence lcs USING (cdna_id) LEFT JOIN
-						lrg_peptide lpp USING (cds_id) LEFT JOIN
-            new_lrg_peptide_sequence lps USING (peptide_id) LEFT JOIN
-            lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id) LEFT JOIN
-            lrg_exon le USING (transcript_id) LEFT JOIN
+            lrg_genomic_sequence lgs ON lgs.gene_id=ld.gene_id LEFT JOIN
+            lrg_cdna_sequence lcs ON lcs.cdna_id=lc.cdna_id LEFT JOIN
+						lrg_peptide lpp ON lpp.cds_id=lp.cds_id LEFT JOIN
+            lrg_peptide_sequence lps USING (peptide_id) LEFT JOIN
+            lrg_exon le ON le.transcript_id=lt.transcript_id LEFT JOIN
+						lrg_exon_peptide lep ON le.exon_id=lep.exon_id LEFT JOIN
             lrg_intron li ON li.exon_5 = le.exon_id LEFT JOIN
-            lrg_cds_codon lcc USING (cds_id)
+            lrg_cds_exception lce ON lce.cds_id=lp.cds_id LEFT JOIN
+						lrg_cds_frameshift lcf ON lcf.cds_id=lp.cds_id LEFT JOIN
+						lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id OR lce.sequence_id = ls.sequence_id) 
         WHERE
             ld.gene_id = $gene_id
-    };
-    if (!$keep_fixed) {
-        print STDOUT localtime() . "\tRemoving entries from fixed annotation for $lrg_id\n" if ($verbose);
-        $db_adaptor->dbc->do($stmt);
+    	};
+			print STDOUT localtime() . "\tRemoving entries from fixed annotation for $lrg_id\n" if ($verbose);
+      $db_adaptor->dbc->do($stmt);
     }
     else {
         print STDOUT localtime() . "\tKeeping fixed annotation for $lrg_id\n" if ($verbose);
@@ -345,24 +354,16 @@ my $pep_ins_stmt = qq{
             cds_id,
 						peptide_name
         )
-    VALUES (
-        ?,
-        ?
-    )
+    VALUES ( ?, ? )
 };
-
-my $cc_ins_stmt = qq{
+my $ce_ins_stmt = qq{
     INSERT INTO
-        lrg_cds_codon (
+        lrg_cds_exception (
             cds_id,
-            type,
+            sequence_id,
             codon
         )
-    VALUES (
-        ?,
-        ?,
-        ?
-    )
+    VALUES ( ?, ?, ? )
 };
 my $exon_ins_stmt = qq{
     INSERT INTO
@@ -371,16 +372,27 @@ my $exon_ins_stmt = qq{
             lrg_start,
             lrg_end,
             cdna_start,
-            cdna_end,
-            peptide_start,
-            peptide_end
+            cdna_end
         )
     VALUES (
         ?,
         ?,
         ?,
         ?,
+        ?
+    )
+};
+my $exon_pep_ins_stmt = qq{
+    INSERT INTO
+        lrg_exon_peptide (
+            exon_id,
+						peptide_name,
+            peptide_start,
+            peptide_end
+        )
+    VALUES (
         ?,
+				?,
         ?,
         ?
     )
@@ -400,10 +412,11 @@ my $intron_ins_stmt = qq{
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
-my $cc_ins_sth = $db_adaptor->dbc->prepare($cc_ins_stmt);
+my $ce_ins_sth = $db_adaptor->dbc->prepare($ce_ins_stmt);
 my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
 my $pep_ins_sth = $db_adaptor->dbc->prepare($pep_ins_stmt);
 my $exon_ins_sth = $db_adaptor->dbc->prepare($exon_ins_stmt);
+my $exon_pep_ins_sth = $db_adaptor->dbc->prepare($exon_pep_ins_stmt);
 my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 
 # Get the requester data
@@ -447,48 +460,74 @@ while (my $transcript = shift(@{$transcripts})) {
     add_sequence($cdna_id,'cdna',$db_adaptor,$seq);
     
     # Get the cds
-    my $cds_node = $transcript->findNode('coding_region') or warn("Could not get coding region for transcript $name\, skipping this transcript");
-    next unless ($cds_node);
-    my $codon_start = $cds_node->data()->{'codon_start'};
-    (undef,$lrg_start,$lrg_end) = parse_coordinates($cds_node->findNode('coordinates'));
+    my $cds_nodes = $transcript->findNodeArray('coding_region') or warn("Could not get coding region for transcript $name\, skipping this transcript");
+    next unless ($cds_nodes);
+		
+		foreach my $cds (@{$cds_nodes}) {
+    	my $codon_start = $cds->data()->{'codon_start'};
+    	(undef,$lrg_start,$lrg_end) = parse_coordinates($cds->findNode('coordinates'));
     
-		my $pep_node = $cds_node->findNode('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
-		next unless ($pep_node);
-		my $pep_name = $pep_node->data()->{'name'};
-    $node = $pep_node->findNode('sequence');
+			my $pep_node = $cds->findNode('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
+			next unless ($pep_node);
+			my $pep_name = $pep_node->data()->{'name'};
+    	$node = $pep_node->findNode('sequence');
     
-    $seq = $node->content();
+    	$seq = $node->content();
     
-    # Insert the cds into db
-    $cds_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
-    $cds_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
-    $cds_ins_sth->bind_param(3,$lrg_end,SQL_INTEGER);
-    $cds_ins_sth->bind_param(4,$codon_start,SQL_INTEGER);
-    $cds_ins_sth->execute();
-    my $cds_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+    	# Insert the cds into db
+    	$cds_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
+    	$cds_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
+    	$cds_ins_sth->bind_param(3,$lrg_end,SQL_INTEGER);
+    	$cds_ins_sth->bind_param(4,$codon_start,SQL_INTEGER);
+    	$cds_ins_sth->execute();
+    	my $cds_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
     
-		# Insert the peptide into db
-		$pep_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    $pep_ins_sth->bind_param(2,$pep_name,SQL_VARCHAR);
-    $pep_ins_sth->execute();
-    my $pep_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+			# Insert the peptide into db
+			$pep_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+    	$pep_ins_sth->bind_param(2,$pep_name,SQL_VARCHAR);
+    	$pep_ins_sth->execute();
+    	my $pep_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 
-    # Insert the peptide sequence
-    add_sequence($pep_id,'peptide',$db_adaptor,$seq);
-    
-    # Get any non-standard codons
-    $node = $cds_node->findNodeArray('selenocysteine');
-    $node ||= [];
-    push(@{$node},@{($cds_node->findNodeArray('pyrrolysine') or [])});
-    while (my $c = shift(@{$node})) {
-        my $type = $c->name();
-        my $codon = $c->data()->{'codon'};
-        $cc_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
-        $cc_ins_sth->bind_param(2,$type,SQL_VARCHAR);
-        $cc_ins_sth->bind_param(3,$codon,SQL_INTEGER);
-        $cc_ins_sth->execute();
+    	# Insert the peptide sequence
+    	add_sequence($pep_id,'peptide',$db_adaptor,$seq);
+
+			# Get any translation exception
+    	$node = $cds->findNodeArray('translation_exception');
+    	$node ||= [];
+    	while (my $c = shift(@{$node})) {
+				my $codon = $c->data()->{'codon'};
+
+        my $seq_node = $c->findNode('sequence');
+				next unless ($seq_node);
+   			my $seq = $seq_node->content();
+				my $seq_ids = add_sequence($cds_id,'',$db_adaptor,$seq);
+
+				foreach my $seq_id (@{$seq_ids}) {
+        	$ce_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+        	$ce_ins_sth->bind_param(2,$seq_id,SQL_INTEGER);
+        	$ce_ins_sth->bind_param(3,$codon,SQL_INTEGER);
+        	$ce_ins_sth->execute();
+    		}
+    	}
+			# Get any translation frameshift
+    	$node = $cds->findNodeArray('translation_frameshift');
+    	$node ||= [];
+    	while (my $c = shift(@{$node})) {
+				my $cdna_pos = $c->data()->{'cdna_position'};
+				my $frameshift = $c->data()->{'shift'};
+
+				# stmt here because of a bug with DBI bind_param when the integer is negative
+				my $cfs_ins_stmt = qq{
+    			INSERT INTO lrg_cds_frameshift ( cds_id, cdna_pos, frameshift )
+					VALUES ( ?, ?, $frameshift )
+				};
+				my $cfs_ins_sth = $db_adaptor->dbc->prepare($cfs_ins_stmt);
+				$cfs_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+        $cfs_ins_sth->bind_param(2,$cdna_pos,SQL_INTEGER);
+        $cfs_ins_sth->execute();
+    	}
     }
-    
+
     # Get the children nodes of the transcript and iterate over the exons and introns
     my $children = $transcript->getAllNodes();
     my $phase;
@@ -505,8 +544,7 @@ while (my $transcript = shift(@{$transcripts})) {
             my $cdna_start;
             my $cdna_end;
             
-            my $peptide_start;
-            my $peptide_end;
+						my @peptides;
             
             # Get the coordinates
             foreach my $node (@{$child->findNodeArray('coordinates') || []}) {
@@ -519,9 +557,9 @@ while (my $transcript = shift(@{$transcripts})) {
                 $cdna_start = $start;
                 $cdna_end = $end;
               }
-              elsif ($cs =~ m/^LRG_\d+_?p\d+$/) {
-                $peptide_start = $start;
-                $peptide_end = $end;
+              elsif ($cs =~ m/^LRG_\d+_?(p\d+)$/) {
+								my $pep_name = $1;
+                push(@peptides, { 'name' => $pep_name, 'start' => $start, 'end' => $end });
               }
             }
             warn("Could not get LRG coordinates for one or more exons in $name") unless (defined($lrg_start) && defined($lrg_end));
@@ -533,11 +571,18 @@ while (my $transcript = shift(@{$transcripts})) {
             $exon_ins_sth->bind_param(3,$exon_lrg_end,SQL_INTEGER);
             $exon_ins_sth->bind_param(4,$cdna_start,SQL_INTEGER);
             $exon_ins_sth->bind_param(5,$cdna_end,SQL_INTEGER);
-            $exon_ins_sth->bind_param(6,$peptide_start,SQL_INTEGER);
-            $exon_ins_sth->bind_param(7,$peptide_end,SQL_INTEGER);
             $exon_ins_sth->execute();
             my $exon_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
             
+						# An exon can have several peptides coordinates
+						foreach my $pep (@peptides) {
+							$exon_pep_ins_sth->bind_param(1,$exon_id,SQL_INTEGER);
+							$exon_pep_ins_sth->bind_param(2,$pep->{name},SQL_VARCHAR);
+            	$exon_pep_ins_sth->bind_param(3,$pep->{start},SQL_INTEGER);
+            	$exon_pep_ins_sth->bind_param(4,$pep->{end},SQL_INTEGER);
+            	$exon_pep_ins_sth->execute();
+						}
+
             # If an intron was preceeding this exon, we should insert that one as well
             if (defined($phase)) {
                 $intron_ins_sth->bind_param(1,$last_exon,SQL_INTEGER);
@@ -650,13 +695,15 @@ sub parse_annotation_set {
     
     # Get the xml for the rest of the annotation_set
     foreach my $name (('fixed_transcript_annotation','features')) {
-        my $node = $annotation_set->findNode($name);
-        if (defined($node)) {
-            my $xml = new XML::Writer(OUTPUT => \$xml_out, DATA_INDENT => 2, DATA_MODE => 1);
-            $node->xml($xml);
-            $node->printNode();
-            $xml_out .= "\n";
-        }
+			my $nodes = $annotation_set->findNodeArray($name);
+			if (defined($nodes)) {
+				foreach my $node (@{$nodes}) {
+					my $xml = new XML::Writer(OUTPUT => \$xml_out, DATA_INDENT => 2, DATA_MODE => 1);
+					$node->xml($xml);
+					$node->printNode();
+					$xml_out .= "\n";
+				}
+			}
     }
     
     $as_ins_sth->bind_param(1,$source_id,SQL_INTEGER);
@@ -777,13 +824,7 @@ sub parse_mapping {
         $chr_start = $span->data()->{'other_start'} or die ("Could not find start attribute in mapping span of $xmlfile");
         $chr_end = $span->data()->{'other_end'} or die ("Could not find end attribute in mapping span of $xmlfile");
         $strand = $span->data()->{'strand'} or die ("Could not find strand attribute in mapping span of $xmlfile");
-        
-#        #$ms_ins_sth->bind_param(1,$mapping_id,SQL_INTEGER);
-#        #$ms_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
-#        #$ms_ins_sth->bind_param(3,$lrg_end,SQL_INTEGER);
-#        #$ms_ins_sth->bind_param(4,$chr_start,SQL_INTEGER);
-#        #$ms_ins_sth->bind_param(5,$chr_end,SQL_INTEGER);
-#        #$ms_ins_sth->bind_param(6,$strand,SQL_INTEGER);
+
         $ms_ins_sth->execute($mapping_id,$lrg_start,$lrg_end,$chr_start,$chr_end,$strand);
         my $span_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
         
@@ -1039,7 +1080,7 @@ sub add_sequence {
     elsif ($type =~ m/^peptide$/i) {
         $stmt = qq{
             INSERT IGNORE INTO
-                new_lrg_peptide_sequence (
+                lrg_peptide_sequence (
                     peptide_id,
                     sequence_id
                 )
@@ -1050,8 +1091,8 @@ sub add_sequence {
         };
     }
     else {
-        warn("Unknown sequence type '$type' specified");
-        return;
+        #warn("Unknown sequence type '$type' specified");
+        return \@sids;
     }
     $sth = $db_adaptor->dbc->prepare($stmt);
     
@@ -1103,14 +1144,6 @@ sub parse_coordinates {
 	my @attribs;
   
   if (defined($element) && $element->name() eq 'coordinates') {
-  
-    #$attribs[] = $element->data()->{coord_system};
-    #$attribs[] = $element->data()->{start};
-    #$attribs[] = $element->data()->{end};
-    #$attribs[] = $element->data()->{start_ext};
-    #$attribs[] = $element->data()->{end_ext};
-    #$attribs[] = $element->data()->{strand};
-    #$attribs[] = $element->data()->{mapped_from};
     push(@attribs,$element->data()->{coord_system});
 		push(@attribs,$element->data()->{start});
 		push(@attribs,$element->data()->{end});
