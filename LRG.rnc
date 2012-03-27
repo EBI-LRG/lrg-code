@@ -79,17 +79,19 @@ DNA_SEQUENCE = element sequence {
 FX_TRANSCRIPT = element transcript {
 
    attribute name {
-      text
+      xsd:string {
+        pattern = 't[0-9]+'
+      }
    }, # e.g. "t1", "t2"
 
    LRG_COORDS, # location of transcript in LRG coordinates
-	
+
    element cdna {
       DNA_SEQUENCE
    },
    
    # The coding region is optional to accommodate e.g. non-protein-coding genes
-   CODING_REGION?,
+   CODING_REGION*,
    # All transcripts have at least one exon
    FX_EXON,
    # Additional (intron)-exon blocks  
@@ -121,25 +123,29 @@ CODING_REGION = element coding_region {
    # start phase of coding sequence when coding sequence is incomplete
    attribute codon_start { xsd:integer }?,
    
-   # location of coding region in LRG coordinates
+   # location of coding region in LRG and the parent transcript coordinates
    LRG_COORDS,
    
-   # location of selenocysteine codon(s)
-   element selenocysteine {
-      attribute codon { xsd:integer }
+   # amino-acid replacement, e.g. canonical stop codon read through, in p# coordinates
+   element translation_exception {
+      attribute codon { xsd:integer },
+      PEPTIDE_SEQUENCE
    }*,
-   
-   # location of pyrrolysine codon(s)
-   element pyrrolysine {
-      attribute codon { xsd:integer }
+
+   #ribosomal slippage
+   element translation_frameshift {
+      attribute cdna_position {xsd:integer}, #location in the parent t# coordinates
+      attribute shift { xsd:integer } #typically -1 or 1
    }*,
-   
+
    TRANSLATION
 }
 
 TRANSLATION = element translation {
    attribute name {
-      text
+      xsd:string {
+         pattern = 'p[0-9]+[A-Za-z]*'
+      }
    }, # e.g. "p1", "p2"
    PEPTIDE_SEQUENCE
 }
@@ -154,7 +160,7 @@ PEPTIDE_SEQUENCE = element sequence {
 FX_EXON = element exon {
    LRG_COORDS,
    LRG_CDNA_COORDS,
-   LRG_PEPTIDE_COORDS?
+   LRG_PEPTIDE_COORDS*
 }
 
 # LRG cDNA coordinates element
@@ -171,7 +177,7 @@ LRG_CDNA_COORDS = element coordinates {
 LRG_PEPTIDE_COORDS = element coordinates {
    attribute coord_system {
       xsd:string {
-         pattern = 'LRG_[0-9]+_p[0-9]+'
+         pattern = 'LRG_[0-9]+_p[0-9]+[A-Za-z]*'
       }
    },  
    COORD_ATTRIBS
@@ -226,12 +232,16 @@ ANNOTATION_SET = element annotation_set {
 FIXED_TRANSCRIPT_ANNOTATION = element fixed_transcript_annotation {
 
    # fixed_id corresponding to the transcript name used in the fixed section 
-   attribute name { text },
+   attribute name {
+      xsd:string {
+         pattern = 't[0-9]+'
+      }
+   },
    
    COMMENT?,
 
-   OTHER_EXON_NAMING?,
-   ALT_AA_NUMBERING?
+   OTHER_EXON_NAMING*,
+   ALT_AA_NUMBERING*
 }
 
 COMMENT = element comment { text }
@@ -370,8 +380,13 @@ UP_TRANSCRIPT = element transcript {
 
    FEATURE_SOURCE,
    FEATURE_ACCESSION,
-   attribute fixed_id { text }?,
-   
+
+   attribute fixed_id {
+      xsd:string {
+         pattern = 't[0-9]+'
+      }
+   } ?,
+      
    LRG_COORDS,
    COORDS*,
    PARTIAL*,
@@ -379,7 +394,7 @@ UP_TRANSCRIPT = element transcript {
    COMMENT*,
    DB_XREF*,
    UP_EXON*,
-   UP_PROTEIN_PRODUCT?
+   UP_PROTEIN_PRODUCT*
 }
 
 UP_EXON = element exon {
@@ -395,6 +410,13 @@ UP_EXON = element exon {
 UP_PROTEIN_PRODUCT = element protein_product {
    FEATURE_SOURCE,
    FEATURE_ACCESSION,
+
+   attribute fixed_id {
+      xsd:string {
+         pattern = 'p[0-9]+[A-Za-z]*'
+      }
+   } ?,
+   
    attribute codon_start { xsd:integer }?,
    
    LRG_COORDS,
