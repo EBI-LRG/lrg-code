@@ -55,7 +55,6 @@ $registry->load_registry_from_db(
   -db_version =>  $option{db_version},
 ) or die (sprintf("Could not load registry from '\%s'",$option{host}));
 
-
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
 my $schema_version = $mca->get_schema_version();
@@ -89,11 +88,9 @@ my $asets = $lrg->updatable_annotation->annotation_set();
 
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
-#my $lrg_slice;
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'Ensembl');
   $ensembl_aset = $aset;
-	#$lrg_slice = $slice_adaptor->fetch_by_region('LRG',$option{lrg_id});
   last;
 }
 
@@ -154,15 +151,11 @@ my $feature = $lrga->feature();
 # Add coordinates in the LRG coordinate system
 map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
-# Attach the features to the Ensembl annotation set
-$ensembl_aset->feature($feature);
-
-
-# Get the Ensembl transcript mappings (with mapping diffs)
 my $ens_mapping;
 my @ens_feature = @{$feature};
 my $tr_adaptor = $registry->get_adaptor('human','core','transcript');
 my $ex_adaptor = $registry->get_adaptor('human','core','exon');
+
 
 my $lrg_aset;
 my $lrg_locus;
@@ -176,7 +169,6 @@ foreach my $aset (@{$asets}) {
 }
 
 my $diffs_list = get_diff($asets);
-
 foreach my $f (@ens_feature) {
 	foreach my $g (@{$f->gene}) {
 
@@ -190,11 +182,12 @@ foreach my $f (@ens_feature) {
 				last;
 			}
 		}
-		next if (!$gene_flag);
 
-
-		my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
-		$ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
+		# Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
+		if ($gene_flag) {
+			my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
+			$ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
+		}
 		
 		remove_grc_coordinates($g);
 		foreach my $t (@{$g->transcript}) {
@@ -203,20 +196,31 @@ foreach my $f (@ens_feature) {
 				remove_grc_coordinates($e);
 			}
 			if ($t->translation) {
-				remove_grc_coordinates($t->translation);
+				foreach my $trans (@{$t->translation}) {
+					remove_grc_coordinates($trans);
+				}
 			}
 		}
 	}
 }
+
+# Attach the features and mappings to the Ensembl annotation set
+$ensembl_aset->feature($feature);
 $ensembl_aset->mapping($ens_mapping);
 
 
 # Print the XML
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
+#
+#my $f_adaptor = $xmla->get_FeatureUpXMLAdaptor();
+#my $xml = $f_adaptor->xml_from_objs($feature);
+#my $lrg_root = LRG::LRG::new('/tmp/LRG.xml');
+#map {$lrg_root->addExisting($_)} @{$xml};
+#$lrg_root->printAll();
+# 
 warn("Done!\n");
 
 
-# Methods #
 sub get_diff {
 	my $sets = shift;
 	my %diffs_list;
