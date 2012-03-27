@@ -680,7 +680,7 @@ sub printNode {
     'lrg_coords'  =>  {
       'start' =>  1,
       'end' =>  2
-    },
+   },
     
     'lrg_gene_name' =>  {
       'source'  =>  1
@@ -776,6 +776,7 @@ sub printNode {
 				$priority{$name}{$key} = List::Util::max(values(%{$priority{$name} || {}}),0)+1;
 			    }
 			}
+			
 			@key_order = sort {$priority{$name}{$a} <=> $priority{$name}{$b}} keys %{$self->data};
 		}
 		
@@ -786,7 +787,6 @@ sub printNode {
 		# put the data into a hash (key, value, key, value etc.)
 		foreach my $key(@key_order) {
 			#print $key, " ", $self->data->{$key}, "\n" unless $priority{$key};
-			
 			push @data_array, ($key, $self->data->{$key});
 		}
 		
@@ -991,26 +991,32 @@ sub sort_nodes {
 	    my $b_s;
 	    my $b_e;
 	    
-	    # Firstly by LRG coords if applicable
-	    if (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'})) {
-	      $a_s = $a->data->{'lrg_start'};
-	      $a_e = $a->data->{'lrg_end'};
-	      $b_s = $b->data->{'lrg_start'};
-	      $b_e = $b->data->{'lrg_end'};
-	    }
-	    # Otherwise by general start and end positions
-	    else {
-	      $a_s = $a->data->{'start'};
-	      $a_e = $a->data->{'end'};
-	      $b_s = $b->data->{'start'};
-	      $b_e = $b->data->{'end'};
-	    }
+			# Sort by coordinate system (LRG > LRG_t > LRG_p)
+			if ($a->name eq 'coordinates') {
+				return -1 if ($a->data->{'coord_system'} =~/LRG_\d+$/);
+			}
+			else {
+	    	# Firstly by LRG coords if applicable
+	    	if (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'})) {
+	      	$a_s = $a->data->{'lrg_start'};
+	      	$a_e = $a->data->{'lrg_end'};
+	      	$b_s = $b->data->{'lrg_start'};
+	      	$b_e = $b->data->{'lrg_end'};
+				}
+	    	# Otherwise by general start and end positions
+	    	else {
+	      	$a_s = $a->data->{'start'};
+	      	$a_e = $a->data->{'end'};
+	      	$b_s = $b->data->{'start'};
+	      	$b_e = $b->data->{'end'};
+	    	}
 	
-	    # Sort primarily by start and secondarily by end
-	    if ($a_s < $b_s || ($a_s == $b_s && $a_e <= $b_e)) {
-	      return -1;
-	    }
-	
+	    	# Sort primarily by start and secondarily by end
+	    	if ($a_s < $b_s || ($a_s == $b_s && $a_e <= $b_e)) {
+	      	return -1;
+	    	}
+			}
+
 	    return 1;
     }
   }
