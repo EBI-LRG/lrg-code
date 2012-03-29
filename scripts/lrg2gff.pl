@@ -25,6 +25,8 @@ GetOptions(
 
 die("An LRG XML input file or LRG identifier is required") unless (defined($xmlfile) || defined($lrgid));
 
+my %assembly_syn = ( 'GRCh37' => 'NCBI37' );
+
 # If no xml file was specified, attempt to fetch it from the website
 if (!defined($xmlfile) && defined($lrgid)) {
     
@@ -68,7 +70,7 @@ my $lrgid = $lrg->fixed_annotation->name();
 my $mapping;
 foreach my $aset (@{$lrg->updatable_annotation->annotation_set() || []}) {
   foreach my $amap (@{$aset->mapping() || []}) {
-    next unless ($amap->assembly() =~ m/^$ASSEMBLY$/i);
+    next unless ($amap->assembly() =~ m/^$ASSEMBLY$/i || $amap->assembly() eq $assembly_syn{$ASSEMBLY});
     $mapping = $amap;
     last;
   }
