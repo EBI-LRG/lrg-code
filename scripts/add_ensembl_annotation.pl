@@ -13,11 +13,6 @@ use Bio::EnsEMBL::Registry;
 
 
 my @option_defs = (
-  'host=s',
-  'port=i',
-  'user=s',
-  'pass=s',
-  'db_version=s',
   'xmlfile=s',
   'species=s',
   'assembly=s',
@@ -34,9 +29,6 @@ my %assembly_syn = ( 'GRCh37' => 'NCBI37' );
 GetOptions(\%option,@option_defs);
 
 # Use default database (public) unless otherwise specified
-$option{host} ||= 'ensembldb.ensembl.org';
-#$option{port} ||= 5306;
-#$option{user} ||= 'anonymous';
 $option{species} ||= 'Homo_sapiens';
 $option{lrg_set_name} ||= 'LRG';
 $option{locus_source} ||= 'HGNC';
@@ -47,13 +39,7 @@ if (!defined($option{lrg_id})) {
 
 # Load the registry from the database
 my $registry = 'Bio::EnsEMBL::Registry';
-$registry->load_registry_from_db(
-  -host =>  $option{host},
-  -port =>  $option{port},
-  -user =>  $option{user},
-  -pass =>  $option{pass},
-  -db_version =>  $option{db_version},
-) or die (sprintf("Could not load registry from '\%s'",$option{host}));
+$registry->load_all( $option{registry} );
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
@@ -74,7 +60,7 @@ unless ($option{assembly}) {
 die("You need to specify an LRG xml file with the -xmlfile option") unless ($option{xmlfile});
 die(sprintf("XML file '\%s' does not exist",$option{xmlfile})) unless (-e $option{xmlfile});
 
-warn (sprintf("Will get mapping to \%s from \%s and fetch overlapping annotations from \%s\n",$option{assembly},$option{xmlfile},$option{host}));
+warn (sprintf("Will get mapping to \%s from \%s and fetch overlapping annotations\n",$option{assembly},$option{xmlfile}));
 
 # Load the XML file
 my $xmla = LRG::API::XMLA::XMLAdaptor->new();
@@ -88,9 +74,11 @@ my $asets = $lrg->updatable_annotation->annotation_set();
 
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
+#my $lrg_slice;
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'Ensembl');
   $ensembl_aset = $aset;
+	#$lrg_slice = $slice_adaptor->fetch_by_region('LRG',$option{lrg_id});
   last;
 }
 
@@ -151,6 +139,10 @@ my $feature = $lrga->feature();
 # Add coordinates in the LRG coordinate system
 map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
+# Attach the features to the Ensembl annotation set
+#$ensembl_aset->feature($feature);
+
+########## TEST BLOCK ##########
 my $ens_mapping;
 my @ens_feature = @{$feature};
 my $tr_adaptor = $registry->get_adaptor('human','core','transcript');
@@ -168,6 +160,7 @@ foreach my $aset (@{$asets}) {
   last;
 }
 
+#my $diffs_list;
 my $diffs_list = get_diff($asets);
 foreach my $f (@ens_feature) {
 	foreach my $g (@{$f->gene}) {
@@ -221,6 +214,8 @@ print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
 warn("Done!\n");
 
 
+
+# /!\ Needs to check the assemblies first (TODO) /!\ #
 sub get_diff {
 	my $sets = shift;
 	my %diffs_list;
