@@ -35,7 +35,7 @@ echo "# ${lrg_id}:"
 
 echo "# Check data file #1 ... "
 rm -f ${error_log}
-bash ./healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml 2> ${error_log}
+bash code/scripts/shell/healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml 2> ${error_log}
 check_script_result
 echo "> checking #1 done"
 echo ""
@@ -43,13 +43,13 @@ echo ""
 
 
 echo "# Add annotations ... "
-bash ./update_xml_annotation.sh ${tmp_dir}/${lrg_id}.xml ${hgnc} ${assembly}
+bash code/scripts/shell/update_xml_annotation.sh ${tmp_dir}/${lrg_id}.xml ${hgnc} ${assembly}
 check_empty_file ${tmp_dir}/${lrg_id}.xml.new "Annotations done"
 
 
 echo "# Check data file #2 ... "
 rm -f ${error_log}
-bash ./healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml.new 2> ${error_log}
+bash code/scripts/shell/healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml.new 2> ${error_log}
 check_script_result
 echo "> checking #2 done"
 echo ""
@@ -57,20 +57,20 @@ echo ""
 
 
 echo "# Store ${lrg_id} into the database ... "
-bash ./import_into_db.sh ${tmp_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc}
+bash code/scripts/shell/import_into_db.sh ${tmp_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc}
 echo "> Storage done"
 echo ""
 echo ""
 
 
 echo "# Extract ${lrg_id} from the database ... "
-bash ./export_from_db.sh ${lrg_id} ${tmp_dir}/${lrg_id}.xml.exp
+bash code/scripts/shell/export_from_db.sh ${lrg_id} ${tmp_dir}/${lrg_id}.xml.exp
 check_empty_file ${tmp_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
 echo "# Check data file #3 ... "
 rm -f ${error_log}
-bash ./healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml.exp 2> ${error_log}
+bash code/scripts/shell/healthcheck_record.sh ${tmp_dir}/${lrg_id}.xml.exp 2> ${error_log}
 check_script_result
 echo "> checking #3 done"
 echo ""
@@ -87,17 +87,17 @@ echo ""
 
 
 echo "# Create Fasta file ... "
-perl ../lrg2fasta.pl -xml_dir ${new_dir} -fasta_dir ${new_dir}/fasta -xml_file ${lrg_id}.xml
+perl code/scripts/lrg2fasta.pl -xml_dir ${new_dir} -fasta_dir ${new_dir}/fasta -xml_file ${lrg_id}.xml
 check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created"
 
 
 echo "# Create index file ... "
-perl ../index_EB-eye.pl -xml_dir ${new_dir} -index_dir ${new_dir}/index -xml_file ${lrg_id}.xml
+perl code/scripts/index_EB-eye.pl -xml_dir ${new_dir} -index_dir ${new_dir}/index -xml_file ${lrg_id}.xml
 check_empty_file ${new_dir}/index/${lrg_id}_index.xml "Index file created"
 
 
 echo "# Create GFF file ... "
-perl ../lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
+perl code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
 check_empty_file ${new_dir}/gff/${lrg_id}.xml.gff "GFF file created"
 
 echo "Script done"
