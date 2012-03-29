@@ -86,7 +86,7 @@ foreach my $check (@checks) {
     }
 }
 
-print "\nHealthcheck ".($count_passed == $count_total ? 'PASSED' : 'FAILED')."\n";
+print STDERR "Healthcheck FAILED\n" if ($count_passed != $count_total);
 
 
 sub usage {
