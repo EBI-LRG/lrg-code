@@ -392,7 +392,7 @@
 
   <tr>
     <td class="sequence">
-  <xsl:value-of select="substring(coding_region/translation/sequence,$i,60)"/>
+  <xsl:value-of select="substring(translation/sequence,$i,60)"/>
     </td>
   </tr>
   
@@ -446,7 +446,7 @@
     <xsl:if test="sequence_source">
       <p>
         <strong>Sequence source: </strong>
-        <xsl:value-of select="sequence_source"/>
+				This LRG is identical to <xsl:value-of select="sequence_source"/>
       </p>
     </xsl:if>
 
@@ -472,7 +472,9 @@
 <!-- GENOMIC SEQUENCE -->           
 <xsl:template name="genomic_sequence">
   <xsl:param name="lrg_id" />
-        
+	<!-- Sequence length threshold to avoid errors when the page is loaded with a very large sequence (~2MB) -->
+  <xsl:variable name="sequence_max_length">1000000</xsl:variable>      
+
   <table>
   
     <tr>
@@ -492,20 +494,23 @@
   <div id="sequence" class="hidden">
 
     <table>
-
+			<xsl:if test="string-length(/*/fixed_annotation/sequence)&lt;$sequence_max_length">
       <tr valign="middle">
         <td class="sequence_cell" colspan="2">
               <a>
-  <xsl:attribute name="href">#genomic_fasta_anchor</xsl:attribute>
+  <!--<xsl:attribute name="href">#genomic_fasta_anchor</xsl:attribute>
   <xsl:attribute name="onclick">javascript:show('genomic_fasta');</xsl:attribute>
-            Jump to sequence in FASTA format
-          </a>
+            Jump to sequence in FASTA format-->
+		<xsl:attribute name="href">fasta/<xsl:value-of select="$lrg_id" />.fasta</xsl:attribute>
+		<xsl:attribute name="target">_blank</xsl:attribute>
+			Display the genomic sequence in <b>FASTA</b> format</a><small> (in a new tab)</small><br /><br />
         </td>
       </tr>
+			</xsl:if>
       
       <tr valign="middle">
         <td class="sequence_cell">
-          <strong>Key: </strong>
+         	<strong>Key: </strong>
         </td>
       <td class="sequence_cell">
         Highlighting indicates <span class="sequence"><span class="intron">INTRONS</span> / <span class="exon">EXONS</span></span>
@@ -593,7 +598,7 @@
               </div>
             </td>
           </tr>
-          
+     <xsl:if test="string-length(/*/fixed_annotation/sequence)&lt;$sequence_max_length">     
           <tr>
             <td class="showhide">
           <a>
@@ -603,7 +608,7 @@
         </td>
       </tr>
       
-      <tr>
+     <!-- <tr>
         <td class="showhide">
           <a name="genomic_fasta_anchor"/>
               <a>
@@ -611,11 +616,11 @@
             Show/hide
           </a> sequence in FASTA format
         </td>
-      </tr>
-      
+      </tr>-->
+      </xsl:if>
     </table>
     
-    <div id="genomic_fasta" class="hidden">
+   <!-- <div id="genomic_fasta" class="hidden">
 
       <table border="0" cellpadding="0" cellspacing="0" class="sequence">
 
@@ -640,7 +645,7 @@
         
       </table>
       
-    </div>
+    </div>-->
   </div>
 
 </xsl:template>
@@ -735,7 +740,7 @@
     <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
     <xsl:with-param name="lrg_coord_system"><xsl:value-of select="$lrg_coord_system" /></xsl:with-param>
     <xsl:with-param name="cdna_coord_system"><xsl:value-of select="$cdna_coord_system" /></xsl:with-param>
-    <xsl:with-param name="peptide_coord_system"><xsl:value-of select="$peptide_coord_system" /></xsl:with-param>
+<!--    <xsl:with-param name="peptide_coord_system"><xsl:value-of select="$peptide_coord_system" /></xsl:with-param> -->
   </xsl:call-template>
 
 </xsl:template>
@@ -830,8 +835,8 @@
     <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
     <xsl:variable name="cdna_start" select="coordinates[@coord_system = $cdna_coord_system]/@start" />
     <xsl:variable name="cdna_end" select="coordinates[@coord_system = $cdna_coord_system]/@end" />
-    <xsl:variable name="peptide_start" select="coordinates[@coord_system = $peptide_coord_system]/@start"/>
-    <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/>
+<!--    <xsl:variable name="peptide_start" select="coordinates[@coord_system = $peptide_coord_system]/@start"/>
+    <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/> -->
     <xsl:variable name="exon_number" select="position()"/>
 
             <span>
@@ -1064,11 +1069,15 @@
         <th colspan="2">LRG</th>
         <th colspan="2">cDNA</th>
         <th colspan="2">CDS</th>
-        <th colspan="2">Peptide</th>
+				<th colspan="2">Peptide 
+				<xsl:if test="count(/*/fixed_annotation/transcript[@name = $transname]/coding_region)>1"> 
+					<xsl:value-of select="translate($transname,'t','p')" />
+				</xsl:if>
+				</th>
         <th>Intron</th>
   <xsl:if test="/*/updatable_annotation/annotation_set/fixed_transcript_annotation[@name = $transname]/other_exon_naming">
         <th class="exon_separator"> </th>
-        <th colspan="100" class="exon_label">Labels</th>
+        <th colspan="100" class="exon_label">Source of exon numbering</th>
   </xsl:if>
       </tr>
       
@@ -1094,9 +1103,9 @@
       <xsl:attribute name="title">
         <xsl:value-of select="@description"/>
       </xsl:attribute>
-            <a>
+            <a class="exon_label">
       <xsl:attribute name="href">#fixed_transcript_annotation_aa_set_<xsl:value-of select="$setnum"/></xsl:attribute>
-      <xsl:value-of select="$setname"/>
+      <xsl:value-of select="@description"/>
             </a>
           </span>
         </th>
@@ -1151,8 +1160,8 @@
       <xsl:with-param name="cds_offset" select="$cds_offset"/>
     </xsl:call-template>
       
-  
-    <xsl:choose>
+
+		<xsl:choose>
       <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt; $cds_end">
         <td>
         <xsl:if test="$lrg_start &lt; $cds_start">
@@ -1172,7 +1181,7 @@
         <td>-</td>
       </xsl:otherwise>
     </xsl:choose>
-        
+    
         <td>
     <xsl:choose>
       <xsl:when test="name(following-sibling::*[1]) = 'intron'">
@@ -1186,10 +1195,10 @@
       <xsl:if test="position()=1">
       <th class="exon_separator" />
       </xsl:if>
-      <xsl:if test="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
+			<xsl:for-each select="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
       	<xsl:variable name="setnum" select="position()"/>
-      	<xsl:variable name="label" select="fixed_transcript_annotation[@name = $transname]/other_exon_naming/exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
-      	<td>  
+      	<xsl:variable name="label" select="exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
+      	<td>
       	<xsl:choose>
         	<xsl:when test="$label">
          	 	<xsl:value-of select="$label"/>
@@ -1197,7 +1206,7 @@
         <xsl:otherwise>-</xsl:otherwise>
       	</xsl:choose>
 				</td>
-			</xsl:if>
+			</xsl:for-each>
     </xsl:for-each>
       </tr>
       
@@ -1222,39 +1231,42 @@
   <xsl:param name="transname" />
   <xsl:param name="lrg_coord_system" />
   <xsl:param name="cdna_coord_system" />
-  <xsl:param name="peptide_coord_system" />
+<!--  <xsl:param name="peptide_coord_system" />-->
 
-  <table>
-  
-    <tr>
-      <td class="sequence_cell">
-        <a>
-  <xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-        </a>
-        <h4>- Translated sequence: <xsl:value-of select="coding_region/translation/@name"/></h4>
-      </td>
-      <td class="sequence_cell">
-        <a>
-  <xsl:attribute name="href">javascript:showhide('translated_<xsl:value-of select="$transname"/>');</xsl:attribute>
-          show/hide
-        </a>
-      </td>
-    </tr>
+	<xsl:for-each	select="coding_region">
+		<xsl:variable name="pepname" select="translation/@name" />
+		<xsl:variable name="peptide_coord_system" select="concat($lrg_id,'_',$pepname)" />
+  	<table>
+
+    	<tr>
+      	<td class="sequence_cell">
+        	<a>
+  	<xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
+        	</a>
+        	<h4>- Translated sequence: <xsl:value-of select="$pepname"/></h4>
+      	</td>
+      	<td class="sequence_cell">
+        	<a>
+  	<xsl:attribute name="href">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>
+          	show/hide
+        	</a>
+      	</td>
+    	</tr>
     
-  </table>
+  	</table>
     
-    
+   
 <!-- TRANSLATED SEQUENCE -->
   <div class="hidden">
-  <xsl:attribute name="id">translated_<xsl:value-of select="$transname"/></xsl:attribute>
+  <xsl:attribute name="id">translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
     
     <table>
       
       <tr>
         <td class="sequence_cell" colspan="2">
           <a>
-  <xsl:attribute name="href">#translated_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:show('translated_fasta_<xsl:value-of select="$transname"/>')</xsl:attribute>
+  <xsl:attribute name="href">#translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
+  <xsl:attribute name="onclick">javascript:show('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>')</xsl:attribute>
             Jump to sequence in FASTA format
           </a>
         </td>
@@ -1297,8 +1309,8 @@
       <tr>
         <td width="624" class="sequence">
           <div class="hardbreak">
-  <xsl:variable name="trans_seq" select="coding_region/translation/sequence"/>
-  <xsl:for-each select="exon">
+  <xsl:variable name="trans_seq" select="translation/sequence"/>
+  <xsl:for-each select="../exon">
     <xsl:variable name="exon_number" select="position()"/>
     <xsl:variable name="peptide_start" select="coordinates[@coord_system = $peptide_coord_system]/@start"/>
     <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/>
@@ -1381,8 +1393,8 @@
       <tr>
         <td class="showhide">
           <a>
-  <xsl:attribute name="href">#translated_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('translated_<xsl:value-of select="$transname"/>');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="href">#translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>^^ hide ^^
           </a>
         </td>
       </tr>
@@ -1390,10 +1402,10 @@
       <tr>
         <td class="showhide">
           <a>
-  <xsl:attribute name="name">translated_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
+  <xsl:attribute name="name">translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
           </a>
           <a>
-  <xsl:attribute name="href">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute>
+  <xsl:attribute name="href">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>
             Show/hide
           </a> sequence in FASTA format
         </td>
@@ -1401,18 +1413,18 @@
     </table>
     
     <div class="hidden">
-  <xsl:attribute name="id">translated_fasta_<xsl:value-of select="$transname"/></xsl:attribute>
+  <xsl:attribute name="id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
       <table border="0" cellpadding="0" cellspacing="0" class="sequence">
       
 	      <tr>
 	        <td class="sequence">
-	          ><xsl:value-of select="$lrg_id"/>p<xsl:value-of select="substring($transname,2)"/> (protein translated from transcript <xsl:value-of select="$transname"/> of <xsl:value-of select="$lrg_id"/>)
+	          ><xsl:value-of select="$lrg_id"/><xsl:value-of select="$pepname"/> (protein translated from transcript <xsl:value-of select="$transname"/> of <xsl:value-of select="$lrg_id"/>)
 	        </td>
 	      </tr>
       
   <xsl:call-template xmlns:xslt="http://www.w3.org/1999/XSL/Transform" name="for-loop-d1e966">
 		<xsl:with-param name="i" select="1"/>
-		<xsl:with-param name="tod1e966" select="string-length(coding_region/translation/sequence)"/>
+		<xsl:with-param name="tod1e966" select="string-length(translation/sequence)"/>
 		<xsl:with-param name="stepd1e966" select="60"/>
 		<xsl:with-param name="transname" select="$transname"/>
 		<xsl:with-param name="first_exon_start" select="$first_exon_start"/>
@@ -1421,8 +1433,8 @@
 	      <tr>
 	        <td class="showhide">
 	          <a>
-  <xsl:attribute name="href">#translated_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="href">#translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>^^ hide ^^
 	          </a>
 	        </td>
 	      </tr>
@@ -1430,6 +1442,7 @@
       </table>
     </div>
   </div>
+	</xsl:for-each>
 </xsl:template>
 
 <!-- UPDATABLE ANNOTATION -->
@@ -1524,7 +1537,7 @@
   <xsl:if test="fixed_transcript_annotation/other_exon_naming/*">
       <h3>Alternate exon naming</h3>
     <xsl:for-each select="fixed_transcript_annotation/other_exon_naming">
-      <xsl:apply-templates select=".">
+     <xsl:apply-templates select=".">
         <xsl:with-param name="lrg_id" select="$lrg_id" />
         <xsl:with-param name="transname" select="../@name" />
         <xsl:with-param name="setnum" select="$setnum" />
