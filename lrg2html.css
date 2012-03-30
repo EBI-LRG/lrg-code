@@ -43,6 +43,11 @@ th.exon_label {
 	background:#2266BB;
 }
 
+a.exon_label {
+	font-weight:normal;
+	color:#FFF;
+}
+
 th.exon_separator {
 	background:#000000;
 	border-color:#000000;
