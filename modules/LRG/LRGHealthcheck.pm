@@ -174,7 +174,8 @@ sub exon_labels {
 
 						# If present, get the other_exon_naming/source nodes
         		my $other_exon_namings = $fixed_transcript_annotation->findNodeArray('other_exon_naming');
-            
+            my $count_other_exon_namings = 0;
+
             # Go through all other_exon_naming and fetch the corresponding transcript from the fixed section
             foreach my $other_exon_naming (@{$other_exon_namings}) {
                 
@@ -219,11 +220,13 @@ sub exon_labels {
                    
                     # If the coordinates of the updatable exon does not match the fixed exon, we have a fixed exon without label
                     if ($updatable_start != $fixed_start || $updatable_end != $fixed_end) {
-                        $passed = 0;
-                        $self->{'check'}{$name}{'message'} .= "There is no label for exon ($fixed_start - $fixed_end) in transcript '$tr_name' as specified in '$source' annotation set and '$source_description' other exon naming//";
-                        # Push the updatable exon back onto the array so that it will be reported as orphan if necessary
-                        unshift(@updatable_exons,$updatable_exon) if defined($updatable_exon);
-                    }
+                      if ($count_other_exon_namings == 0) { 
+													$passed = 0;
+                        	$self->{'check'}{$name}{'message'} .= "There is no label for exon ($fixed_start - $fixed_end) in transcript '$tr_name' as specified in '$source' annotation set and '$source_description' other exon naming//";
+											}
+                      # Push the updatable exon back onto the array so that it will be reported as orphan if necessary
+                      unshift(@updatable_exons,$updatable_exon) if defined($updatable_exon);
+										}
                 }
                 
                 #ÊIf the updatable exon array is non-empty, the remaining elements are orphans
@@ -235,6 +238,7 @@ sub exon_labels {
                     $passed = 0;
                     $self->{'check'}{$name}{'message'} .= "There is no corresponding fixed section exon for exon '$label' ($updatable_start - $updatable_end) in transcript '$tr_name' as specified in '$source' annotation set and '$source_description' other exon naming//";
                 }
+								$count_other_exon_namings ++;
             }
         }
     }
