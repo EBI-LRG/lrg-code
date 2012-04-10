@@ -81,7 +81,7 @@ sub xml_from_objs {
     push(@xml,$exon);
     
     # If there are more exon objects following, intersperse with an intron
-    if (scalar(@{$objs})) {
+    if (scalar(@{$objs}) and $obj->end_phase() != -1) {
       my $intron = LRG::Node::newEmpty('intron',undef,{'phase' => $obj->end_phase()});
       push(@xml,$intron);
     }
