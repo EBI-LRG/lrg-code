@@ -3,12 +3,17 @@
 use strict;
 use LRG::LRG;
 use Getopt::Long;
+use DBI;
 
-my ($xml_dir,$index_dir,$lrg_file,$help);
+my ($xml_dir,$index_dir,$lrg_file,$dbname,$dbhost,$dbport,$dbuser,$help);
 GetOptions(
   'xml_dir=s'		=> \$xml_dir,
   'index_dir=s' => \$index_dir,
   'xml_file=s'	=> \$lrg_file,
+	'db_name=s'   => \$dbname,
+	'db_host=s'   => \$dbhost,
+	'db_port=i'   => \$dbport,
+	'db_user=s'   => \$dbuser,
 	'help'        => \$help
 );
 
@@ -16,6 +21,8 @@ die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)
 die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir)); 
 usage() if (defined($help));
 
+my $dbh = DBI->connect("dbi:mysql:$dbname:$dbhost:$dbport", $dbuser, '') or die $DBI::errstr;
+my $sth = $dbh->prepare(qq{SELECT status FROM lrg_status_backup WHERE lrg_id=?});
 
 my @xml_list;
 if ($lrg_file) {
@@ -79,13 +86,33 @@ foreach my $xml (@xml_list) {
 	# Additional fields
 	my $add_fields = $entry->addNode('additional_fields');
 
-	# Locus
+	# Coordinates
+	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set/');
+	foreach my $aset (@$asets) {
+		if ($aset->findNode('source/name')->content =~ /LRG/) {
+			my $coord = $aset->findNode('mapping');
+			$add_fields->addNode('field',{'name' => 'assembly'})->content($coord->data->{coord_system});
+			$add_fields->addNode('field',{'name' => 'chr_name'})->content($coord->data->{other_name});
+			$add_fields->addNode('field',{'name' => 'chr_start'})->content($coord->data->{other_start});
+			$add_fields->addNode('field',{'name' => 'chr_end'})->content($coord->data->{other_end});
+			last;
+		}
+	}
+	
+	# Status
+	my $status;
+	$sth->execute($lrg_id);
+	$sth->bind_columns(\$status);
+	$sth->fetch();
+	$add_fields->addNode('field',{'name' => 'status'})->content($status) if (defined($status));
+
+	# Locus + synonyms
 	my $loci = $lrg->findNodeArray('updatable_annotation/annotation_set/lrg_locus');
 	foreach my $locus (@{$loci}) {
 		my $l_content = $locus->content;
 		$add_fields->addNode('field',{'name' => 'synonym'})->content($l_content) if ($l_content ne $hgnc);
 	}
-	
+
 	# Symbol
 	my $symbols = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/symbol');
 	foreach my $symbol (@{$symbols}) {
