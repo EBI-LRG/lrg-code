@@ -92,7 +92,7 @@ check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created"
 
 
 echo "# Create index file ... "
-perl code/scripts/index_EB-eye.pl -xml_dir ${new_dir} -index_dir ${new_dir}/index -xml_file ${lrg_id}.xml
+perl code/scripts/index_EB-eye.pl -xml_dir ${new_dir} -index_dir ${new_dir}/index -xml_file ${lrg_id}.xml -db_name ${LRGDBNAME} -db_host ${LRGDBHOST} -db_port ${LRGDBPORT} -db_user ${LRGDBROUSER}
 check_empty_file ${new_dir}/index/${lrg_id}_index.xml "Index file created"
 
 
