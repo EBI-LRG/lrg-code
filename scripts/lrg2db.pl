@@ -82,9 +82,14 @@ if ($purge) {
         $stmt .= qq{ symbol = '$hgnc_symbol'};
     }
     $stmt .= qq{ LIMIT 1};
-		print STDERR "LRG_ID: $lrg_id\n";
-    ($gene_id,$hgnc_symbol,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
-    
+
+		my $gene_data = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt);
+		if (!scalar(@$gene_data)) {
+			print "No gene entry could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id") . " (database purge step)\n";
+			exit(0);
+		}
+    ($gene_id,$hgnc_symbol,$lrg_id) = @{$gene_data->[0]};# or die ("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
+
     # Delete the mapping data
     $stmt = qq{
         DELETE FROM
@@ -209,6 +214,7 @@ if ($purge) {
     exit;
 }
 
+
 print STDOUT localtime() . "\tCreating LRG object from input XML file $xmlfile\n" if ($verbose);
 my $lrg = LRG::LRG::newFromFile($xmlfile) or die("ERROR: Could not create LRG object from XML file!");
 
@@ -218,6 +224,70 @@ my $fixed = $lrg->findNode('fixed_annotation') or die ("ERROR: Could not find fi
 # Get the LRG id node
 my $node = $fixed->findNode('id') or die ("ERROR: Could not find LRG identifier");
 $lrg_id = $node->content();
+
+# Get the database gene_id for the HGNC symbol and LRG id
+my $stmt = qq{
+    SELECT
+        gene_id
+    FROM
+        gene
+    WHERE
+        symbol = '$hgnc_symbol' AND
+        (
+            lrg_id IS NULL OR
+            lrg_id = '$lrg_id'
+        )
+    LIMIT 1
+};
+$gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];# or die ("No gene could be find with HGNC symbol $hgnc_symbol and LRG id $lrg_id");
+
+
+# Insert LRG entry into the gene table
+if (!defined($gene_id)) {
+	print STDOUT "No gene entry could be found with HGNC symbol $hgnc_symbol and LRG id $lrg_id. The script will insert an entry for this LRG (data insertion step).\n";
+	if (!defined($hgnc_symbol)) {
+		my @asets = $lrg->findNodeArray('updatable_annotation/annotation_set');
+		foreach my $aset (@asets) {
+			$hgnc_symbol = $aset->findNode('lrg_locus')->content if ($aset->findNode('source/name')->content eq 'LRG');
+			last;
+		}
+	}
+	# RefSeq ID
+	my $refseq = $fixed->findNode('sequence_source')->content;
+
+	# Get gene_id
+	foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
+		foreach my $symbol (@{$gene->findNodeArraySingle('symbol')}) {
+			$gene_id = $gene->data->{accession} if ($symbol->content eq $hgnc_symbol);
+		}
+	}
+
+	if (defined($lrg_id) && defined($gene_id) && defined($refseq) && defined($hgnc_symbol)) {
+		print STDOUT localtime() . "\tInserting LRG gene entry $lrg_id ($hgnc_symbol,$refseq) to database\n";
+		$stmt = qq{
+    	INSERT INTO
+		     gene (
+		          gene_id,
+							ncbi_gene_id,
+		    			symbol,
+							refseq,
+		    			lrg_id
+		      )
+		  VALUES (
+		       $gene_id,
+		       $gene_id,
+		      '$hgnc_symbol',
+		      '$refseq',
+					'$lrg_id'
+		  )
+		};
+		$db_adaptor->dbc->do($stmt);
+	}
+	else {
+		print "Error: No enough information could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id"). " to create a new entry in the gene table\n";
+		exit(1);
+	}
+}
 
 # Get the organism and taxon_id
 $node = $fixed->findNode('organism') or die ("ERROR: Could not find organism tag");
@@ -244,22 +314,6 @@ if (defined($node)) {
 # Get the LRG sequence
 $node = $fixed->findNode('sequence') or die ("ERROR: Could not find LRG sequence tag");
 my $lrg_seq = $node->content();
-
-# Get the database gene_id for the HGNC symbol and LRG id
-my $stmt = qq{
-    SELECT
-        gene_id
-    FROM
-        gene
-    WHERE
-        symbol = '$hgnc_symbol' AND
-        (
-            lrg_id IS NULL OR
-            lrg_id = '$lrg_id'
-        )
-    LIMIT 1
-};
-$gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0] or die ("No gene could be find with HGNC symbol $hgnc_symbol and LRG id $lrg_id");
 
 # If we are updating the annotation sets, do that here
 if (scalar(@update_annotation_set)) {
