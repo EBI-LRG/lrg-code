@@ -2,27 +2,29 @@
 
 use strict;
 use LRG::LRG;
-use Time::Local qw (timelocal);
-use List::Util qw (max);
+use Getopt::Long;
 
-#ÊThe header fields
-my @fields = ("LRG_ID","HGNC_SYMBOL","STATUS","MODIFIED","ASSEMBLY","CHR_NAME","CHR_START","CHR_END","PATH");
+my ($xml_dir,$index_dir,$help);
+GetOptions(
+  'xml_dir=s'		=> \$xml_dir,
+  'index_dir=s' => \$index_dir,
+	'help'        => \$help
+);
+
+die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)); 
+die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir)); 
+usage() if (defined($help));
+
 
 # A directory handle
 my $dh;
 
-# The main LRG directory is passed as an argument
-my $maindir = shift;
-
-#ÊIf we get an index file as input, we will just append to it and update fields if necessary (e.g. if they go from being pending to public)
-my $indexfile = shift;
-
 # The pending directory is a subdirectory of the main dir
-my $pendingdir = $maindir . "/pending/";
+my $pendingdir = $xml_dir . "/pending/";
 
-#ÊParse the main and pending directories
+# Parse the main and pending directories
 my @xmlfiles;
-foreach my $dir (($maindir,$pendingdir)) {
+foreach my $dir (($xml_dir,$pendingdir)) {
     
     # Open a directory handle
     opendir($dh,$dir);
@@ -37,67 +39,152 @@ foreach my $dir (($maindir,$pendingdir)) {
     closedir($dh);
 }
 
-# Loop over the XML files and parse out the required fields
-print "# " . join("\t",@fields) . "\n";
 
-foreach my $xmlfile (@xmlfiles) {
-    my $obj = LRG::LRG::newFromFile($xmlfile->{'filename'});
+my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
+
+
+foreach my $xml (@xmlfiles) {
+	# Load the LRG XML file
+	my $lrg = LRG::LRG::newFromFile($xml->{'filename'}) or die("ERROR: Could not create LRG object from XML file!");
+	my $lrg_id  = $lrg->findNode('fixed_annotation/id')->content;
+
+	# Create Index file root element
+	my $index_root = LRG::LRG::new("$index_dir/$lrg_id"."_index.xml");
+	my $database = $index_root->addNode('database');
+  $database->addNode('name')->content('LRG');
+	# description
+	$database->addNode('description')->content($general_desc);
+	# entry count
+	$database->addNode('entry_count')->content('1');
+
+
+	# entry
+	my $entries = $database->addNode('entries');
+	my $entry = $entries->addNode('entry',{'id' => $lrg_id});
+
+	my $hgnc = $lrg->findNode('updatable_annotation/annotation_set/lrg_locus')->content;
+	$entry->addNode('name')->content($hgnc);
+
+
+	# gene description
+	my $desc;
+	my $as = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
+	foreach my $set (@{$as}) {
+		if ($set->findNode('source/name')->content =~ /NCBI/) {
+			my $genes = $set->findNodeArray('features/gene');
+			foreach my $gene (@{$genes}) {
+				my $flag = 0;
+				foreach my $symbol (@{$gene->findNodeArray('symbol')}) {
+					$flag = 1 if ($symbol->content eq $hgnc);
+				}
+				$desc = ($gene->findNodeArray('long_name'))->[0]->content if ($flag == 1);
+			}
+		}
+	}
+	die "Gene symbol not found!\n" if (!defined($desc));
+	$entry->addNode('description')->content($desc);
+
+
+	# Additional fields
+	my $add_fields = $entry->addNode('additional_fields');
+
+	# Coordinates
+	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set/');
+	foreach my $aset (@$asets) {
+		if ($aset->findNode('source/name')->content =~ /LRG/) {
+			my $coord = $aset->findNode('mapping');
+			$add_fields->addNode('field',{'name' => 'assembly'})->content($coord->data->{coord_system});
+			$add_fields->addNode('field',{'name' => 'chr_name'})->content($coord->data->{other_name});
+			$add_fields->addNode('field',{'name' => 'chr_start'})->content($coord->data->{other_start});
+			$add_fields->addNode('field',{'name' => 'chr_end'})->content($coord->data->{other_end});
+			last;
+		}
+	}
+	
+	# Status
+	$add_fields->addNode('field',{'name' => 'status'})->content($xml->{'status'}) if (defined($xml->{'status'}));
+
+	# Locus + synonyms
+	my $loci = $lrg->findNodeArray('updatable_annotation/annotation_set/lrg_locus');
+	foreach my $locus (@{$loci}) {
+		my $l_content = $locus->content;
+		$add_fields->addNode('field',{'name' => 'synonym'})->content($l_content) if ($l_content ne $hgnc);
+	}
+
+	# Symbol
+	my $symbols = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/symbol');
+	foreach my $symbol (@{$symbols}) {
+		my $s_content = $symbol->content;
+		$add_fields->addNode('field',{'name' => 'synonym'})->content($s_content) if ($s_content ne $hgnc);
+	}
+
+	
+	# Xref
+	my $cross_ref = $entry->addNode('cross_references');
+	my $xrefs;
+	# Gene xref
+	my $x_genes = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene');
+	$xrefs = get_xrefs($x_genes,$xrefs);
+	my $seq_source = $lrg->findNode('fixed_annotation/sequence_source')->content;
+	$xrefs->{$seq_source} = 'ResSeq' if (defined($seq_source));
+
+	# Transcript xref
+	my $x_trans = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript');
+	$xrefs = get_xrefs($x_trans,$xrefs);
+
+	# Protein xref
+	my $x_proteins = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript/protein_product');
+	$xrefs = get_xrefs($x_proteins,$xrefs);
+	
+	while (my ($k,$v) = each(%{$xrefs})) {
+		$cross_ref->addEmptyNode('ref',{'dbname' => $v, 'dbkey' => $k});
+	}
+
+	# Date
+	my $dates = $entry->addNode('dates');
+	my $creation_date = $lrg->findNode('fixed_annotation/creation_date')->content;
+	$dates->addEmptyNode('date',{'type' => 'creation', 'value' =>  $creation_date});
+	
+	# Dump XML to output_file
+	$index_root->printAll(1);
+
+}
+
+
+
+sub get_xrefs {
+	my $xref_nodes = shift;
+	my $xrefs = shift;
+	foreach my $x_node (@{$xref_nodes}) {
+		my $dbname = $x_node->data->{'source'};
+		my $dbkey  = $x_node->data->{'accession'};
+		$xrefs->{$dbkey} = $dbname;
+		my $db_xrefs = $x_node->findNodeArray('db_xref');
+		next if (!scalar $db_xrefs);
+		foreach my $x_ref (@{$db_xrefs}) {
+			my $dbname2 = $x_ref->data->{'source'};
+			my $dbkey2  = $x_ref->data->{'accession'};
+			$xrefs->{$dbkey2} = $dbname2;
+		}
+	}
+	return $xrefs;
+}
+
+
+
+sub usage {
     
-    #ÊGet the LRG id
-    my $lrg_id = $obj->findNode('fixed_annotation/id');
-    if (defined($lrg_id)) {
-        $lrg_id = $lrg_id->content();
-    }
-    else {
-        warn("No LRG identifier found in " . $xmlfile->{'filename'});
-        $lrg_id = "";
-    }
+  print qq{
+  Usage: perl index.lrg.pl [OPTION]
+  
+  Generate EB-eye index XML file(s) from LRG XML record(s)
+	
+  Options:
     
-    # Get the HGNC symbol
-    my $hgnc_symbol = $obj->findNode('updatable_annotation/annotation_set/lrg_gene_name');
-    if (defined($hgnc_symbol)) {
-        $hgnc_symbol = $hgnc_symbol->content();
-    }
-    else {
-        warn("No HGNC symbol found in " . $xmlfile->{'filename'});
-        $hgnc_symbol = "";
-    }
-    
-    # Get the last modified date across all dates in the file
-    my $last_modified;
-    my $node = $obj->findNode('fixed_annotation/creation_date');
-    if (defined($node)) {
-        my ($y,$m,$d) = $node->content() =~ m/(\d{4})\-(\d{2})\-(\d{2})/;
-        $last_modified = Time::Local::timelocal(0,0,0,$d,($m - 1),$y);
-    }
-    foreach $node (@{$obj->findNodeArray('updatable_annotation/annotation_set')}) {
-        $node = $node->findNode('modification_date');
-        if (defined($node)) {
-            my ($y,$m,$d) = $node->content() =~ m/(\d{4})\-(\d{2})\-(\d{2})/;
-            $last_modified = max($last_modified,Time::Local::timelocal(0,0,0,$d,($m - 1),$y));
-        }
-    }
-    #ÊConvert the timestamp back into a string
-    if (defined($last_modified)) {
-        my @t = localtime($last_modified);
-        $last_modified = (1900 + $t[5]) . "-" . sprintf("%02d",($t[4] + 1)) . "-" . sprintf("%02d",$t[3]);
-    }
-    
-    # Get the genomic mapping
-    my $mapping = $obj->findNode('updatable_annotation/annotation_set/mapping',{'most_recent' => 1});
-    my ($assembly,$chr_name,$chr_start,$chr_end);
-    if (defined($mapping)) {
-        ($assembly,$chr_name,$chr_start,$chr_end) = ($mapping->data()->{'assembly'},$mapping->data()->{'chr_name'},$mapping->data()->{'chr_start'},$mapping->data()->{'chr_end'});
-    }
-    else {
-        warn("No genomic mapping found in " . $xmlfile->{'filename'});
-        ($assembly,$chr_name,$chr_start,$chr_end) = ("","","","");
-    }
-    
-    # Use the filename relative to the root dir
-    my ($filename) = $xmlfile->{'filename'} =~ m/([^\/]+)$/;
-    $filename = "pending/" . $filename if ($xmlfile->{'status'} eq "pending");
-    
-    # Print the tab-delimited fields
-    print join("\t",($lrg_id,$hgnc_symbol,$xmlfile->{'status'},$last_modified,$assembly,$chr_name,$chr_start,$chr_end,$filename)) . "\n";
+        -xml_dir       Path to LRG XML directory to be read (required)
+				-index_dir     Path to LRG index directory where the file(s) will be stored (required)
+        -help          Print this message
+        
+  };
+  exit(0);
 }
