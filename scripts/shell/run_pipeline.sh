@@ -12,13 +12,19 @@ new_dir=$5
 tmp_dir=$6
 report_file=$7
 
+if [ -z ${tmp_dir} ] ; then
+	tmp_dir='.'
+fi
+
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
 
 function check_script_result {
 	if [[ -s ${error_log} ]] ; then
 		echo_stderr  "ERROR: the script failed!"
 		echo_stderr  "Please, look at the error log file ${error_log} for more details"
-		echo  "failed" >> ${report_file}
+		if [ -n "${report_file}" ] ; then
+			echo  "failed" >> ${report_file}
+		fi
 		exit 1 #exit shell script
 	fi
 }
@@ -31,7 +37,9 @@ function check_empty_file {
 		echo_stderr  ""
 	else	
 		echo_stderr  "ERROR: the script failed!"
-		echo "failed" >> ${report_file}
+		if [ -n "${report_file}" ] ; then
+			echo "failed" >> ${report_file}
+		fi
 		exit 1 #exit shell script
 	fi
 }
@@ -104,4 +112,6 @@ echo_stderr  "Script done"
 echo_stderr  ""
 echo_stderr  ""
 
-echo "ran successfully" >> ${report_file}
+if [ -n "${report_file}" ] ; then
+	echo "ran successfully" >> ${report_file}
+fi
