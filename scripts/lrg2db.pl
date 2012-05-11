@@ -514,8 +514,7 @@ while (my $transcript = shift(@{$transcripts})) {
     add_sequence($cdna_id,'cdna',$db_adaptor,$seq);
     
     # Get the cds
-    my $cds_nodes = $transcript->findNodeArray('coding_region') or warn("Could not get coding region for transcript $name\, skipping this transcript");
-    next unless ($cds_nodes);
+    my $cds_nodes = $transcript->findNodeArray('coding_region') or warn("Could not get coding region for transcript $name");
 		
 		foreach my $cds (@{$cds_nodes}) {
     	my $codon_start = $cds->data()->{'codon_start'};
@@ -592,6 +591,7 @@ while (my $transcript = shift(@{$transcripts})) {
         
         # If we have an exon, parse out the data
         if ($child->name() eq 'exon') {
+
             my $exon_lrg_start;
             my $exon_lrg_end;
             

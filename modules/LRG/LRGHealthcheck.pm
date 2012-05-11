@@ -97,7 +97,7 @@ sub cDNA {
         #ÊGet the genomic features
         my $features = $self->get_genomic_features($name,$transcript,$genomic_seq);
         my $genomic_cdna = $features->{'cdna'};
-        
+
         # Compare the cDNAs
         if ($genomic_cdna ne $tr_cdna) {
             $passed = 0;
@@ -265,10 +265,13 @@ sub exons {
         
         # Get the coding_region start and end (in lrg_coords)
         my $coding_region = $transcript->findNode('coding_region');
-				my $coding_coord = $coding_region->findNode('coordinates');
-        my $coding_start = $coding_coord->data()->{'start'};
-        my $coding_end = $coding_coord->data()->{'end'};
-    
+				my ($coding_start, $coding_end);
+				if (defined($coding_region)) {
+				  my $coding_coord = $coding_region->findNode('coordinates');
+          $coding_start = $coding_coord->data()->{'start'};
+          $coding_end = $coding_coord->data()->{'end'};
+    		}
+
         # Get the exons
         my $exons = $self->get_exons($name,$transcript) or ($passed = 0);
         next if (!defined($exons));
@@ -279,95 +282,85 @@ sub exons {
         my $peptide_last_end;
         my $last_phase;
         my $last_expected_phase = 0;
+
         foreach my $exon (@{$exons}) {
             
-            # Get LRG coordinates (these are required by the schema)
-            my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
-						#my $lrg_coords = $exon->findNode('lrg_coords');
-            #my $lrg_start = $lrg_coords->data()->{'start'};
-            #my $lrg_end = $lrg_coords->data()->{'end'};
-            my $lrg_length = ($lrg_end - $lrg_start + 1);
+          # Get LRG coordinates (these are required by the schema)
+          my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
+          my $lrg_length = ($lrg_end - $lrg_start + 1);
             
-            #ÊGet the cdna coordinates (these are optional)
-						my ($cdna_start,$cdna_end) = $self->get_coordinates($exon,'cdna');
-						if (defined($cdna_start)) {
-            #my $cdna_coords = $exon->findNode('cdna_coords');						
-            #if (defined($cdna_coords)) {
-                #my $cdna_start = $cdna_coords->data()->{'start'};
-                #my $cdna_end = $cdna_coords->data()->{'end'};
-                my $cdna_length = ($cdna_end - $cdna_start + 1);
+          #ÊGet the cdna coordinates (these are optional)
+				  my ($cdna_start,$cdna_end) = $self->get_coordinates($exon,'cdna');
+				  if (defined($cdna_start)) {
+            my $cdna_length = ($cdna_end - $cdna_start + 1);
                 
-                # Compare the cDNA coords to the LRG coords
-                if ($cdna_length != $lrg_length) {
-                    $passed = 0;
-                    $self->{'check'}{$name}{'message'} .= "Length of exon ($lrg_start - $lrg_end) in transcript $tr_name is different in cDNA coordinates ($cdna_length nts) compared to LRG coordinates ($lrg_length nts)//";
-                }
-                
-                # If defined, check that the gap between this exon and the previous is 1
-                if (defined($cdna_last_end) && ($cdna_start - $cdna_last_end) != 1) {
-                    $passed = 0;
-                    $self->{'check'}{$name}{'message'} .= "Expected cDNA start to be " . ($cdna_last_end + 1) . " for exon ($lrg_start - $lrg_end) in transcript $tr_name but it is $cdna_start//";
-                }
-                
-                $cdna_last_end = $cdna_end;
+            # Compare the cDNA coords to the LRG coords
+            if ($cdna_length != $lrg_length) {
+                $passed = 0;
+                $self->{'check'}{$name}{'message'} .= "Length of exon ($lrg_start - $lrg_end) in transcript $tr_name is different in cDNA coordinates ($cdna_length nts) compared to LRG coordinates ($lrg_length nts)//";
             }
+                
+            # If defined, check that the gap between this exon and the previous is 1
+            if (defined($cdna_last_end) && ($cdna_start - $cdna_last_end) != 1) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "Expected cDNA start to be " . ($cdna_last_end + 1) . " for exon ($lrg_start - $lrg_end) in transcript $tr_name but it is $cdna_start//";
+            }
+                
+            $cdna_last_end = $cdna_end;
+          }
             
-            #ÊGet the peptide coordinates (these are optional)
-						my ($peptide_start,$peptide_end) = $self->get_coordinates($exon,'peptide');
-						if (defined($peptide_start)) {
-            #my $peptide_coords = $exon->findNode('peptide_coords');
-            #if (defined($peptide_coords)) {
-                #my $peptide_start = $peptide_coords->data()->{'start'};
-                #my $peptide_end = $peptide_coords->data()->{'end'};
-                my $peptide_length = ($peptide_end - $peptide_start + 1);
+          #ÊGet the peptide coordinates (these are optional)
+				  my ($peptide_start,$peptide_end) = $self->get_coordinates($exon,'peptide');
+				  if (defined($peptide_start) && defined($coding_start)) {
+            my $peptide_length = ($peptide_end - $peptide_start + 1);
 
-                # Calculate the length of the coding sequence within the exon
-                my $cds_length = $lrg_length;
-                my $first_exon = ($coding_start >= $lrg_start && $coding_start <= $lrg_end);
-                my $last_exon = ($coding_end >= $lrg_start && $coding_end <= $lrg_end);
-                $cds_length -= ($coding_start - $lrg_start) if ($first_exon);
-                $cds_length -= ($lrg_end - $coding_end) if ($last_exon);
+            # Calculate the length of the coding sequence within the exon
+            my $cds_length = $lrg_length;
+						my $first_exon  = ($coding_start >= $lrg_start && $coding_start <= $lrg_end);
+            my $last_exon   = ($coding_end >= $lrg_start && $coding_end <= $lrg_end);
+            $cds_length -= ($coding_start - $lrg_start) if ($first_exon);
+            $cds_length -= ($lrg_end - $coding_end) if ($last_exon);
+    
+            # Deduct the nucleotides belonging to the previous codon from the cds_length, unless this is the first exon
+            my $prev_codon = (3 - $last_expected_phase);
+            $cds_length -= $prev_codon unless ($first_exon);
                 
-                # Deduct the nucleotides belonging to the previous codon from the cds_length, unless this is the first exon
-                my $prev_codon = (3 - $last_expected_phase);
-                $cds_length -= $prev_codon unless ($first_exon);
+            my $expected_phase = ($cds_length % 3);
+            #ÊCompensate for the stop codon coordinate being included in the coding_region annotation but not in the peptide coordinates
+            my $expected_peptide_length = (!$first_exon) + int($cds_length / 3) + ($expected_phase > 0) - ($last_exon == 1);
                 
-                my $expected_phase = ($cds_length % 3);
-                #ÊCompensate for the stop codon coordinate being included in the coding_region annotation but not in the peptide coordinates
-                my $expected_peptide_length = (!$first_exon) + int($cds_length / 3) + ($expected_phase > 0) - ($last_exon == 1);
-                
-                if ($expected_peptide_length != $peptide_length) {
-                    $passed = 0;
-                    $self->{'check'}{$name}{'message'} .= "Expected peptide length for exon ($lrg_start - $lrg_end) in transcript $tr_name to be $expected_peptide_length but it is $peptide_length" . ($last_exon ? ". This is the terminal exon, perhaps the stop codon was not included in the coding region coordinates?" : "") . "//";
-                }
-                $last_expected_phase = $expected_phase;
-                
-                #ÊCheck that the peptide start coordinate is either equal to the last end or one nt more, depending on the intervening intron phase
-                if (defined($peptide_last_end)) {
-                    if (defined($last_phase) && $last_phase != -1) {
-                        # If exon start phase is 0, we expect the peptide coordinate to have been incremented by one aa
-                        if ($last_phase == 0 && $peptide_start != ($peptide_last_end + 1)) {
-                            $passed = 0;
-                            $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be " . ($peptide_last_end + 1) . " but it is $peptide_start//";
-                        }
-                        # Else, it should be the same as the last ending coordinate
-                        elsif ($last_phase != 0 && $peptide_start != $peptide_last_end) {
-                            $passed = 0;
-                            $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be $peptide_last_end but it is $peptide_start//";
-                        }
-                    }
-                    else {
-                        if ($peptide_start != ($peptide_last_end + 1) && $peptide_start != $peptide_last_end) {
-                            $passed = 0;
-                            $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be " . ($peptide_last_end + 1) . " or $peptide_last_end but it is $peptide_start//";
-                        }
-                    }
-                }
-                $peptide_last_end = $peptide_end;
+            if ($expected_peptide_length != $peptide_length) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "Expected peptide length for exon ($lrg_start - $lrg_end) in transcript $tr_name to be $expected_peptide_length but it is $peptide_length" . ($last_exon ? ". This is the terminal exon, perhaps the stop codon was not included in the coding region coordinates?" : "") . "//";
             }
-            $lrg_last_end = $lrg_end;
-            # Store the phase of the intron following this exon
-            $last_phase = $self->get_exon_end_phase($exon);
+            $last_expected_phase = $expected_phase;
+                
+            #ÊCheck that the peptide start coordinate is either equal to the last end or one nt more, depending on the intervening intron phase
+            if (defined($peptide_last_end)) {
+              if (defined($last_phase) && $last_phase != -1) {
+                # If exon start phase is 0, we expect the peptide coordinate to have been incremented by one aa
+                if ($last_phase == 0 && $peptide_start != ($peptide_last_end + 1)) {
+                  $passed = 0;
+                  $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be " . ($peptide_last_end + 1) . " but it is $peptide_start//";
+                }
+                # Else, it should be the same as the last ending coordinate
+                elsif ($last_phase != 0 && $peptide_start != $peptide_last_end) {
+                  $passed = 0;
+                  $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be $peptide_last_end but it is $peptide_start//";
+                }
+              }
+              else {
+                if ($peptide_start != ($peptide_last_end + 1) && $peptide_start != $peptide_last_end) {
+                  $passed = 0;
+                  $self->{'check'}{$name}{'message'} .= "Expected peptide start coordinate for exon ($lrg_start - $lrg_end) in transcript $tr_name to be " . ($peptide_last_end + 1) . " or $peptide_last_end but it is $peptide_start//";
+                }
+              }
+            }
+            $peptide_last_end = $peptide_end;
+          }
+          $lrg_last_end = $lrg_end;
+          # Store the phase of the intron following this exon
+          $last_phase = $self->get_exon_end_phase($exon);
         }
     }
     $self->{'check'}{$name}{'passed'} = $passed;
@@ -683,9 +676,12 @@ sub phases {
         
         # Get the coding_region start and end (in lrg_coords)
         my $coding_region = $transcript->findNode('coding_region');
-				my $coding_coord = $coding_region->findNode('coordinates');
-        my $coding_start = $coding_coord->data()->{'start'};
-        my $coding_end = $coding_coord->data()->{'end'};
+				my ($coding_start, $coding_end);
+				if(defined($coding_region)) {
+				  my $coding_coord = $coding_region->findNode('coordinates');
+          $coding_start = $coding_coord->data()->{'start'};
+          $coding_end = $coding_coord->data()->{'end'};
+        }
     
         #ÊLoop over the transcripts nodes to get the exon-intron pairs (assume they are in the correct order in the nodes array)
         my $last_phase = 0;
@@ -694,12 +690,10 @@ sub phases {
         foreach my $exon (@{$exons}) {
             
             # Calculate the expected phase of the intron following an exon
-            #my $exon_start = $exon->findNode('lrg_coords')->data()->{'start'};
-            #my $exon_end = $exon->findNode('lrg_coords')->data()->{'end'};
             my ($exon_start,$exon_end) = $self->get_coordinates($exon,'lrg');
 						
             # Check if the exon is completely in the UTRs, in that case, expected phase is -1. Expected phase is also -1 if the stop codon is within this exon.
-            if (($coding_start > $exon_end) || ($coding_end <= $exon_end)) {
+            if (!defined($coding_start) || ($coding_start > $exon_end) || ($coding_end <= $exon_end)) {
                 $expected_phase = -1;
             }
             else {
@@ -1011,25 +1005,31 @@ sub get_genomic_features {
    
     #ÊBuild the cDNA from the genomic sequence
     my $genomic_cdna = $self->get_cDNA($exons,$genomic_seq);
+    my %features;
     
     # Get the coding_region start and end (in lrg_coords)
     my $coding_region = $transcript->findNode('coding_region');
-		my $coding_coord = $coding_region->findNode('coordinates');
-    my $coding_start = $coding_coord->data()->{'start'};
-    my $coding_end = $coding_coord->data()->{'end'};
+		
+		if (defined($coding_region)) {
+			my $coding_coord = $coding_region->findNode('coordinates');
+    	my $coding_start = $coding_coord->data()->{'start'};
+    	my $coding_end = $coding_coord->data()->{'end'};
 
-    # Get the genomic CDS
-    my $genomic_cds = $self->get_cDNA($exons,$genomic_seq,$coding_start,$coding_end);
+    	# Get the genomic CDS
+    	my $genomic_cds = $self->get_cDNA($exons,$genomic_seq,$coding_start,$coding_end);
     
-    # Translate the genomic sequence CDS
-    my $seq_obj = Bio::Seq->new(-name => 'genomic_cdna', -seq => $genomic_cds);
-    my $genomic_translation = $seq_obj->translate()->seq();
-    
-    my %features = (
+    	# Translate the genomic sequence CDS
+   		my $seq_obj = Bio::Seq->new(-name => 'genomic_cdna', -seq => $genomic_cds);
+    	my $genomic_translation = $seq_obj->translate()->seq();
+    	%features = (
         'cdna' => $genomic_cdna,
         'cds' => $genomic_cds,
         'translation' => $genomic_translation
-    );
+    	);
+		}
+    else {
+      %features = ('cdna' => $genomic_cdna);
+    }
     
     return \%features;  
 }
