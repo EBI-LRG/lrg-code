@@ -258,7 +258,7 @@ if (!defined($gene_id)) {
 	# Get gene_id
 	foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
 		foreach my $symbol (@{$gene->findNodeArraySingle('symbol')}) {
-			$gene_id = $gene->data->{accession} if ($symbol->content eq $hgnc_symbol);
+			$gene_id = $gene->data->{accession} if ($symbol->content eq $hgnc_symbol && $gene->data->{source} =~ /NCBI/i); # get the GeneID 
 		}
 	}
 
