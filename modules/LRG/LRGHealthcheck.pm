@@ -207,15 +207,17 @@ sub exon_labels {
                     my $updatable_exon;
                     my $updatable_start = 0;
                     my $updatable_end = 0;
-                    
-                    while ($updatable_start < $fixed_start) {
+
+                    while ($updatable_start < $fixed_start && scalar(@updatable_exons) > 0) {
                         
                         # If the current updatable exon didn't match, we have an exon label without corresponding exon in the fixed section
                         push(@orphan_labels,$updatable_exon) if (defined($updatable_exon));
                         
                         $updatable_exon = shift(@updatable_exons);
-                        $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
-                        $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
+                        if (defined($updatable_exon)) {
+                          $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
+                          $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
+												}
                     }
                    
                     # If the coordinates of the updatable exon does not match the fixed exon, we have a fixed exon without label
@@ -232,6 +234,7 @@ sub exon_labels {
                 #ÊIf the updatable exon array is non-empty, the remaining elements are orphans
                 push(@orphan_labels,@updatable_exons);
                 while (my $updatable_exon = shift(@orphan_labels)) {
+										print STDERR "EXON:".$updatable_exon->findNode('label')->content."\n";
                     my $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
                     my $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
                     my $label = $updatable_exon->findNode('label')->content();
@@ -583,7 +586,7 @@ sub partial {
     #ÊAlso do a check to make sure that all annotations on the LRG gene are contained within the LRG region. Need the lrg_gene_name for that
     my $lrg_gene_name;
     foreach my $annotation_set (@{$annotation_sets}) {
-        my $lrg_gene_node = $annotation_set->findNode('lrg_gene_name',{'source' => 'HGNC'}) or next;
+        my $lrg_gene_node = $annotation_set->findNode('lrg_locus',{'source' => 'HGNC'}) or next;
         $lrg_gene_name = $lrg_gene_node->content();
         last;
     }
@@ -606,7 +609,7 @@ sub partial {
             # Set the flag for the partial type (if any) indicating that the gene is only partially contained within the LRG
             #ÊDo this manually since we don't want the call to be recursive
             foreach my $node (@{$gene->{'nodes'}}) {
-                $partial{$node->content()} = 1 if ($node->name() eq 'partial');
+                $partial{$node->content()} = 1 if ($node->name() eq 'partial');				
             }
             
             # Check if the gene symbol corresponds to the lrg_gene_name and if partial is indicated 
@@ -626,7 +629,6 @@ sub partial {
                     if ($node->name() eq 'partial') {
                         $transcript_partial{$node->content()} = 1;
                         $skip_gene = 1 if (!exists($partial{$node->content()}));
-                        last;
                     }
                 }
                 
@@ -708,17 +710,18 @@ sub phases {
             
             # Get the phase of the intron following this exon
             my $phase = $self->get_exon_end_phase($exon);
-            
+						next if ($phase == -1);            
+
             #ÊDid we get an intron although we didn't expect one?
             if ($expected_phase == -1 && $phase != -1) {
                 $passed = 0;
                 $self->{'check'}{$name}{'message'} .= "Expected no intron following exon ($exon_start - $exon_end) in transcript $tr_name but found one with phase $phase//";
             }
             # Did we expect an intron but found none?
-            elsif ($expected_phase != -1 && $phase == -1) {
-                $passed = 0;
-                $self->{'check'}{$name}{'message'} .= "Expected an intron with phase $expected_phase but no intron found following exon ($exon_start - $exon_end) in transcript $tr_name//";
-            }
+            #elsif ($expected_phase != -1 && $phase == -1) {
+            #    $passed = 0;
+            #    $self->{'check'}{$name}{'message'} .= "Expected an intron with phase $expected_phase but no intron found following exon ($exon_start - $exon_end) in transcript $tr_name//";
+            #}
             # Are the expected and actual phases different
             elsif ($phase != $expected_phase) {
                 $passed = 0;
