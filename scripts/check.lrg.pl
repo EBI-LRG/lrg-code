@@ -56,9 +56,9 @@ usage() if (defined($help));
 if ($list) {
     print "\nAvailable checks:\n\n";
     foreach my $check (@LRGHealthcheck::CHECKS) {
-        print "\t$check\n";
+        print STDOUT "\t$check\n";
     }
-    print "\n";
+    print STDOUT "\n";
     exit(0);
 }
 
@@ -70,7 +70,7 @@ $LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
 my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
     if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS)) {
-        print "Unknown healthcheck '$check'\n";
+        print STDOUT "Unknown healthcheck '$check'\n";
         next;
     }
     $hc->$check();
@@ -78,14 +78,16 @@ foreach my $check (@checks) {
 
 my $count_passed;
 my $count_total = scalar (@checks);
+my $msg;
 foreach my $check (@checks) {
-    print "$check\t" . ($hc->{'check'}{$check}{'passed'} ? "PASSED" : "FAILED") . "!\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
+    $msg .= "$check\t" . ($hc->{'check'}{$check}{'passed'} ? "PASSED" : "FAILED") . "!\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
 		$count_passed ++ if ($hc->{'check'}{$check}{'passed'});
     if (exists($hc->{'check'}{$check}{'message'})) {
-        print "\t" . join("\n\t\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
+        $msg .= "\t" . join("\n\t\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
     }
 }
 
+print STDERR "$msg\n" if ($verbose || $count_passed != $count_total);
 print STDERR "Healthcheck FAILED\n" if ($count_passed != $count_total);
 
 
