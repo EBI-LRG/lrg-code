@@ -435,7 +435,7 @@ sub id {
 sub mappings {
     my $self = shift;
     my $passed = 1;
-    
+  
     # Get the name of the check
     my $name = sub_name();
     
@@ -453,18 +453,18 @@ sub mappings {
     foreach my $mapping_set (@{$mapping_sets}) {
         #ÊGet the source name
         my $source = $mapping_set->parent()->findNode('source/name')->content();
-				
+
 				# Check if the LRG mapping corresponds to the sequence 
 				next if ($source !~ /^LRG/);        
 
         # Get the assembly
         my $assembly = $mapping_set->data()->{'coord_system'};
         #ÊSubstitute 'NCBI37' for 'GRCh37'
-        $assembly =~ s/NCBI37/GRCh37/;
+        $assembly =~ s/NCBI37/GRCh37/ if ($assembly eq 'NCBI37');
 
         #ÊStore the mapping set under the assembly key and source name
         $mapping_hash{$assembly}->{$source} = $mapping_set;
-        
+
         # Do some sanity checking on this mapping set
         
         # Get the length of the genomic sequence
@@ -493,7 +493,7 @@ sub mappings {
     # Go over each assembly and check if the mappings differ in the relevant fields from the different sources
     while (my ($assembly,$mappings) = each(%mapping_hash)) {
         my @sources = keys(%{$mappings});
-        
+
         # If we only have one source, nothing to compare
         next if (scalar(@sources) < 2);
         
@@ -502,7 +502,7 @@ sub mappings {
             my $mapping_i = $mappings->{$sources[$i]};
             my $spans_i = $mapping_i->findNodeArray('mapping_span');
             my $diffs_i = $mapping_i->findNodeArray('mapping_span/diff');
-            
+
             for (my $j=($i+1); $j<scalar(@sources); $j++) {
                 my $mapping_j = $mappings->{$sources[$j]};
                 my $spans_j = $mapping_j->findNodeArray('mapping_span');
@@ -519,6 +519,22 @@ sub mappings {
             }
         }
     }
+
+    # Check if several mappings for one source-assembly
+    %mapping_hash = ();
+		foreach my $mapping_set (@{$mapping_sets}) {
+			my $source = $mapping_set->parent()->findNode('source/name')->content();
+      my $coord_sys = $mapping_set->data()->{'coord_system'};
+
+      if (!$mapping_hash{$coord_sys}->{$source}) {
+        $mapping_hash{$coord_sys}->{$source} = 1;
+      }
+      else {
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "The mapping of $coord_sys in the annotation set $source is duplicated.";
+      }
+		}
+
     $self->{'check'}{$name}{'passed'} = $passed;
     
     return $passed;
