@@ -24,8 +24,10 @@ print O "Pipeline begins\n\n";
 open F, "< $data_file" or die $!;
 while (<F>) {
 	chomp $_;
-	my ($lrg_id,$hgnc_name,$assembly) = split ("\t", $_);
-	
+	next if ($_ =~ /^#/);
+
+	my ($lrg_id,$hgnc_name,$assembly) = split ("\t", $_);	
+
 	if (!$lrg_id || !$hgnc_name || !$assembly) {
 		print O ($lrg_id) ? "$lrg_id: Can't read the data in the data_file (HGNC name, assembly)\n" : "Can't read the data in the data_file, line $.\n";
 		next;
