@@ -108,6 +108,7 @@ if ($purge) {
         WHERE
             las.gene_id = $gene_id
     };
+
     if (!$keep_mapping) {
         print STDOUT localtime() . "\tRemoving mapping from updatable annotation for $lrg_id\n" if ($verbose);
         $db_adaptor->dbc->do($stmt);
@@ -199,7 +200,7 @@ if ($purge) {
             lrg_intron li ON li.exon_5 = le.exon_id LEFT JOIN
             lrg_cds_exception lce ON lce.cds_id=lp.cds_id LEFT JOIN
 						lrg_cds_frameshift lcf ON lcf.cds_id=lp.cds_id LEFT JOIN
-						lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id OR lce.sequence_id = ls.sequence_id) 
+						lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id OR lce.sequence_id = ls.sequence_id)
         WHERE
             ld.gene_id = $gene_id
     	};
@@ -476,9 +477,19 @@ my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 # Get the requester data
 $node = $fixed->findNodeArray('source') or warn ("Could not find requester data");
 if (defined($node)) {
-    while (my $source = shift(@{$node})) {
+	
+	my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
+
+	# Check if some requester information are already in the database for this LRG. 
+	my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
+	if (defined($lsdb_id)) {
+		print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
+	}
+	else {
+		while (my $source = shift(@{$node})) {
         parse_source($source,$gene_id,$db_adaptor);
     }
+	}
 }
 
 # Get the transcript nodes
@@ -767,7 +778,6 @@ sub parse_annotation_set {
     $as_ins_sth->bind_param(5,$xml_out,SQL_VARCHAR);
     $as_ins_sth->execute();
     my $annotation_set_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
-    
     # Link the mappings to the annotation_set
     $asm_ins_sth->bind_param(1,$annotation_set_id,SQL_INTEGER);
     while (my $mid = shift(@mids)) {
@@ -913,7 +923,7 @@ sub parse_source {
     my $gene_id = shift;
     my $db_adaptor = shift;
     my $use_annotation_set = shift || [];
-    
+
     my $lr_ins_stmt = qq{
         INSERT IGNORE INTO
             lrg_request (
@@ -973,6 +983,7 @@ sub parse_source {
             '$gene_id'
         )
     };
+
     my $lr_ins_sth = $db_adaptor->dbc->prepare($lr_ins_stmt);
     my $lsdb_ins_sth = $db_adaptor->dbc->prepare($lsdb_ins_stmt);
     my $contact_ins_sth = $db_adaptor->dbc->prepare($contact_ins_stmt);
@@ -980,7 +991,7 @@ sub parse_source {
     my $lg_ins_sth = $db_adaptor->dbc->prepare($lg_ins_stmt);
 
     my $lsdb_name = $source->findNode('name');
-    
+
     # Check that the parent node is source so that we are not in the contact section
     if (defined($lsdb_name) && $lsdb_name->parent()->name() eq 'source') {
         $lsdb_name = $lsdb_name->content();
