@@ -25,6 +25,8 @@ my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
 
+my $lsdb_code_id = 1;
+
 GetOptions(
   'host=s'		=> \$host,
   'port=i'		=> \$port,
@@ -935,7 +937,7 @@ sub parse_source {
             ?
         )
     };
-    my $lsdb_ins_stmt = qq{
+    my $lsdb_ins_stmt_1 = qq{
         INSERT INTO
             lsdb (
                 name,
@@ -943,6 +945,15 @@ sub parse_source {
             )
         VALUES (
             ?,
+            ?
+        )
+    };
+		my $lsdb_ins_stmt_2 = qq{
+        INSERT INTO
+            lsdb (
+                code
+            )
+        VALUES (
             ?
         )
     };
@@ -985,7 +996,8 @@ sub parse_source {
     };
 
     my $lr_ins_sth = $db_adaptor->dbc->prepare($lr_ins_stmt);
-    my $lsdb_ins_sth = $db_adaptor->dbc->prepare($lsdb_ins_stmt);
+    my $lsdb_ins_sth_1 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_1);
+		my $lsdb_ins_sth_2 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_2);
     my $contact_ins_sth = $db_adaptor->dbc->prepare($contact_ins_stmt);
     my $lc_ins_sth = $db_adaptor->dbc->prepare($lc_ins_stmt);
     my $lg_ins_sth = $db_adaptor->dbc->prepare($lg_ins_stmt);
@@ -1015,10 +1027,12 @@ sub parse_source {
     
     # If we could not get the LSDB data from the source element, or if both name and url are blank, return undef
     $lsdb_url ||= "";
-    return undef if (!defined($lsdb_name) || ($lsdb_name eq "" && $lsdb_url eq ""));
     
     # Enter the LSDB info into db
-    my $stmt = qq{
+		my $stmt;
+		my $lsdb_id;
+		if (defined($lsdb_name) && $lsdb_name ne '' || $lsdb_url ne '') {
+    	$stmt = qq{
         SELECT
             lsdb_id
         FROM
@@ -1027,15 +1041,34 @@ sub parse_source {
             name = '$lsdb_name' AND
             url = '$lsdb_url'
         LIMIT 1
-    };
-    my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-    if (!defined($lsdb_id)) {
-        $lsdb_ins_sth->bind_param(1,$lsdb_name,SQL_VARCHAR);
-        $lsdb_ins_sth->bind_param(2,$lsdb_url,SQL_VARCHAR);
-        $lsdb_ins_sth->execute();
+    	};
+			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    	if (!defined($lsdb_id)) {
+        $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
+        $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
+        $lsdb_ins_sth_1->execute();
         $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+    	}
+		}
+		else {
+			my $lsdb_code = "$lrg_id\_$lsdb_code_id";
+			$stmt = qq{
+        SELECT
+            lsdb_id
+        FROM
+            lsdb
+        WHERE
+            code = '$lsdb_code'
+        LIMIT 1
+    	};
+    	$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    	if (!defined($lsdb_id)) {
+        $lsdb_ins_sth_2->bind_param(1,$lsdb_code,SQL_VARCHAR);
+        $lsdb_ins_sth_2->execute();
+        $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+    	}
+			$lsdb_code_id++;
     }
-    
     # Get the contact information for this source
     my $contacts = $source->findNodeArray('contact') or warn ("Could not find contact information for source " . (defined($lsdb_name) ? $lsdb_name : ""));
     $contacts ||= [];
