@@ -904,11 +904,9 @@ sub parse_mapping {
     $check_dup_sth->bind_param(4,$chr_start,SQL_INTEGER);
     $check_dup_sth->bind_param(5,$chr_end,SQL_INTEGER);
 		$check_dup_sth->execute();
-		my @res = $check_dup_sth->fetchrow_array;
-		print STDERR "Mapping: $chr_name -> ".$res[0]."\n";
-		if ($res[0] !=0 ) {
-			print STDERR "Duplicated entry $chr_name!\n";
-		}
+		
+    my @res = $check_dup_sth->fetchrow_array;
+		error_msg("ERROR: Duplicated entry $chr_name!") if ($res[0] !=0 );
 
     $m_ins_sth->bind_param(1,$assembly,SQL_VARCHAR);
     $m_ins_sth->bind_param(2,$chr_name,SQL_VARCHAR);
