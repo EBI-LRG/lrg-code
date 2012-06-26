@@ -24,31 +24,33 @@ my $keep_mapping;
 my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
+my $error_log;
 
 my $lsdb_code_id = 1;
 
 GetOptions(
   'host=s'		=> \$host,
   'port=i'		=> \$port,
-  'dbname=s'		=> \$dbname,
+  'dbname=s'  => \$dbname,
   'user=s'		=> \$user,
   'pass=s'		=> \$pass,
-  'xmlfile=s'		=> \$xmlfile,
-  'verbose!'		=> \$verbose,
+  'xmlfile=s'	=> \$xmlfile,
+  'verbose!'	=> \$verbose,
   'hgnc_symbol=s'       => \$hgnc_symbol,
   'lrg_id=s'            => \$lrg_id,
   'purge!'              => \$purge,
   'keep_fixed!'         => \$keep_fixed,
   'keep_mapping!'       => \$keep_mapping,
   'keep_updatable!'     => \$keep_updatable,
-  'delete_request!'       => \$delete_request,
-  'replace_updatable=s'   => \@update_annotation_set
+  'delete_request!'     => \$delete_request,
+  'replace_updatable=s' => \@update_annotation_set,
+  'error_log=s'         => \$error_log,
 );
 
-die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
-die("An input LRG XML file must be specified") unless (defined($xmlfile) || defined($purge));
-die("A correspondiong HGNC symbol must be specified") unless (defined($hgnc_symbol) || (defined($purge) && defined($lrg_id)));
-die("An LRG id must be specified") unless (!defined($purge) || defined($lrg_id) || defined($hgnc_symbol));
+error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
+error_msg("An input LRG XML file must be specified") unless (defined($xmlfile) || defined($purge));
+error_msg("A correspondiong HGNC symbol must be specified") unless (defined($hgnc_symbol) || (defined($purge) && defined($lrg_id)));
+error_msg("An LRG id must be specified") unless (!defined($purge) || defined($lrg_id) || defined($hgnc_symbol));
 
 # Get a database connection
 print STDOUT localtime() . "\tConnecting to database $dbname\n" if ($verbose);
@@ -58,7 +60,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
   -pass => $pass,
   -port => $port,
   -dbname => $dbname
-) or die("Could not get a database adaptor for $dbname on $host:$port");
+) or error_msg("Could not get a database adaptor for $dbname on $host:$port");
 print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbose);
 
 $lrg_id =~ /(LRG_\d+)/;
@@ -90,30 +92,38 @@ if ($purge) {
 			print "No gene entry could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id") . " (database purge step)\n";
 			exit(0);
 		}
-    ($gene_id,$hgnc_symbol,$lrg_id) = @{$gene_data->[0]};# or die ("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
+    ($gene_id,$hgnc_symbol,$lrg_id) = @{$gene_data->[0]};# or error_msg("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
 
-    # Delete the mapping data
-    $stmt = qq{
+    # Delete the lrg_annotation_set_mapping data
+    my $stmt1 = qq{
         DELETE FROM
-            lasm,
-            lm,
-            lms,
-            lmd
+            lasm
         USING
             lrg_annotation_set las JOIN (
-                lrg_annotation_set_mapping lasm LEFT JOIN (
-                    lrg_mapping lm LEFT JOIN
-                    lrg_mapping_span lms USING (mapping_id) LEFT JOIN
-                    lrg_mapping_diff lmd USING (mapping_span_id)
-                ) USING (mapping_id) 
+                lrg_annotation_set_mapping lasm
             ) USING (annotation_set_id)
         WHERE
             las.gene_id = $gene_id
     };
 
+		# Delete the mapping data (separarted from the lrg_annotation_set_mapping because of issues when the script failed at some point).
+		my $stmt2 = qq{
+        DELETE FROM
+            lm,
+            lms,
+            lmd
+        USING
+            lrg_mapping lm LEFT JOIN
+            lrg_mapping_span lms USING (mapping_id) LEFT JOIN
+            lrg_mapping_diff lmd USING (mapping_span_id)
+        WHERE
+            lm.gene_id = $gene_id
+    };
+
     if (!$keep_mapping) {
         print STDOUT localtime() . "\tRemoving mapping from updatable annotation for $lrg_id\n" if ($verbose);
-        $db_adaptor->dbc->do($stmt);
+        $db_adaptor->dbc->do($stmt1);
+				$db_adaptor->dbc->do($stmt2);
     }
     else {
         print STDOUT localtime() . "\tKeeping mapping in updatable annotation for $lrg_id\n" if ($verbose);
@@ -219,13 +229,13 @@ if ($purge) {
 
 
 print STDOUT localtime() . "\tCreating LRG object from input XML file $xmlfile\n" if ($verbose);
-my $lrg = LRG::LRG::newFromFile($xmlfile) or die("ERROR: Could not create LRG object from XML file!");
+my $lrg = LRG::LRG::newFromFile($xmlfile) or error_msg("ERROR: Could not create LRG object from XML file!");
 
 # Get the fixed section node
-my $fixed = $lrg->findNode('fixed_annotation') or die ("ERROR: Could not find fixed annotation section in LRG file");
+my $fixed = $lrg->findNode('fixed_annotation') or error_msg("ERROR: Could not find fixed annotation section in LRG file");
 
 # Get the LRG id node
-my $node = $fixed->findNode('id') or die ("ERROR: Could not find LRG identifier");
+my $node = $fixed->findNode('id') or error_msg("ERROR: Could not find LRG identifier");
 $lrg_id = $node->content();
 
 # Get the database gene_id for the HGNC symbol and LRG id
@@ -242,7 +252,7 @@ my $stmt = qq{
         )
     LIMIT 1
 };
-$gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];# or die ("No gene could be find with HGNC symbol $hgnc_symbol and LRG id $lrg_id");
+$gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];# or error_msg("No gene could be find with HGNC symbol $hgnc_symbol and LRG id $lrg_id");
 
 
 # Insert LRG entry into the gene table
@@ -293,16 +303,16 @@ if (!defined($gene_id)) {
 }
 
 # Get the organism and taxon_id
-$node = $fixed->findNode('organism') or die ("ERROR: Could not find organism tag");
+$node = $fixed->findNode('organism') or error_msg("ERROR: Could not find organism tag");
 my $taxon_id = $node->data()->{'taxon'};
 my $organism = $node->content();
 
 # Get the moltype
-$node = $fixed->findNode('mol_type') or die ("ERROR: Could not find moltype tag");
+$node = $fixed->findNode('mol_type') or error_msg("ERROR: Could not find moltype tag");
 my $moltype = $node->content();
 
 # Get the creation date
-$node = $fixed->findNode('creation_date') or die ("ERROR: Could not find creation date tag");
+$node = $fixed->findNode('creation_date') or error_msg("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
 
 # Get the RefSeqGene ID
@@ -315,14 +325,14 @@ if (defined($node)) {
 }
 
 # Get the LRG sequence
-$node = $fixed->findNode('sequence') or die ("ERROR: Could not find LRG sequence tag");
+$node = $fixed->findNode('sequence') or error_msg("ERROR: Could not find LRG sequence tag");
 my $lrg_seq = $node->content();
 
 # If we are updating the annotation sets, do that here
 if (scalar(@update_annotation_set)) {
         
     # Parse the updatable section to get the annotation sets
-    my $updatable = $lrg->findNode('updatable_annotation') or die ("ERROR: Could not find updatable annotation section in LRG file $xmlfile");
+    my $updatable = $lrg->findNode('updatable_annotation') or error_msg("ERROR: Could not find updatable annotation section in LRG file $xmlfile");
     my $annotation_sets = $updatable->findNodeArray('annotation_set');
     $annotation_sets ||= [];
     
@@ -495,7 +505,7 @@ if (defined($node)) {
 }
 
 # Get the transcript nodes
-my $transcripts = $fixed->findNodeArray('transcript') or die ("ERROR: Could not find transcript tags");
+my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could not find transcript tags");
 
 # Parse and add each transcript to the database separately
 while (my $transcript = shift(@{$transcripts})) {
@@ -672,7 +682,7 @@ while (my $transcript = shift(@{$transcripts})) {
 
 
 # Parse the updatable section to get the annotation sets
-my $updatable = $lrg->findNode('updatable_annotation') or die ("ERROR: Could not find updatable annotation section in LRG file $xmlfile");
+my $updatable = $lrg->findNode('updatable_annotation') or error_msg("ERROR: Could not find updatable annotation section in LRG file $xmlfile");
 my $annotation_sets = $updatable->findNodeArray('annotation_set');
 $annotation_sets ||= [];
 
@@ -724,7 +734,7 @@ sub parse_annotation_set {
     my $asm_ins_sth = $db_adaptor->dbc->prepare($asm_ins_stmt);
 
     # Get and parse the source
-    my $source = $annotation_set->findNode('source') or die ("Could not find any source for annotation_set in $xmlfile");
+    my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
     
@@ -738,7 +748,7 @@ sub parse_annotation_set {
     }
     
     # Get modification_date
-    my $modification_date = $annotation_set->findNode('modification_date') or die ("Could not find modification date for annotation_set in $xmlfile");
+    my $modification_date = $annotation_set->findNode('modification_date') or error_msg("Could not find modification date for annotation_set in $xmlfile");
     $modification_date = $modification_date->content();
     
     # Get the mapping from the updatable section
@@ -859,22 +869,47 @@ sub parse_mapping {
             ?
         )
     };
-    my $m_ins_sth = $db_adaptor->dbc->prepare($m_ins_stmt);
-    my $ms_ins_sth = $db_adaptor->dbc->prepare($ms_ins_stmt);
-    my $diff_ins_sth = $db_adaptor->dbc->prepare($diff_ins_stmt);
+
+    my $check_dup_stmt = qq{
+			SELECT count(*) FROM lrg_mapping
+      WHERE gene_id=?
+        AND assembly=?
+        AND chr_name=?
+        AND chr_id=?
+        AND chr_start=?
+        AND chr_end=?
+		};
     
-    my $assembly = $mapping->data()->{'coord_system'} or die ("Could not find assembly attribute in mapping tag of $xmlfile");
-    my $chr_name = $mapping->data()->{'other_name'} or die ("Could not find chr_name attribute in mapping tag of $xmlfile");
-    my $chr_start = $mapping->data()->{'other_start'} or die ("Could not find chr_start attribute in mapping tag of $xmlfile");
-    my $chr_end = $mapping->data()->{'other_end'} or die ("Could not find chr_end attribute in mapping tag of $xmlfile");
+		my $check_dup_sth = $db_adaptor->dbc->prepare($check_dup_stmt);
+    my $m_ins_sth     = $db_adaptor->dbc->prepare($m_ins_stmt);
+    my $ms_ins_sth    = $db_adaptor->dbc->prepare($ms_ins_stmt);
+    my $diff_ins_sth  = $db_adaptor->dbc->prepare($diff_ins_stmt);
+    
+    my $assembly = $mapping->data()->{'coord_system'} or error_msg("Could not find assembly attribute in mapping tag of $xmlfile");
+    my $chr_name = $mapping->data()->{'other_name'} or error_msg("Could not find chr_name attribute in mapping tag of $xmlfile");
+    my $chr_start = $mapping->data()->{'other_start'} or error_msg("Could not find chr_start attribute in mapping tag of $xmlfile");
+    my $chr_end = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
     my $chr_id = $mapping->data()->{'other_id'};
     my $most_recent = $mapping->data()->{'most_recent'};
     my $lrg_start;
     my $lrg_end;
     my $strand;
     
-    my $spans = $mapping->findNodeArray('mapping_span') or die ("Could not find any mapping spans in mapping tag of $xmlfile");
+    my $spans = $mapping->findNodeArray('mapping_span') or error_msg("Could not find any mapping spans in mapping tag of $xmlfile");
     
+
+    $check_dup_sth->bind_param(1,$assembly,SQL_VARCHAR);
+    $check_dup_sth->bind_param(2,$chr_name,SQL_VARCHAR);
+    $check_dup_sth->bind_param(3,$chr_id,SQL_VARCHAR);
+    $check_dup_sth->bind_param(4,$chr_start,SQL_INTEGER);
+    $check_dup_sth->bind_param(5,$chr_end,SQL_INTEGER);
+		$check_dup_sth->execute();
+		my @res = $check_dup_sth->fetchrow_array;
+		print STDERR "Mapping: $chr_name -> ".$res[0]."\n";
+		if ($res[0] !=0 ) {
+			print STDERR "Duplicated entry $chr_name!\n";
+		}
+
     $m_ins_sth->bind_param(1,$assembly,SQL_VARCHAR);
     $m_ins_sth->bind_param(2,$chr_name,SQL_VARCHAR);
     $m_ins_sth->bind_param(3,$chr_id,SQL_VARCHAR);
@@ -883,13 +918,13 @@ sub parse_mapping {
     $m_ins_sth->bind_param(6,(defined($most_recent) ? 1 : 0),SQL_INTEGER);
     $m_ins_sth->execute();
     my $mapping_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
-    
+
     while (my $span = shift(@{$spans})) {
-        $lrg_start = $span->data()->{'lrg_start'} or die ("Could not find lrg_start attribute in mapping span of $xmlfile");
-        $lrg_end = $span->data()->{'lrg_end'} or die ("Could not find lrg_end attribute in mapping span of $xmlfile");
-        $chr_start = $span->data()->{'other_start'} or die ("Could not find start attribute in mapping span of $xmlfile");
-        $chr_end = $span->data()->{'other_end'} or die ("Could not find end attribute in mapping span of $xmlfile");
-        $strand = $span->data()->{'strand'} or die ("Could not find strand attribute in mapping span of $xmlfile");
+        $lrg_start = $span->data()->{'lrg_start'} or error_msg("Could not find lrg_start attribute in mapping span of $xmlfile");
+        $lrg_end = $span->data()->{'lrg_end'} or error_msg("Could not find lrg_end attribute in mapping span of $xmlfile");
+        $chr_start = $span->data()->{'other_start'} or error_msg("Could not find start attribute in mapping span of $xmlfile");
+        $chr_end = $span->data()->{'other_end'} or error_msg("Could not find end attribute in mapping span of $xmlfile");
+        $strand = $span->data()->{'strand'} or error_msg("Could not find strand attribute in mapping span of $xmlfile");
 
         $ms_ins_sth->execute($mapping_id,$lrg_start,$lrg_end,$chr_start,$chr_end,$strand);
         my $span_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
@@ -897,11 +932,11 @@ sub parse_mapping {
         my $diffs = $span->findNodeArray('diff');
         $diffs ||= [];
         while (my $diff = shift(@{$diffs})) {
-            my $diff_type = $diff->data()->{'type'} or die ("Could not find type attribute in diff of $xmlfile");
-            $lrg_start = $diff->data()->{'lrg_start'} or die ("Could not find lrg_start attribute in diff of $xmlfile");
-            $lrg_end = $diff->data()->{'lrg_end'} or die ("Could not find lrg_end attribute in diff of $xmlfile");
-            $chr_start = $diff->data()->{'other_start'} or die ("Could not find start attribute in diff of $xmlfile");
-            $chr_end = $diff->data()->{'other_end'} or die ("Could not find end attribute in diff of $xmlfile");
+            my $diff_type = $diff->data()->{'type'} or error_msg("Could not find type attribute in diff of $xmlfile");
+            $lrg_start = $diff->data()->{'lrg_start'} or error_msg("Could not find lrg_start attribute in diff of $xmlfile");
+            $lrg_end = $diff->data()->{'lrg_end'} or error_msg("Could not find lrg_end attribute in diff of $xmlfile");
+            $chr_start = $diff->data()->{'other_start'} or error_msg("Could not find start attribute in diff of $xmlfile");
+            $chr_end = $diff->data()->{'other_end'} or error_msg("Could not find end attribute in diff of $xmlfile");
             my $lrg_seq = $diff->data()->{'lrg_sequence'};
             my $chr_seq = $diff->data()->{'other_sequence'};
             
@@ -1248,4 +1283,18 @@ sub parse_coordinates {
   }
   
   return @attribs;
+}
+
+sub error_msg {
+	my $msg = shift;
+  print STDERR "$error_log: $msg\n";
+	if (defined($error_log)) {
+		open LOG, "> $error_log" or die "Error log file $error_log can't be opened";
+    print LOG "$msg\n";
+    close(LOG);
+		exit(1);
+	}
+  else {
+    die($msg);
+	}
 }
