@@ -234,7 +234,6 @@ sub exon_labels {
                 #ÊIf the updatable exon array is non-empty, the remaining elements are orphans
                 push(@orphan_labels,@updatable_exons);
                 while (my $updatable_exon = shift(@orphan_labels)) {
-										print STDERR "EXON:".$updatable_exon->findNode('label')->content."\n";
                     my $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
                     my $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
                     my $label = $updatable_exon->findNode('label')->content();
@@ -864,6 +863,9 @@ sub translation {
         	# Strip any terminal codons from the translations
         	$genomic_translation =~ s/\*$//;
         	$tr_translation =~ s/\*$//;
+          # Problem to compare the sequences when the tr_translation sequence contains a selenocystein (UGA->U) and/or a pyrrolysine (UAG->O) 
+          $tr_translation =~ tr/UO/*/; 
+
         	if ($genomic_translation ne $tr_translation ) {
             	$passed = 0;
             	$self->{'check'}{$name}{'message'} .= "Transcript $tr_name translation defined by genomic sequence and exon coordinates is different from translation supplied in XML file//";
@@ -1036,7 +1038,7 @@ sub get_genomic_features {
 
     	# Get the genomic CDS
     	my $genomic_cds = $self->get_cDNA($exons,$genomic_seq,$coding_start,$coding_end);
-    
+
     	# Translate the genomic sequence CDS
    		my $seq_obj = Bio::Seq->new(-name => 'genomic_cdna', -seq => $genomic_cds);
     	my $genomic_translation = $seq_obj->translate()->seq();
