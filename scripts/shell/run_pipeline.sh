@@ -73,7 +73,8 @@ echo_stderr  ""
 
 
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc}
+bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc} ${error_log}
+check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
 
