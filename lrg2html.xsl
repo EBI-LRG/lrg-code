@@ -5,11 +5,12 @@
    
 <xsl:output method="html" doctype-public="-//W3C//DTD HTML 4.0 Transitional//EN"/>
 
+<xsl:variable name="lrg_gene_name" select="/lrg/updatable_annotation/annotation_set/lrg_locus"/>
+<xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
+
 <xsl:template match="/lrg">
   
   <xsl:variable name="pending" select="0"/>      
-  <xsl:variable name="lrg_id" select="fixed_annotation/id"/>
-  <xsl:variable name="lrg_gene_name" select="updatable_annotation/annotation_set/lrg_locus"/>
   
   <html lang="en">
     <head>
@@ -56,77 +57,22 @@
       </h1>
 
 <!-- Create the table with within-page navigation  -->	 
-      <table>
-      
-        <tr>
-	       <td colspan="0" class="quicklink_cell">Jump to:</td>
-        </tr>
+  <p>Jump to:</p>
+  <b><a href="#fixed_annotation_anchor">Fixed annotation</a></b>
+  <ul>
+    <li><a href="#genomic_sequence_anchor">Genomic sequence</a></li>
+    <li><a href="#transcripts_anchor">Transcripts</a></li>
+  </ul>
 
-        <tr>
-          <td class="quicklink_cell"> </td>
-          <td class="quicklink_cell">
-		  
-            <table border="0">
-		     
-              <tr>
-                <td colspan="2" class="quicklink_cell">
-                  <a href="#fixed_annotation_anchor">Fixed annotation</a>
-                </td>
-              </tr>
-		     
-              <tr>
-                <td class="quicklinks"> </td>
-                <td class="quicklinks">
-                  - <a href="#genomic_sequence_anchor">Genomic sequence</a>
-                </td>
-              </tr>
-         
-              <tr>
-                <td class="quicklinks"> </td>
-                <td class="quicklinks">
-                  - <a href="#transcripts_anchor">Transcripts</a>
-                </td>
-              </tr>
-         
-              <tr>
-                <td colspan="2" class="quicklinks">
-                  <a href="#updatable_annotation_anchor">Updatable annotation</a>
-                </td>
-              </tr>
+  <b><a href="#updatable_annotation_anchor">Updatable annotation</a></b>
+  <ul>
+    <li><a href="#set_1_anchor">LRG annotation</a></li>
+    <li><a href="#set_2_anchor">NCBI annotation</a></li>
+    <li><a href="#set_3_anchor">Ensembl annotation</a></li>
+  </ul>
 
-              <tr>
-                <td class="quicklinks"> </td>
-                <td class="quicklinks">
-                  - <a href="#set_1_anchor">LRG annotation</a>
-                </td>
-              </tr>
-              
-              <tr>
-                <td class="quicklinks"> </td>
-                <td class="quicklinks">
-                  - <a href="#set_2_anchor">NCBI annotation</a>
-                </td>
-              </tr>
-              
-              <tr>
-                <td class="quicklinks"> </td>
-                <td class="quicklinks">
-                  - <a href="#set_3_anchor">Ensembl annotation</a>
-                </td>
-              </tr>
-         
-              <tr>
-                <td colspan="2" class="quicklinks">
-                  <a href="#additional_data_anchor">Additional data sources</a>
-                </td>
-              </tr>
-              
-            </table>
-            
-          </td>
-        </tr>
-        
-      </table>
+  <b><a href="#additional_data_anchor">Additional data sources</a></b>
+  <p></p>
 
 <!-- FIXED ANNOTATION -->
   <xsl:apply-templates select="fixed_annotation">
@@ -446,7 +392,13 @@
     <xsl:if test="sequence_source">
       <p>
         <strong>Sequence source: </strong>
-				This LRG is identical to <xsl:value-of select="sequence_source"/>
+				This LRG is identical to 
+        <a>
+          <xsl:attribute name="href">
+            http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="sequence_source"/>
+          </xsl:attribute>
+          <xsl:value-of select="sequence_source"/>
+        </a>
       </p>
     </xsl:if>
 
@@ -694,7 +646,7 @@
   <xsl:variable name="ncbi_source_name">NCBI RefSeqGene</xsl:variable>
   <xsl:variable name="ref_transcript" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]" />
   <xsl:if test="$ref_transcript">
-    <strong> Source: </strong>This transcript is based on RefSeq transcript 
+    <strong> Source: </strong>This transcript is identical to the RefSeq transcript 
     <a>
     <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="$ref_transcript/@accession" /></xsl:attribute>
     <xsl:attribute name="target">_blank</xsl:attribute>
@@ -1925,35 +1877,55 @@
     <xsl:for-each select="gene">
 			<xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
 
+      <xsl:variable name="display_symbol">  
+        <xsl:choose>
+	        <xsl:when test="symbol[@source = 'HGNC']">
+	          <xsl:value-of select="symbol[@source = 'HGNC']" />
+	        </xsl:when>
+          <xsl:when test="symbol[1]">
+            <xsl:value-of select="symbol[1]" />
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>gene_</xsl:text><xsl:value-of select="$gene_idx" />
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+
+
       <xsl:call-template name="updatable_gene">
         <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
         <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
         <xsl:with-param name="gene_idx"><xsl:value-of select="position()" /></xsl:with-param>
 				<xsl:with-param name="mapping_anchor">#<xsl:value-of select="$mapping_anchor" /></xsl:with-param>
+        <xsl:with-param name="display_symbol"><xsl:value-of select="$display_symbol" /></xsl:with-param>
       </xsl:call-template>
 
-			<!-- Insert the transcript mapping tables -->
-			<xsl:if test="transcript/*">
-				<tr><td class="gene_info_cell" colspan="2">
-					<h4><xsl:attribute name="id"><xsl:value-of select="$mapping_anchor"/></xsl:attribute>Mappings</h4>
-				</td></tr>
+			<!-- Displays the transcript mappings only if the gene name corresponds to the LRG gene name -->
+      <xsl:if test="$display_symbol=$lrg_gene_name">
+        
+        <!-- Insert the transcript mapping tables -->
+			  <xsl:if test="transcript/*">
+				  <tr><td class="gene_info_cell" colspan="2">
+					  <h4><xsl:attribute name="id"><xsl:value-of select="$mapping_anchor"/></xsl:attribute>Mappings</h4>
+				  </td></tr>
 
-				<xsl:for-each select="transcript">
-					<xsl:variable name="transcript_id" select="@accession" />
-						<xsl:for-each select="../../../mapping">
-							<xsl:variable name="other_name_no_version" select="substring-before(@other_name,'.')" />
-					  	<xsl:if test="(@other_name=$transcript_id) or ($other_name_no_version=$transcript_id)">
-							 	<tr><td class="gene_info_cell" colspan="2">
-    					 			<xsl:call-template name="t_mapping">
-											<xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-											<xsl:with-param name="transcript_id"><xsl:value-of select="$transcript_id" /></xsl:with-param>
-										</xsl:call-template>
-               	</td></tr>
-            	</xsl:if>
-						</xsl:for-each>
-				</xsl:for-each>
+				  <xsl:for-each select="transcript">
+					  <xsl:variable name="transcript_id" select="@accession" />
+						  <xsl:for-each select="../../../mapping">
+							  <xsl:variable name="other_name_no_version" select="substring-before(@other_name,'.')" />
+					  	  <xsl:if test="(@other_name=$transcript_id) or ($other_name_no_version=$transcript_id)">
+							 	  <tr><td class="gene_info_cell" colspan="2">
+    					 		  	<xsl:call-template name="t_mapping">
+										  	<xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+										  	<xsl:with-param name="transcript_id"><xsl:value-of select="$transcript_id" /></xsl:with-param>
+										  </xsl:call-template>
+               	  </td></tr>
+            	  </xsl:if>
+						  </xsl:for-each>
+				  </xsl:for-each>
+			  </xsl:if>
+
 			</xsl:if>
-		
     </xsl:for-each>
 		</table>
 		
@@ -1967,6 +1939,7 @@
   <xsl:param name="setnum" />
   <xsl:param name="gene_idx" />
 	<xsl:param name="mapping_anchor" />
+  <xsl:param name="display_symbol" />
   
   <xsl:variable name="source" select="@source" />
   <xsl:variable name="accession" select="@accession" />
@@ -1974,21 +1947,7 @@
   <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
   <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
   <xsl:variable name="lrg_strand" select="coordinates[@coord_system = $lrg_coord_system]/@strand" />
-  
-  <xsl:variable name="display_symbol">  
-    <xsl:choose>
-	    <xsl:when test="symbol[@source = 'HGNC']">
-	      <xsl:value-of select="symbol[@source = 'HGNC']" />
-	    </xsl:when>
-      <xsl:when test="symbol[1]">
-        <xsl:value-of select="symbol[1]" />
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>gene_</xsl:text><xsl:value-of select="$gene_idx" />
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
-  
+
   <tr>
     <th>
   <xsl:value-of select="$display_symbol" />
@@ -2054,13 +2013,16 @@
     </xsl:for-each>
           <br/>
 
-    <strong>Mappings: </strong>
-		<a>
-			<xsl:attribute name="href">
-				<xsl:value-of select="$mapping_anchor"/>
-			</xsl:attribute>
-			Detailed mapping of transcripts to LRG
-		</a>
+<!-- Mapping link only if the gene name corresponds to the LRG gene name -->
+    <xsl:if test="$display_symbol=$lrg_gene_name">
+      <strong>Mappings: </strong>
+		  <a>
+			  <xsl:attribute name="href">
+				  <xsl:value-of select="$mapping_anchor"/>
+			  </xsl:attribute>
+			  Detailed mapping of transcripts to LRG
+		  </a>
+    </xsl:if>
         
     <xsl:if test="comment">
           <strong>Comments: </strong>
