@@ -296,17 +296,7 @@ sub long_name {
     
   }
   elsif (ref($feature) eq 'Bio::EnsEMBL::Transcript') {
-    
-    # Primarily use the RefSeq xref description
-    my $dbe = $feature->get_all_DBEntries('RefSeq_mRNA'); 
-    if ($dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
-    }
-    $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
-    unless (($name && length($name)) || !$dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
-    }
-    
+
     # Secondarily, use the gene description in Ensembl
     unless ($name && length($name)) {
       $name = $feature->description();
@@ -316,18 +306,15 @@ sub long_name {
     unless ($name && length($name)) {
       $name = $feature->external_name();
     }
-    
+    print STDERR "TR: ".$feature->stable_id.' - '.$feature->description()."\n";
     # Append the biotype
     $name .= sprintf(" (\%s)",$feature->biotype());
     
   }
   elsif (ref($feature) eq 'Bio::EnsEMBL::Translation') {
-    
-    # Primarily use the RefSeq xref description
-    my $dbe = $feature->get_all_DBEntries('RefSeq_peptide'); 
-    if ($dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
-    }
+
+    my $transcript = $feature->transcript;
+    $name = $transcript->display_xref->description if ($transcript->display_xref);
   }
   
   if ($name && length($name)) {
