@@ -306,7 +306,7 @@ sub long_name {
     unless ($name && length($name)) {
       $name = $feature->external_name();
     }
-    print STDERR "TR: ".$feature->stable_id.' - '.$feature->description()."\n";
+
     # Append the biotype
     $name .= sprintf(" (\%s)",$feature->biotype());
     
