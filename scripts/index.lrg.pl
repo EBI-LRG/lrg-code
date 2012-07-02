@@ -18,13 +18,15 @@ usage() if (defined($help));
 
 # A directory handle
 my $dh;
+my @dirs = ($xml_dir);
 
 # The pending directory is a subdirectory of the main dir
 my $pendingdir = $xml_dir . "/pending/";
+push (@dirs,$pendingdir) if (-d $pendingdir); 
 
 # Parse the main and pending directories
 my @xmlfiles;
-foreach my $dir (($xml_dir,$pendingdir)) {
+foreach my $dir (@dirs) {
     
     # Open a directory handle
     opendir($dh,$dir);
@@ -32,7 +34,7 @@ foreach my $dir (($xml_dir,$pendingdir)) {
 
     # Loop over the files in the directory and store the file names of LRG XML files
     while (my $file = readdir($dh)) {
-        push(@xmlfiles,{'status' => ($dir =~ m/pending\/$/ ? 'pending' : 'public'), 'filename' => $dir . "/" . $file}) if ($file =~ m/^LRG\_[0-9]+\.xml$/);
+        push(@xmlfiles,{'status' => ($dir =~ m/pending\/$/i ? 'pending' : 'public'), 'filename' => $dir . "/" . $file}) if ($file =~ m/^LRG\_[0-9]+\.xml$/);
     }
 
     # Close the dir handle
@@ -81,7 +83,7 @@ foreach my $xml (@xmlfiles) {
 			}
 		}
 	}
-	die "Gene symbol not found!\n" if (!defined($desc));
+  print "Gene symbol not found for $lrg_id!\n" if (!defined($desc));
 	$entry->addNode('description')->content($desc);
 
 
