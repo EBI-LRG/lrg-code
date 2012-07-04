@@ -96,16 +96,22 @@ td.quicklinks {
   padding-left: 10px;
 }
 
+div.pending {
+  border: 2px solid #F00;
+  background-color: #FDFDFD;
+}
+
 .pending_banner {
   text-align:center;
-	background-color:#FF0000;
-	color:#FFFFFF;
+	color:#FF0000;
 	font-size:40pt;
 	font-weight:bold;
+  padding-top:5px
 }
 
 .pending_subtitle {
 	font-style:italic;
+  padding:5px;
 }
 
 .contact_lbl {

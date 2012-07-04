@@ -33,10 +33,14 @@
   <xsl:if test="$pending=1">
 	 
 <!-- Add a banner indicating that the record is pending if the pending flag is set -->
-      <p class="pending_banner">*** PENDING APPROVAL, DO NOT USE! ***</p>
-      <p class="pending_subtitle">
-        This LRG record is pending approval and subject to change. Do not use until it has passed final approval
-      </p>
+      <div class="pending">
+        <div class="pending_banner">*** PENDING APPROVAL! ***</div>
+        <div class="pending_subtitle">
+          <p>
+            This LRG record is pending approval and subject to change. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
+          </p>
+        </div>
+      </div>
   </xsl:if>
 
 <!-- Use the HGNC symbol as header if available -->	
@@ -85,7 +89,9 @@
   </xsl:apply-templates>
   
   <xsl:if test="$pending=1">
-      <p class="pending_banner">*** PENDING APPROVAL, DO NOT USE! ***</p>
+    <div class="pending">
+      <div class="pending_banner">*** PENDING APPROVAL! ***</div>
+    </div>
   </xsl:if>
     </body>
   </html>
