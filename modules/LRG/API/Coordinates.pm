@@ -85,19 +85,19 @@ sub transfer {
   my $self = shift;
   my $mapping = shift;
 
-	my %assembly_syn = ( 'NCBI37' => 'GRCh37');
 	my $m_assembly = $mapping->assembly();
-	if ($assembly_syn{$mapping->assembly}) {
-  	$m_assembly = $assembly_syn{$mapping->assembly};
-	}
 
-  my $destination_coordinate_system = shift || ($self->coordinate_system() eq $m_assembly ? 'LRG' : $m_assembly);
+  # Remove the patch version (e.g. GRCh37.p5 => GRCh37)
+  $m_assembly =~ /^(\w+)\./;
+  my $assembly_main = $1;
+  my $destination_coordinate_system = shift || ($self->coordinate_system() =~ /^$assembly_main/i ? 'LRG' : $m_assembly);
 
   # If we're transferring to the same coordinate system we're on, just return a reference to ourselves
   return $self if ($destination_coordinate_system eq $self->coordinate_system());
   
   # Warn and return if this object is not on an assembly used by the mapping and we cannot determine how to do the mapping
-  unless (($destination_coordinate_system eq $m_assembly || $destination_coordinate_system =~ m/^lrg/i) && ($self->coordinate_system() eq $m_assembly || $self->coordinate_system =~ m/^lrg/i)) {
+ 
+  unless (($destination_coordinate_system eq $m_assembly || $destination_coordinate_system =~ m/^lrg/i) && ($self->coordinate_system() =~ /^$assembly_main/i || $self->coordinate_system =~ m/^lrg/i)) {
     warn (sprintf("Attempted to map from \%s to \%s but the supplied mapping object maps between LRG and \%s",$self->coordinate_system(),$destination_coordinate_system,$m_assembly));
     return undef;
   }

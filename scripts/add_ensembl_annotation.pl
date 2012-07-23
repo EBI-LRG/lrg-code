@@ -24,7 +24,6 @@ my @option_defs = (
 );
 
 my %option;
-my %assembly_syn = ( 'GRCh37' => 'NCBI37' );
 
 GetOptions(\%option,@option_defs);
 
@@ -74,11 +73,9 @@ my $asets = $lrg->updatable_annotation->annotation_set();
 
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
-#my $lrg_slice;
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'Ensembl');
   $ensembl_aset = $aset;
-	#$lrg_slice = $slice_adaptor->fetch_by_region('LRG',$option{lrg_id});
   last;
 }
 
@@ -104,16 +101,15 @@ $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
 my $mapping;
-my $assembly = ($assembly_syn{$option{assembly}}) ? $assembly_syn{$option{assembly}} : $option{assembly};
+my $assembly = $option{assembly};
 
 foreach my $aset (@{$asets}) {
   # Loop over the mappings to get the correct one
   foreach my $m (@{$aset->mapping() || []}) {
     # Skip if the assembly of the mapping does not correspond to the assembly we're interested in
-    next unless ($m->assembly() eq $assembly);
+    next unless ($m->assembly() =~ /^$assembly/i);
     $mapping = $m;
-    last;
-    
+    last; 
   }
   
   warn (sprintf("\%s mapping to \%s found in annotation set '\%s'\n",($mapping ? "Will use" : "No"),$assembly,$aset->source->name()));
@@ -139,10 +135,6 @@ my $feature = $lrga->feature();
 # Add coordinates in the LRG coordinate system
 map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
-# Attach the features to the Ensembl annotation set
-#$ensembl_aset->feature($feature);
-
-########## TEST BLOCK ##########
 my $ens_mapping;
 my @ens_feature = @{$feature};
 my $tr_adaptor = $registry->get_adaptor('human','core','transcript');
