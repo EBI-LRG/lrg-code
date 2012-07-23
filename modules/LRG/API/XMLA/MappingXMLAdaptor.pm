@@ -44,11 +44,10 @@ sub objs_from_xml {
     # Get the coordinates and spans
     my $assembly = $mapping->data->{$assembly_key};
     my $other_coordinates = $c_adaptor->fetch_other_by_mapping($mapping);
-    my $most_recent = $mapping->data->{most_recent};
     my $spans = $s_adaptor->fetch_all_by_mapping($mapping);
     
     # Create the Mapping object
-    my $obj = LRG::API::Mapping->new($assembly,$other_coordinates,$most_recent,$spans);
+    my $obj = LRG::API::Mapping->new($assembly,$other_coordinates,$spans);
     push(@objs,$obj);
   }
   
@@ -79,10 +78,7 @@ sub xml_from_objs {
     
     # Set the mapping attributes
     $c_adaptor->mapping_from_obj($obj->other_coordinates(),$mapping);
-    $mapping->addData({
-      $assembly_key => $obj->assembly(),
-      'most_recent' => $obj->most_recent()
-    });
+    $mapping->addData({ $assembly_key => $obj->assembly() });
     
     # Add the mapping spans
     map {$mapping->addExisting($_)} @{$s_adaptor->xml_from_objs($obj->mapping_span())};

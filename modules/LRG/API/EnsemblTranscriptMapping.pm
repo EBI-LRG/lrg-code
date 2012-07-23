@@ -55,7 +55,6 @@ sub get_transcripts_mappings {
   my @diffs_start = keys(%$diffs_list);
 
 	foreach my $t (@{$gene->transcript}) {
-		my $tr_most_recent = 1;
 		my $tr_other;
 		my $tr_assembly;
 		my $tr_span;
@@ -142,7 +141,7 @@ sub get_transcripts_mappings {
 		}
 		$tr_other->start($cdna_start);
 		$tr_other->end($cdna_end);
-		my $tr_mapping = LRG::API::Mapping->new($tr_accession,$tr_other,$tr_most_recent,$tr_span);
+		my $tr_mapping = LRG::API::Mapping->new($tr_accession,$tr_other,$tr_span);
 		push (@$ens_mapping,$tr_mapping);
 	}
 	return $ens_mapping;

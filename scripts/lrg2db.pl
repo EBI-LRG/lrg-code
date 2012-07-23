@@ -814,12 +814,10 @@ sub parse_mapping {
                 chr_name,
                 chr_id,
                 chr_start,
-                chr_end,
-                most_recent
+                chr_end
             )
         VALUES (
             '$gene_id',
-            ?,
             ?,
             ?,
             ?,
@@ -890,7 +888,6 @@ sub parse_mapping {
     my $chr_start = $mapping->data()->{'other_start'} or error_msg("Could not find chr_start attribute in mapping tag of $xmlfile");
     my $chr_end = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
     my $chr_id = $mapping->data()->{'other_id'};
-    my $most_recent = $mapping->data()->{'most_recent'};
     my $lrg_start;
     my $lrg_end;
     my $strand;
@@ -913,7 +910,6 @@ sub parse_mapping {
     $m_ins_sth->bind_param(3,$chr_id,SQL_VARCHAR);
     $m_ins_sth->bind_param(4,$chr_start,SQL_INTEGER);
     $m_ins_sth->bind_param(5,$chr_end,SQL_INTEGER);
-    $m_ins_sth->bind_param(6,(defined($most_recent) ? 1 : 0),SQL_INTEGER);
     $m_ins_sth->execute();
     my $mapping_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 

@@ -398,7 +398,6 @@ my $asm_stmt = qq{
     WHERE
         lasm.annotation_set_id = ?
     ORDER BY
-        lm.most_recent DESC,
         lm.assembly ASC
 };
 $stmt = qq{
@@ -506,8 +505,7 @@ sub get_mapping {
             chr_name,
             chr_id,
             chr_start,
-            chr_end,
-            most_recent
+            chr_end
         FROM
             lrg_mapping
         WHERE
@@ -558,11 +556,10 @@ sub get_mapping {
     my $md_sth  = $db_adaptor->dbc->prepare($md_stmt);
 		my $mdc_sth = $db_adaptor->dbc->prepare($mdc_stmt);
     
-    my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end,$most_recent) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
+    my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
     my $mapping = LRG::Node::new('mapping');
     $mapping->addData({'coord_system' => $assembly,'other_name' => $chr_name,'other_start' => $chr_start, 'other_end' => $chr_end});
     $mapping->addData({'other_id' => $chr_id}) if (defined($chr_id));
-    $mapping->addData({'most_recent' => $most_recent}) if ($most_recent);
     
     $ms_sth->execute();
     my ($mapping_span_id,$lrg_start,$lrg_end,$strand);
