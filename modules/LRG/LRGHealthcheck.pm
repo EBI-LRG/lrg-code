@@ -485,7 +485,7 @@ sub mappings {
     }
     
     # Define which data fields in the mapping tag should be compared
-    my $mapping_fields = ['most_recent','chr_name','chr_start','chr_end'];
+    my $mapping_fields = ['chr_name','chr_start','chr_end'];
     my $span_fields = ['lrg_start','lrg_end','start','end','strand'];
     my $diff_fields = ['type','lrg_start','lrg_end','start','end','lrg_sequence','other_sequence'];
     

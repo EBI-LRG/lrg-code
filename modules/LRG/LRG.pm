@@ -700,8 +700,7 @@ sub printNode {
       'chr_name'  =>  2,
       'chr_id'  =>  3,
       'chr_start' =>  4,
-      'chr_end' =>  5,
-      'most_recent' =>  6
+      'chr_end' =>  5
 		},
 		
 		'mapping_span'  =>  {
