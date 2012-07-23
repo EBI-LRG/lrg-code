@@ -164,6 +164,7 @@ foreach my $aset (@{$asets}) {
 my $diffs_list = get_diff($asets);
 foreach my $f (@ens_feature) {
 	foreach my $g (@{$f->gene}) {
+    next if($g->source ne 'Ensembl');
 
 		# Check gene name
 		my $gene_flag = 0;

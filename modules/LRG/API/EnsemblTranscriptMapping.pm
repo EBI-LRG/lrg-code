@@ -119,12 +119,22 @@ sub get_transcripts_mappings {
 			foreach my $d_start (@diffs_start) {
 				if ($d_start > $l_coord->start && $d_start < $l_coord->end) {
 						my $mapping_diff = $diffs_list->{$d_start};
-						my $other_coordinates = $mapping_diff->other_coordinates;
+            my $moc = $mapping_diff->other_coordinates;
+            my $other_coordinates = LRG::API::Coordinates->new($moc->coordinate_system,
+                                                               $moc->start,
+                                                               $moc->end,
+                                                               $moc->strand);                                   
+            $other_coordinates->prefix('other_');
+
 						my @coords = $enst->genomic2cdna($other_coordinates->start,$other_coordinates->end,$o_coord->strand);
 						$other_coordinates->start($coords[0]->start);
 						$other_coordinates->end($coords[0]->end);
-						$mapping_diff->other_coordinates($other_coordinates);
-						push(@diff_tags,$mapping_diff);
+						my $new_mapping_diff = LRG::API::MappingDiff->new($mapping_diff->type,
+                                                              $mapping_diff->lrg_coordinates,
+                                                              $other_coordinates,
+                                                              $mapping_diff->lrg_sequence,
+                                                              $mapping_diff->other_sequence);
+						push(@diff_tags,$new_mapping_diff);
 				}
 			}
 			$e_span->mapping_diff(\@diff_tags) if (scalar @diff_tags);
