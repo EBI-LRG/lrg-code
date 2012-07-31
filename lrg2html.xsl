@@ -436,7 +436,7 @@
 <!-- LRG TRANSCRIPTS -->
 
     <a name="transcripts_anchor"/>
-    <h3>Transcripts</h3>
+    <h3 class="subsection">Transcripts</h3>
   
   <xsl:for-each select="transcript">
     <xsl:call-template name="lrg_transcript">
@@ -453,19 +453,12 @@
 	<!-- Sequence length threshold to avoid errors when the page is loaded with a very large sequence (~2MB) -->
   <xsl:variable name="sequence_max_length">1000000</xsl:variable>      
 
-  <table style="margin-left:-5px;vertical-align:middle">
-    <tr style="vertical-align:middle">
-      <td class="sequence_cell">
-        <a name="genomic_sequence_anchor" />
-        <h3 style="vertical-align:middle">Genomic sequence</h3>
-      </td>
-      <td class="sequence_cell">
-        <a>
-          <xsl:attribute name="href">javascript:showhide('sequence');</xsl:attribute>show/hide
-        </a>
-      </td>
-    </tr>
-  </table>
+  <a name="genomic_sequence_anchor" />
+  <h3 class="subsection">Genomic sequence
+    <a class="subsection">
+      <xsl:attribute name="href">javascript:showhide('sequence');</xsl:attribute>show/hide
+    </a>
+  </h3>
 
   <xsl:variable name="fasta_dir">
     <xsl:choose>
@@ -590,7 +583,7 @@
       </xsl:if>
     </table>
   </div>
-
+  <br />
 </xsl:template>
 
 <xsl:template name="lrg_transcript">  
@@ -610,8 +603,7 @@
     <a>
   <xsl:attribute name="name">transcript_<xsl:value-of select="$transname"/></xsl:attribute>
     </a>
-    <div class="lrg_transcript">
-    Transcript: <span class="blue"><xsl:value-of select="$transname"/></span></div>
+    <div class="lrg_transcript">Transcript: <span class="blue"><xsl:value-of select="$transname"/></span></div>
     <strong>Start/end: </strong>
   <xsl:value-of select="$t_start"/>-<xsl:value-of select="$t_end"/>
     <br/>

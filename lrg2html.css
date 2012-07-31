@@ -204,8 +204,7 @@ td.subsection{
 }
 
 h3.subsection {
-  border-top: 1px solid #003399;
-  background-color: #F8F8F8;
+  background-color: #EBEBEB;
   padding: 4px;
   margin-top: 15px;
   margin-bottom: 0px;
@@ -217,6 +216,12 @@ h3.sub_subsection {
   margin-top: 15px;
   margin-bottom: 0px;
 }
+
+a.subsection{
+  font-weight:normal;
+  font-size:14px;
+}
+
 
 .contact_lbl {
   border: 0px;
@@ -402,10 +407,11 @@ div.lrg_source {
 }
 
 div.lrg_transcript {
-	background-color: #F0F0F0; 
-	padding: 5px 0px;
+	padding: 2px 0px;
+  text-decoration:underline;
   font-weight:bold;
-  margin-bottom:2px;
+  font-size:1.1em;
+  margin-bottom:4px;
 }
 
 div.fixed_transcript_annotation {
