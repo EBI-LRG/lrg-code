@@ -51,38 +51,69 @@ function toggle_transcript_highlight(s_id,g_id,t_id) {
   }
 }
 
+// function to highlight or remove highlight for a transcript and a protein
+function retrieve_exon_class (eclass) {
+  var exon_class = 'exon_odd';
+  var select = '_select';
+  var eclass_name = eclass.className;
+  if (eclass_name.substr(0,1) == 'e') {
+    if (eclass_name.slice(-7) == select) {
+      exon_class = eclass_name.substr(0,eclass_name.length-8+1);
+    }
+    else {
+      exon_class = eclass_name+select;
+    }
+  }
+  return exon_class;
+}
+
+// function to remove highlight for a transcript and a protein
+function clear_exon_highlight(eclass) {
+  var exon_class = eclass.className;
+  var select = '_select';
+  if (exon_class.substr(0,1) == 'e') {
+    if (exon_class.slice(-7) == select) {
+      exon_class = exon_class.substr(0,exon_class.length-8+1);
+    }
+  }
+  return exon_class;
+}
+
 // function to highlight exons
 function highlight_exon(num) {
   var tableobj = document.getElementById('table_exon_'+num);
   
   // we only want to get the genomic exon if this is transcript t1
   var genobj;
+  var exon_select;
   if(num.substr(0,2) == 't1') {
-	genobj = document.getElementById('genomic_exon_'+num);
+	  genobj = document.getElementById('genomic_exon_'+num);
   }
   
   var cdnaobj = document.getElementById('cdna_exon_'+num);
   var pepobj = document.getElementById('peptide_exon_'+num);
-  
-  
+
+  var exon_select = retrieve_exon_class(cdnaobj);
+
   if(tableobj) {
-	if(tableobj.className.length > 11) {
-	  tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	  if(num.substr(0,2) == 't1') {
-		genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
+	  if(tableobj.className.length > 11) {
+	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	    if(num.substr(0,2) == 't1') {
+		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+	    }
+	    cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+	    pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
 	  }
-	  cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
-	  pepobj.className = (pepobj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
-	}
 	
-	else {
-	  tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-	  if(num.substr(0,2) == 't1') {
-		genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exonselect' : 'intronselect');
+	  else {
+	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+	    if(num.substr(0,2) == 't1') {
+		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
+	    }
+
+	    cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+	    pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
 	  }
-	  cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? 'exonselect' : 'intronselect');
-	  pepobj.className = (pepobj.className.substr(0,1) == 'e' ? 'exonselect' : 'intronselect');
-	}
   }
 }
 
@@ -94,32 +125,34 @@ function clear_highlight(trans) {
   // clear genomic
   i = 1;
   while(document.getElementById('genomic_exon_'+trans+'_'+i)) {
-	obj = document.getElementById('genomic_exon_'+trans+'_'+i);
-	obj.className = (obj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
-	i++;
+	  obj = document.getElementById('genomic_exon_'+trans+'_'+i);
+	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+	  i++;
   }
   
   // clear cdna
   i = 1;
   while(document.getElementById('cdna_exon_'+trans+'_'+i)) {
-	obj = document.getElementById('cdna_exon_'+trans+'_'+i);
-	obj.className = (obj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
-	i++;
+	  obj = document.getElementById('cdna_exon_'+trans+'_'+i);
+    var exon_select = clear_exon_highlight(obj);
+	  obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+	  i++;
   }
   
   // clear exons
   i = 1;
   while(document.getElementById('table_exon_'+trans+'_'+i)) {
-	obj = document.getElementById('table_exon_'+trans+'_'+i);
-	obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	i++;
+	  obj = document.getElementById('table_exon_'+trans+'_'+i);
+	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	  i++;
   }
   
   // clear peptide
   i = 1;
   while(document.getElementById('peptide_exon_'+trans+'_'+i)) {
-	obj = document.getElementById('peptide_exon_'+trans+'_'+i);
-	obj.className = (obj.className.substr(0,1) == 'e' ? 'exon' : 'intron');
-	i++;
+	  obj = document.getElementById('peptide_exon_'+trans+'_'+i);
+    var exon_select = clear_exon_highlight(obj);
+	  obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+	  i++;
   }
 }
