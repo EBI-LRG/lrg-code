@@ -15,6 +15,8 @@ die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)
 die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir)); 
 usage() if (defined($help));
 
+my $species = 'Homo sapiens';
+my $taxo_id = 9606;
 
 # A directory handle
 my $dh;
@@ -120,6 +122,8 @@ foreach my $xml (@xmlfiles) {
 		$add_fields->addNode('field',{'name' => 'synonym'})->content($s_content) if ($s_content ne $hgnc);
 	}
 
+  # Organism
+  $add_fields->addNode('field',{'name' => 'organism'})->content($species);
 	
 	# Xref
 	my $cross_ref = $entry->addNode('cross_references');
@@ -128,7 +132,7 @@ foreach my $xml (@xmlfiles) {
 	my $x_genes = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene');
 	$xrefs = get_xrefs($x_genes,$xrefs);
 	my $seq_source = $lrg->findNode('fixed_annotation/sequence_source')->content;
-	$xrefs->{$seq_source} = 'ResSeq' if (defined($seq_source));
+	$xrefs->{$seq_source} = 'RefSeq' if (defined($seq_source));
 
 	# Transcript xref
 	my $x_trans = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript');
@@ -141,6 +145,9 @@ foreach my $xml (@xmlfiles) {
 	while (my ($k,$v) = each(%{$xrefs})) {
 		$cross_ref->addEmptyNode('ref',{'dbname' => $v, 'dbkey' => $k});
 	}
+  
+  # Taxonomy ID
+  $cross_ref->addEmptyNode('ref',{'dbname' => 'TAXONOMY', 'dbkey' => $taxo_id});
 
 	# Date
 	my $dates = $entry->addNode('dates');
