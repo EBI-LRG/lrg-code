@@ -1008,7 +1008,7 @@
         <th>Intron</th>
   <xsl:if test="/*/updatable_annotation/annotation_set/fixed_transcript_annotation[@name = $transname]/other_exon_naming">
         <th class="exon_separator"> </th>
-        <th colspan="100" class="exon_label">Source of exon naming</th>
+        <th colspan="100" class="exon_label">Source of exon numbering</th>
   </xsl:if>
       </tr>
       
