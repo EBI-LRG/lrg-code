@@ -221,7 +221,7 @@ ANNOTATION_SET = element annotation_set {
    # multiple mappings allowed e.g. to different assemblies
    MAPPING*,
    
-   element lrg_locus {
+   element lrg_gene_name {
       FEATURE_SOURCE,
       text
    }?,
@@ -282,9 +282,6 @@ MAPPING = element mapping {
    
    attribute other_start { xsd:integer },
    attribute other_end { xsd:integer },
-   
-   # A flag indicating whether the coord_system is the most recent (e.g. GRCh37 is the most recent in comparison with NCBI36)   
-   attribute most_recent { xsd:integer }?,
    
    # a mapping span corresponds to a block of the LRG sequence that aligns with an assembly
    MAPPING_SPAN+
