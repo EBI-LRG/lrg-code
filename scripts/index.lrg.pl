@@ -72,8 +72,9 @@ foreach my $xml (@xmlfiles) {
 
 	# gene description
 	my $desc;
-	my $as = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
-	foreach my $set (@{$as}) {
+	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
+
+	foreach my $set (@$asets) {
 		if ($set->findNode('source/name')->content =~ /NCBI/) {
 			my $genes = $set->findNodeArray('features/gene');
 			foreach my $gene (@{$genes}) {
@@ -93,10 +94,9 @@ foreach my $xml (@xmlfiles) {
 	my $add_fields = $entry->addNode('additional_fields');
 
 	# Coordinates
-	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set/');
-	foreach my $aset (@$asets) {
-		if ($aset->findNode('source/name')->content =~ /LRG/) {
-			my $coord = $aset->findNode('mapping');
+	foreach my $set (@$asets) {
+		if ($set->findNode('source/name')->content =~ /LRG/) {
+			my $coord = $set->findNode('mapping');
 			$add_fields->addNode('field',{'name' => 'assembly'})->content($coord->data->{coord_system});
 			$add_fields->addNode('field',{'name' => 'chr_name'})->content($coord->data->{other_name});
 			$add_fields->addNode('field',{'name' => 'chr_start'})->content($coord->data->{other_start});
@@ -154,6 +154,14 @@ foreach my $xml (@xmlfiles) {
 	my $creation_date = $lrg->findNode('fixed_annotation/creation_date')->content;
 	$dates->addEmptyNode('date',{'type' => 'creation', 'value' =>  $creation_date});
 	
+	foreach my $set (@$asets) {
+    if ($set->findNode('source/name')->content =~ /LRG/) {
+      my $last_modified = $set->findNode('modification_date')->content;
+      $dates->addEmptyNode('date',{'type' => 'last_modified', 'value' =>  $last_modified});
+      last;
+    }
+  }      
+
 	# Dump XML to output_file
 	$index_root->printAll(1);
 
