@@ -157,7 +157,7 @@ foreach my $xml (@xmlfiles) {
 	foreach my $set (@$asets) {
     if ($set->findNode('source/name')->content =~ /LRG/) {
       my $last_modified = $set->findNode('modification_date')->content;
-      $dates->addEmptyNode('date',{'type' => 'last_modified', 'value' =>  $last_modified});
+      $dates->addEmptyNode('date',{'type' => 'last_modification_date', 'value' =>  $last_modified});
       last;
     }
   }      
