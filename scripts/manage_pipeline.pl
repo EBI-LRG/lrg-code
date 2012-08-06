@@ -26,7 +26,7 @@ while (<F>) {
 	chomp $_;
 	next if ($_ =~ /^#/);
 
-	my ($lrg_id,$hgnc_name,$assembly) = split ("\t", $_);	
+	my ($lrg_id,$hgnc_name,$assembly) = split (/[ \t]/, $_);	
 
 	if (!$lrg_id || !$hgnc_name || !$assembly) {
 		print O ($lrg_id) ? "$lrg_id: Can't read the data in the data_file (HGNC name, assembly)\n" : "Can't read the data in the data_file, line $.\n";
