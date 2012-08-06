@@ -114,8 +114,9 @@ echo_stderr  ""
 echo_stderr  ""
 
 if [ -n "${report_file}" ] ; then
-  count_partial=`grep -c "<partial>" ${new_dir}/${lrg_id}.xml`
-  if [[ ${count_partial} != "0" ]] ; then
+  is_partial=`perl code/scripts/check.lrg.pl -xml_file ${new_dir}/${lrg_id}.xml -check partial_gene`
+ 
+  if [[ -n ${is_partial} ]] ; then
     echo "ran successfully - Partial gene/transcript/protein found!" >> ${report_file}
   else
    echo "ran successfully" >> ${report_file}
