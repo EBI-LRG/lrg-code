@@ -606,6 +606,8 @@ sub partial {
         last;
     }
     
+    my $is_partial = 0;
+
     # Loop over the annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
         
@@ -624,7 +626,10 @@ sub partial {
             # Set the flag for the partial type (if any) indicating that the gene is only partially contained within the LRG
             #ÊDo this manually since we don't want the call to be recursive
             foreach my $node (@{$gene->{'nodes'}}) {
-                $partial{$node->content()} = 1 if ($node->name() eq 'partial');				
+              if ($node->name() eq 'partial') {
+                $partial{$node->content()} = 1;	
+                $is_partial = 1;
+              }
             }
             
             # Check if the gene symbol corresponds to the lrg_gene_name and if partial is indicated 
@@ -644,6 +649,7 @@ sub partial {
                     if ($node->name() eq 'partial') {
                         $transcript_partial{$node->content()} = 1;
                         $skip_gene = 1 if (!exists($partial{$node->content()}));
+                        $is_partial = 1;
                     }
                 }
                 
@@ -655,6 +661,7 @@ sub partial {
                     foreach my $node (@{$protein->{'nodes'}}) {
                         if ($node->name() eq 'partial') {
                             $skip_gene = 1 if (!exists($transcript_partial{$node->content()}));
+                            $is_partial = 1;
                             last;
                         }
                     }
@@ -668,7 +675,8 @@ sub partial {
         }
     }
     
-    
+    print "Partial gene/transcript/protein found!\n" if ($is_partial == 1);    
+
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed;
 }
