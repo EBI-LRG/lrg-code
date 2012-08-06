@@ -622,10 +622,7 @@ sub partial_gene {
             
             my $is_lrg_gene = 0;            
 
-        #    my $symbols = $gene->findNodeArray('symbol');
-         #   foreach my $symbol (@{$symbols}) {
-              next if ($gene->data()->{'symbol'} && $gene->data()->{'symbol'} ne $lrg_gene_name);
-           # }
+            next if ($gene->data()->{'symbol'} && $gene->data()->{'symbol'} ne $lrg_gene_name);
             
             # Set the flag for the partial type (if any) indicating that the gene is only partially contained within the LRG
             #ÊDo this manually since we don't want the call to be recursive
@@ -635,7 +632,6 @@ sub partial_gene {
                 last;
               }
             }
-            
             last if ($is_partial == 1);
 
             #ÊGet the transcripts
