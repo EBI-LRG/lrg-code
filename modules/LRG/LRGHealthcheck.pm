@@ -675,7 +675,7 @@ sub partial {
         }
     }
     
-    print "Partial gene/transcript/protein found!\n" if ($is_partial == 1);    
+    print $self->{'lrg_id'}.": Partial gene/transcript/protein found!\n" if ($is_partial == 1);    
 
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed;
