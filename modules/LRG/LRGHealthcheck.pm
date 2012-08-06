@@ -28,6 +28,7 @@ our @CHECKS = (
     'mappings',
     'gene_name',
     'partial',
+    'partial_gene',
     'coordinates'
 );
 
@@ -586,6 +587,92 @@ sub compare_tags {
     return $passed;
 }
 
+# Check if there is partial data for the gene of interest (the corresponding HGNC symbol)
+sub partial_gene {
+    my $self = shift;
+    
+    my $passed = 1;
+
+    # Get the name of the check
+    my $name = sub_name();
+    
+    # Get the updatable annotation sets 
+    my $annotation_sets = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set');
+    
+    # Also do a check to make sure that all annotations on the LRG gene are contained within the LRG region. Need the lrg_gene_name for that
+    my $lrg_gene_name;
+    foreach my $annotation_set (@{$annotation_sets}) {
+        my $lrg_gene_node = $annotation_set->findNode('lrg_locus',{'source' => 'HGNC'}) or next;
+        $lrg_gene_name = $lrg_gene_node->content();
+        last;
+    }
+    
+    # Loop over the annotation sets
+    foreach my $annotation_set (@{$annotation_sets}) {
+        
+        # Get the annotation source
+        my $source = $annotation_set->findNode('source/name')->content();
+        
+        # Grab the gene features
+        my $gene_sets = $annotation_set->findNodeArray('features/gene');
+        next if (!defined($gene_sets));
+        my $is_partial = 0;
+
+        foreach my $gene (@{$gene_sets}) {
+            
+            my $is_lrg_gene = 0;            
+
+        #    my $symbols = $gene->findNodeArray('symbol');
+         #   foreach my $symbol (@{$symbols}) {
+              next if ($gene->data()->{'symbol'} && $gene->data()->{'symbol'} ne $lrg_gene_name);
+           # }
+            
+            # Set the flag for the partial type (if any) indicating that the gene is only partially contained within the LRG
+            #ÊDo this manually since we don't want the call to be recursive
+            foreach my $node (@{$gene->{'nodes'}}) {
+              if ($node->name() eq 'partial') {
+                $is_partial = 1;
+                last;
+              }
+            }
+            
+            last if ($is_partial == 1);
+
+            #ÊGet the transcripts
+            my $transcripts = $gene->findNodeArray('transcript');
+            next if (!defined($transcripts));
+            
+            while (my $transcript = shift(@{$transcripts})) {
+                
+                my %transcript_partial;
+                foreach my $node (@{$transcript->{'nodes'}}) {
+                    if ($node->name() eq 'partial') {
+                        $is_partial = 1;
+                        last;
+                    }
+                }
+                last if ($is_partial == 1);
+
+                # Get the protein product nodes
+                my $proteins = $transcript->findNodeArray('protein_product');
+                next if (!defined($proteins));
+                
+                while (my $protein = shift(@{$proteins})) {
+                    foreach my $node (@{$protein->{'nodes'}}) {
+                        if ($node->name() eq 'partial') {
+                            $is_partial = 1;
+                            last;
+                        }
+                    }
+                }
+            } 
+        }
+        print $self->{'lrg_id'}.": Partial gene/transcript/protein found for $source annotations!\n" if ($is_partial == 1);   
+    }
+    $self->{'check'}{$name}{'passed'} = $passed;
+    return $passed;
+}
+
 #ÊCheck that all annotations that are only partial is consistent in the partial indications for transcripts and the respective protein product
 sub partial {
     my $self = shift;
@@ -605,8 +692,6 @@ sub partial {
         $lrg_gene_name = $lrg_gene_node->content();
         last;
     }
-    
-    my $is_partial = 0;
 
     # Loop over the annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
@@ -627,8 +712,7 @@ sub partial {
             #ÊDo this manually since we don't want the call to be recursive
             foreach my $node (@{$gene->{'nodes'}}) {
               if ($node->name() eq 'partial') {
-                $partial{$node->content()} = 1;	
-                $is_partial = 1;
+                $partial{$node->content()} = 1;
               }
             }
             
@@ -649,7 +733,6 @@ sub partial {
                     if ($node->name() eq 'partial') {
                         $transcript_partial{$node->content()} = 1;
                         $skip_gene = 1 if (!exists($partial{$node->content()}));
-                        $is_partial = 1;
                     }
                 }
                 
@@ -661,7 +744,6 @@ sub partial {
                     foreach my $node (@{$protein->{'nodes'}}) {
                         if ($node->name() eq 'partial') {
                             $skip_gene = 1 if (!exists($transcript_partial{$node->content()}));
-                            $is_partial = 1;
                             last;
                         }
                     }
@@ -673,9 +755,7 @@ sub partial {
                 $self->{'check'}{$name}{'message'} .= "Indication of partial overlap for gene " . $gene->findNode('symbol')->content . " in $source is not consistent//";
             }
         }
-    }
-    
-    print $self->{'lrg_id'}.": Partial gene/transcript/protein found!\n" if ($is_partial == 1);    
+    }  
 
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed;
