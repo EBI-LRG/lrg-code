@@ -609,7 +609,8 @@ sub partial_gene {
     
     # Loop over the annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
-        
+        my %transcript_partial;
+
         # Get the annotation source
         my $source = $annotation_set->findNode('source/name')->content();
         
@@ -630,46 +631,37 @@ sub partial_gene {
             }
             next if ($is_lrg_gene == 0);
             
+            my $gene_name = $gene->data->{accession};
+
             # Set the flag for the partial type (if any) indicating that the gene is only partially contained within the LRG
             #ÊDo this manually since we don't want the call to be recursive
             foreach my $node (@{$gene->{'nodes'}}) {
               if ($node->name() eq 'partial') {
                 $is_partial = 1;
-                last;
+                $transcript_partial{$gene_name}{partial} .= ($transcript_partial{$gene_name}{partial}) ? ', ' : '';
+                $transcript_partial{$gene_name}{partial} .= $node->content;
               }
             }
-            last if ($is_partial == 1);
-
             #ÊGet the transcripts
             my $transcripts = $gene->findNodeArray('transcript');
             next if (!defined($transcripts));
             
             while (my $transcript = shift(@{$transcripts})) {
                 
-                my %transcript_partial;
-                foreach my $node (@{$transcript->{'nodes'}}) {
-                    if ($node->name() eq 'partial') {
-                        $is_partial = 1;
-                        last;
-                    }
+                if ($transcript->findNode('partial')) {
+                    $is_partial = 1;
+                    $transcript_partial{$gene_name}{tr} .= ($transcript_partial{$gene_name}{tr}) ? ', ' : '';
+                    $transcript_partial{$gene_name}{tr} .= $transcript->data->{accession};
                 }
-                last if ($is_partial == 1);
-
-                # Get the protein product nodes
-                my $proteins = $transcript->findNodeArray('protein_product');
-                next if (!defined($proteins));
-                
-                while (my $protein = shift(@{$proteins})) {
-                    foreach my $node (@{$protein->{'nodes'}}) {
-                        if ($node->name() eq 'partial') {
-                            $is_partial = 1;
-                            last;
-                        }
-                    }
-                }
-            } 
+            }
         }
-        print $self->{'lrg_id'}.": Partial gene/transcript/protein found for $source annotations!\n" if ($is_partial == 1);   
+        if ($is_partial == 1) {
+          print "\n".$self->{'lrg_id'}.": Partial gene/transcript/protein found for $source annotations\n";
+          foreach my $gname (keys(%transcript_partial)) {
+            print "  > Partial gene: $gname (".$transcript_partial{$gname}{partial}.")\n"; 
+            print "  > Partial transcript(s): ".$transcript_partial{$gname}{tr}."\n" if ($transcript_partial{$gname}{tr});
+          }
+        }
     }
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed;
