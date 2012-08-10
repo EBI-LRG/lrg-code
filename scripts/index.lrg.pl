@@ -46,8 +46,13 @@ foreach my $dir (@dirs) {
 
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
 
+# Count variables
+my $nb_files = @xmlfiles;
+my $percent = 10;
+my $count_files = 0;
 
 foreach my $xml (@xmlfiles) {
+
 	# Load the LRG XML file
 	my $lrg = LRG::LRG::newFromFile($xml->{'filename'}) or die("ERROR: Could not create LRG object from XML file!");
 	my $lrg_id  = $lrg->findNode('fixed_annotation/id')->content;
@@ -62,49 +67,66 @@ foreach my $xml (@xmlfiles) {
 	$database->addNode('entry_count')->content('1');
 
 
-	# entry
+
+
+	## Entry ##
 	my $entries = $database->addNode('entries');
 	my $entry = $entries->addNode('entry',{'id' => $lrg_id});
 
 	my $hgnc = $lrg->findNode('updatable_annotation/annotation_set/lrg_locus')->content;
 	$entry->addNode('name')->content($hgnc);
 
+	# Get information by source
+	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $last_modified);
 
-	# gene description
-	my $desc;
 	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
 
 	foreach my $set (@$asets) {
-		if ($set->findNode('source/name')->content =~ /NCBI/) {
-			my $genes = $set->findNodeArray('features/gene');
-			foreach my $gene (@{$genes}) {
-				my $flag = 0;
-				foreach my $symbol (@{$gene->findNodeArray('symbol')}) {
-					$flag = 1 if ($symbol->content eq $hgnc);
-				}
-				$desc = ($gene->findNodeArray('long_name'))->[0]->content if ($flag == 1);
-			}
-		}
+    my $s_name = $set->findNode('source/name')->content;
+    
+		# Gene description
+    if ($s_name =~ /NCBI/) {
+	    my $genes = $set->findNodeArray('features/gene');
+		  DESC: foreach my $gene (@{$genes}) {
+		    foreach my $symbol (@{$gene->findNodeArray('symbol')}) {
+			    if ($symbol->content eq $hgnc) {
+            $desc = ($gene->findNodeArray('long_name'))->[0]->content;
+            last DESC;
+		      }
+	      }
+      }
+    }
+
+    # LRG data
+    elsif ($s_name =~ /LRG/) {
+      # Last modification date (dates)
+      $last_modified = $set->findNode('modification_date')->content;
+
+      # Coordinates (addditional_fields)
+      my $coord  = $set->findNode('mapping');
+			$assembly  = $coord->data->{coord_system};
+			$chr_name  = $coord->data->{other_name};
+			$chr_start = $coord->data->{other_start};
+			$chr_end   = $coord->data->{other_end};
+    }
 	}
+  
+  $entry->addNode('description')->content($desc);
   print "Gene symbol not found for $lrg_id!\n" if (!defined($desc));
-	$entry->addNode('description')->content($desc);
 
 
-	# Additional fields
-	my $add_fields = $entry->addNode('additional_fields');
 
-	# Coordinates
-	foreach my $set (@$asets) {
-		if ($set->findNode('source/name')->content =~ /LRG/) {
-			my $coord = $set->findNode('mapping');
-			$add_fields->addNode('field',{'name' => 'assembly'})->content($coord->data->{coord_system});
-			$add_fields->addNode('field',{'name' => 'chr_name'})->content($coord->data->{other_name});
-			$add_fields->addNode('field',{'name' => 'chr_start'})->content($coord->data->{other_start});
-			$add_fields->addNode('field',{'name' => 'chr_end'})->content($coord->data->{other_end});
-			last;
-		}
-	}
+	## Additional fields ##
 	
+  my $add_fields = $entry->addNode('additional_fields');
+
+  # Coordinates
+	$add_fields->addNode('field',{'name' => 'assembly'})->content($assembly);
+	$add_fields->addNode('field',{'name' => 'chr_name'})->content($chr_name);
+  $add_fields->addNode('field',{'name' => 'chr_start'})->content($chr_start);
+	$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
+
+
 	# Status
 	$add_fields->addNode('field',{'name' => 'status'})->content($xml->{'status'}) if (defined($xml->{'status'}));
 
@@ -125,25 +147,28 @@ foreach my $xml (@xmlfiles) {
   # Organism
   $add_fields->addNode('field',{'name' => 'organism'})->content($species);
 	
-	# Xref
+
+	## Cross references / Xref ##
 	my $cross_ref = $entry->addNode('cross_references');
-	my $xrefs;
+	my $cross_refs;
+
 	# Gene xref
 	my $x_genes = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene');
-	$xrefs = get_xrefs($x_genes,$xrefs);
+	$cross_refs = get_cross_refs($x_genes,$cross_refs);
 	my $seq_source = $lrg->findNode('fixed_annotation/sequence_source')->content;
-	$xrefs->{$seq_source} = 'RefSeq' if (defined($seq_source));
+	$cross_refs->{$seq_source} = 'RefSeq' if (defined($seq_source));
 
 	# Transcript xref
 	my $x_trans = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript');
-	$xrefs = get_xrefs($x_trans,$xrefs);
+	$cross_refs = get_cross_refs($x_trans,$cross_refs);
 
 	# Protein xref
 	my $x_proteins = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript/protein_product');
-	$xrefs = get_xrefs($x_proteins,$xrefs);
+	$cross_refs = get_cross_refs($x_proteins,$cross_refs);
 	
-	while (my ($k,$v) = each(%{$xrefs})) {
-		$cross_ref->addEmptyNode('ref',{'dbname' => $v, 'dbkey' => $k});
+  # Cross references + Xref (additional fields)
+  foreach my $cr (sort(keys %{$cross_refs})) {
+		$cross_ref->addEmptyNode('ref',{'dbname' => $cross_refs->{$cr}, 'dbkey' => $cr});
 	}
   
   # Taxonomy ID
@@ -157,7 +182,7 @@ foreach my $xml (@xmlfiles) {
 	foreach my $set (@$asets) {
     if ($set->findNode('source/name')->content =~ /LRG/) {
       my $last_modified = $set->findNode('modification_date')->content;
-      $dates->addEmptyNode('date',{'type' => 'last_modification_date', 'value' =>  $last_modified});
+      $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $last_modified});
       last;
     }
   }      
@@ -165,28 +190,42 @@ foreach my $xml (@xmlfiles) {
 	# Dump XML to output_file
 	$index_root->printAll(1);
 
+
+  # Count
+  $count_files ++;
+  get_count();
+  
 }
 
 
 
-sub get_xrefs {
-	my $xref_nodes = shift;
-	my $xrefs = shift;
-	foreach my $x_node (@{$xref_nodes}) {
+sub get_cross_refs {
+	my $cross_refs_nodes = shift;
+	my $cross_refs = shift;
+	foreach my $x_node (@{$cross_refs_nodes}) {
 		my $dbname = $x_node->data->{'source'};
 		my $dbkey  = $x_node->data->{'accession'};
-		$xrefs->{$dbkey} = $dbname;
+		$cross_refs->{$dbkey} = $dbname;
 		my $db_xrefs = $x_node->findNodeArray('db_xref');
 		next if (!scalar $db_xrefs);
 		foreach my $x_ref (@{$db_xrefs}) {
 			my $dbname2 = $x_ref->data->{'source'};
 			my $dbkey2  = $x_ref->data->{'accession'};
-			$xrefs->{$dbkey2} = $dbname2;
+			$cross_refs->{$dbkey2} = $dbname2;
 		}
 	}
-	return $xrefs;
+	return $cross_refs;
 }
 
+
+sub get_count {
+  my $c_percent = ($count_files/$nb_files)*100;
+  
+  if ($c_percent =~ /($percent)\./ || $count_files == $nb_files) {
+    print "$percent% completed ($count_files/$nb_files)\n";
+    $percent += 10;
+  }
+}
 
 
 sub usage {
