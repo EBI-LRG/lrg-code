@@ -17,6 +17,16 @@ usage() if (defined($help));
 
 my $species = 'Homo sapiens';
 my $taxo_id = 9606;
+#my $lrg_list = 'lrgs_in_ensembl.txt';
+
+# List of LRG IDs which are stored in Ensembl
+print "Generating the file with the list of LRGs in Ensembl ...";
+my $lrg_from_ensembl = `perl get_LRG_from_Ensembl.pl $index_dir`;
+die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
+if (-s "$index_dir/tmp_$lrg_list") {
+  `mv $index_dir/tmp_$lrg_list $index_dir/$lrg_list`;
+}
+print " done\n";
 
 # A directory handle
 my $dh;
@@ -26,7 +36,9 @@ my @dirs = ($xml_dir);
 my $pendingdir = $xml_dir . "/pending/";
 push (@dirs,$pendingdir) if (-d $pendingdir); 
 
+
 # Parse the main and pending directories
+print "List LRG files to index ...";
 my @xmlfiles;
 foreach my $dir (@dirs) {
     
@@ -42,6 +54,7 @@ foreach my $dir (@dirs) {
     # Close the dir handle
     closedir($dh);
 }
+print " done\n";
 
 
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
@@ -65,8 +78,6 @@ foreach my $xml (@xmlfiles) {
 	$database->addNode('description')->content($general_desc);
 	# entry count
 	$database->addNode('entry_count')->content('1');
-
-
 
 
 	## Entry ##
@@ -126,6 +137,9 @@ foreach my $xml (@xmlfiles) {
   $add_fields->addNode('field',{'name' => 'chr_start'})->content($chr_start);
 	$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
 
+  ## In ensembl
+  #my $in_ensembl = (`grep -w $lrg_id $index_dir/$lrg_list`) ? 1 : 0;
+  #$add_fields->addNode('field',{'name' => 'in_ensembl'})->content($in_ensembl);
 
 	# Status
 	$add_fields->addNode('field',{'name' => 'status'})->content($xml->{'status'}) if (defined($xml->{'status'}));
