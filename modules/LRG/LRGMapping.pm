@@ -119,7 +119,7 @@ sub smalt_map {
 	my $bsub_cmd = "bsub -K -J smalt_$name -o $output_file -e $error_file $resource $smalt_cmd";
 	
 	# Submit the job to the farm and wait for it to finish
-	print $bsub_cmd . "\n";
+	# print $bsub_cmd . "\n";
 	system($bsub_cmd);
 
   	# Check the error file
@@ -1523,14 +1523,12 @@ sub pairs_2_mapping {
   my $pairs = shift;
   my $chr_assembly = shift;
   my $chr_name = shift;
-  my $most_recent = shift;
   my $chr_id = shift;
   
   # Create the top mapping node
   my $mapping_node = LRG::Node->new('mapping');
   $mapping_node->addData({'assembly' => $chr_assembly,'chr_name' => $chr_name});
   $mapping_node->addData({'chr_id' => $chr_id}) if (defined($chr_id));
-  $mapping_node->addData({'most_recent' => $most_recent}) if (defined($most_recent));
   
   # Create a local deep copy of the array so we won't mess up the elements
   my @pairs_array;

@@ -94,13 +94,19 @@ sub wrap_array {
 sub remap {
   my $self = shift;
   my $mapping = shift;
-  
+	my $destination_coordinate_system = shift;
+
   return unless (grep {/^coordinates$/} @{$self->_permitted()});
   $self->assert_ref($mapping,'LRG::API::Mapping');
-  
-  my @remapped = map {$_->transfer($mapping)} @{$self->coordinates() || []};
-  $self->coordinates([@{$self->coordinates()},@remapped]) if (@remapped);
 
+	my @remapped;
+	if (defined($destination_coordinate_system)) {
+  	@remapped = map {$_->transfer($mapping,$destination_coordinate_system)} @{$self->coordinates() || []};
+	}
+	else {
+		@remapped = map {$_->transfer($mapping)} @{$self->coordinates() || []};
+	}
+  $self->coordinates([@{$self->coordinates()},@remapped]) if (@remapped);
 }
 
 1;

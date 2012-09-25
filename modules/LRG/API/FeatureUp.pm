@@ -24,8 +24,10 @@ sub _permitted {
 sub remap {
   my $self = shift;
   my $mapping = shift;
+	my $destination_coordinate_system = shift;
   
-  map {$_->remap($mapping)} @{$self->gene() || []};
+	$self->SUPER::remap($mapping);
+  map {$_->remap($mapping,$destination_coordinate_system)} @{$self->gene() || []};
 } 
 
 1;

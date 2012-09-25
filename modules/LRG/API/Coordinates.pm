@@ -84,19 +84,26 @@ sub in_range {
 sub transfer {
   my $self = shift;
   my $mapping = shift;
-  my $destination_coordinate_system = shift || ($self->coordinate_system() eq $mapping->assembly() ? 'LRG' : $mapping->assembly());
-  
+
+	my $m_assembly = $mapping->assembly();
+
+  # Remove the patch version (e.g. GRCh37.p5 => GRCh37)
+  $m_assembly =~ /^(\w+)\./;
+  my $assembly_main = $1;
+  my $destination_coordinate_system = shift || ($self->coordinate_system() =~ /^$assembly_main/i ? 'LRG' : $m_assembly);
+
   # If we're transferring to the same coordinate system we're on, just return a reference to ourselves
   return $self if ($destination_coordinate_system eq $self->coordinate_system());
   
   # Warn and return if this object is not on an assembly used by the mapping and we cannot determine how to do the mapping
-  unless (($destination_coordinate_system eq $mapping->assembly() || $destination_coordinate_system =~ m/^lrg/i) && ($self->coordinate_system() eq $mapping->assembly() || $self->coordinate_system =~ m/^lrg/i)) {
-    warn (sprintf("Attempted to map from \%s to \%s but the supplied mapping object maps between LRG and \%s",$self->coordinate_system(),$destination_coordinate_system,$mapping->assembly()));
+ 
+  unless (($destination_coordinate_system eq $m_assembly || $destination_coordinate_system =~ m/^lrg/i) && ($self->coordinate_system() =~ /^$assembly_main/i || $self->coordinate_system =~ m/^lrg/i)) {
+    warn (sprintf("Attempted to map from \%s to \%s but the supplied mapping object maps between LRG and \%s",$self->coordinate_system(),$destination_coordinate_system,$m_assembly));
     return undef;
   }
   
   # Determine which direction we're transferring
-  my $direction = ($destination_coordinate_system eq $mapping->assembly() ? 'lrg_to_other' : 'other_to_lrg');
+  my $direction = ($destination_coordinate_system eq $m_assembly ? 'lrg_to_other' : 'other_to_lrg');
   my $strand = $mapping->strand(); 
   
   # Transfer the start and end coordinates
@@ -129,7 +136,7 @@ sub transfer {
     $transferred{$ext} = $offset;
   }
   
-  $transferred{name} = ($destination_coordinate_system eq $mapping->assembly() ? $mapping->name() : "");
+  $transferred{name} = ($destination_coordinate_system eq $m_assembly ? $mapping->name() : "");
   
   # Swap the coordinates if the strand is negative
   if ($strand < 0) {
@@ -138,7 +145,7 @@ sub transfer {
   
   # Create a new coordinates object
   my $obj = LRG::API::Coordinates->new($destination_coordinate_system,$transferred{start},$transferred{end},($strand * $self->strand()),$transferred{start_ext},$transferred{end_ext},$transferred{name},$self->coordinate_system());
-  
+
   return $obj;
 }
 

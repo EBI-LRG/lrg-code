@@ -44,9 +44,10 @@ sub transcript {
 sub remap {
   my $self = shift;
   my $mapping = shift;
-  
-  $self->SUPER::remap($mapping);
-  map {$_->remap($mapping)} @{$self->transcript() || []};
+  my $destination_coordinate_system = shift;
+
+  $self->SUPER::remap($mapping,$destination_coordinate_system);
+  map {$_->remap($mapping,$destination_coordinate_system)} @{$self->transcript() || []};
 } 
 
 1;

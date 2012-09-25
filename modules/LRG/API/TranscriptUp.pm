@@ -38,16 +38,17 @@ sub exon {
 sub translation {
   my $self = shift;
   my $translation = shift;
-  $self->_translation($translation,'LRG::API::TranslationUp');
+  $self->_translation($translation,'LRG::API::TranslationUp',1);
 }
 
 sub remap {
   my $self = shift;
   my $mapping = shift;
+	my $destination_coordinate_system = shift;
   
-  $self->SUPER::remap($mapping);
-  map {$_->remap($mapping)} @{$self->exon() || []};
-  $self->translation->remap($mapping) if (defined($self->translation()));
+  $self->SUPER::remap($mapping,$destination_coordinate_system);
+  map {$_->remap($mapping,$destination_coordinate_system)} @{$self->exon() || []};
+  map {$_->remap($mapping,$destination_coordinate_system)} @{$self->translation() || []};
 } 
 
 1;

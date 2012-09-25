@@ -16,7 +16,7 @@ sub initialize {
   
   # Set the source if it's not specified
   unless (defined($source)) {
-    my $contact = LRG::API::Contact->new('Ensembl Variation','helpdesk@ensembl.org','European Bioinformatics Institute');
+    my $contact = LRG::API::Contact->new('Ensembl','helpdesk@ensembl.org','European Bioinformatics Institute');
     $source = LRG::API::Source->new('Ensembl','http://www.ensembl.org/',$contact);
   }
   

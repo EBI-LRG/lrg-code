@@ -10,7 +10,7 @@ our @ISA = "LRG::API::Base";
 
 sub initialize {
   my $self = shift;
-  my ($assembly,$other_coordinates,$most_recent,$mapping_span) = @_;
+  my ($assembly,$other_coordinates,$mapping_span,$name) = @_;
   
   unless (defined($assembly)) {
     die ("Assembly must be specified in call to $self constructor");
@@ -21,9 +21,8 @@ sub initialize {
   unless (defined($mapping_span)) {
     die ("At least one mapping span must be specified in call to $self constructor");
   }
-  
-  $self->assembly($assembly);
-  $self->most_recent($most_recent);
+
+	$self->assembly($assembly);
   $self->other_coordinates($other_coordinates,'LRG::API::Coordinates');
   $self->mapping_span($mapping_span,'LRG::API::MappingSpan',1);
 }
@@ -32,8 +31,7 @@ sub _permitted {
   return [
     'assembly',
     'other_coordinates',
-    'mapping_span',
-    'most_recent'
+    'mapping_span'
   ];
 }
 
@@ -102,7 +100,6 @@ sub equals {
   
   my $equals = 1;
   $equals &&= ($self->assembly() eq $other->assembly());
-  $equals &&= ($self->most_recent() eq $other->most_recent());
   $equals &&= $self->other_coordinates->equals($other->other_coordinates);
   my @spans = sort {$a->lrg_coordinates->start() <=> $b->lrg_coordinates->start()} @{$self->mapping_span() || []};
   my @other_spans = sort {$a->lrg_coordinates->start() <=> $b->lrg_coordinates->start()} @{$other->mapping_span() || []};
