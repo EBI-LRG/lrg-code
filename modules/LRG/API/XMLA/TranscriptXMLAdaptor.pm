@@ -47,7 +47,7 @@ sub objs_from_xml {
     # Get a cDNA sequence object
     my $cdna = $s_adaptor->fetch_by_transcript($transcript);
     # Get a CodingRegion object
-    my $cds = $cds_adaptor->fetch_by_transcript($transcript);
+    my $cds = $cds_adaptor->fetch_all_by_transcript($transcript);
     # Get the exons
     my $exons = $e_adaptor->fetch_all_by_transcript($transcript);
     

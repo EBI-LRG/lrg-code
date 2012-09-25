@@ -200,7 +200,7 @@ sub xml_from_objs {
   map {$self->assert_ref($_,'LRG::API::Coordinates')} @{$objs};
   
   my @xml;
-  
+
   foreach my $obj (@{$objs}) {
     my %data;
     $data{coord_system} = $obj->coordinate_system();

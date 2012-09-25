@@ -40,7 +40,7 @@ sub objs_from_xml {
     # Get the exons
     my $exon = $e_adaptor->fetch_by_transcript($node);
     # Get the translation
-    my $translation = $t_adaptor->fetch_by_transcript($node);
+    my $translation = $t_adaptor->fetch_all_by_transcript($node);
     
     # Create the transcript object
     my $obj = $self->SUPER::obj_from_xml($node);

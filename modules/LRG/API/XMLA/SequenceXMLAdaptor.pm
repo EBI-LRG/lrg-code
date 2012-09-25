@@ -25,12 +25,12 @@ sub fetch_by_locus_reference {
   return $obj; 
 }
 
-sub fetch_by_coding_region {
+sub fetch_by_translation {
   my $self = shift;
-  my $coding_region = shift;
+  my $translation = shift;
   
   # Get the sequence
-  my $seq = $coding_region->findNodeSingle('translation/sequence');
+  my $seq = $translation->findNodeSingle('sequence');
   
   my $objs = $self->objs_from_xml($seq);
   my $obj;

@@ -6,6 +6,7 @@ use Getopt::Long;
 use List::Util qw(min max);
 use LRG::LRG;
 use LRG::LRGImport;
+use LRG::API::XMLA::XMLAdaptor;
 
 my $LRG_EXTERNAL_XML = q{ftp://ftp.ebi.ac.uk/pub/databases/lrgex/};
 my $LRG_EXTERNAL_ADDR = q{http://www.lrg-sequence.org/};
@@ -52,31 +53,43 @@ if (!defined($xmlfile) && defined($lrgid)) {
 # If no output file has been specified, use the xmlfile and add a .gff suffix
 $outfile = $xmlfile . '.gff' if (!defined($outfile));
 
-#ÊGet a LRG object from the xmlfile
-my $root = LRG::LRG::newFromFile($xmlfile) or die("Could not create LRG object from $xmlfile");
+# Load the XML file using the API
+my $xmla = LRG::API::XMLA::XMLAdaptor->new();
+$xmla->load_xml_file($xmlfile);
 
-#ÊGet the LRG id
-my $lrgid = $root->findNode('fixed_annotation/id')->content();
+# Get an LRGXMLAdaptor and fetch the LRG object
+my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
+my $lrg = $lrg_adaptor->fetch();
 
-# In order to get the correct coordinates relative to the assembly, we need to get the mapping
-my $mapping = $root->findNodeArray('updatable_annotation/annotation_set/mapping',{'assembly' => $ASSEMBLY}) or die("Could not get mapping between $lrgid and $ASSEMBLY");
-# Get the first mapping (should only be one anyway)
-$mapping = $mapping->[0] or die("Could not get mapping between $lrgid and $ASSEMBLY");
+# Get the LRG identifier
+my $lrgid = $lrg->fixed_annotation->name();
+
+# Find the correct mapping
+my $mapping;
+foreach my $aset (@{$lrg->updatable_annotation->annotation_set() || []}) {
+  foreach my $amap (@{$aset->mapping() || []}) {
+    next unless ($amap->assembly() =~ m/^$ASSEMBLY/i);
+    $mapping = $amap;
+    last;
+  }
+  last if ($mapping);
+}
+
+die (sprintf("Could not get mapping between \%s and \%s",$lrgid,$ASSEMBLY)) unless ($mapping);
 
 # For now, we will ignore any mapping spans etc. and just assume that the mapping is linear.
 # FIXME: Do a finer mapping, this could be done by (temporarily) inserting the LRG into the core db via the LRGMapping.pm module
-my $chr_name = $mapping->data()->{'chr_name'};
-my $chr_start = $mapping->data()->{'chr_start'};
-my $chr_end = $mapping->data()->{'chr_end'};
+my $chr_name = $mapping->other_coordinates->coordinate_system();
+my $chr_start = $mapping->other_coordinates->start();
+my $chr_end = $mapping->other_coordinates->end();
 my $strand;
 my $lrg_start = 1e11;
 my $lrg_end = -1;
 # Get the extreme points of the LRG mapping
-my $spans = $mapping->findNodeArray('mapping_span');
-foreach my $span (@{$spans}) {
-    $strand = $span->data()->{'strand'};
-    $lrg_start = min($lrg_start,$span->data()->{'lrg_start'});
-    $lrg_end = max($lrg_end,$span->data()->{'lrg_end'});
+foreach my $span (@{$mapping->mapping_span() || []}) {
+    $strand = $span->strand();
+    $lrg_start = min($lrg_start,$span->lrg_coordinates->start());
+    $lrg_end = max($lrg_end,$span->lrg_coordinates->end());
 }
 my $strand_ch = ($strand > 0 ? '+' : '-');
 
@@ -95,49 +108,39 @@ my @row = (
 );
 push(@output,join("\t",@row));
 
-#ÊGet the coordinates for the gene which will be the extreme points of the transcripts
+# Get the coordinates for the gene which will be the extreme points of the transcripts
 my $track_line;
 my $gene_start = 1e11;
 my $gene_end = -1;
-my $transcripts = $root->findNodeArray('fixed_annotation/transcript') or die("Could not get transcripts from $lrgid");
+my $transcripts = $lrg->fixed_annotation->transcript() or die("Could not get transcripts from $lrgid");
 foreach my $transcript (@{$transcripts}) {
-    $gene_start = min($gene_start,$transcript->data()->{'start'});
-    $gene_end = max($gene_end,$transcript->data()->{'end'});
+    $gene_start = min($gene_start,$transcript->lrg_coordinates->start());
+    $gene_end = max($gene_end,$transcript->lrg_coordinates->end());
     
-    my $tr_name = $transcript->data()->{'name'};
+    my $tr_name = $transcript->name();
     @row[2] = 'exon';
     @row[8] = $lrgid . '_' . $tr_name;
-    
-    # Loop over the exons and print them to the GFF
-    my $nodes = $transcript->{'nodes'};
     
     # Add a track line for this transcript
     $track_line = "track name=\"$lrgid\_$tr_name\" description=\"Transcript $tr_name for gene of $lrgid\" color=128,128,255";
     push(@output,$track_line);
-    for (my $i=0; $i<scalar(@{$nodes}); $i++) {
-        next if ($nodes->[$i]->name() ne 'exon');
-        
-        my $phase;
-        # Get the start phase of the exon from the last phase of the intron
-        if ($i > 0 && $nodes->[$i-1]->name() eq 'intron') {
-            $phase = $nodes->[$i-1]->data()->{'phase'};
-        }
-        else {
-            $phase = '.';
-        }
-        
-        # Get the exon information
-        if ($nodes->[$i]->name() eq 'exon') {
-            my $exon_start = $nodes->[$i]->findNode('lrg_coords')->data()->{'start'};
-            my $exon_end = $nodes->[$i]->findNode('lrg_coords')->data()->{'end'};
-            @row[3] = ($strand > 0 ? ($chr_start + $exon_start - 1) : ($chr_end - $exon_end + 1));
-            @row[4] = ($strand > 0 ? ($chr_start + $exon_end - 1) : ($chr_end - $exon_start + 1));
-            @row[7] = $phase;
-            push(@output,join("\t",@row));
-        }
+    
+    # Loop over the exons and print them to the GFF
+    foreach my $exon (@{$transcript->exons() || []}) {
+      my $phase = $exon->start_phase();
+      $phase = '.' unless (defined($phase) && $phase >= 0);
+      
+      my $exon_start = $exon->lrg_coordinates->start();
+      my $exon_end = $exon->lrg_coordinates->end();
+      @row[3] = ($strand > 0 ? ($chr_start + $exon_start - 1) : ($chr_end - $exon_end + 1));
+      @row[4] = ($strand > 0 ? ($chr_start + $exon_end - 1) : ($chr_end - $exon_start + 1));
+      @row[7] = $phase;
+      push(@output,join("\t",@row));
+      
     }
 }
-#ÊShift off the first element (the LRG region)
+
+# Shift off the first element (the LRG region)
 my $lrgrow = shift(@output);
 @row[2] = 'gene';
 @row[3] = ($strand > 0 ? ($chr_start + $gene_start - 1) : ($chr_end - $gene_end + 1));
@@ -149,7 +152,7 @@ my $lrgrow = shift(@output);
 #$track_line = "track name=\"$lrgid" . "_g1" . "\" description=\"Genomic region spanned by gene of $lrgid\" color=128,128,255";
 #unshift(@output,$track_line);
 
-#ÊAdd the LRG region entry to the top
+# Add the LRG region entry to the top
 unshift(@output,$lrgrow);
 # Add a track line for the LRG region
 $track_line = "track name=\"$lrgid\" description=\"Genomic region spanned by $lrgid\" color=128,128,255";
@@ -159,7 +162,7 @@ unshift(@output,$track_line);
 my $browser_line = "browser position $chr_name\:$chr_start\-$chr_end";
 unshift(@output,$browser_line);
 
-#ÊOpen the outfile for writing
+# Open the outfile for writing
 open(GFF,'>',$outfile) or die("Could not open $outfile for writing");
 print GFF join("\n",@output);
 close(GFF);

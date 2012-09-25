@@ -41,7 +41,7 @@ sub objs_from_xml {
     my $other_sequence = LRG::API::Sequence->new($diff->data->{other_sequence});
     my $lrg_coordinates = $c_adaptor->fetch_lrg_by_mapping_diff($diff);
     my $other_coordinates = $c_adaptor->fetch_other_by_mapping_diff($diff);
-    
+
     # Create the MappingDiff object
     my $obj = LRG::API::MappingDiff->new($type,$lrg_coordinates,$other_coordinates,$lrg_sequence,$other_sequence);
     push(@objs,$obj);
@@ -61,7 +61,7 @@ sub xml_from_objs {
   my $s_adaptor = $self->xml_adaptor->get_SequenceXMLAdaptor();
   my @xml;
 
-  # Use the appropriate name for the ccoord_system depending on schema
+  # Use the appropriate name for the coord_system depending on schema
   my $prefix = "other_";
   if ($self->xml_adaptor->schema_version() < 1.7) {
     $prefix = "chr_";
@@ -71,15 +71,15 @@ sub xml_from_objs {
     
     # Create the diff root object
     my $diff = LRG::Node::newEmpty('diff',undef,{'type' => $obj->type()});
-    
+
     # Add the coordinate attributes
-    $c_adaptor->mapping_diff_from_obj($obj->lrg_coordinates(),$diff);
+		$c_adaptor->mapping_diff_from_obj($obj->lrg_coordinates(),$diff);
     $c_adaptor->mapping_diff_from_obj($obj->other_coordinates(),$diff);
-    
+
     # Add the sequence attributes
     $s_adaptor->mapping_diff_from_obj($obj->lrg_sequence(),'lrg_',$diff);
     $s_adaptor->mapping_diff_from_obj($obj->other_sequence(),$prefix,$diff);
-    
+
     push(@xml,$diff);
   }
   

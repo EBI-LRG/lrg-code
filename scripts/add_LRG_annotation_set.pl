@@ -61,16 +61,14 @@ else {
   
   # Attach the LRG annotation set to the LRG object
   $lrg->updatable_annotation->annotation_set([values(%sets)]);
-  
 }
 
 # Update the meta information for the annotation_set
-my $mod_date = LRG::API::Meta->new('modification_date',$date);
-$sets{$option{lrg_set_name}}->modification_date($mod_date);
+$sets{$option{lrg_set_name}}->modification_date($date);
 
 # Add the lrg locus information specified on the command line
 my $lrg_locus = LRG::API::Meta->new('lrg_locus',$option{locus},[LRG::API::Meta->new('source',$option{locus_source})]);
-$sets{$option{lrg_set_name}}->lrg_locus($lrg_locus);
+$sets{$option{lrg_set_name}}->lrg_locus($lrg_locus->value);
 # Loop over the other sets and remove any locus element. At the same time make sure that it matches the one in the LRG annotation set
 while (my ($name,$obj) = each(%sets)) {
   next if ($name eq $option{lrg_set_name});
@@ -89,22 +87,25 @@ while (my ($name,$obj) = each(%sets)) {
   my @to_keep;
   foreach my $mapping (@{$obj->mapping() || []}) {
     # check that this mapping is in the list of assemblies we're interested in
-    my $ass = $mapping->assembly();
-    unless (grep {$_ =~ m/^$ass$/i} @{$option{assembly}}) {
+    my $asse = $mapping->assembly();
+    # Remove the patch version (e.g. GRCh37.p5 => GRCh37)
+    $asse =~ /^(\w+)\./;
+    my $assembly_main = $1;
+    unless (grep {$_ =~ m/^$assembly_main/i} @{$option{assembly}}) {
       push(@to_keep,$mapping);
       next;
     }
     
     # Warn that we will move the mapping
-    warn (sprintf("Mapping to the '\%s' assembly in annotation set '\%s' will be moved to the LRG annotation set",$ass,$name));
-    push(@moved,$ass);
+    warn (sprintf("Mapping to the '\%s' assembly in annotation set '\%s' will be moved to the LRG annotation set",$asse,$name));
+    push(@moved,$asse);
     
     # See if we already have a mapping to this assembly
     my @lrg_to_keep = ($mapping);
     foreach my $lrg_mapping (@{$sets{$option{lrg_set_name}}->mapping() || []}) {
       # Warn if anything on the same assembly is not matching and needs to be updated
-      if ($lrg_mapping->assembly() eq $ass) {      
-        warn (sprintf("There is already a pre-existing mapping to the '\%s' assembly in the LRG annotation set but it doesn't fully match the one in '\%s', so it will be replaced",$ass,$name)) unless ($lrg_mapping->equals($mapping));
+      if ($lrg_mapping->assembly() eq $asse) {      
+        warn (sprintf("There is already a pre-existing mapping to the '\%s' assembly in the LRG annotation set but it doesn't fully match the one in '\%s', so it will be replaced",$asse,$name)) unless ($lrg_mapping->equals($mapping));
         next;
       }
       push(@lrg_to_keep,$lrg_mapping);
@@ -121,9 +122,9 @@ while (my ($name,$obj) = each(%sets)) {
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
 
 # Warn about any mappings that we sought but didn't find
-foreach my $ass (@{$option{assembly}}) {
-  next if (grep {m/^$ass$/i} @moved);
-  warn (sprintf("Could not find any mapping to '\%s'",$ass));
+foreach my $asse (@{$option{assembly}}) {
+  next if (grep {m/^$asse/i} @moved);
+  warn (sprintf("Could not find any mapping to '\%s'",$asse));
 }
 
 warn("Done!\n");

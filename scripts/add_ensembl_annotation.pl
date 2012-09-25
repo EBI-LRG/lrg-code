@@ -5,42 +5,40 @@ use warnings;
 use Getopt::Long;
 
 use LRG::LRGAnnotation;
+use LRG::LRGMapping;
 use LRG::API::EnsemblAnnotationSet;
 use LRG::API::XMLA::XMLAdaptor;
+use LRG::API::EnsemblTranscriptMapping;
 use Bio::EnsEMBL::Registry;
 
 
 my @option_defs = (
-  'host=s',
-  'port=i',
-  'user=s',
-  'pass=s',
-  'db_version=s',
   'xmlfile=s',
   'species=s',
   'assembly=s',
   'replace!',
+  'registry=s',
+	'lrg_id=s',
+  'locus_source=s',
   'help!'
 );
 
 my %option;
+
 GetOptions(\%option,@option_defs);
 
 # Use default database (public) unless otherwise specified
-$option{host} ||= 'ensembldb.ensembl.org';
-$option{port} ||= 5306;
-$option{user} ||= 'anonymous';
-$option{species} ||= 'homo_sapiens';
+$option{species} ||= 'Homo_sapiens';
+$option{lrg_set_name} ||= 'LRG';
+$option{locus_source} ||= 'HGNC';
+if (!defined($option{lrg_id})) {
+	$option{xmlfile} =~ /(LRG_\d+)/;
+	$option{lrg_id} = $1;
+}
 
 # Load the registry from the database
 my $registry = 'Bio::EnsEMBL::Registry';
-$registry->load_registry_from_db(
-  -host =>  $option{host},
-  -port =>  $option{port},
-  -user =>  $option{user},
-  -pass =>  $option{pass},
-  -db_version =>  $option{db_version},
-) or die (sprintf("Could not load registry from '\%s'",$option{host}));
+$registry->load_all( $option{registry} );
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
@@ -61,7 +59,7 @@ unless ($option{assembly}) {
 die("You need to specify an LRG xml file with the -xmlfile option") unless ($option{xmlfile});
 die(sprintf("XML file '\%s' does not exist",$option{xmlfile})) unless (-e $option{xmlfile});
 
-warn (sprintf("Will get mapping to \%s from \%s and fetch overlapping annotations from \%s\n",$option{assembly},$option{xmlfile},$option{host}));
+warn (sprintf("Will get mapping to \%s from \%s and fetch overlapping annotations\n",$option{assembly},$option{xmlfile}));
 
 # Load the XML file
 my $xmla = LRG::API::XMLA::XMLAdaptor->new();
@@ -71,6 +69,7 @@ $xmla->load_xml_file($option{xmlfile});
 my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
 my $lrg = $lrg_adaptor->fetch();
 my $asets = $lrg->updatable_annotation->annotation_set();
+
 
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
@@ -102,19 +101,18 @@ $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
 my $mapping;
+my $assembly = $option{assembly};
+
 foreach my $aset (@{$asets}) {
-  
   # Loop over the mappings to get the correct one
   foreach my $m (@{$aset->mapping() || []}) {
-    
     # Skip if the assembly of the mapping does not correspond to the assembly we're interested in
-    next unless ($m->assembly() eq $option{assembly});
+    next unless ($m->assembly() =~ /^$assembly/i);
     $mapping = $m;
-    last;
-    
+    last; 
   }
   
-  warn (sprintf("\%s mapping to \%s found in annotation set '\%s'\n",($mapping ? "Will use" : "No"),$option{assembly},$aset->source->name()));
+  warn (sprintf("\%s mapping to \%s found in annotation set '\%s'\n",($mapping ? "Will use" : "No"),$assembly,$aset->source->name()));
   
   # Quit the iteration if we have found the mapping we need
   last if ($mapping);
@@ -122,11 +120,12 @@ foreach my $aset (@{$asets}) {
 }
 
 # If no mapping could be found at all, exit the script
-die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n",$option{assembly})) unless ($mapping);
+die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n",$assembly)) unless ($mapping);
 
 # Get a SliceAdaptor and a Slice spanning the mapped region
 my $s_adaptor = $registry->get_adaptor($option{species},'core','slice');
 my $slice = $s_adaptor->fetch_by_region('chromosome',$mapping->other_coordinates->coordinate_system(),$mapping->other_coordinates->start(),$mapping->other_coordinates->end(),$mapping->mapping_span->[0]->strand(),$option{assembly}) or die("Could not fetch a slice for the mapped region");
+
 
 # Create a new LRGAnnotation object and load the slice into it
 my $lrga = LRG::LRGAnnotation->new($slice);
@@ -134,14 +133,106 @@ my $lrga = LRG::LRGAnnotation->new($slice);
 my $feature = $lrga->feature();
 
 # Add coordinates in the LRG coordinate system
-map {$_->remap($mapping)} @{$feature};
+map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
-# Attach the features to the Ensembl annotation set
+my $ens_mapping;
+my @ens_feature = @{$feature};
+my $tr_adaptor = $registry->get_adaptor('human','core','transcript');
+my $ex_adaptor = $registry->get_adaptor('human','core','exon');
+
+
+my $lrg_aset;
+my $lrg_locus;
+foreach my $aset (@{$asets}) {
+  next unless ($aset->source->name() eq 'LRG');
+  $lrg_aset = $aset;
+	$lrg_locus = $lrg_aset->lrg_locus->value;
+	# Check LRG locus source (sometimes lost when parsing the XML file ...)
+	$lrg_aset->lrg_locus->attribute([LRG::API::Meta->new('source',$option{locus_source})]) if (!$lrg_aset->lrg_locus->attribute) ;
+  last;
+}
+
+#my $diffs_list;
+my $diffs_list = get_diff($asets);
+foreach my $f (@ens_feature) {
+	foreach my $g (@{$f->gene}) {
+    next if($g->source ne 'Ensembl');
+
+		# Check gene name
+		my $gene_flag = 0;
+		my $symbols = $g->symbol();	
+
+		foreach my $sym (@$symbols) {
+			if ($sym->name eq $lrg_locus) {	
+				$gene_flag = 1;
+				last;
+			}
+		}
+
+		# Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
+		if ($gene_flag) {
+			my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
+			$ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
+		}
+		
+		remove_grc_coordinates($g);
+		foreach my $t (@{$g->transcript}) {
+			remove_grc_coordinates($t);
+			foreach my $e (@{$t->exon}) {
+				remove_grc_coordinates($e);
+			}
+			if ($t->translation) {
+				foreach my $trans (@{$t->translation}) {
+					remove_grc_coordinates($trans);
+				}
+			}
+		}
+	}
+}
+
+# Attach the features and mappings to the Ensembl annotation set
 $ensembl_aset->feature($feature);
+$ensembl_aset->mapping($ens_mapping);
+
 
 # Print the XML
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
-
+#
+#my $f_adaptor = $xmla->get_FeatureUpXMLAdaptor();
+#my $xml = $f_adaptor->xml_from_objs($feature);
+#my $lrg_root = LRG::LRG::new('/tmp/LRG.xml');
+#map {$lrg_root->addExisting($_)} @{$xml};
+#$lrg_root->printAll();
+# 
 warn("Done!\n");
 
- 
+
+
+# /!\ Needs to check the assemblies first (TODO) /!\ #
+sub get_diff {
+	my $sets = shift;
+	my %diffs_list;
+	foreach my $set (@{$sets}) {
+  	next unless ($set->source->name() eq 'LRG');
+  	
+		foreach my $m (@{$set->mapping() || []}) {
+			foreach my $ms (@{$m->mapping_span()}) {
+				foreach my $diff (@{$ms->mapping_diff}) {
+					$diffs_list{$diff->lrg_coordinates->start} = $diff;
+				}
+			}
+		}
+  	last;
+	}
+	return \%diffs_list;
+}
+
+sub remove_grc_coordinates {
+	my $obj = shift;
+	my @coord;
+	foreach my $c (@{$obj->coordinates}) {
+		push (@coord,$c) if ($c->coordinate_system =~ /^LRG/);
+	}
+	$obj->coordinates(\@coord);
+}
+

@@ -11,6 +11,11 @@ cvspath=${CVSROOTDIR}/xml/
 pubpath=${PUBFTP}
 
 tag=$1
+cvspath2=$2
+
+if [[ ! -z ${cvspath2} ]] ; then
+ cvspath=${cvspath2}
+fi
 
 echo -n "This will tag records on the public ftp (published and pending) with the tag "${tag}". Do you wish to continue (y/n)? "
 read -e go

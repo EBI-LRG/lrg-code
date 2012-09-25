@@ -39,6 +39,7 @@ sub objs_from_xml {
       
       # Get a coordinates element
       my $coords = $c_adaptor->fetch_all_by_exon($element);
+			
       # Set the start phase to equal the last end phase
       $start_phase = $end_phase;
       # Create the Exon object
@@ -74,13 +75,13 @@ sub xml_from_objs {
     
     # Create an exon object 
     my $exon = LRG::Node::newEmpty('exon');
+
     # Add LRG coordinates
-    map {$exon->addExisting($_)} @{$c_adaptor->xml_from_objs($obj->coordinates())};
-    
+		map {$exon->addExisting($_)} @{$c_adaptor->xml_from_objs($obj->coordinates())};
     push(@xml,$exon);
     
     # If there are more exon objects following, intersperse with an intron
-    if (scalar(@{$objs})) {
+    if (scalar(@{$objs}) and $obj->end_phase() != -1) {
       my $intron = LRG::Node::newEmpty('intron',undef,{'phase' => $obj->end_phase()});
       push(@xml,$intron);
     }
