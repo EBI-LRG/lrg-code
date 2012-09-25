@@ -20,12 +20,12 @@ my $taxo_id = 9606;
 #my $lrg_list = 'lrgs_in_ensembl.txt';
 
 # List of LRG IDs which are stored in Ensembl
-print "Generating the file with the list of LRGs in Ensembl ...";
-my $lrg_from_ensembl = `perl get_LRG_from_Ensembl.pl $index_dir`;
-die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
-if (-s "$index_dir/tmp_$lrg_list") {
-  `mv $index_dir/tmp_$lrg_list $index_dir/$lrg_list`;
-}
+#print "Generating the file with the list of LRGs in Ensembl ...";
+#my $lrg_from_ensembl = `perl get_LRG_from_Ensembl.pl $index_dir`;
+#die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
+#if (-s "$index_dir/tmp_$lrg_list") {
+#  `mv $index_dir/tmp_$lrg_list $index_dir/$lrg_list`;
+#}
 print " done\n";
 
 # A directory handle
