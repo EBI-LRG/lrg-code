@@ -9,26 +9,34 @@
 <xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
 <xsl:variable name="pending" select="0"/>
 
+<!-- Source names -->
+<xsl:variable name="lrg_source_name">LRG</xsl:variable>
+<xsl:variable name="ncbi_source_name">NCBI RefSeqGene</xsl:variable>
+<xsl:variable name="ensembl_source_name">Ensembl</xsl:variable>
+
 <xsl:template match="/lrg">
 
-  <html lang="en">
-    <head>
-      <title>
-  <xsl:value-of select="$lrg_id"/> -
-  <xsl:value-of select="$lrg_gene_name"/>
+<html lang="en">
+  <head>
+    <title>
+      <xsl:value-of select="$lrg_id"/> -
+      <xsl:value-of select="$lrg_gene_name"/>
 	
-  <xsl:if test="$pending=1">
-    *** PENDING APPROVAL ***
-  </xsl:if>
-      </title>
+      <xsl:if test="$pending=1">
+        *** PENDING APPROVAL ***
+      </xsl:if>
+    </title>
 
 <!-- Load the stylesheet and javascript functions -->	   
       <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
       <script type="text/javascript" src="lrg2html.js" />
-    </head>
+  </head>
 
-    <body>
-		
+  <body>
+    <xsl:if test="$pending=0">
+      <xsl:attribute name="onload">search_in_ensembl('<xsl:value-of select="$lrg_id"/>')</xsl:attribute >
+    </xsl:if>
+
   <xsl:if test="$pending=1">
 	 
 <!-- Add a banner indicating that the record is pending if the pending flag is set -->
@@ -60,7 +68,7 @@
       </h1>
 
 <!-- Create the table with within-page navigation  -->	 
-  <p>Jump to:</p>
+   <p style="font-weight:bold">Jump to:</p>
   <b><a href="#fixed_annotation_anchor">Fixed annotation</a></b>
   <ul>
     <li><a href="#genomic_sequence_anchor">Genomic sequence</a></li>
@@ -73,8 +81,9 @@
     <li><a href="#set_2_anchor">NCBI annotation</a></li>
     <li><a href="#set_3_anchor">Ensembl annotation</a></li>
   </ul>
-
-  <b><a href="#additional_data_anchor">Additional data sources</a></b>
+  <xsl:if test="count(updatable_annotation/annotation_set) &gt; 3">
+    <b><a href="#additional_data_anchor">Additional data sources</a></b>
+  </xsl:if>
   <p></p>
 
 <!-- FIXED ANNOTATION -->
@@ -161,8 +170,7 @@
    
 <xsl:template match="source">
   <xsl:param name="requester"/>
-  <xsl:param name="external"/>
-  <br />    
+  <xsl:param name="external"/> 
   <div>
   <xsl:choose>
     <xsl:when test="$requester=1">
@@ -175,7 +183,7 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:attribute name="class">lrg_source</xsl:attribute>
-    <div class="source"><span class="source">Source: <span class="source_name"><xsl:value-of select="name"/></span></span></div>
+      <div class="source"><span class="source">Source: <span class="source_name"><xsl:value-of select="name"/></span></span></div>
     </xsl:otherwise>
   </xsl:choose>
     <table>
@@ -240,9 +248,6 @@
     </xsl:for-each>
     </table>
   </div>
-  <xsl:if test="$requester=1 or $external=1">
-   <br />
-  </xsl:if>
 
 </xsl:template>
    
@@ -387,32 +392,33 @@
     <div class="section">
       <h2 class="section">FIXED ANNOTATION</h2>
     </div><br />
-<!-- Add a contact section for each requester and NCBI RSG -->
+<!-- Add a contact section for each requester -->
   <xsl:for-each select="source">
-    <xsl:apply-templates select=".">         
-      <xsl:with-param name="requester">
-        <xsl:if test="position()!=last()">1</xsl:if>
-      </xsl:with-param>
-    </xsl:apply-templates>
+    <xsl:if test="name!=$ncbi_source_name">
+      <xsl:apply-templates select=".">         
+        <xsl:with-param name="requester">
+          <xsl:if test="position()!=last()">1</xsl:if>
+        </xsl:with-param>
+      </xsl:apply-templates>
+    </xsl:if>
   </xsl:for-each>  
 
 <!-- Add the meta data -->
     <p>
-      <strong>Organism: </strong>
-  <xsl:value-of select="organism"/>
+      <strong>Organism: </strong><xsl:value-of select="organism"/>
       <br/>
-      <strong>Taxonomy ID: </strong>
-  <xsl:value-of select="organism/@taxon"/>
+      <strong>Taxonomy ID: </strong><xsl:value-of select="organism/@taxon"/>
     </p>
 
     <p>
-      <strong>Molecule type: </strong>
-  <xsl:value-of select="mol_type"/>
+      <strong>Molecule type: </strong><xsl:value-of select="mol_type"/>
     </p>
 
     <p>
       <strong>Creation date: </strong>
-      <xsl:value-of select="creation_date"/>
+      <xsl:call-template name="format_date">
+        <xsl:with-param name="date2format"><xsl:value-of select="creation_date"/></xsl:with-param>
+      </xsl:call-template>
     </p>
 
     <xsl:if test="sequence_source">
@@ -427,6 +433,13 @@
         </a>
       </p>
     </xsl:if>
+    <xsl:if test="comment">
+      <p>
+        <strong style="color:red">Note: </strong>
+				<xsl:value-of select="comment"/>
+      </p>
+    </xsl:if>
+    <br />
 
 <!-- LRG GENOMIC SEQUENCE -->
   <xsl:call-template name="genomic_sequence">
@@ -436,7 +449,7 @@
 <!-- LRG TRANSCRIPTS -->
 
     <a name="transcripts_anchor"/>
-    <h3 class="subsection">Transcripts</h3>
+    <h3 class="subsection">Transcript(s)</h3>
   
   <xsl:for-each select="transcript">
     <xsl:call-template name="lrg_transcript">
@@ -626,7 +639,6 @@
   </xsl:for-each>
       
 <!-- Display the NCBI accession for the transcript -->
-  <xsl:variable name="ncbi_source_name">NCBI RefSeqGene</xsl:variable>
   <xsl:variable name="ref_transcript" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]" />
   <xsl:if test="$ref_transcript">
     <strong> Source: </strong>This transcript is identical to the RefSeq transcript 
@@ -1364,23 +1376,23 @@
 <xsl:template match="updatable_annotation">
   <xsl:param name="lrg_id" />
   <xsl:param name="lrg_gene_name" />
-  
-  <xsl:variable name="lrg_source_name">LRG</xsl:variable>
-  <xsl:variable name="ncbi_source_name">NCBI RefSeqGene</xsl:variable>
-  <xsl:variable name="ensembl_source_name">Ensembl</xsl:variable>
-  <br /><br />
+  <br /><br /><br />
   <div id="updatable_annotation_div" class="evenDiv">
 
   <a name="updatable_annotation_anchor" />
   <div class="section">
       <h2 class="section">UPDATABLE ANNOTATION</h2>
-  </div><br />
+  </div>
    
   <xsl:for-each select="annotation_set[source/name=$lrg_source_name or source/name=$ncbi_source_name or source/name=$ensembl_source_name]">
-    <xsl:apply-templates select=".">
-      <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-      <xsl:with-param name="setnum" select="position()" />
-    </xsl:apply-templates>
+    <br />
+    <div class="meta_source">
+      <xsl:apply-templates select=".">
+        <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+        <xsl:with-param name="setnum" select="position()" />
+      </xsl:apply-templates>
+    </div>
+    <br /><br />
   </xsl:for-each>
     
   </div>
@@ -1390,8 +1402,9 @@
     <div id="additional_data_div" class="oddDiv">
       <a name="additional_data_anchor" />
        <div class="section">
-        <h2 class="section">ADDITIONAL DATA SOURCES FOR <xsl:value-of select="$lrg_gene_name"/></h2>
-       </div>  
+         <h2 class="section">ADDITIONAL DATA SOURCES FOR <xsl:value-of select="$lrg_gene_name"/></h2>
+       </div>
+       <br />
       <xsl:for-each select="annotation_set[source/name!=$lrg_source_name and source/name!=$ncbi_source_name and source/name!=$ensembl_source_name]">
         <xsl:apply-templates select="source">
           <xsl:with-param name="external" select="1" />
@@ -1405,19 +1418,24 @@
 <xsl:template match="annotation_set">
   <xsl:param name="lrg_id" />
   <xsl:param name="setnum" />
-  
-  <xsl:if test="$setnum>1">
-  <br /><br />
-  </xsl:if>
-  
+
+  <xsl:variable name="ensembl_source_name">Ensembl</xsl:variable>
+
   <a>
   <xsl:attribute name="name">set_<xsl:value-of select="$setnum"/>_anchor</xsl:attribute>
   </a>
   
   <xsl:apply-templates select="source" />
   
+  <xsl:if test="source/name=$ensembl_source_name">
+    <div id="ensembl_links"></div>
+  </xsl:if>
+
   <p>
-    <strong>Modification date: </strong><xsl:value-of select="modification_date"/>
+    <strong>Modification date: </strong>
+    <xsl:call-template name="format_date">
+      <xsl:with-param name="date2format"><xsl:value-of select="modification_date"/></xsl:with-param>
+    </xsl:call-template>
   <xsl:if test="comment">
     <br/>
     <strong>Comment: </strong><xsl:value-of select="comment" />
@@ -1548,7 +1566,7 @@
     <xsl:value-of select="$ensembl_url" />
     <xsl:value-of select="$ensembl_region" />
     <xsl:if test="($coord_system='GRCh37') or ($coord_system='NCBI37')">
-      <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text>
+      <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels,variation_feature_variation=normal</xsl:text>
     </xsl:if>
   </xsl:attribute>
         [Ensembl]
@@ -1653,7 +1671,6 @@
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>MAPS=ugHs,genes,rnaHs,rna-r<xsl:text>&amp;</xsl:text>query=<xsl:value-of select="$region_id"/></xsl:variable>
   <h3>Mapping of transcript <xsl:value-of select="$region_name"/> to <xsl:value-of select="$lrg_id"/></h3>
   
-  
     <strong>Region covered: <xsl:value-of select="$region_id"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></strong>
     
 	<xsl:choose>
@@ -1728,8 +1745,7 @@
       </tr>      
   </xsl:for-each>
     </table>
-  </div> 
-  <br />
+  </div>
 </xsl:template>
 
 
@@ -2299,6 +2315,23 @@
     </xsl:otherwise>
   </xsl:choose>
   
+</xsl:template>
+
+<xsl:template name="format_date">
+  <xsl:param name="date2format" />
+
+  <xsl:variable name="delimiter">-</xsl:variable>
+
+  <xsl:variable name="year"><xsl:value-of select="substring-before($date2format, $delimiter)" /></xsl:variable>
+  <xsl:variable name="month_day"><xsl:value-of select="substring-after($date2format, $delimiter)" /></xsl:variable>
+
+  <xsl:variable name="month"><xsl:value-of select="substring-before($month_day, $delimiter)" /></xsl:variable>
+  <xsl:variable name="day"><xsl:value-of select="substring-after($month_day, $delimiter)" /></xsl:variable>
+
+  
+    <xsl:value-of select="$day"/>/<xsl:value-of select="$month"/>/<xsl:value-of select="$year"/>
+
+
 </xsl:template>
     
 </xsl:stylesheet>

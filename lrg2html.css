@@ -98,6 +98,7 @@ tr.gene_info_cell {
 td.gene_info_cell {
   border-right: 0px;
   padding-right:0px;
+  background-color: #FFF;
 }
 
 td.transcript_mapping{
@@ -172,7 +173,9 @@ div.pending {
 div.section{
   border-top: 2px solid #003399;
   border-bottom: 1px dotted #003399;
+  background-color:#FFF;
   padding: 0px;
+  margin-bottom:5px;
 }
 
 h2.section{
@@ -211,7 +214,7 @@ h3.subsection {
 }
 
 h3.sub_subsection {
-  background-color: #F8F8F8;
+  background-color: #F2F2F8;
   padding: 4px;
   margin-top: 15px;
   margin-bottom: 0px;
@@ -369,7 +372,7 @@ a.subsection{
 }
 
 .oddDiv {
-  background: #F8F8F8;
+  background: #F9F9F9;
   margin: 5px;
 }
      
@@ -386,6 +389,10 @@ a.subsection{
 .unhidden {
 	height: 100px;
 	display: inline;
+}
+
+div.meta_source {
+  background: #F9F9F9;
 }
 
 div.requester_source {
