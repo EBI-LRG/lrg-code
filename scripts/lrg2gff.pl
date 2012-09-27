@@ -50,6 +50,16 @@ if (!defined($xmlfile) && defined($lrgid)) {
     }
 }
 
+# Check if the gff directory exists
+$outfile =~ /^(.*\/?gff)/;
+my $gff_dir = $1;
+if(defined($gff_dir)) {
+  unless(-d $gff_dir){
+    mkdir $gff_dir or die "Directory $gff_dir doesn't exist and can't be created";
+  }
+}
+
+
 # If no output file has been specified, use the xmlfile and add a .gff suffix
 $outfile = $xmlfile . '.gff' if (!defined($outfile));
 

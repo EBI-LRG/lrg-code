@@ -32,6 +32,11 @@ else {
 	}
 }
 
+if (defined($fasta_dir)) {
+  unless(-d $fasta_dir){
+    mkdir $fasta_dir or die "Directory $fasta_dir doesn't exist and can't be created";
+  }
+}
 
 foreach my $xml (@xml_list) {
 	my $lrg = LRG::LRG::newFromFile("$xml_dir/$xml") or die("ERROR: Could not create LRG object from XML file!");
