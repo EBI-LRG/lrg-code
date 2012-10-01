@@ -51,7 +51,7 @@ if (!defined($xmlfile) && defined($lrgid)) {
 }
 
 # Check if the gff directory exists
-$outfile =~ /^(.*\/?gff)/;
+$outfile =~ /^(.*)\/LRG_\d+\.xml\.gff/;
 my $gff_dir = $1;
 if(defined($gff_dir)) {
   unless(-d $gff_dir){
