@@ -38,6 +38,9 @@ FIXED_ANNOTATION = element fixed_annotation {
    element creation_date {
       xsd:date
    },
+   element comment {
+     text
+   }?,
    DNA_SEQUENCE,
    FX_TRANSCRIPT+
    
