@@ -27,7 +27,7 @@ my $script_path = ($1) ? $1 : '.';
 my $lrg_from_ensembl = `perl $script_path/get_LRG_from_Ensembl.pl $index_dir`;
 die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
 if (-s "$index_dir/tmp_$lrg_list") {
-  `mv $index_dir/tmp_$lrg_list $index_dir/$lrg_list`;
+  `mv $index_dir/tmp_$lrg_list $index_dir/../$lrg_list`;
 }
 print " done\n";
 

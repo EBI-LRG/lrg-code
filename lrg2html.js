@@ -159,7 +159,7 @@ function clear_highlight(trans) {
 
 function search_in_ensembl(lrg_id) {
 
-  var filePath = '../lrg_index/lrgs_in_ensembl.txt';
+  var filePath = 'lrgs_in_ensembl.txt';
   div = document.getElementById('ensembl_links');
   xmlhttp = new XMLHttpRequest();
   xmlhttp.open("GET",filePath,false);
