@@ -4,12 +4,13 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my ($data_file, $xml_dir, $new_dir, $tmp_dir, $help);
+my ($data_file, $xml_dir, $new_dir, $tmp_dir, $skip_check0, $help);
 GetOptions(
   'data_file=s'		=> \$data_file,
   'xml_dir=s'		  => \$xml_dir,
   'new_dir=s'     => \$new_dir,
   'tmp_dir=s'     => \$tmp_dir,
+  'skip_check0!'  => \$skip_check0,
   'help!'         => \$help
 );
 
@@ -33,7 +34,7 @@ while (<F>) {
 		next;
 	}	
 	print O "$lrg_id: ";
-	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file`;
+	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_check0`;
 
 }
 print O "\nPipeline ends\n";
