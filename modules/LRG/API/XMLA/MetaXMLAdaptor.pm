@@ -13,7 +13,7 @@ our @ISA = "LRG::API::XMLA::BaseXMLAdaptor";
 sub fetch_all_by_locus_reference {
   my $self = shift;
   my $lrg = shift;
-  my $attributes = shift || ['sequence_source','organism','mol_type','creation_date'];
+  my $attributes = shift || ['sequence_source','organism','mol_type','creation_date','comment'];
   
   return $self->_fetch_all_by_element_names($lrg,$attributes);
 }
