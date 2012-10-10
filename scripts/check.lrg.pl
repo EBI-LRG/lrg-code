@@ -69,7 +69,7 @@ $LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
 
 my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
-    if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS)) {
+    if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS) && !grep(/^$check$/,@LRG::LRGHealthcheck::PRELIMINARY_CHECKS)) {
         print STDOUT "Unknown healthcheck '$check'\n";
         next;
     }
