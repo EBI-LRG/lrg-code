@@ -159,7 +159,8 @@ $stmt = qq{
         taxon_id,
         moltype,
         creation_date,
-				sequence_source
+				sequence_source,
+        comment
     FROM
         lrg_data
     WHERE
@@ -169,8 +170,8 @@ $stmt = qq{
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 
-my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source);
-$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source);
+my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source,$fcomment);
+$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source,\$fcomment);
 $sth->fetch();
 
 # Create LRG root elements and fixed_annotation element
@@ -180,6 +181,7 @@ my $fixed = $lrg->addNode('fixed_annotation');
 
 # Set the data
 $fixed->addNode('id')->content($lrg_id);
+
 if (defined($sequence_source)) {
 	$fixed->addNode('sequence_source')->content($sequence_source);
 }
@@ -202,11 +204,15 @@ $sth->execute();
 my $lsdb_id;
 $sth->bind_columns(\$lsdb_id);
 while ($sth->fetch()) {
-    $fixed->addExisting(get_source($lsdb_id,$db_adaptor));
+  $fixed->addExisting(get_source($lsdb_id,$db_adaptor));
 }
 
 $fixed->addNode('mol_type')->content($moltype);
 $fixed->addNode('creation_date')->content($creation_date);
+if (defined($fcomment)) {
+	$fixed->addNode('comment')->content($fcomment);
+}
+
 my $sequence = get_sequence($gene_id,'genomic',$db_adaptor);
 $fixed->addNode('sequence')->content($sequence);
 

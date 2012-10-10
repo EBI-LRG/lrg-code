@@ -315,14 +315,22 @@ my $moltype = $node->content();
 $node = $fixed->findNode('creation_date') or error_msg("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
 
+
+my $other_val;
+my $other_col;
 # Get the RefSeqGene ID
 $node = $fixed->findNode('sequence_source');
-my $sequence_source_val;
-my $sequence_source_col;
 if (defined($node)) {
-	$sequence_source_val = ",'".$node->content()."'";
-	$sequence_source_col = ",sequence_source";
+	$other_val .= ",'".$node->content()."'";
+	$other_col .= ",sequence_source";
 }
+# Get the comment (optional)
+$node = $fixed->findNode('comment');
+if (defined($node)) {
+	$other_val .= ",'".$node->content()."'";
+	$other_col .= ",comment";
+}
+
 
 # Get the LRG sequence
 $node = $fixed->findNode('sequence') or error_msg("ERROR: Could not find LRG sequence tag");
@@ -357,7 +365,7 @@ $stmt = qq{
             taxon_id,
             moltype,
             creation_date
-						$sequence_source_col
+						$other_col
         )
     VALUES (
         '$gene_id',
@@ -365,7 +373,7 @@ $stmt = qq{
         $taxon_id,
         '$moltype',
         '$creation_date'
-				$sequence_source_val
+				$other_val
     )
 };
 print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
