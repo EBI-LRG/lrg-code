@@ -11,6 +11,7 @@ xml_dir=$4
 new_dir=$5
 tmp_dir=$6
 report_file=$7
+skip_check0=$8
 
 if [ -z ${tmp_dir} ] ; then
 	tmp_dir='.'
@@ -50,6 +51,15 @@ function echo_stderr {
 }
 
 echo_stderr  "#### ${lrg_id} ####" >&2
+
+if [ ! ${skip_check0} ] ; then
+  echo_stderr  "# Preliminary check: compare with existing LRG entry ... " >&2
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
+  check_script_result
+  echo_stderr  "> checking comparison done" 
+  echo_stderr  ""
+fi
 
 echo_stderr  "# Check data file #1 ... " >&2
 rm -f ${error_log}
