@@ -12,11 +12,15 @@ a:hover {
   text-decoration: underline;
 }
 
+img {
+  vertical-align:middle;
+  padding-right:4px;
+}
+
 h1 {
-  color: #FFFFFF;
-  background: #003399;
-  border: 2px solid black;
-  padding: 10px;
+  vertical-align:middle;
+  padding:0px;
+  margin:0px;
 }
 
 h2 {
@@ -45,7 +49,13 @@ h4 {
 .gene_name{
   font-size:1.1em;
   padding-left:0px;
+  padding-bottom:2px;
   border: 0px;
+}
+
+img.external_link {
+ padding-left:4px;
+ vertical-align:top;
 }
 
 th {
@@ -89,6 +99,10 @@ td.sequence_cell {
   color:#000;
 }
 
+table.gene_info_cell {
+  margin: 5px;
+}
+
 tr.gene_info_cell {
   vertical-align: top;
   margin:0px;
@@ -101,9 +115,17 @@ td.gene_info_cell {
   background-color: #FFF;
 }
 
+table.mapping_detail{
+  background-color:#FFF;
+}
+
+td.mapping{
+  padding-left:15px;
+  padding-right:5px;
+}
+
 td.transcript_mapping{
   border:0px;
-  padding-right:0px;
 }
 
 td.gene_transcript_cell {
@@ -116,8 +138,12 @@ ul{
   margin-left:20px;
   padding-left:5px;
   margin-top:2px;
-  margin-bottom:6px;
+  margin-bottom:8px;
   list-style-type:circle;
+}
+
+li {
+  padding-bottom:2px;
 }
 
 ul.ext_id{
@@ -143,6 +169,9 @@ span.transcript_label{
   padding-right: 5px;
 }
 
+a.menu {
+  color: #003399;
+}
 
 td.quicklinks {
   border: 0px;
@@ -152,9 +181,26 @@ td.quicklinks {
   padding-left: 10px;
 }
 
+div.banner{
+  color: #FFFFFF;
+  background: #003399;
+  border: 2px solid black;
+}
+
+div.banner_left{
+  float:left;
+  padding: 10px;
+}
+
+div.banner_right{
+  float:right;
+  padding: 5px;
+}
+
 div.pending {
   border: 2px solid #F00;
   background-color: #FDFDFD;
+  margin-bottom:15px;
 }
 
 .pending_banner {
@@ -174,18 +220,20 @@ div.section{
   border-top: 2px solid #003399;
   border-bottom: 1px dotted #003399;
   background-color:#FFF;
-  padding: 0px;
+  padding: 5px 0px;
   margin-bottom:5px;
 }
 
 h2.section{
-  padding: 5px;
+  padding: 2px;
   margin: 0px;
+  vertical-align:middle;
+  display:inline;
 }
 
 div.source{
   margin-left:-5px;
-  padding:5px;
+  padding:5px 2px;
   background-color:#E0E0E0;
   border-top: 1px solid #003399;
   border-bottom: 1px dotted #003399;
@@ -194,16 +242,40 @@ div.source{
 span.source{
   color: #003399;
   font-size: 1.3em;
+  padding-left:2px;
   font-weight:bold;
+  vertical-align:middle;
 }
 
 span.source_name{
   color: #000;
 }
 
-td.subsection{
-  padding-left:0px;
-  margin-bottom: 4px;
+div.other_source{
+  margin-left:-2px;
+  padding:10px 0px;
+  background-color:#E0E0E0;
+}
+
+span.other_source{
+  color: #003399;
+  font-size: 1.1em;
+  padding-left:2px;
+  font-weight:bold;
+  vertical-align:middle;
+}
+
+div.main_subsection {
+  background-color: #EBEBEB;
+  padding: 4px;
+  margin-top: 15px;
+  margin-bottom: 0px;
+}
+
+h3.main_subsection {
+  padding-left:2px;
+  vertical-align:middle;
+  display:inline;
 }
 
 h3.subsection {
@@ -218,13 +290,29 @@ h3.sub_subsection {
   padding: 4px;
   margin-top: 15px;
   margin-bottom: 0px;
+  margin-left:5px;
+}
+
+td.subsection{
+  padding-left:0px;
+  margin-bottom: 4px;
 }
 
 a.subsection{
   font-weight:normal;
   font-size:14px;
+  padding-left:6px;
+  vertical-align:middle;
 }
 
+div.mapping {
+  padding-left:15px;
+}
+
+h3.mapping {
+  display:inline;
+  padding-right:10px;
+}
 
 .contact_lbl {
   border: 0px;
@@ -287,11 +375,13 @@ a.subsection{
 .exon_odd {
   font-family: monospace;
   color: #003399;
+	background: #FFF;
 }
 
 .exon_even {
   font-family: monospace;
   color: #000000;
+	background: #FFF;
 }
 
 .exon_odd_select {
@@ -301,7 +391,7 @@ a.subsection{
 }
 .exon_even_select {
   font-family: monospace;
-  color: #EEE;
+  color: #FFF;
   background: #68C746;
 }
 
@@ -404,8 +494,11 @@ div.requester_source {
 }
 
 div.external_source {
-	background-color: #F0F0F0; 
-	padding-left: 5px;
+	background-color: #E0E0E0; 
+	border-style: dashed; 
+	border-width: 1px; 
+	padding-left: 5px; 
+	padding-bottom: 10px
 }
 
 div.lrg_source {
