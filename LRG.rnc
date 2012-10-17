@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
 # Version $Revision: 1.7 $
-# Last modified: 2011-12-21
+# Last modified: 2012-10-17
 
 start = LRG
 LRG = element lrg { 
