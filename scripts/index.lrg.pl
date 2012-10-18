@@ -141,7 +141,7 @@ foreach my $xml (@xmlfiles) {
 	$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
 
   ## In ensembl
-  my $in_ensembl = (`grep -w $lrg_id $index_dir/$lrg_list`) ? 1 : 0;
+  my $in_ensembl = (`grep -w $lrg_id $index_dir$index_dir/../$lrg_list`) ? 1 : 0;
   $add_fields->addNode('field',{'name' => 'in_ensembl'})->content($in_ensembl);
 
 	# Status
