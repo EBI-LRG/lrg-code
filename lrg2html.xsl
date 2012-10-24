@@ -1996,13 +1996,14 @@
       </xsl:for-each>
     </xsl:if>
         <strong>Synonyms: </strong>
-    <xsl:choose>
-      <xsl:when test="synonym[. != $display_symbol]">
-        <xsl:for-each select="synonym[. != $display_symbol]">
-          <xsl:value-of select="."/>
-          <xsl:if test="position()!=last()">, </xsl:if>
-        </xsl:for-each>
-      </xsl:when>
+     <xsl:variable name="gene_synonym" select="db_xref[not(@source='GeneID')]/synonym"/>
+     <xsl:choose>
+       <xsl:when test="$gene_synonym">
+         <xsl:for-each select="$gene_synonym">
+           <xsl:value-of select="." />
+           <xsl:if test="position() != last()"><xsl:text>, </xsl:text></xsl:if>
+         </xsl:for-each>
+        </xsl:when>
       <xsl:otherwise>-</xsl:otherwise>
     </xsl:choose>
         <br/>
