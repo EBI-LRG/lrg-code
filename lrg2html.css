@@ -14,10 +14,12 @@ a:hover {
 
 img {
   vertical-align:middle;
-  padding-right:4px;
+  margin-right:4px;
+  border:none;
 }
 
 h1 {
+  display:inline;
   vertical-align:middle;
   padding:0px;
   margin:0px;
@@ -36,6 +38,11 @@ h4 {
   font-style: italic;
 }
 
+h1.separator{
+  color:#ffc600;
+  margin: 0px 8px;
+}
+
 .blue{
   color: #003399;
   font-weight: bold;
@@ -46,15 +53,14 @@ h4 {
   font-weight: bold;
 }
 
-.gene_name{
-  font-size:1.1em;
-  padding-left:0px;
-  padding-bottom:2px;
-  border: 0px;
+h3.gene_name{
+  padding: 4px 5px;
+  margin: 10px 6px 0px;
+  background-color: #E2E2F2;
 }
 
 img.external_link {
- padding-left:4px;
+ margin-left:4px;
  vertical-align:top;
 }
 
@@ -99,28 +105,36 @@ td.sequence_cell {
   color:#000;
 }
 
-table.gene_info_cell {
-  margin: 5px;
-}
-
 tr.gene_info_cell {
   vertical-align: top;
   margin:0px;
   padding:0px;
+  border:none;
 }
 
 td.gene_info_cell {
-  border-right: 0px;
+  border: none;
   padding-right:0px;
-  background-color: #FFF;
 }
+
+
+div.transcript_mapping{
+  margin:0px 6px 20px;
+	padding:0px 2px 2px;
+  background-color: #003399;
+}
+
+div.sub_transcript_mapping{
+  background-color:#FFF;
+}
+
 
 table.mapping_detail{
   background-color:#FFF;
 }
 
 td.mapping{
-  padding-left:15px;
+  padding-left:10px;
   padding-right:5px;
 }
 
@@ -129,9 +143,8 @@ td.transcript_mapping{
 }
 
 td.gene_transcript_cell {
-	padding:0px; 
-  margin:0px;
-	border-left:0px;
+	border:none;
+  padding:2px;
 }
 
 ul{
@@ -183,8 +196,17 @@ td.quicklinks {
 
 div.banner{
   color: #FFFFFF;
-  background: #003399;
-  border: 2px solid black;
+  border: 1px solid #C0C0C0;
+  margin-bottom:0px;
+  padding-bottom:0px;
+}
+
+#link1_banner.banner{
+  background:url(img/gradient_back.png) repeat-x;
+}
+
+#link2_banner.banner{
+  background:url(../img/gradient_back.png) repeat-x;
 }
 
 div.banner_left{
@@ -214,6 +236,19 @@ div.pending {
 .pending_subtitle {
 	font-style:italic;
   padding:5px;
+}
+
+div.menu{
+  margin-top:0px;
+  padding-top:2px;
+}
+
+#link1_shadow.menu{
+  background:url(img/shadow_top.png) no-repeat 50% 0%;
+}
+
+#link2_shadow.menu{
+  background:url(../img/shadow_top.png) no-repeat 50% 0%;
 }
 
 div.section{
@@ -266,7 +301,7 @@ span.other_source{
 }
 
 div.main_subsection {
-  background-color: #EBEBEB;
+  background-color: #E0E0E0;
   padding: 4px;
   margin-top: 15px;
   margin-bottom: 0px;
@@ -279,18 +314,17 @@ h3.main_subsection {
 }
 
 h3.subsection {
-  background-color: #EBEBEB;
+  background-color: #E0E0E0;
   padding: 4px;
   margin-top: 15px;
   margin-bottom: 0px;
 }
 
 h3.sub_subsection {
-  background-color: #F2F2F8;
-  padding: 4px;
-  margin-top: 15px;
-  margin-bottom: 0px;
-  margin-left:5px;
+  background-color: #003399;
+  padding: 2px 5px;
+  margin: 10px 6px 0px;
+  color: #FFF;
 }
 
 td.subsection{
@@ -306,7 +340,7 @@ a.subsection{
 }
 
 div.mapping {
-  padding-left:15px;
+  padding-left:25px;
 }
 
 h3.mapping {
@@ -517,4 +551,17 @@ div.lrg_transcript {
 div.fixed_transcript_annotation {
   padding-left: 5px;
   clear: both;
+}
+
+.legend {
+	text-align:center;
+	margin:2px 0px;
+	border:none;
+	font-size:0.9em;
+}
+
+.no_data{
+  padding: 4px;
+  text-align:center;
+  font-weight:bold;
 }
