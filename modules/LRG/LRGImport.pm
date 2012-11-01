@@ -26,6 +26,13 @@ sub add_analysis {
     };
     $dbCore->dbc->do($stmt);
     $analysis_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  } else {
+    my $stmt = qq{
+    UPDATE analysis
+    SET created = now()
+    WHERE analysis_id = $analysis_id
+    };
+    $dbCore->dbc->do($stmt);
   }
 
   return $analysis_id;
@@ -91,15 +98,17 @@ sub add_annotation {
   foreach my $transnode ( @{$transnodes} ) {
 
     # Get the transcript start and end
-    my $transcript_start  = $transnode->data->{'start'};
-    my $transcript_end    = $transnode->data->{'end'};
+    my $trans_coord = $transnode->findNode('coordinates');
+    my $transcript_start  = $trans_coord->data->{'start'};
+    my $transcript_end    = $trans_coord->data->{'end'};
     my $transcript_length = $transcript_end - $transcript_start + 1;
     my $transcript_name   = $transnode->data->{'name'};
 
     # Get the coding start and end coordinates
     my $cds_node  = $transnode->findNode('coding_region');
-    my $cds_start = $cds_node->data->{'start'};
-    my $cds_end   = $cds_node->data->{'end'};
+    my $cds_coord = $cds_node->findNode('coordinates');
+    my $cds_start = $cds_coord->data->{'start'};
+    my $cds_end   = $cds_coord->data->{'end'};
 
     # Insert transcript entry into db
     my $transcript_id = add_transcript(
@@ -162,7 +171,7 @@ sub add_annotation {
         }
 
         $exon_count++;
-        my $lrg_coords  = $exon->findNode('lrg_coords');
+        my $lrg_coords  = $exon->findNode('coordinates', {'coord_system' => $lrg_name});
         my $exon_start  = $lrg_coords->data->{'start'};
         my $exon_end    = $lrg_coords->data->{'end'};
         my $exon_length = ( $exon_end - $exon_start + 1 );
@@ -1633,18 +1642,6 @@ sub purge_db {
       }
     }
 
-    # Delete from assembly
-    remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
-    remove_row( [qq{cmp_seq_region_id = $seq_region_id}], 'assembly' );
-
-    # Delete from seq_region_attrib
-    remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region_attrib' );
-
-    # Delete from dna
-    remove_row( [qq{seq_region_id = $seq_region_id}], 'dna' );
-
-    # Delete from seq_region
-    remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region' );
   }
 
   #ÊGet any xrefs for this LRG
@@ -1681,11 +1678,28 @@ qq{x.display_label = '$lrg_name' OR x.display_label LIKE '$lrg_name\_t%' OR x.di
       return;
     }
 
-    # Remove coord_system entry
-    remove_row( [qq{coord_system_id = $cs_id}], 'coord_system' );
+    foreach my $seq_region_id (@seq_region_ids) {
 
-    # Remove meta_coord entries
-    remove_row( [qq{coord_system_id = $cs_id}], 'meta_coord' );
+      # Delete from assembly
+      remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
+      remove_row( [qq{cmp_seq_region_id = $seq_region_id}], 'assembly' );
+  
+      # Delete from seq_region_attrib
+      remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region_attrib' );
+  
+      # Delete from dna
+      remove_row( [qq{seq_region_id = $seq_region_id}], 'dna' );
+  
+      # Delete from seq_region
+      remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region' );
+
+      # Remove coord_system entry
+      remove_row( [qq{coord_system_id = $cs_id}], 'coord_system' );
+
+      # Remove meta_coord entries
+      remove_row( [qq{coord_system_id = $cs_id}], 'meta_coord' );
+
+    }
 
     #ÊRemove meta table entries
     my $ids = fetch_rows(

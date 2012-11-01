@@ -1374,17 +1374,17 @@ sub mapping_2_pairs {
   my @pairs;
   my $mapping_spans = $mapping_node->findNodeArray('mapping_span');
   my $last_strand = 1;
-  my $chr_name = $mapping_node->data->{'chr_name'};
-  my $chr_offset_start = $mapping_node->data->{'chr_start'};
-  my $chr_offset_end = $mapping_node->data->{'chr_end'};
+  my $chr_name = $mapping_node->data->{'other_name'};
+  my $chr_offset_start = $mapping_node->data->{'other_start'};
+  my $chr_offset_end = $mapping_node->data->{'other_end'};
   my $lrg_offset_start = 1e11;
   my $lrg_offset_end = -1;
   
   foreach my $span (@{$mapping_spans}) {
     my $lrg_start = $span->data->{'lrg_start'};
     my $lrg_end = $span->data->{'lrg_end'};
-    my $chr_start = $span->data->{'start'};
-    my $chr_end = $span->data->{'end'};
+    my $chr_start = $span->data->{'other_start'};
+    my $chr_end = $span->data->{'other_end'};
     my $strand = $span->data->{'strand'};
     
     my $dna_pair = [
@@ -1412,15 +1412,15 @@ sub mapping_2_pairs {
       my $pair;
       my $diff_lrg_start = $diff->data()->{'lrg_start'};
       my $diff_lrg_end = $diff->data()->{'lrg_end'};
-      my $diff_chr_start = $diff->data()->{'start'};
-      my $diff_chr_end = $diff->data()->{'end'};
+      my $diff_chr_start = $diff->data()->{'other_start'};
+      my $diff_chr_end = $diff->data()->{'other_end'};
       my $diff_lrg_seq = $diff->data()->{'lrg_sequence'};
-      my $diff_chr_seq = $diff->data()->{'genomic_sequence'};
+      my $diff_chr_seq = $diff->data()->{'other_sequence'};
       if ($diff->data()->{'type'} eq 'mismatch') {
 	$pair = [
 	  'M',
-	  $diff_lrg_start,
 	  $diff_lrg_end,
+	  $diff_lrg_start,
 	  $diff_chr_start,
 	  $diff_chr_end,
 	  $strand,
@@ -1429,13 +1429,13 @@ sub mapping_2_pairs {
 	];
 	push(@pairs,$pair);
       }
-      elsif ($diff->data()->{'type'} =~ m/[lrg|genomic]_ins/) {
+      elsif ($diff->data()->{'type'} =~ m/lrg_ins/) {
 	$pair = [
 	  'G',
 	  $diff_lrg_start,
 	  $diff_lrg_end,
-	  $diff_chr_start,
 	  $diff_chr_end,
+	  $diff_chr_start,
 	  $strand,
 	  $diff_lrg_seq,
 	  $diff_chr_seq
@@ -1444,25 +1444,52 @@ sub mapping_2_pairs {
 	
 	# End the current DNA pair, add it to the array and start a new one
 	$dna_pair->[2] = ($diff_lrg_start - 1);
-	$dna_pair->[4] = ($diff_chr_start - 1) if ($strand > 0);
-	$dna_pair->[3] = ($diff_chr_end + 1) if ($strand < 0);
+	$dna_pair->[4] = ($diff_chr_end - 1) if ($strand > 0);
+	$dna_pair->[3] = ($diff_chr_start + 1) if ($strand < 0);
 	push(@pairs,$dna_pair);
 	$dna_pair = [
 	  'DNA',
 	  ($diff_lrg_end + 1),
 	  $lrg_end,
-	  ($strand > 0 ? ($diff_chr_end + 1) : $chr_start),
-	  ($strand > 0 ? $chr_end : ($diff_chr_start - 1)),
+	  ($strand > 0 ? ($diff_chr_start + 1) : $chr_start),
+	  ($strand > 0 ? $chr_end : ($diff_chr_end - 1)),
 	  $strand
 	];
+      }
+      elsif ($diff->data()->{'type'} =~ m/other_ins/) {
+        $pair = [
+          'G',
+          $diff_lrg_end,
+          $diff_lrg_start,
+          $diff_chr_start,
+          $diff_chr_end,
+          $strand,
+          $diff_lrg_seq,
+          $diff_chr_seq
+        ];
+        push(@pairs,$pair);
+
+        # End the current DNA pair, add it to the array and start a new one
+        $dna_pair->[2] = ($diff_lrg_end - 1);
+        $dna_pair->[4] = ($diff_chr_start - 1) if ($strand > 0);
+        $dna_pair->[3] = ($diff_chr_end + 1) if ($strand < 0);
+        push(@pairs,$dna_pair);
+        $dna_pair = [
+          'DNA',
+          ($diff_lrg_end),
+          $lrg_end,
+          ($strand > 0 ? ($diff_chr_end + 1) : $chr_start),
+          ($strand > 0 ? $chr_end : ($diff_chr_start - 1)),
+          $strand
+        ];
       }
     } 
     push(@pairs,$dna_pair);
   }
   
   my %mapping = (
-    'lrg_start' => $lrg_offset_start,
-    'lrg_end' => $lrg_offset_end,
+    'lrg_end' => $lrg_offset_start,
+    'lrg_start' => $lrg_offset_end,
     'chr_start' => $chr_offset_start,
     'chr_end' => $chr_offset_end,
     'chr_name' => $chr_name,

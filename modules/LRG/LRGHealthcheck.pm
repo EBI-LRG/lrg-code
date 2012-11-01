@@ -323,23 +323,24 @@ sub exon_labels {
         # Get the source/name for this annotation_set
         my $source = $annotation_set->findNode('source/name')->content();
         
-				my $fixed_transcript_annotations = $annotation_set->findNodeArray('fixed_transcript_annotation');
-
-
+        # If present, get the other_exon_naming/source nodes
+        my $transcripts = $annotation_set->findNodeArray('fixed_transcript_annotation');
+        
         #ÊGo through all sources for alternative exon namings
-        foreach my $fixed_transcript_annotation (@{$fixed_transcript_annotations}) {
+        foreach my $transcript (@{$transcripts}) {
+
+            # Get the transcript name
+            my $tr_name = $transcript->data->{'name'};
+            my $lrg_id = $self-{'lrg_id'};
             
-						my $tr_name = $fixed_transcript_annotation->data()->{'name'};
+            # Get the transcripts
+            my $sources = $transcript->findNodeArray('other_exon_naming');
+            
+            # Go through all transcripts and fetch the corresponding transcript from the fixed section
+            foreach my $source (@{$sources}) {
 
-						# If present, get the other_exon_naming/source nodes
-        		my $other_exon_namings = $fixed_transcript_annotation->findNodeArray('other_exon_naming');
-            my $count_other_exon_namings = 0;
-
-            # Go through all other_exon_naming and fetch the corresponding transcript from the fixed section
-            foreach my $other_exon_naming (@{$other_exon_namings}) {
-                
-								#ÊGet the source description
-            		my $source_description = $other_exon_naming->data()->{'description'};
+                # Get the source description
+                my $source_description = $source->data()->{'description'};
 
                 # Get the corresponding transcript from the fixed section
                 my $fixed_transcript = $self->{'lrg'}->findNode('fixed_annotation/transcript',{'name' => $tr_name});
@@ -359,9 +360,10 @@ sub exon_labels {
                 #ÊGo through the fixed exons and shift the updatable exons off the array. The exons are sorted.
                 foreach my $fixed_exon (@{$fixed_exons}) {
                     # Get the coordinates
-                    my $fixed_start = $fixed_exon->findNode('coordinates')->data()->{'start'};
-                    my $fixed_end = $fixed_exon->findNode('coordinates')->data()->{'end'};
-             
+                    my $lrg_coords = $fixed_exon->findNode('coordinate', {'coord_system' => $lrg_id});
+                    my $fixed_start = $lrg_coords->data()->{'start'};
+                    my $fixed_end = $lrg_coords->data()->{'end'};
+
                     # Get the corresponding updatable exon
                     my $updatable_exon;
                     my $updatable_start = 0;
@@ -374,9 +376,10 @@ sub exon_labels {
                         
                         $updatable_exon = shift(@updatable_exons);
                         if (defined($updatable_exon)) {
-                          $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
-                          $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
-												}
+                          $lrg_coords = $updatable_exon->findNode('coordinates', {'coord_system' => $lrg_id});
+                          $updatable_start = $lrg_coords->data()->{'start'};
+                          $updatable_end = $lrg_coords->data()->{'end'};
+                        }
                     }
                    
                     # If the coordinates of the updatable exon does not match the fixed exon, we have a fixed exon without label
@@ -393,8 +396,9 @@ sub exon_labels {
                 #ÊIf the updatable exon array is non-empty, the remaining elements are orphans
                 push(@orphan_labels,@updatable_exons);
                 while (my $updatable_exon = shift(@orphan_labels)) {
-                    my $updatable_start = $updatable_exon->findNode('coordinates')->data()->{'start'};
-                    my $updatable_end = $updatable_exon->findNode('coordinates')->data()->{'end'};
+                    my $lrg_coords = $updatable_exon->findNode('coordinates', {'coord_system' => $lrg_id});
+                    my $updatable_start = $lrg_coords->data()->{'start'};
+                    my $updatable_end = $lrg_coords->data()->{'end'};
                     my $label = $updatable_exon->findNode('label')->content();
                     $passed = 0;
                     $self->{'check'}{$name}{'message'} .= "There is no corresponding fixed section exon for exon '$label' ($updatable_start - $updatable_end) in transcript '$tr_name' as specified in '$source' annotation set and '$source_description' other exon naming//";
@@ -423,16 +427,17 @@ sub exons {
         
         # Get the name
         my $tr_name = $transcript->data()->{'name'};
+        my $lrg_id = $self->{'lrg_id'};
         
         # Get the coding_region start and end (in lrg_coords)
         my $coding_region = $transcript->findNode('coding_region');
-				my ($coding_start, $coding_end);
-				if (defined($coding_region)) {
-				  my $coding_coord = $coding_region->findNode('coordinates');
-          $coding_start = $coding_coord->data()->{'start'};
-          $coding_end = $coding_coord->data()->{'end'};
-    		}
-
+        if (defined($coding_region) {
+          my $tl_name = $coding_region->findNode('translation')->data()->{'name'};
+          my $cds_coord = $coding_region->findNode('coordinates');
+          my $coding_start = $cds_coord->data()->{'start'};
+          my $coding_end = $cds_coord->data()->{'end'};
+        }
+    
         # Get the exons
         my $exons = $self->get_exons($name,$transcript) or ($passed = 0);
         next if (!defined($exons));
@@ -446,14 +451,18 @@ sub exons {
 
         foreach my $exon (@{$exons}) {
             
-          # Get LRG coordinates (these are required by the schema)
-          my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
-          my $lrg_length = ($lrg_end - $lrg_start + 1);
+            # Get LRG coordinates (these are required by the schema)
+            my $lrg_coords = $exon->findNode('coordinates', {'coord_system' => $lrg_id});
+            my $lrg_start = $lrg_coords->data()->{'start'};
+            my $lrg_end = $lrg_coords->data()->{'end'};
+            my $lrg_length = ($lrg_end - $lrg_start + 1);
             
-          #ÊGet the cdna coordinates (these are optional)
-				  my ($cdna_start,$cdna_end) = $self->get_coordinates($exon,'cdna');
-				  if (defined($cdna_start)) {
-            my $cdna_length = ($cdna_end - $cdna_start + 1);
+            #ÊGet the cdna coordinates (these are optional)
+            my $cdna_coords = $exon->findNode('coordinates', {'coord_system' => $lrg_id . '_' . $tr_name});
+            if (defined($cdna_coords)) {
+                my $cdna_start = $cdna_coords->data()->{'start'};
+                my $cdna_end = $cdna_coords->data()->{'end'};
+                my $cdna_length = ($cdna_end - $cdna_start + 1);
                 
             # Compare the cDNA coords to the LRG coords
             if ($cdna_length != $lrg_length) {
@@ -494,7 +503,13 @@ sub exons {
               $passed = 0;
               $self->{'check'}{$name}{'message'} .= "Expected peptide length for exon ($lrg_start - $lrg_end) in transcript $tr_name to be $expected_peptide_length but it is $peptide_length" . ($last_exon ? ". This is the terminal exon, perhaps the stop codon was not included in the coding region coordinates?" : "") . "//";
             }
-            $last_expected_phase = $expected_phase;
+            
+            #ÊGet the peptide coordinates (these are optional)
+            my $peptide_coords = $exon->findNode('coordinates', {'coord_system' => $lrg_id . "_" . $tl_name});
+            if (defined($peptide_coords)) {
+                my $peptide_start = $peptide_coords->data()->{'start'};
+                my $peptide_end = $peptide_coords->data()->{'end'};
+                my $peptide_length = ($peptide_end - $peptide_start + 1);
                 
             #ÊCheck that the peptide start coordinate is either equal to the last end or one nt more, depending on the intervening intron phase
             if (defined($peptide_last_end)) {
@@ -517,11 +532,9 @@ sub exons {
                 }
               }
             }
-            $peptide_last_end = $peptide_end;
-          }
-          $lrg_last_end = $lrg_end;
-          # Store the phase of the intron following this exon
-          $last_phase = $self->get_exon_end_phase($exon);
+            $lrg_last_end = $lrg_end;
+            # Store the phase of the intron following this exon
+            $last_phase = $self->get_exon_end_phase($exon);
         }
     }
     $self->{'check'}{$name}{'passed'} = $passed;
@@ -617,9 +630,6 @@ sub mappings {
 
         # Get the assembly
         my $assembly = $mapping_set->data()->{'coord_system'};
-        #ÊSubstitute 'NCBI37' for 'GRCh37'
-        $assembly =~ s/NCBI37/GRCh37/ if ($assembly eq 'NCBI37');
-
         #ÊStore the mapping set under the assembly key and source name
         $mapping_hash{$assembly}->{$source} = $mapping_set;
 
@@ -644,9 +654,9 @@ sub mappings {
     }
     
     # Define which data fields in the mapping tag should be compared
-    my $mapping_fields = ['chr_name','chr_start','chr_end'];
-    my $span_fields = ['lrg_start','lrg_end','start','end','strand'];
-    my $diff_fields = ['type','lrg_start','lrg_end','start','end','lrg_sequence','other_sequence'];
+    my $mapping_fields = ['most_recent','other_name','other_start','other_end'];
+    my $span_fields = ['lrg_start','lrg_end','other_start','other_end','strand'];
+    my $diff_fields = ['type','lrg_start','lrg_end','other_start','other_end','lrg_sequence','other_sequence'];
     
     # Go over each assembly and check if the mappings differ in the relevant fields from the different sources
     while (my ($assembly,$mappings) = each(%mapping_hash)) {
@@ -869,7 +879,7 @@ sub partial {
             }
             
             # Check if the gene symbol corresponds to the lrg_gene_name and if partial is indicated 
-            if (scalar(keys(%partial)) > 0 && defined($lrg_gene_name) && exists($gene->data()->{'symbol'}) && $gene->data()->{'symbol'} eq $lrg_gene_name) {
+            if (scalar(keys(%partial)) > 0 && defined($lrg_gene_name) && $gene->findNode('symbol')->content() eq $lrg_gene_name) {
                 $passed = 0;
                 $self->{'check'}{$name}{'message'} .= "The LRG gene $lrg_gene_name itself is indicated as partial in the $source updatable annotation//";                
             }
@@ -920,6 +930,7 @@ sub phases {
     
     # Get the name of the check
     my $name = sub_name();
+    my $lrg_id = $self->{'lrg_id'};
     
     # Get the transcripts
     my $transcripts = $self->get_transcripts($name) or return 0;
@@ -933,12 +944,9 @@ sub phases {
         
         # Get the coding_region start and end (in lrg_coords)
         my $coding_region = $transcript->findNode('coding_region');
-				my ($coding_start, $coding_end);
-				if(defined($coding_region)) {
-				  my $coding_coord = $coding_region->findNode('coordinates');
-          $coding_start = $coding_coord->data()->{'start'};
-          $coding_end = $coding_coord->data()->{'end'};
-        }
+        my $cds_coord = $coding_region->findNode('coordinates');
+        my $coding_start = $cds_coord->data()->{'start'};
+        my $coding_end = $cds_coord->data()->{'end'};
     
         #ÊLoop over the transcripts nodes to get the exon-intron pairs (assume they are in the correct order in the nodes array)
         my $last_phase = 0;
@@ -947,8 +955,10 @@ sub phases {
         foreach my $exon (@{$exons}) {
             
             # Calculate the expected phase of the intron following an exon
-            my ($exon_start,$exon_end) = $self->get_coordinates($exon,'lrg');
-						
+            my $lrg_coords = $exon->findNode('coordinates', {'coord_system' => $lrg_id});
+            my $exon_start = $lrg_coords->data()->{'start'};
+            my $exon_end = $lrg_coords->data()->{'end'};
+            
             # Check if the exon is completely in the UTRs, in that case, expected phase is -1. Expected phase is also -1 if the stop codon is within this exon.
             if (!defined($coding_start) || ($coding_start > $exon_end) || ($coding_end <= $exon_end)) {
                 $expected_phase = -1;
@@ -966,7 +976,6 @@ sub phases {
             # Get the phase of the intron following this exon
             my $phase = $self->get_exon_end_phase($exon);
 						next if ($phase == -1);            
-
             #ÊDid we get an intron although we didn't expect one?
             if ($expected_phase == -1 && $phase != -1) {
                 $passed = 0;
@@ -1141,19 +1150,19 @@ sub get_annotation_sets {
 # Given an arrayref of exon elements and a genomic lrg sequence, builds the cDNA (using the lrg_coords).
 # Optionally, supply the start and end coordinates (in lrg_coords) of the CDS and get only the coding sequence
 sub get_cDNA {
-		my $self  = shift;
+    my $self = shift;
     my $exons = shift;
     my $genomic_seq = shift;
     my $genomic_start = shift;
     my $genomic_end = shift;
     
     my $genomic_cdna = "";
+    my $lrg_id = $self->{'lrg_id'};
     
     foreach my $exon (@{$exons}) {
-				my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
-
-        #my $lrg_start = $exon->findNode('lrg_coords')->data()->{'start'};
-        #my $lrg_end = $exon->findNode('lrg_coords')->data()->{'end'};
+        my $lrg_coords = $exon->findNode('coordinate', {'coord_system' => $lrg_id});
+        my $lrg_start = $lrg_coords->data()->{'start'};
+        my $lrg_end = $lrg_coords->data()->{'end'};
         
         # Check to see if a CDS start has been defined and if it is within this exon
         if (defined($genomic_start) && $genomic_start > $lrg_start) {
@@ -1180,14 +1189,15 @@ sub get_cDNA {
 #ÊLook for the intron phase after the supplied exon
 sub get_exon_end_phase {
     my $self = shift;
-		my $exon = shift;
+    my $exon = shift;
     
     my $phase = -1;
+    my $lrg_id = $self->{'lrg_id'};
     
     #ÊGet the lrg coords for the exon, these will be used to identify the exon in the array
-    my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
-		#my $lrg_start = $exon->findNode('lrg_coords')->data()->{'start'};
-    #my $lrg_end = $exon->findNode('lrg_coords')->data()->{'end'};
+    my $lrg_coords = $exon->findNode('coordinate', {'coord_system' => $lrg_id});
+    my $lrg_start = $lrg_coords->data()->{'start'};
+    my $lrg_end = $lrg_coords->data()->{'end'};
     
     #ÊGet a copy of the parent (transcript) of this exon
     my $parent = LRG::Node::newFromNode($exon->parent());
@@ -1196,9 +1206,7 @@ sub get_exon_end_phase {
     my @nodes = @{$parent->{'nodes'}};
     while (my $node = shift(@nodes)) {
         next if ($node->name() ne 'exon');
-				my ($node_start,$node_end) = $self->get_coordinates($node,'lrg');
-				next if ($node_start != $lrg_start || $node_end != $lrg_end);
-        #next if ($node->findNode('lrg_coords')->data()->{'start'} != $lrg_start || $node->findNode('lrg_coords')->data()->{'end'} != $lrg_end);
+        next if ($node->findNode('coordinate', {'coord_system' => $lrg_id})->data()->{'start'} != $lrg_start || $node->findNode('coordinate', {'coord_system' => $lrg_id})->data()->{'end'} != $lrg_end);
         
         #ÊThis is the correct exon, look at the next element and check if it's an exon
         my $next = shift(@nodes);
@@ -1213,12 +1221,14 @@ sub get_exon_end_phase {
     return $phase;
 }
 
-# Get the exons for a transcript object and sort them in ascending coordinates order
+
+# Get the exons for a transcript object and sort them in ascending lrg_coords order
 sub get_exons {
     my $self = shift;
     my $name = shift;
     my $transcript = shift;
     
+    my $lrg_id = $self->{'lrg_id'};
     #ÊGet the exons
     my $exons = $transcript->findNodeArray('exon');
     if (!defined($exons) || scalar(@{$exons}) == 0) {
@@ -1245,7 +1255,7 @@ sub get_exons {
 		}
 
     # Sort exons in ascending lrg_coords order
-    #my @sorted_exons = sort {$a->findNode('coordinates')->data()->{'start'} <=> $b->findNode('coordinates')->data()->{'start'}} @{$exons};
+    my @sorted_exons = sort {$a->findNode('coordinates', {'coord_system' => $lrg_id})->data()->{'start'} <=> $b->findNode('coordinates', {'coord_system' => $lrg_id})->data()->{'start'}} @{$exons};
     
     return \@sorted_exons;
 }
@@ -1266,23 +1276,21 @@ sub get_genomic_features {
    
     #ÊBuild the cDNA from the genomic sequence
     my $genomic_cdna = $self->get_cDNA($exons,$genomic_seq);
-    my %features;
     
     # Get the coding_region start and end (in lrg_coords)
     my $coding_region = $transcript->findNode('coding_region');
-		
-		if (defined($coding_region)) {
-			my $coding_coord = $coding_region->findNode('coordinates');
-    	my $coding_start = $coding_coord->data()->{'start'};
-    	my $coding_end = $coding_coord->data()->{'end'};
-
-    	# Get the genomic CDS
-    	my $genomic_cds = $self->get_cDNA($exons,$genomic_seq,$coding_start,$coding_end);
-
-    	# Translate the genomic sequence CDS
-   		my $seq_obj = Bio::Seq->new(-name => 'genomic_cdna', -seq => $genomic_cds);
-    	my $genomic_translation = $seq_obj->translate()->seq();
-    	%features = (
+    my $cds_coord = $coding_region->findNode('coordinates');
+    my $coding_start = $cds_coord->data()->{'start'};
+    my $coding_end = $cds_coord->data()->{'end'};
+    
+    # Get the genomic CDS
+    my $genomic_cds = $self->get_cDNA($exons,$genomic_seq,$coding_start,$coding_end);
+    
+    # Translate the genomic sequence CDS
+    my $seq_obj = Bio::Seq->new(-name => 'genomic_cdna', -seq => $genomic_cds);
+    my $genomic_translation = $seq_obj->translate()->seq();
+    
+    my %features = (
         'cdna' => $genomic_cdna,
         'cds' => $genomic_cds,
         'translation' => $genomic_translation
