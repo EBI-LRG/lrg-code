@@ -39,6 +39,7 @@ use LRG::LRGImport;
 use LRG::LRGMapping;
 
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 # Some constants
 my $SPECIES = q{human};
@@ -407,8 +408,17 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $updatable_annotation = $lrg->findNode("updatable_annotation");
       my $annotation_sets = $updatable_annotation->findNodeArray("annotation_set");
       my $mapping_node;
+      my $cs_node;
+      my $cs;
       foreach my $annotation_set (@{$annotation_sets}) {
-	$mapping_node = $annotation_set->findNode("mapping",{'coord_system' => $db_assembly});
+        $cs_node = $annotation_set->findNode("mapping");
+        $cs = $cs_node->data->{'coord_system'};
+        if ($cs =~ /$db_assembly/){
+          $mapping_node = $cs_node;
+          if ($cs_node->data->{'other_name'} =~ /HS/){
+            throw("LRG is being mapped against a patch/haplotype region");
+          }
+        }
 	last unless !$mapping_node;
       }
       
