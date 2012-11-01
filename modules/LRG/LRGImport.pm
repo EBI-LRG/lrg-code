@@ -108,7 +108,7 @@ sub add_annotation {
       1
     );
 
-    # Insert transcript_stable_id (we already know what it should be)
+    # Update transcript stable_id (we already know what it should be)
     my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
     add_stable_id( $transcript_id, $transcript_stable_id, 'transcript' );
 
@@ -121,7 +121,7 @@ sub add_annotation {
       # For genes, use the LRG identifier as gene name
       my $gene_stable_id = $lrg_name;
 
-      # Insert gene stable id into gene_stable_id table
+      # Update gene stable id
       add_stable_id( $gene_id, $gene_stable_id, 'gene' );
 
       print "Gene:\t" . $gene_id . "\t" . $gene_stable_id . "\n";
@@ -168,11 +168,11 @@ sub add_annotation {
         my $exon_length = ( $exon_end - $exon_start + 1 );
         $exon_id = add_exon( $seq_region_id, $exon_start, $exon_end, 1 );
 
-        # Get the next free exon stable id for this transcript
-        my $exon_stable_id =
-          get_next_stable_id( 'exon_stable_id', $transcript_stable_id . '_e' );
+        # Used to be a query to the DB but we can do the same thing in memory
+        # by using the exon_count & producing something like LRG_1_t1_e1
+        my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
 
-        # Insert exon stable id into exon_stable_id table
+        # Update exon stable id
         add_stable_id( $exon_id, $exon_stable_id, 'exon' );
 
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
@@ -217,12 +217,11 @@ sub add_annotation {
         add_translation( $transcript_id, $cds_start, $start_exon_id, $cds_end,
         $end_exon_id );
 
-      # Get the next free translation stable_id
-      my $translation_stable_id =
-        get_next_stable_id( 'translation_stable_id',
-        $transcript_stable_id . '_p' );
+      # Translation stable id is the replacement of t with p in the transcript stable id
+      my $translation_stable_id = $transcript_stable_id;
+      $translation_stable_id =~ s/t(\d+)$/p$1/;
 
-      # Insert translation stable id into translation_stable_id table
+      # Update translation stable id 
       add_stable_id( $translation_id, $translation_stable_id, 'translation' );
       print "\tTranslation:\t"
         . $translation_id . "\t"
@@ -916,40 +915,33 @@ sub add_object_attrib {
 }
 
 # Add stable id for a gene/transcript/translation. If one already exists, replace it
+
 sub add_stable_id {
   my $object_id        = shift;
   my $object_stable_id = shift;
   my $object_type      = shift;
   my $version          = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
+  
   $version ||= 1;
-
-  # Insert object stable id into object_stable_id table
-  my $stmt = qq{
-      INSERT INTO
-	$table (
-	  $key,
-	  stable_id,
-	  version,
-	  created_date,
-	  modified_date
-	)
-      VALUES (
-	$object_id,
-	'$object_stable_id',
-	$version,
-	NOW(),
-	NOW()
-      )
-      ON DUPLICATE KEY UPDATE
-	stable_id = '$object_stable_id',
-	version = $version,
-	modified_date = NOW()
-    };
-  $dbCore->dbc->do($stmt);
+  
+  my ($q_table, $q_field) = @{$dbCore->dbc()->quote_identifier(lc($object_type), lc($object_type).'_id')};
+  my $sql = qq{select count(*) from $q_table where $q_field =?};
+  my $count = $dbCore->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => [$object_stable_id]);
+  
+  my $dml;
+  my $params;
+  if($count) {
+    $dml = qq{UPDATE $q_table set stable_id =?, version =?, created_date =NOW(), modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $version, $object_id];
+  }
+  else {
+    $dml = qq{UPDATE $q_table set stable_id =?, modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $object_id];
+  }
+  
+  $dbCore->dbc()->sql_helper()->execute_update(-SQL => $dml, -PARAMS => $params);
+  
+  return;
 }
 
 # Add a transcript or update one with gene_id if a transcript_id is specified
@@ -1365,21 +1357,17 @@ sub get_max_key {
     'coord_system'          => 'coord_system_id',
     'dna'                   => 'seq_region_id',
     'exon'                  => 'exon_id',
-    'exon_stable_id'        => 'exon_id',
     'exon_transcript'       => 'exon_id',
     'external_db'           => 'external_db_id',
     'gene'                  => 'gene_id',
     'gene_attrib'           => 'gene_id',
-    'gene_stable_id'        => 'gene_id',
     'meta'                  => 'meta_id',
     'meta_coord'            => 'coord_system_id',
     'object_xref'           => 'object_xref_id',
     'seq_region'            => 'seq_region_id',
     'seq_region_attrib'     => 'seq_region_id',
     'transcript'            => 'transcript_id',
-    'transcript_stable_id'  => 'transcript_id',
     'translation'           => 'translation_id',
-    'translation_stable_id' => 'translation_id',
     'xref'                  => 'xref_id'
   };
 
@@ -1417,32 +1405,6 @@ sub get_max_length {
   return $max_length;
 }
 
-# Get the next free stable id for a *_stable_id table.
-sub get_next_stable_id {
-  my $table  = shift;
-  my $prefix = shift;
-
-  my $stable_id;
-  my $suflength = 9;
-  my $prelength = length($prefix);
-
-  my $stmt = qq{
-    SELECT
-      MAX(CONVERT(SUBSTR(stable_id,$prelength+1),UNSIGNED INTEGER))
-    FROM
-      $table
-    WHERE
-      stable_id LIKE '$prefix%'
-  };
-  my $max = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-  $max ||= 0;
-
-  $max++;
-  $stable_id = $prefix . sprintf( "%u", $max );
-
-  return $stable_id;
-}
-
 sub get_object_ids_by_seq_region_id {
   my $object_type   = shift;
   my $seq_region_id = shift;
@@ -1475,7 +1437,7 @@ sub get_object_id_by_stable_id {
   my $stable_id   = shift;
 
   my $key      = 'stable_id';
-  my $table    = $object_type . '_stable_id';
+  my $table    = $object_type;
   my $id_field = $object_type . '_id';
 
   my $rows = get_rows( $stable_id, $key, $table, $id_field );
@@ -1570,28 +1532,6 @@ sub get_rows {
   return fetch_rows( $fields, [$table], ["$key = '$id'"] );
 }
 
-# Get stable id for an object type and object id
-sub get_stable_id {
-  my $object_id   = shift;
-  my $object_type = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
-  my $stmt = qq{
-	SELECT
-	    stable_id
-	FROM
-	    $table
-	WHERE
-	    $key = $object_id
-	LIMIT 1
-    };
-  my $stable_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-
-  return $stable_id;
-}
-
 # Get translation id for a transcript
 sub get_translation_id {
   my $transcript_id = shift;
@@ -1657,14 +1597,9 @@ sub purge_db {
         if ( $object_type eq 'transcript' ) {
           my $stmt = qq{
 		    DELETE FROM
-			t,
-			tsi
-		    USING
-			translation t,
-			translation_stable_id tsi
+			translation
 		    WHERE
-			tsi.translation_id = t.translation_id AND
-			t.transcript_id = $oid
+			transcript_id = $oid
 		    };
           $dbCore->dbc->do($stmt);
 
@@ -1684,10 +1619,8 @@ sub purge_db {
           remove_row( [qq{transcript_id = '$oid'}], 'exon_transcript' );
         }
 
-        # Remove rows with this object id (also from associated stable_id table)
+        # Remove rows with this object id
         remove_row( [ $object_type . '_id' . qq{ = $oid} ], $object_type );
-        remove_row( [ $object_type . '_id' . qq{ = $oid} ],
-          $object_type . '_stable_id' );
 
 #ÊRemove xref objects linked to this object id. Does not remove the xref itself, just the row in object_xref
         remove_row(
