@@ -396,14 +396,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Check if the LRG already exists in the database (if the seq_region exists), in which case it should first be deleted
       my $cs_id = LRG::LRGImport::add_coord_system($LRG_COORD_SYSTEM_NAME);
-      my $seq_region_id = LRG::LRGImport::get_seq_region_id($lrg_id,$cs_id);
-      if (defined($seq_region_id)) {
-	warn("$lrg_id already exists in $coredb\. If you want to replace it, delete it first using the -clean parameter. Will skip it for now");
-	# Undefine the input_file so that the next one will be fetched
-	undef($input_file);
-	# Note, this will also skip xref and verify methods for this LRG
-        next;
-      }
       
       # Get the assembly that the database uses
       print STDOUT localtime() . "\tGetting assembly name from core db\n" if ($verbose);
@@ -416,7 +408,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $annotation_sets = $updatable_annotation->findNodeArray("annotation_set");
       my $mapping_node;
       foreach my $annotation_set (@{$annotation_sets}) {
-	$mapping_node = $annotation_set->findNode("mapping",{'assembly' => $db_assembly});
+	$mapping_node = $annotation_set->findNode("mapping",{'coord_system' => $db_assembly});
 	last unless !$mapping_node;
       }
       
@@ -429,18 +421,15 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	next;
       }
       
-      # Warn if the assembly used is not flagged as the most recent
-      warn("Assembly $db_assembly is currently not flagged as the most recent in the $lrg_id XML file!") unless ($mapping_node->{'data'}{'most_recent'} == 1);
-      
-      my $assembly = $mapping_node->data->{'assembly'};
+      my $assembly = $mapping_node->data->{'coord_system'};
       print STDOUT localtime() . "\tMapped assembly is $assembly\n" if ($verbose);
       
       # Extract the genomic LRG sequence
       my $lrg_seq = $lrg->findNode('fixed_annotation/sequence')->content();
       # Get the reference genomic sequence from database
-      my $chr_name = $mapping_node->data->{'chr_name'};
-      my $chr_start = $mapping_node->data->{'start'};
-      my $chr_end = $mapping_node->data->{'end'}; 
+      my $chr_name = $mapping_node->data->{'other_name'};
+      my $chr_start = $mapping_node->data->{'other_start'};
+      my $chr_end = $mapping_node->data->{'other_end'}; 
       my $chr_seq = $sa->fetch_by_region('chromosome',$chr_name,$chr_start,$chr_end)->seq();
       
       # Create pairs array based on the data in the mapping node
@@ -514,7 +503,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       }
       
       # Get the HGNC identifier from the XML 
-      my $lrg_gene_name_node = $lrg->findNode("updatable_annotation/annotation_set/lrg_gene_name",{'source' => 'HGNC'});
+      my $lrg_gene_name_node = $lrg->findNode("updatable_annotation/annotation_set/lrg_locus",{'source' => 'HGNC'});
       if (!$lrg_gene_name_node) {
 	warn("Could not find HGNC identifier in XML file! Skipping $lrg_name");
 	# Undefine the input_file so that the next one will be fetched
@@ -526,14 +515,23 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # A bit cumbersome but.. get the HGNC accession from the XML
       my $annotation_sets = $lrg->findNodeArray('updatable_annotation/annotation_set');
-      my $annotation_set_ensembl;
+      my ($annotation_set_ensembl, $annotation_set_refseq);
       while (my $annotation_set = shift(@{$annotation_sets})) {
 	if ($annotation_set->findNode('source/name')->content() eq 'Ensembl') {
 	  $annotation_set_ensembl = $annotation_set;
-	  last;
 	}
+        if ($annotation_set->findNode('source/name')->content() eq 'NCBI RefSeqGene') {
+          $annotation_set_refseq = $annotation_set;
+        }
       }
-      my $lrg_gene = $annotation_set_ensembl->findNode('features/gene',{'symbol' => $hgnc_name});
+      my $lrg_gene;
+      foreach my $gene (@{ $annotation_set_ensembl->findNodeArray('features/gene') }) {
+        for my $symbol (@{ $gene->findNodeArray('symbol') } ) {
+          if ($symbol->content() eq $hgnc_name) {
+            $lrg_gene = $gene;
+          }
+        }
+      }
       my $hgnc_accession = $lrg_gene->findNode('db_xref',{'source' => 'HGNC'})->data()->{'accession'};
       
       my $xref_id;
@@ -608,10 +606,15 @@ Skip this, this is done by the external data files
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
-      my $lrg_transcripts = $lrg_gene->findNodeArray('transcript',{'source' => 'Ensembl'});
+      my $lrg_transcripts = $lrg_gene->findNodeArray('transcript', {'source' => 'Ensembl'});
       foreach my $lrg_transcript (@{$lrg_transcripts}) {
-	my $fixed_id = $lrg_transcript->{'data'}{'fixed_id'};
-	my $core_accession = $lrg_transcript->{'data'}{'transcript_id'};
+        my $refseq = $lrg_transcript->findNode('db_xref', {'source' => 'RefSeq'});
+        if (!defined $refseq) { next; }
+	my $refseq_accession = $refseq->{'data'}{'accession'};
+        my $refseq_annotation = $annotation_set_refseq->findNode('features/transcript', {'accession' => $refseq_accession});
+        if (!defined $refseq_annotation) { next; }
+        my $fixed_id = $refseq_annotation->{'data'}{'fixed_id'};
+	my $core_accession = $lrg_transcript->{'data'}{'accession'};
 	next unless(defined($fixed_id) && defined($core_accession));
 	
 	# Get the core db LRG transcript_id for this transcript
