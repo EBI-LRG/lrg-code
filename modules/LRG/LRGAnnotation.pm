@@ -208,9 +208,8 @@ sub translation {
   my $meta;
   
   # Partial genes
-  push(@{$meta},@{$self->partial($slice,$translation,$translation->genomic_start() ,$translation->genomic_end(),$transcript->strand()) || []});
-  #push(@{$meta},@{$self->partial($slice,$translation,($translation->genomic_start() - $slice->start()),($translation->genomic_end() - $slice->start() + 1),$transcript->strand()) || []});
-  
+  push(@{$meta},@{$self->partial($slice,$translation,($translation->genomic_start() - $slice->start()),($translation->genomic_end() - $slice->start() + 1),$transcript->strand()) || []});
+    
   # Comments
   push(@{$meta},@{$self->comment($translation) || []});
     
@@ -236,7 +235,6 @@ sub coords {
     $start = List::Util::max($start,$slice->start());
     $end = List::Util::min($end,$slice->end());
   }
-
   my $coords = LRG::API::Coordinates->new($feature->slice->coord_system->version(),$start,$end,$feature->strand(),0,0,$feature->seq_region_name());
   return $coords;
 }
@@ -296,7 +294,17 @@ sub long_name {
     
   }
   elsif (ref($feature) eq 'Bio::EnsEMBL::Transcript') {
-
+    
+    # Primarily use the RefSeq xref description
+    my $dbe = $feature->get_all_DBEntries('RefSeq_mRNA'); 
+    if ($dbe) {
+      $name = join(", ",map {$_->description()} @{$dbe});
+    }
+    $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
+    unless (($name && length($name)) || !$dbe) {
+      $name = join(", ",map {$_->description()} @{$dbe});
+    }
+    
     # Secondarily, use the gene description in Ensembl
     unless ($name && length($name)) {
       $name = $feature->description();
@@ -306,15 +314,18 @@ sub long_name {
     unless ($name && length($name)) {
       $name = $feature->external_name();
     }
-
+    
     # Append the biotype
     $name .= sprintf(" (\%s)",$feature->biotype());
     
   }
   elsif (ref($feature) eq 'Bio::EnsEMBL::Translation') {
-
-    my $transcript = $feature->transcript;
-    $name = $transcript->display_xref->description if ($transcript->display_xref);
+    
+    # Primarily use the RefSeq xref description
+    my $dbe = $feature->get_all_DBEntries('RefSeq_peptide'); 
+    if ($dbe) {
+      $name = join(", ",map {$_->description()} @{$dbe});
+    }
   }
   
   if ($name && length($name)) {
@@ -333,6 +344,7 @@ sub partial {
   my $strand = shift || $feature->strand();
   
   my @metas;
+    
   if ($start < $slice->start() || $end > $slice->end()) {
     if ($start < $slice->start()) {
       if ($strand >= 0) {
@@ -360,12 +372,12 @@ sub xref {
   my $feature = shift;
   
   my @xrefs;
-  my @xrefs_list;
-
+  
   # The DB names we will use for the different feature types
   my %source_dbs = (
     'Bio::EnsEMBL::Gene' => {
       'MIM_GENE' => 'MIM',
+      'EntrezGene' => 'GeneID',
       'HGNC' => 'HGNC',
       'HGNC_curated' => 'HGNC',
       'RFAM'  =>  'RFAM',
@@ -392,19 +404,13 @@ sub xref {
     # Skip if the external db source name is not among the listed sources for this feature type 
     next unless ($xref_source);
     
-		my $xref_id = $dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : "");
-		
-		next if (grep {"$xref_source:$xref_id" eq $_} @xrefs_list);
-	  push(@xrefs_list,"$xref_source:$xref_id");
-
     # Create a new xref object
-    push(@xrefs,LRG::API::Xref->new($xref_source,$xref_id,$dblink->get_all_synonyms()));
+    push(@xrefs,LRG::API::Xref->new($xref_source,$dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : ""),$dblink->get_all_synonyms()));
   }
   
-  # Lastly, add an xref to Ensembl as well (Only Gene stable id)
-	if ($feature->stable_id() !~ /^ENS(P|T)/) {
-  	push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
-  }
+  # Lastly, add an xref to Ensembl as well
+  push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
+  
   return \@xrefs;
   
 }
