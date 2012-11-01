@@ -91,7 +91,7 @@ foreach my $xml (@xmlfiles) {
 	$entry->addNode('name')->content($hgnc);
 
 	# Get information by source
-	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $last_modified);
+	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified);
 
 	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
 
@@ -122,6 +122,9 @@ foreach my $xml (@xmlfiles) {
 			$chr_name  = $coord->data->{other_name};
 			$chr_start = $coord->data->{other_start};
 			$chr_end   = $coord->data->{other_end};
+
+      my $mapping_span = $coord->findNode('mapping_span');
+      $chr_strand = $mapping_span ->data->{strand};
     }
 	}
   
@@ -139,6 +142,7 @@ foreach my $xml (@xmlfiles) {
 	$add_fields->addNode('field',{'name' => 'chr_name'})->content($chr_name);
   $add_fields->addNode('field',{'name' => 'chr_start'})->content($chr_start);
 	$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
+  $add_fields->addNode('field',{'name' => 'chr_strand'})->content($chr_strand);
 
   ## In ensembl
   my $in_ensembl = (`grep -w $lrg_id $index_dir/../$lrg_list`) ? 1 : 0;
