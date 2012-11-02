@@ -18,7 +18,7 @@ EXAMPLE
     perl import.lrg.pl -help
     
   Import a LRG and add xrefs, will download XML record from website:
-    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -import -xrefs
+    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -import
     
   Add gene_attribs for Ensembl genes overlapping a LRG:
     perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -overlap
@@ -79,7 +79,6 @@ my $overlap;
 my @lrg_ids;
 my $input_file;
 my $import;
-my $add_xrefs;
 my $max_values;
 my $revert;
 my $verify;
@@ -108,7 +107,6 @@ GetOptions(
   'lrg_id=s' 		=> \@lrg_ids,
   'input_file=s' 	=> \$input_file,
   'import!' 		=> \$import,
-  'xrefs!' 		=> \$add_xrefs,
   'max!' 		=> \$max_values,
   'revert!' 		=> \$revert,
   'verify!'		=> \$verify,
@@ -124,7 +122,7 @@ usage() if (defined($help));
 die("Database credentials (-host, -port, -core, -user) need to be specified!") unless (defined($host) && defined($port) && defined($coredb) && defined($user));
 
 # If an input XML file was specified, this will override any specified lrg_id. So get the identifier from within the file
-if ((defined($import) || defined($verify) || defined($add_xrefs) || defined($overlap) || defined($clean)) && defined($input_file)) {
+if ((defined($import) || defined($verify) || defined($overlap) || defined($clean)) && defined($input_file)) {
 
   die("ERROR: Input file $input_file does not exist!") unless(-e $input_file);
   
@@ -144,7 +142,7 @@ if ((defined($import) || defined($verify) || defined($add_xrefs) || defined($ove
 die("Supplied LRG id is not in the correct format ('LRG_NNN')") if (grep($_ !~ m/^LRG\_[0-9]+$/,@lrg_ids));
 
 # If doing something requiring the XML file but without specified input XML file or LRG ids, get a listing of published LRGs available at the ftp site
-if ((defined($import) || defined($clean) || defined($overlap) || defined($verify) || defined($add_xrefs)) && !scalar(@lrg_ids)) {
+if ((defined($import) || defined($clean) || defined($overlap) || defined($verify)) && !scalar(@lrg_ids)) {
   
   print STDOUT localtime() . "\tNo input XML file and no LRG id specified, fetching a LRG listing from the LRG server\n" if ($verbose);
   my $result = LRG::LRGImport::fetch_remote_lrg_ids([$LRG_EXTERNAL_XML]);
@@ -363,7 +361,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
     }
   }
   
-  if ($import || $add_xrefs || $verify) {
+  if ($import || $verify) {
     
   # If lrg_id has been specified but not input_file and a XML file is required, try to fetch it from the LRG website to the /tmp directory
     if (!defined($input_file)) {
@@ -497,7 +495,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       print STDOUT localtime() . "\tImport done!\n" if ($verbose);
     }
-    if ($add_xrefs) {
       
       # This should no longer be done from this script but be included in the main core xref mapping. Will allow it for now.
       # die("Adding xrefs is no longer done from this script. Exiting!");
@@ -654,8 +651,6 @@ Skip this, this is done by the external data files
 	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
 	
       }
-      
-    }
     
     # Check that the mapping stored in the database give the same sequences as those stored in the XML file
     if ($verify) {
@@ -812,13 +807,6 @@ sub usage {
 			API gets when accessing the core db. Will check genomic sequence, cDNA (spliced transcript)
 			and peptide translation.
       
-      -xrefs		This will add xrefs to HGNC, the external LRG website as well as to the
-			corresponding Ensembl genes for genes on the lrg coordinate system.
-			Will also add xrefs to the corresponding Ensembl genes, linking them to
-			the external LRG website and to the genes on the lrg coordinate system.
-			This should only need to be run for release 58. Subsequent releases will
-			take care of this through the normal xref pipeline, using HGNC data
-			
       -overlap		For the LRG specified by the -lrg_id argument, find all Ensembl genes in the
 			chromosome coordinate system that overlap. Add a gene_attrib to these, indicating
 			that they overlap a LRG region, either partially or completely. Note that the LRG
