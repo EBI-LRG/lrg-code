@@ -824,6 +824,7 @@ sub partial_gene {
             print "  > Partial gene: $gname (".$transcript_partial{$gname}{partial}.")\n"; 
             print "  > Partial transcript(s): ".$transcript_partial{$gname}{tr}."\n" if ($transcript_partial{$gname}{tr});
           }
+          $passed = 0;
         }
     }
     $self->{'check'}{$name}{'passed'} = $passed;
