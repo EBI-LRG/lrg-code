@@ -819,10 +819,10 @@ sub partial_gene {
             }
         }
         if ($is_partial == 1) {
-          print "\n".$self->{'lrg_id'}.": Partial gene/transcript/protein found for $source annotations\n";
+          $self->{'check'}{$name}{'message'} .= "Partial gene/transcript/protein found for $source annotations\n";
           foreach my $gname (keys(%transcript_partial)) {
-            print "  > Partial gene: $gname (".$transcript_partial{$gname}{partial}.")\n"; 
-            print "  > Partial transcript(s): ".$transcript_partial{$gname}{tr}."\n" if ($transcript_partial{$gname}{tr});
+            $self->{'check'}{$name}{'message'} .=  "\tPartial gene: $gname (".$transcript_partial{$gname}{partial}.")//";
+            $self->{'check'}{$name}{'message'} .=  "\tPartial transcript(s): ".$transcript_partial{$gname}{tr}."//" if ($transcript_partial{$gname}{tr});
           }
           $passed = 0;
         }
