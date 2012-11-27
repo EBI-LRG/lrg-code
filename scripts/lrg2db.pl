@@ -792,7 +792,7 @@ sub parse_annotation_set {
     }
     
     # /!\ HACK /!\ # Waiting for the NCBI to change it in their XML files
-    $xml_out =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/;
+    $xml_out =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/ if ($xml_out);
     # /!\ HACK /!\ # End
 
     $as_ins_sth->bind_param(1,$source_id,SQL_INTEGER);
