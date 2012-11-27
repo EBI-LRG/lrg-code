@@ -2128,11 +2128,9 @@
             </xsl:for-each> 
           </xsl:when>
           <xsl:otherwise>
-            <xsl:if test="long_name and contains(long_name,'(protein_coding)')">
           <tr>
             <th colspan="6" class="no_data">No protein product identified for this gene in this source</th>
           </tr>
-            </xsl:if>
           </xsl:otherwise>
         </xsl:choose>
           <tr><td colspan="6" class="legend">> Click on a transcript/protein to highlight the transcript and protein pair</td></tr>
