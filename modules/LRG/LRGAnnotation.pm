@@ -70,12 +70,15 @@ sub gene {
   my $slice = shift;
  
   my @objs;
-  # Get all genes overlapping the slice. Restrict to genes having ensembl as source and load transcripts upfront
-  my $genes = $slice->get_all_Genes_by_source('ensembl',1);
-  
+
+  # Get Ensembl genes
+  my $e_genes = $slice->get_all_Genes_by_source('ensembl',1);
+  my $h_genes = $slice->get_all_Genes_by_source('havana',1);
+  my $genes = [@$e_genes,@$h_genes];
+
   # Loop over the genes and create objects and attach transcripts, exons and translations as we go along
   foreach my $gene (@{$genes}) {
-    
+
     # Transfer the gene to the chromosomal slice instead so that all genomic coordinates routines actually behaves like expected
     $gene = $gene->transfer($slice->seq_region_Slice());
     
@@ -102,11 +105,11 @@ sub gene {
     
     # Transcripts
     my $transcript = $self->transcript($slice,$gene);
-    
+
     push(@objs,LRG::API::GeneUp->new('Ensembl',$gene->stable_id(),$coords,$xrefs,$meta,$symbol,$transcript));
     
   }
-  
+
   return \@objs;
 }
 
@@ -150,7 +153,7 @@ sub transcript {
     
     push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id(),$coords,$xrefs,$meta,$exon,$translation));
   }
-  
+
   return \@objs;
 }
 
@@ -208,8 +211,8 @@ sub translation {
   my $meta;
   
   # Partial genes
-  push(@{$meta},@{$self->partial($slice,$translation,($translation->genomic_start() - $slice->start()),($translation->genomic_end() - $slice->start() + 1),$transcript->strand()) || []});
-    
+  push(@{$meta},@{$self->partial($slice,$translation,$translation->genomic_start() ,$translation->genomic_end(),$transcript->strand()) || []});  
+
   # Comments
   push(@{$meta},@{$self->comment($translation) || []});
     
@@ -372,7 +375,8 @@ sub xref {
   my $feature = shift;
   
   my @xrefs;
-  
+  my @xrefs_list;
+
   # The DB names we will use for the different feature types
   my %source_dbs = (
     'Bio::EnsEMBL::Gene' => {
@@ -404,12 +408,21 @@ sub xref {
     # Skip if the external db source name is not among the listed sources for this feature type 
     next unless ($xref_source);
     
+    my $xref_id = $dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : "");
+		
+		next if (grep {"$xref_source:$xref_id" eq $_} @xrefs_list);
+	  
+    push(@xrefs_list,"$xref_source:$xref_id");
+
     # Create a new xref object
-    push(@xrefs,LRG::API::Xref->new($xref_source,$dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : ""),$dblink->get_all_synonyms()));
+    #push(@xrefs,LRG::API::Xref->new($xref_source,$dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : ""),$dblink->get_all_synonyms()));
+    push(@xrefs,LRG::API::Xref->new($xref_source,$xref_id,$dblink->get_all_synonyms()));
   }
   
   # Lastly, add an xref to Ensembl as well
-  push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
+  if ($feature->stable_id() !~ /^ENS(P|T)/) {
+    push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
+  }
   
   return \@xrefs;
   
