@@ -981,7 +981,11 @@ sub sort_nodes {
     if (defined($a->data->{'name'}) && defined($b->data->{'name'})) {
       return ($a->data->{'name'} cmp $b->data->{'name'});
     }
-	
+    # Sort the updatable genes and transcripts (in the updatable annotation feature) according to their coordinates.
+	  if (defined($a->data->{'accession'}) && defined($b->data->{'accession'}) && ($a->name eq 'transcript' or $a->name eq 'gene')) {
+      return ($a->findNode('coordinates')->data->{'start'} <=> $b->findNode('coordinates')->data->{'start'});
+    }
+
 	  # If not, sort by position if applicable.
     if ((defined($a->data->{'start'}) && defined($b->data->{'start'})) || (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'}))) {
    
