@@ -419,6 +419,18 @@ sub add_exon {
   my $seq_region_strand = shift;
 
   my $stmt = qq{
+      SELECT
+           exon_id
+      FROM
+           exon
+      WHERE
+          seq_region_id = '$seq_region_id' AND
+          seq_region_start = '$seq_region_start' AND
+          seq_region_end = '$seq_region_end'
+  };
+  my $exon_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+  if (!$exon_id) {
+    $stmt = qq{
       INSERT INTO
 	exon (
 	  seq_region_id,
@@ -434,8 +446,9 @@ sub add_exon {
 	  $seq_region_strand
 	)
     };
-  $dbCore->dbc->do($stmt);
-  my $exon_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    $dbCore->dbc->do($stmt);
+    $exon_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  }
 
   return $exon_id;
 }
@@ -446,7 +459,19 @@ sub add_exon_transcript {
   my $transcript_id = shift;
   my $rank          = shift;
 
-  my $stmt = qq {
+  my $stmt = qq{
+        SELECT
+             exon_id
+        FROM
+             exon_transcript
+        WHERE
+             transcript_id = '$transcript_id' AND
+             rank = '$rank'
+    };
+  my $result = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$result) {
+    $stmt = qq {
 	INSERT INTO
 	    exon_transcript (
 		exon_id,
@@ -459,7 +484,8 @@ sub add_exon_transcript {
 	    $rank
 	)
     };
-  $dbCore->dbc->do($stmt);
+    $dbCore->dbc->do($stmt);
+  }
 }
 
 #ÊAdds an external db if it does not exist
@@ -550,6 +576,21 @@ sub add_gene {
   $status     ||= 'KNOWN';
 
   my $stmt = qq{
+         SELECT
+              gene_id
+         FROM
+              gene
+         WHERE
+              biotype = '$biotype' AND
+              seq_region_id = '$seq_region_id' AND
+              seq_region_start = '$seq_region_start' AND
+              seq_region_end = '$seq_region_end'
+         };
+
+  my $gene_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$gene_id) {
+    $stmt = qq{
 	INSERT INTO
 	    gene (
 		biotype,
@@ -576,8 +617,9 @@ sub add_gene {
 	    '$status'
 	)
     };
-  $dbCore->dbc->do($stmt);
-  my $gene_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    $dbCore->dbc->do($stmt);
+    $gene_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  }
 
   return $gene_id;
 }
@@ -650,41 +692,20 @@ sub add_mapping {
   #ÊAdd a seq_region_attrib indicating that it is toplevel
   my $attrib_type_id = get_attrib_type_id('toplevel')
     or warn("Could not get attrib_type_id for toplevel attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
 
-  #ÊAdd a seq_region_attrib indicating that it is non-reference
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
+
+  # Add a seq_region_attrib indicating that it is non-reference
   $attrib_type_id = get_attrib_type_id('non_ref')
     or warn("Could not get attrib_type_id for non_ref attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
 
-  #ÊAdd a seq_region_attrib indicating that it is a LRG
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
+
+  # Add a seq_region_attrib indicating that it is a LRG
   $attrib_type_id = get_attrib_type_id('LRG')
     or warn("Could not get attrib_type_id for LRG attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
+
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
 
   # Get the seq_region_id for the target contig
   my $ctg_cs_id = get_coord_system_id('contig');
@@ -908,6 +929,18 @@ sub add_object_attrib {
   my $key   = $object_type . '_id';
 
   my $stmt = qq{
+        SELECT
+            value
+        FROM
+            $table
+        WHERE
+            $key = '$object_id' AND
+            attrib_type_id = '$attrib_type_id'
+     };
+  my $entry = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$entry) {
+    $stmt = qq{
 	INSERT IGNORE INTO
 	    $table (
 		$key,
@@ -920,7 +953,9 @@ sub add_object_attrib {
 	    '$value'
 	)
     };
-  $dbCore->dbc->do($stmt);
+    $dbCore->dbc->do($stmt);
+  }
+
 }
 
 # Add stable id for a gene/transcript/translation. If one already exists, replace it
@@ -988,8 +1023,23 @@ sub add_transcript {
   # Else, insert transcript entry into db
   else {
 
-# Will this properly set gene_id to NULL if undef provided? Will not really matter though since it is updated later
     $stmt = qq{
+              SELECT 
+                  transcript_id
+              FROM
+                  transcript
+              WHERE
+                  seq_region_id = '$seq_region_id' AND
+                  seq_region_start = '$seq_region_start' AND
+                  seq_region_end = '$seq_region_end' AND
+                  biotype = '$biotype'
+              };
+
+    $transcript_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+# Will this properly set gene_id to NULL if undef provided? Will not really matter though since it is updated later
+    if (!defined($transcript_id)) {
+      $stmt = qq{
 	    INSERT INTO
 	      transcript (
 		gene_id,
@@ -1014,8 +1064,9 @@ sub add_transcript {
 	      '$status'
 	    )
 	};
-    $dbCore->dbc->do($stmt);
-    $transcript_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+      $dbCore->dbc->do($stmt);
+      $transcript_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    }
   }
 
   return $transcript_id;
@@ -1642,6 +1693,18 @@ sub purge_db {
       }
     }
 
+    remove_row( [qq{cmp_seq_region_id = $seq_region_id}], 'assembly' );
+    remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
+
+    # Delete from seq_region_attrib
+    remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region_attrib' );
+
+    # Delete from dna
+    remove_row( [qq{seq_region_id = $seq_region_id}], 'dna' );
+
+    # Delete from seq_region
+    remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region' );
+
   }
 
   #ÊGet any xrefs for this LRG
@@ -1678,30 +1741,13 @@ qq{x.display_label = '$lrg_name' OR x.display_label LIKE '$lrg_name\_t%' OR x.di
       return;
     }
 
-    foreach my $seq_region_id (@seq_region_ids) {
+    # Remove coord_system entry
+    remove_row( [qq{coord_system_id = $cs_id}], 'coord_system' );
 
-      # Delete from assembly
-      remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
-      remove_row( [qq{cmp_seq_region_id = $seq_region_id}], 'assembly' );
-  
-      # Delete from seq_region_attrib
-      remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region_attrib' );
-  
-      # Delete from dna
-      remove_row( [qq{seq_region_id = $seq_region_id}], 'dna' );
-  
-      # Delete from seq_region
-      remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region' );
+    # Remove meta_coord entries
+    remove_row( [qq{coord_system_id = $cs_id}], 'meta_coord' );
 
-      # Remove coord_system entry
-      remove_row( [qq{coord_system_id = $cs_id}], 'coord_system' );
-
-      # Remove meta_coord entries
-      remove_row( [qq{coord_system_id = $cs_id}], 'meta_coord' );
-
-    }
-
-    #ÊRemove meta table entries
+    # Remove meta table entries
     my $ids = fetch_rows(
       ["meta_id"],
       ["meta"],
