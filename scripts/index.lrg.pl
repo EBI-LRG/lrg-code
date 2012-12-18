@@ -20,6 +20,9 @@ my $species = 'Homo sapiens';
 my $taxo_id = 9606;
 my $lrg_list = 'lrgs_in_ensembl.txt';
 
+# Give write permission for the group
+umask(0002);
+
 # List of LRG IDs which are stored in Ensembl
 print "Generating the file with the list of LRGs in Ensembl ...";
 $0 =~ /(.+)\//;
@@ -215,7 +218,6 @@ foreach my $xml (@xmlfiles) {
   # Count
   $count_files ++;
   get_count();
-  
 }
 
 

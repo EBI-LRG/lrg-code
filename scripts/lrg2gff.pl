@@ -25,6 +25,9 @@ GetOptions(
 
 die("An LRG XML input file or LRG identifier is required") unless (defined($xmlfile) || defined($lrgid));
 
+# Give write permission for the group
+umask(0002);
+
 # If no xml file was specified, attempt to fetch it from the website
 if (!defined($xmlfile) && defined($lrgid)) {
     

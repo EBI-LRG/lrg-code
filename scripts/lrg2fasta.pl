@@ -17,6 +17,8 @@ die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)
 die("Fasta directory (-fasta_dir) needs to be specified!") unless (defined($fasta_dir)); 
 usage() if (defined($help));
 
+# Give write permission for the group
+umask(0002);
 
 my @xml_list;
 if ($lrg_file) {
