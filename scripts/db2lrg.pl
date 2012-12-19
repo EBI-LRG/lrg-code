@@ -57,6 +57,9 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbose);
 
+# Give write permission for the group
+umask(0002);
+
 # Get the gene_id
 my $stmt;
 my $sth;
