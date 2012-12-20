@@ -1072,17 +1072,20 @@ sub parse_source {
     # Enter the LSDB info into db
 		my $stmt;
 		my $lsdb_id;
-		if (defined($lsdb_name) && $lsdb_name ne '' || $lsdb_url ne '') {
+		if (defined($lsdb_name) && ($lsdb_name ne '' || $lsdb_url ne '')) {
+      $lsdb_name = ($lsdb_name ne '') ? "= '$lsdb_name'" : ' is null';
+      $lsdb_url  = ($lsdb_url ne '') ?  "= '$lsdb_url'" : ' is null';
     	$stmt = qq{
         SELECT
             lsdb_id
         FROM
             lsdb
         WHERE
-            name = '$lsdb_name' AND
-            url = '$lsdb_url'
+            name $lsdb_name AND
+            url $lsdb_url
         LIMIT 1
     	};
+
 			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
         $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
@@ -1102,6 +1105,7 @@ sub parse_source {
             code = '$lsdb_code'
         LIMIT 1
     	};
+
     	$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
         $lsdb_ins_sth_2->bind_param(1,$lsdb_code,SQL_VARCHAR);
