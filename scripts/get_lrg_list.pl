@@ -5,7 +5,7 @@ use File::stat;
 use LRG::LRG;
 
 my $index_dir = '/ebi/ftp/pub/databases/lrgex/.lrg_index';
-my $list_file = '/homes/lgil/projets/LRG/lrg_head/list_LRGs.txt'; #'/ebi/ftp/pub/databases/lrgex/list_LRGs.txt';
+my $list_file = '/ebi/ftp/pub/databases/lrgex/list_LRGs.txt';
 my $dh;
 
 # Time
@@ -20,6 +20,8 @@ $sec = complete_with_2_numbers($sec);
 
 my $time = "$mday-$mon-$year\@$hour:$min:$sec";
 
+# Give write permission for the group
+umask(0002);
 
 # Open text file to fill
 open LIST, "> $list_file" or die $!;
