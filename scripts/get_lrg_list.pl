@@ -5,7 +5,9 @@ use File::stat;
 use LRG::LRG;
 
 my $index_dir = '/ebi/ftp/pub/databases/lrgex/.lrg_index';
-my $list_file = '/ebi/ftp/pub/databases/lrgex/list_LRGs.txt';
+my $f_name = 'list_LRGs.txt';
+my $list_file  = ($ARGV[0]) ? $ARGV[0] : '/ebi/ftp/pub/databases/lrgex';
+   $list_file .= "/$f_name";
 my $dh;
 
 # Time
