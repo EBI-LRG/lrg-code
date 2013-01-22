@@ -679,10 +679,8 @@ sub add_mapping {
 
   # Need the mapping to contig and also to chromosome via contig
   my $meta_value = $lrg_coord_system . '#contig';
-  foreach my $append ( ( '', '#chromosome:' . $assembly ) ) {
-    my $id = add_meta_key_value( $meta_key, $meta_value . $append );
-    push( @meta_id, $id );
-  }
+  push( @meta_id, add_meta_key_value ($meta_key, $meta_value));
+  push( @meta_id, add_meta_key_value ($meta_key, 'chromosome:' . $assembly . "#" . $lrg_coord_system));
 
   # Add a seq_region for the LRG if it doesn't exist
   my @seq_region_ids;
@@ -716,7 +714,6 @@ sub add_mapping {
 
 #ÊLoop over the pairs array. For each mapping span, first get a chromosomal slice and project this one to contigs
   foreach my $pair ( sort { $a->[3] <=> $b->[3] } @{$pairs} ) {
-
     # Each span is represented by a 'DNA' type
     if ( $pair->[0] eq 'DNA' ) {
       die(
@@ -728,6 +725,10 @@ sub add_mapping {
       my $chr_slice =
         $sa->fetch_by_region( 'chromosome', $mapping->{'chr_name'},
         $pair->[3], $pair->[4], 1, $assembly );
+      my $chr_id = $sa->get_seq_region_id($chr_slice);
+
+      add_assembly_mapping ($chr_id, $q_seq_region_id, $pair->[3],
+        $pair->[4], $pair->[1], $pair->[2], $pair->[5]);
 
       #ÊProject the chromosomal slice to contig
       my $segments = $chr_slice->project('contig');
@@ -935,7 +936,8 @@ sub add_object_attrib {
             $table
         WHERE
             $key = '$object_id' AND
-            attrib_type_id = '$attrib_type_id'
+            attrib_type_id = '$attrib_type_id' AND
+            value = '$value'
      };
   my $entry = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
 
