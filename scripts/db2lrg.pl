@@ -467,18 +467,13 @@ if (defined($include_external)) {
         SELECT DISTINCT
             lg.lsdb_id
         FROM
-            lsdb_gene lg
+            lsdb_gene lg,
+            lsdb l
         WHERE
+            lg.lsdb_id = l.lsdb_id AND
             lg.gene_id = $gene_id AND
-            NOT EXISTS (
-                SELECT
-                    *
-                FROM
-                    lrg_request lr
-                WHERE
-                    lr.gene_id = '$gene_id' AND
-                    lr.lsdb_id = lg.lsdb_id
-            ) AND
+            l.name is not null AND
+            l.url is not null AND
             NOT EXISTS (
                 SELECT
                     *
