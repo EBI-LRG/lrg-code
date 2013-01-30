@@ -27,14 +27,18 @@ while (<F>) {
 	chomp $_;
 	next if ($_ =~ /^#/);
 
-	my ($lrg_id,$hgnc_name,$assembly) = split (/[ \t]/, $_);	
+	my ($lrg_id,$hgnc_name,$assembly,$skip_hc) = split (/[ \t]/, $_);	
 
 	if (!$lrg_id || !$hgnc_name || !$assembly) {
-		print O ($lrg_id) ? "$lrg_id: Can't read the data in the data_file (HGNC name, assembly)\n" : "Can't read the data in the data_file, line $.\n";
+		print O ($lrg_id) ? "$lrg_id: Can't read the data in the data_file (LRG_ID HGNC_name assembly skip_health_checks )\n" : "Can't read the data in the data_file, line $.\n";
 		next;
 	}	
+  
+  # Flag to skip all the HealthChecks (value equal to 1)
+  $skip_hc = (defined($skip_hc)) ? 1 : 0;
+  
 	print O "$lrg_id: ";
-	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_check0`;
+	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_hc $skip_check0`;
 
 }
 print O "\nPipeline ends\n";
