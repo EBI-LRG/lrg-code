@@ -111,27 +111,19 @@ sub add_annotation {
     my $cds_end   = $cds_coord->data->{'end'};
 
     # Insert transcript entry into db
+    my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
     my $transcript_id = add_transcript(
-      undef,             $gene_id,        $analysis_id, $seq_region_id,
+      undef,             $gene_id,        $transcript_stable_id,        $analysis_id, $seq_region_id,
       $transcript_start, $transcript_end, 1,            $biotype,
       1
     );
 
-    # Update transcript stable_id (we already know what it should be)
-    my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
-    add_stable_id( $transcript_id, $transcript_stable_id, 'transcript' );
-
 # If we are processing the first transcript of the gene, the gene needs to be added to the database
     if ( !defined($gene_id) ) {
-      $gene_id =
-        add_gene( $biotype, $analysis_id, $seq_region_id, $transcript_start,
-        $transcript_end, 1, 'LRG database', $transcript_id );
-
-      # For genes, use the LRG identifier as gene name
       my $gene_stable_id = $lrg_name;
-
-      # Update gene stable id
-      add_stable_id( $gene_id, $gene_stable_id, 'gene' );
+      $gene_id =
+        add_gene( $biotype, $gene_stable_id, $analysis_id, $seq_region_id, $transcript_start,
+        $transcript_end, 1, 'LRG database', $transcript_id );
 
       print "Gene:\t" . $gene_id . "\t" . $gene_stable_id . "\n";
     }
@@ -175,14 +167,8 @@ sub add_annotation {
         my $exon_start  = $lrg_coords->data->{'start'};
         my $exon_end    = $lrg_coords->data->{'end'};
         my $exon_length = ( $exon_end - $exon_start + 1 );
-        $exon_id = add_exon( $seq_region_id, $exon_start, $exon_end, 1 );
-
-        # Used to be a query to the DB but we can do the same thing in memory
-        # by using the exon_count & producing something like LRG_1_t1_e1
         my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
-
-        # Update exon stable id
-        add_stable_id( $exon_id, $exon_stable_id, 'exon' );
+        $exon_id = add_exon( $exon_stable_id, $seq_region_id, $exon_start, $exon_end, 1 );
 
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
 
@@ -222,16 +208,13 @@ sub add_annotation {
 
 # Insert translation into db (if available, the gene could be non-protein coding)
     if ( $exon_count > 0 ) {
-      my $translation_id =
-        add_translation( $transcript_id, $cds_start, $start_exon_id, $cds_end,
-        $end_exon_id );
-
-      # Translation stable id is the replacement of t with p in the transcript stable id
       my $translation_stable_id = $transcript_stable_id;
       $translation_stable_id =~ s/t(\d+)$/p$1/;
 
-      # Update translation stable id 
-      add_stable_id( $translation_id, $translation_stable_id, 'translation' );
+      my $translation_id =
+        add_translation( $transcript_id, $translation_stable_id, $cds_start, $start_exon_id, $cds_end,
+        $end_exon_id );
+
       print "\tTranslation:\t"
         . $translation_id . "\t"
         . $translation_stable_id . "\n";
@@ -413,6 +396,7 @@ sub add_dna {
 
 # Add an exon
 sub add_exon {
+  my $stable_id         = shift;
   my $seq_region_id     = shift;
   my $seq_region_start  = shift;
   my $seq_region_end    = shift;
@@ -426,13 +410,15 @@ sub add_exon {
       WHERE
           seq_region_id = '$seq_region_id' AND
           seq_region_start = '$seq_region_start' AND
-          seq_region_end = '$seq_region_end'
+          seq_region_end = '$seq_region_end' AND
+          stable_id = '$stable_id'
   };
   my $exon_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
   if (!$exon_id) {
     $stmt = qq{
       INSERT INTO
 	exon (
+          stable_id,
 	  seq_region_id,
 	  seq_region_start,
 	  seq_region_end,
@@ -440,6 +426,7 @@ sub add_exon {
 	)
       VALUES
 	(
+          '$stable_id',
 	  $seq_region_id,
 	  $seq_region_start,
 	  $seq_region_end,
@@ -562,6 +549,7 @@ sub add_external_db {
 # Add a gene
 sub add_gene {
   my $biotype                 = shift;
+  my $stable_id               = shift;
   my $analysis_id             = shift;
   my $seq_region_id           = shift;
   my $seq_region_start        = shift;
@@ -584,7 +572,8 @@ sub add_gene {
               biotype = '$biotype' AND
               seq_region_id = '$seq_region_id' AND
               seq_region_start = '$seq_region_start' AND
-              seq_region_end = '$seq_region_end'
+              seq_region_end = '$seq_region_end' AND
+              stable_id = '$stable_id'
          };
 
   my $gene_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
@@ -594,6 +583,7 @@ sub add_gene {
 	INSERT INTO
 	    gene (
 		biotype,
+                stable_id,
 		analysis_id,
 		seq_region_id,
 		seq_region_start,
@@ -606,6 +596,7 @@ sub add_gene {
 	    )
 	VALUES (
 	    '$biotype',
+            '$stable_id',
 	    $analysis_id,
 	    $seq_region_id,
 	    $seq_region_start,
@@ -994,6 +985,7 @@ sub add_stable_id {
 sub add_transcript {
   my $transcript_id     = shift;
   my $gene_id           = shift;
+  my $stable_id         = shift;
   my $analysis_id       = shift;
   my $seq_region_id     = shift;
   my $seq_region_start  = shift;
@@ -1034,7 +1026,8 @@ sub add_transcript {
                   seq_region_id = '$seq_region_id' AND
                   seq_region_start = '$seq_region_start' AND
                   seq_region_end = '$seq_region_end' AND
-                  biotype = '$biotype'
+                  biotype = '$biotype' AND
+                  stable_id = '$stable_id'
               };
 
     $transcript_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
@@ -1045,6 +1038,7 @@ sub add_transcript {
 	    INSERT INTO
 	      transcript (
 		gene_id,
+                stable_id,
 		analysis_id,
 		seq_region_id,
 		seq_region_start,
@@ -1056,6 +1050,7 @@ sub add_transcript {
 	      )
 	    VALUES (
 	      $gene_id,
+              '$stable_id',
 	      $analysis_id,
 	      $seq_region_id,
 	      $seq_region_start,
@@ -1077,6 +1072,7 @@ sub add_transcript {
 # Add a translation
 sub add_translation {
   my $transcript_id = shift;
+  my $stable_id     = shift;
   my $cds_start     = shift;
   my $start_exon_id = shift;
   my $cds_end       = shift;
@@ -1091,6 +1087,7 @@ sub add_translation {
 	    INSERT INTO
 		translation (
 		    transcript_id,
+                    stable_id,
 		    seq_start,
 		    start_exon_id,
 		    seq_end,
@@ -1098,6 +1095,7 @@ sub add_translation {
 		)
 	    VALUES (
 		$transcript_id,
+                '$stable_id',
 		$cds_start,
 		$start_exon_id,
 		$cds_end,
@@ -1117,7 +1115,8 @@ sub add_translation {
 		seq_start = $cds_start,
 		start_exon_id = $start_exon_id,
 		seq_end = $cds_end,
-		end_exon_id = $end_exon_id
+		end_exon_id = $end_exon_id,
+                stable_id = '$stable_id'
 	    WHERE
 		translation_id = $translation_id
 	};
