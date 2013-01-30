@@ -11,10 +11,15 @@ xml_dir=$4
 new_dir=$5
 tmp_dir=$6
 report_file=$7
-skip_check0=$8
+skip_hc=$8
+skip_check0=$9
 
 if [ -z ${tmp_dir} ] ; then
 	tmp_dir='.'
+fi
+
+if [[ ! ${skip_hc} ]] ; then
+  skip_hc=0
 fi
 
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
@@ -61,12 +66,14 @@ if [ ! ${skip_check0} ] ; then
   echo_stderr  ""
 fi
 
-echo_stderr  "# Check data file #1 ... " >&2
-rm -f ${error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${error_log}
-check_script_result
-echo_stderr  "> checking #1 done" 
-echo_stderr  ""
+if [ ${skip_hc} == 0 ] ; then
+  echo_stderr  "# Check data file #1 ... " >&2
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${error_log}
+  check_script_result
+  echo_stderr  "> checking #1 done" 
+  echo_stderr  ""
+fi
 
 
 echo_stderr  "# Add annotations ... "
@@ -74,12 +81,14 @@ bash code/scripts/shell/update_xml_annotation.sh ${xml_dir}/${lrg_id}.xml ${hgnc
 check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 
 
-echo_stderr  "# Check data file #2 ... "
-rm -f ${error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new 2> ${error_log}
-check_script_result
-echo_stderr  "> checking #2 done"
-echo_stderr  ""
+if [ ${skip_hc} == 0 ] ; then
+  echo_stderr  "# Check data file #2 ... "
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new 2> ${error_log}
+  check_script_result
+  echo_stderr  "> checking #2 done"
+  echo_stderr  ""
+fi
 
 
 echo_stderr  "# Store ${lrg_id} into the database ... "
@@ -94,12 +103,14 @@ bash code/scripts/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp
 check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
-echo_stderr  "# Check data file #3 ... "
-rm -f ${error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp 2> ${error_log}
-check_script_result
-echo_stderr  "> checking #3 done"
-echo_stderr  ""
+if [ ${skip_hc} == 0 ] ; then
+  echo_stderr  "# Check data file #3 ... "
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp 2> ${error_log}
+  check_script_result
+  echo_stderr  "> checking #3 done"
+  echo_stderr  ""
+fi
 
 
 echo_stderr  "Move XML file to ${new_dir}"
@@ -128,6 +139,8 @@ if [ -n "${report_file}" ] ; then
  
   if [[ -n ${is_partial} ]] ; then
     echo "ran successfully - Partial gene/transcript/protein found!" >> ${report_file}
+  elif [[ ${skip_hc} == 1 ]] ; then
+    echo "ran successfully - HealthChecks skipped for this LRG!" >> ${report_file}
   else
    echo "ran successfully" >> ${report_file}
   fi 
