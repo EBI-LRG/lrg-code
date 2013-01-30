@@ -1,0 +1,193 @@
+use strict;
+use File::stat;
+use LRG::LRG;
+use Getopt::Long;
+
+my ($only_ftp_snapshot, $xml_dir, $tmp_dir, $cvs_dir);
+GetOptions(
+  'only_ftp_snapshot!' => \$only_ftp_snapshot,
+  'xml_dir=s'          => \$xml_dir,
+  'tmp_dir=s'          => \$tmp_dir,
+  'cvs_dir=s'          => \$cvs_dir,
+);
+
+if (!$cvs_dir) {
+
+  my $cvs_path = `grep "^CVSROOTDIR" ~/.lrgpaths`;
+  chomp $cvs_path;
+  if ($cvs_path =~ /CVSROOTDIR=(.+)$/) {
+    $cvs_dir = $1;
+  }
+  die("You need to specify the CVS directory (-cvs_dir)") unless ($cvs_dir);
+}
+my $cvs_ftp = "$cvs_dir/ftp/public";
+
+$tmp_dir = $cvs_ftp if (!$tmp_dir || !-d $tmp_dir);
+$xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
+
+# FTP record settings
+my $record = 'ftp_record.txt';
+my $file_record =  $cvs_ftp.'/'.$record;
+my $new_file_record = $tmp_dir."/new_$record";
+
+# Relnotes settings
+my $relnotes_fname = 'relnotes.txt';
+my $relnotes = $xml_dir.'/'.$relnotes_fname;
+my $new_relnotes = $tmp_dir."/new_".$relnotes_fname;
+
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+$year+=1900;
+
+foreach my $item ($hour,$min,$sec,$mday) {
+	$item = complete_with_2_numbers($item);
+}
+
+my $day = "$mday-$abbr[$mon]-$year";
+
+my %changes;
+
+#### Old data ####
+my %old_data;
+open OLD, "< $file_record" || die $!;
+while (<OLD>) {
+  chomp $_;
+  my ($lrg, $date, $status) = split("\t", $_);
+  $old_data{$lrg}{'date'} = $date;
+  $old_data{$lrg}{'status'} = $status;
+}
+close(OLD);
+
+
+#### XML directory #### 
+my $pub_count  = `ls $xml_dir/LRG_* | wc -l`;
+my $pend_count = `ls $xml_dir/pending/LRG_* | wc -l`;
+chomp($pub_count);
+chomp($pend_count);
+
+my $dh;
+my @dirs = ($xml_dir,"$xml_dir/pending");
+my $schema_version;
+
+my %new_data;
+foreach my $dir (@dirs) {
+  opendir($dh,$dir);
+  warn("Could not process directory $dir") unless (defined($dh));
+
+  # Loop over the files in the directory and store the file names of LRG XML files
+  while (my $file = readdir($dh)) {
+    next if ($file !~ m/^LRG\_[0-9]+\.xml$/);
+    $file =~ m/^(LRG\_[0-9]+)\.xml$/;
+    my $lrg = $1;
+
+    my $date = get_date("$dir/$file");
+    $new_data{$lrg}{'date'} = $date;
+    $new_data{$lrg}{'status'} = ($dir =~ /pending/i) ? 'pending' : 'public';
+
+    if (!$old_data{$lrg}) {
+      $changes{$lrg} = 'new_file';
+    } elsif ($old_data{$lrg}{'status'} ne $new_data{$lrg}{'status'}) {
+      $changes{$lrg} = 'new_status';
+    } elsif ($old_data{$lrg}{'date'} ne $new_data{$lrg}{'date'}) {
+      $changes{$lrg} = ($new_data{$lrg}{'status'} eq 'pending') ? 'new_pending_date' : 'new_public_date' ;
+    }
+    
+    $schema_version = get_schema_version("$dir/$file") if (!$schema_version);
+  }
+  closedir($dh);
+}
+
+if ($only_ftp_snapshot) {
+	#### Update file status ####
+	ftp_snapshot();
+	exit(0);
+}
+
+#### Update relnotes ####
+my $first_line = `grep "LRG release" $relnotes`;
+   $first_line =~ /LRG release\s(\d+)/;
+
+my $version = $1;
+$version++;
+
+
+## Update the relnotes.txt file
+open NEW, "> $new_relnotes" or die $!;
+
+# Release number
+my $release_version = "$version ($day)";
+print NEW "LRG release $release_version";
+print NEW "\n# Schema version $schema_version" if ($schema_version);
+# Files count
+print NEW "\n\nThere are $pub_count LRG entries\nThere are $pend_count pending LRG entries\n\n### Notes\n\n";
+
+# Notes
+foreach my $lrg (sort(keys(%changes))) {
+  my $pending = ($new_data{$lrg}{'status'} eq 'pending') ? ' Pending' : '';
+  
+  # Get HGNC name 
+  my $subdir = ($new_data{$lrg}{'status'} eq 'pending') ? 'pending/' : '';
+  my $lrg_obj = LRG::LRG::newFromFile("$xml_dir/$subdir$lrg.xml") or die "ERROR: Could not load the LRG file $lrg.xml!";
+  my $hgnc = $lrg_obj->findNode('lrg_locus')->content;
+  $hgnc = (defined($hgnc)) ? " ($hgnc)" : '';
+  
+  if ($changes{$lrg} eq 'new_status') {
+		print NEW "# Pending LRG record $lrg$hgnc is now public\n";
+	} elsif ($changes{$lrg} eq 'new_file') {
+		print NEW "#$pending LRG record $lrg$hgnc added\n";
+	} elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
+		print NEW "#$pending LRG record $lrg$hgnc updated\n";
+ 	}
+
+}
+close(NEW);
+
+#### Update file status ####
+ftp_snapshot();
+
+
+print get_tag_version($version,$year,$mon,$mday);
+
+
+#### Methods ####
+
+sub ftp_snapshot {
+	open F, "> $new_file_record" or die $!;
+	foreach my $lrg (sort {$a cmp $b} keys(%new_data)) {
+  	print F "$lrg\t".$new_data{$lrg}{'date'}."\t".$new_data{$lrg}{'status'}."\n";
+	}
+	close(F);
+}
+
+sub get_date {
+  my $filename = shift;
+  my $stats = stat($filename);
+  my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($stats->mtime);
+  $mon++;
+  $year+=1900;
+	foreach my $item ($hour,$min,$sec,$mday,$mon) {
+		$item = complete_with_2_numbers($item);
+	}
+  return "$hour:$min:$sec|$mday-$mon-$year";
+}
+
+sub get_schema_version {
+  my $filename = shift;
+  my $schema_info = `grep 'lrg schema_version' $filename`;
+  return ($schema_info =~ /lrg schema_version="(.+)"/) ? $1 : undef;
+}
+
+sub get_tag_version {
+  my ($version,$year,$month,$day) = @_;
+  $month++;
+  $day = complete_with_2_numbers($mday);
+  return "release_$version\_$year$month$day";
+}
+
+sub complete_with_2_numbers {
+  my $data = shift;
+  $data = "0$data" if ($data !~ /\d{2}/);
+  return $data;
+}
+
+
