@@ -52,15 +52,15 @@ if ($sets{$option{lrg_set_name}} && !$option{replace}) {
 }
 else {
   if ($sets{$option{lrg_set_name}}) {
-    warn (sprintf("Will overwrite the existing LRG annotation set in '\%s'",$option{xmlfile}));
+    warn (sprintf("Will overwrite the existing LRG annotation set mapping in '\%s'",$option{xmlfile}));
   }
   else {
     warn (sprintf("A new LRG annotation set will be added"));
-  }
-  $sets{$option{lrg_set_name}} = LRG::API::LRGAnnotationSet->new();
+  	$sets{$option{lrg_set_name}} = LRG::API::LRGAnnotationSet->new();
   
-  # Attach the LRG annotation set to the LRG object
-  $lrg->updatable_annotation->annotation_set([values(%sets)]);
+  	# Attach the LRG annotation set to the LRG object
+  	$lrg->updatable_annotation->annotation_set([values(%sets)]);
+	}
 }
 
 # Update the meta information for the annotation_set
