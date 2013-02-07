@@ -69,7 +69,9 @@ if [[ -e ${new_relnotes} ]] ; then
     cvs tag ${tag_release} ${record_fname}
 
 		# 4 - Tag the LRG XML files
+		
     cd ${cvspath}/xml
+		cvs update ./*
     echo "Tagging LRG public records"
     for path in ${pubpath}/LRG_*.xml
     do
