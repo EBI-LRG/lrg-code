@@ -181,6 +181,7 @@ sub get_tag_version {
   my ($version,$year,$month,$day) = @_;
   $month++;
   $day = complete_with_2_numbers($mday);
+	$month = complete_with_2_numbers($month);
   return "release_$version\_$year$month$day";
 }
 
