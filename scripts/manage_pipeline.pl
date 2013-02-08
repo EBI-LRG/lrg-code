@@ -19,10 +19,10 @@ usage() if (!defined($data_file) || !defined($xml_dir) || !defined($new_dir) || 
 
 my $report_file = "$tmp_dir/pipeline_reports.txt";
 
-$skip_check0 = ($skip_check0) ? 1 : undef;
+$skip_check0 = (defined($skip_check0)) ? 1 : 0;
 
-my $annotation_test = ($is_test) ? 1 : undef;
-my $report_type = ($is_test) ? 'test ' : '';
+my $annotation_test = ($is_test) ? 1 : 0;
+my $report_type = ($is_test) ? 'test' : '';
 
 `rm -f $report_file`;
 
@@ -43,7 +43,7 @@ while (<F>) {
   # Flag to skip all the HealthChecks (value equal to 1)
   $skip_hc = (defined($skip_hc)) ? 1 : 0;
   
-	print O "$lrg_id: $report_type";
+	print O "$lrg_id: $report_type ";
 	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_hc $skip_check0 $annotation_test`;
 
 }
