@@ -97,6 +97,11 @@ foreach my $dir (@dirs) {
   closedir($dh);
 }
 
+if (scalar(keys(%changes)) == 0) {
+	print "No difference found";
+	exit(0);
+}
+
 if ($only_ftp_snapshot) {
 	#### Update file status ####
 	ftp_snapshot();

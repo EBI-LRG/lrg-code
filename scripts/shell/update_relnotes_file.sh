@@ -19,12 +19,16 @@ fi
 tag_release=`perl ${perldir}/update_relnotes.pl -cvs_dir ${cvspath} -xml_dir ${pubpath} ${tmpdir}`
 
 if [[ ! ${tag_release} || ${tag_release} != release_[0-9]*_[0-9]* ]] ; then 
-  echo "Can't retrieve the LRG release from the script update_relnotes.pl"
+  if [[ ${tag_release} == 'No difference found' ]] ; then
+    echo "${tag_release} on the FTP. The release version won't be modified."
+  else
+    echo "Can't retrieve the LRG release from the script update_relnotes.pl"
+  fi
   exit 1
 fi
 
-#### Update and commit CVS ####
 
+#### Update and commit CVS ####
 
 # 0 - Set the file names & their paths.
 relnotes_fname='relnotes.txt'
@@ -88,7 +92,5 @@ if [[ -e ${new_relnotes} ]] ; then
 
   fi
 fi
-
-
 
 
