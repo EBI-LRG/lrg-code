@@ -13,6 +13,7 @@ tmp_dir=$6
 report_file=$7
 skip_hc=$8
 skip_check0=$9
+annotation_test=${10}
 
 if [ -z ${tmp_dir} ] ; then
 	tmp_dir='.'
@@ -23,6 +24,9 @@ if [[ ! ${skip_hc} ]] ; then
 fi
 
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
+
+
+#### METHODS ##########################################################################
 
 function check_script_result {
 	if [[ -s ${error_log} ]] ; then
@@ -55,8 +59,27 @@ function echo_stderr {
 	echo ${msg} >&2
 }
 
+function end_of_script {
+  xmlfile=$1
+  if [ -n "${report_file}" ] ; then
+    is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
+ 
+    if [[ -n ${is_partial} ]] ; then
+      echo "ran successfully - Partial gene/transcript/protein found!" >> ${report_file}
+    elif [[ ${skip_hc} == 1 ]] ; then
+      echo "ran successfully - HealthChecks skipped for this LRG!" >> ${report_file}
+    else
+     echo "ran successfully" >> ${report_file}
+    fi 
+  fi
+}
+
+
+#### PIPELINE #########################################################################################################
+
 echo_stderr  "#### ${lrg_id} ####" >&2
 
+# Preliminary test
 if [ ! ${skip_check0} ] ; then
   echo_stderr  "# Preliminary check: compare with existing LRG entry ... " >&2
   rm -f ${error_log}
@@ -66,6 +89,8 @@ if [ ! ${skip_check0} ] ; then
   echo_stderr  ""
 fi
 
+
+# STEP1: HealthCheck 1 - check raw data
 if [ ${skip_hc} == 0 ] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
@@ -76,11 +101,13 @@ if [ ${skip_hc} == 0 ] ; then
 fi
 
 
+# STEP2: Add Ensembl annotations
 echo_stderr  "# Add annotations ... "
 bash code/scripts/shell/update_xml_annotation.sh ${xml_dir}/${lrg_id}.xml ${hgnc} ${assembly}
 check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 
 
+# STEP3: HealthCheck 2 - check annotation data
 if [ ${skip_hc} == 0 ] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
@@ -91,6 +118,15 @@ if [ ${skip_hc} == 0 ] ; then
 fi
 
 
+# End the script if in test mode (only want to test the Ensembl annotations)
+if [[ ${annotation_test} ]] ; then
+	end_of_script ${xml_dir}/${lrg_id}.xml.new
+	echo_stderr "TEST done."
+  exit 0
+fi
+
+
+# STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
 bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc} ${error_log}
 check_script_result
@@ -98,11 +134,13 @@ echo_stderr  "> Storage done"
 echo_stderr  ""
 
 
+# STEP5: Export the LRG data from the database to an XML file (new requester/lsdb/contact data)
 echo_stderr  "# Extract ${lrg_id} from the database ... "
 bash code/scripts/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp
 check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
+# STEP6: HealthCheck 3 - check the exported data
 if [ ${skip_hc} == 0 ] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
@@ -113,6 +151,7 @@ if [ ${skip_hc} == 0 ] ; then
 fi
 
 
+# STEP7: Move the exported file and generate FASTA and GFF files
 echo_stderr  "Move XML file to ${new_dir}"
 rm -f ${error_log}
 mv ${xml_dir}/${lrg_id}.xml.exp ${new_dir}/${lrg_id}.xml 2> ${error_log}
@@ -134,14 +173,4 @@ echo_stderr  "Script done"
 echo_stderr  ""
 echo_stderr  ""
 
-if [ -n "${report_file}" ] ; then
-  is_partial=`perl code/scripts/check.lrg.pl -xml_file ${new_dir}/${lrg_id}.xml -check partial_gene`
- 
-  if [[ -n ${is_partial} ]] ; then
-    echo "ran successfully - Partial gene/transcript/protein found!" >> ${report_file}
-  elif [[ ${skip_hc} == 1 ]] ; then
-    echo "ran successfully - HealthChecks skipped for this LRG!" >> ${report_file}
-  else
-   echo "ran successfully" >> ${report_file}
-  fi 
-fi
+end_of_script ${new_dir}/${lrg_id}.xml
