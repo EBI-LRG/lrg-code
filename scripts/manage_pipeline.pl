@@ -4,19 +4,25 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my ($data_file, $xml_dir, $new_dir, $tmp_dir, $skip_check0, $help);
+my ($data_file, $xml_dir, $new_dir, $tmp_dir, $skip_check0, $is_test, $help);
 GetOptions(
   'data_file=s'		=> \$data_file,
   'xml_dir=s'		  => \$xml_dir,
   'new_dir=s'     => \$new_dir,
   'tmp_dir=s'     => \$tmp_dir,
   'skip_check0!'  => \$skip_check0,
+  'is_test!'      => \$is_test,
   'help!'         => \$help
 );
 
 usage() if (!defined($data_file) || !defined($xml_dir) || !defined($new_dir) || !defined($tmp_dir) || $help);
 
 my $report_file = "$tmp_dir/pipeline_reports.txt";
+
+$skip_check0 = ($skip_check0) ? 1 : undef;
+
+my $annotation_test = ($is_test) ? 1 : undef;
+my $report_type = ($is_test) ? 'test ' : '';
 
 `rm -f $report_file`;
 
@@ -37,8 +43,8 @@ while (<F>) {
   # Flag to skip all the HealthChecks (value equal to 1)
   $skip_hc = (defined($skip_hc)) ? 1 : 0;
   
-	print O "$lrg_id: ";
-	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_hc $skip_check0`;
+	print O "$lrg_id: $report_type";
+	`./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $report_file $skip_hc $skip_check0 $annotation_test`;
 
 }
 print O "\nPipeline ends\n";
