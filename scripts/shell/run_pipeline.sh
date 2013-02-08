@@ -80,7 +80,7 @@ function end_of_script {
 echo_stderr  "#### ${lrg_id} ####" >&2
 
 # Preliminary test
-if [ ! ${skip_check0} ] ; then
+if [[ ! ${skip_check0} || ${skip_check0} == 0 ]] ; then
   echo_stderr  "# Preliminary check: compare with existing LRG entry ... " >&2
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
@@ -119,7 +119,7 @@ fi
 
 
 # End the script if in test mode (only want to test the Ensembl annotations)
-if [[ ${annotation_test} ]] ; then
+if [[ ${annotation_test} == 1 ]] ; then
 	end_of_script ${xml_dir}/${lrg_id}.xml.new
 	echo_stderr "TEST done."
   exit 0
