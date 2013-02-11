@@ -10,13 +10,26 @@ cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
 perldir=${CVSROOTDIR}/code/scripts/
 cvsftp=${CVSROOTDIR}/ftp/public/
+
 tmpdir=''
 tmp=$1
+
+is_test=$2
+
+if [[ ${is_test} ]]; then
+	is_test=1
+fi
+
 if [ ${tmp} ]; then
- tmpdir="-tmp_dir ${tmp}"
+	if [[ ${tmp} == 'test' ]] ; then
+		is_test=1
+	else
+		tmpdir="-tmp_dir ${tmp}"
+	fi
 fi
 
 tag_release=`perl ${perldir}/update_relnotes.pl -cvs_dir ${cvspath} -xml_dir ${pubpath} ${tmpdir}`
+
 
 if [[ ! ${tag_release} || ${tag_release} != release_[0-9]*_[0-9]* ]] ; then 
   if [[ ${tag_release} == 'No difference found' ]] ; then
@@ -28,9 +41,7 @@ if [[ ! ${tag_release} || ${tag_release} != release_[0-9]*_[0-9]* ]] ; then
 fi
 
 
-#### Update and commit CVS ####
-
-# 0 - Set the file names & their paths.
+# Set the file names & their paths.
 relnotes_fname='relnotes.txt'
 new_relnotes_fname="new_${relnotes_fname}"
 
@@ -45,6 +56,21 @@ else
   new_record="${cvsftp}/${new_record_fname}"
 fi
 
+
+#### IF on TEST MODE ####
+if [[ ${is_test} == 1 ]]; then
+	echo ""
+	echo ">>>>> TEST MODE <<<<<"
+	echo ""
+	cat ${new_relnotes}
+	echo ""
+	echo ">>>>> END of TEST MODE <<<<<"
+	echo ""
+	exit 0
+fi
+
+
+#### Update and commit CVS ####
 
 # 1 - If OK, copy the new relnotes.txt to the CVS ftp/ and commit it.
 if [[ -e ${new_relnotes} ]] ; then
@@ -92,5 +118,4 @@ if [[ -e ${new_relnotes} ]] ; then
 
   fi
 fi
-
 
