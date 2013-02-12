@@ -637,18 +637,20 @@ Skip this, this is done by the external data files
 	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
 	# Get the gene_id for the Ensembl gene
 	$core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
-	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
+        if ($core_id) {
+          $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
 	
-	# Do the same for the translation
-	my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
-	next unless(defined($lrg_protein));
-	$core_accession = $lrg_protein->{'data'}{'accession'};
-	next unless(defined($core_accession));
-	$core_id = LRG::LRGImport::get_translation_id($core_id);
+       	  # Do the same for the translation
+	  my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
+	  next unless(defined($lrg_protein));
+	  $core_accession = $lrg_protein->{'data'}{'accession'};
+	  next unless(defined($core_accession));
+	  $core_id = LRG::LRGImport::get_translation_id($core_id);
 	
-	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
-	# Add an object_xref for the LRG xref
-	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+	  $xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
+	  # Add an object_xref for the LRG xref
+	  $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+        }
 	
       }
     
