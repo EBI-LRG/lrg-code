@@ -433,7 +433,9 @@ sub add_exon {
 	  seq_region_id,
 	  seq_region_start,
 	  seq_region_end,
-	  seq_region_strand
+	  seq_region_strand,
+          created_date,
+          modified_date
 	)
       VALUES
 	(
@@ -441,7 +443,9 @@ sub add_exon {
 	  $seq_region_id,
 	  $seq_region_start,
 	  $seq_region_end,
-	  $seq_region_strand
+	  $seq_region_strand,
+          now(),
+          now()
 	)
     };
     $dbCore->dbc->do($stmt);
@@ -603,7 +607,9 @@ sub add_gene {
 		source,
 		is_current,
 		canonical_transcript_id,
-		status
+		status,
+                created_date,
+                modified_date
 	    )
 	VALUES (
 	    '$biotype',
@@ -616,7 +622,9 @@ sub add_gene {
 	    '$source',
 	    $is_current,
 	    $canonical_transcript_id,
-	    '$status'
+	    '$status',
+            now(),
+            now()
 	)
     };
     $dbCore->dbc->do($stmt);
@@ -1057,7 +1065,9 @@ sub add_transcript {
 		seq_region_strand,
 		biotype,
 		is_current,
-		status
+		status,
+                created_date,
+                modified_date
 	      )
 	    VALUES (
 	      $gene_id,
@@ -1069,7 +1079,9 @@ sub add_transcript {
 	      $seq_region_strand,
 	      '$biotype',
 	      $is_current,
-	      '$status'
+	      '$status',
+              now(),
+              now()
 	    )
 	};
       $dbCore->dbc->do($stmt);
@@ -1102,7 +1114,9 @@ sub add_translation {
 		    seq_start,
 		    start_exon_id,
 		    seq_end,
-		    end_exon_id
+		    end_exon_id,
+                    created_date,
+                    modified_date
 		)
 	    VALUES (
 		$transcript_id,
@@ -1110,7 +1124,9 @@ sub add_translation {
 		$cds_start,
 		$start_exon_id,
 		$cds_end,
-		$end_exon_id
+		$end_exon_id,
+                now(),
+                now()
 	    ) 
 	};
     $dbCore->dbc->do($stmt);
