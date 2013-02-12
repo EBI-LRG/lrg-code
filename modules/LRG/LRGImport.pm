@@ -215,6 +215,17 @@ sub add_annotation {
         add_translation( $transcript_id, $translation_stable_id, $cds_start, $start_exon_id, $cds_end,
         $end_exon_id );
 
+      my $tr_excep = $transnode->findNode('coding_region/translation_exception');
+      if ($tr_excep) {
+        my $codon = $tr_excep->data->{'codon'};
+        my $change = $tr_excep->findNode('sequence')->content();
+        if ($change eq 'U') {
+          my $edit = "$codon $codon U";
+          add_seq_edit($translation_id, $edit, '_selenocysteine');
+        }
+      }
+
+
       print "\tTranslation:\t"
         . $translation_id . "\t"
         . $translation_stable_id . "\n";
@@ -1126,6 +1137,19 @@ sub add_translation {
   return $translation_id;
 }
 
+sub add_seq_edit {
+  my ($seq, $edit, $code) = @_;
+
+  my $stmt = qq{
+    INSERT into translation_attrib
+    SELECT $seq, attrib_type_id, '$edit'
+    FROM attrib_type
+    WHERE code = '$code'
+    };
+  $dbCore->dbc->do($stmt);
+
+}
+
 sub add_xref {
   my $external_db_name = shift;
   my $db_primary_acc   = shift;
@@ -1656,15 +1680,8 @@ sub purge_db {
 
         # Translations have to be removed by the corresponding transcript ids
         if ( $object_type eq 'transcript' ) {
-          my $stmt = qq{
-		    DELETE FROM
-			translation
-		    WHERE
-			transcript_id = $oid
-		    };
-          $dbCore->dbc->do($stmt);
-
           my $translation_id = get_translation_id($oid);
+          remove_row( [qq{translation_id = $translation_id}], 'translation');
 
           # Remove from object_xref
           remove_row(
@@ -1678,6 +1695,8 @@ sub purge_db {
 
           #ÊRemove entries in the exon_transcript table
           remove_row( [qq{transcript_id = '$oid'}], 'exon_transcript' );
+          # Remove potential translation_attrib assigned to it
+          remove_row( [qq{translation_id = $translation_id}], 'translation_attrib' ) if defined($translation_id);
         }
 
         # Remove rows with this object id
