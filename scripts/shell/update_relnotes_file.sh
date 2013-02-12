@@ -28,18 +28,6 @@ if [ ${tmp} ]; then
 	fi
 fi
 
-tag_release=`perl ${perldir}/update_relnotes.pl -cvs_dir ${cvspath} -xml_dir ${pubpath} ${tmpdir}`
-
-
-if [[ ! ${tag_release} || ${tag_release} != release_[0-9]*_[0-9]* ]] ; then 
-  if [[ ${tag_release} == 'No difference found' ]] ; then
-    echo "${tag_release} on the FTP. The release version won't be modified."
-  else
-    echo "Can't retrieve the LRG release from the script update_relnotes.pl"
-  fi
-  exit 1
-fi
-
 
 # Set the file names & their paths.
 relnotes_fname='relnotes.txt'
@@ -54,6 +42,28 @@ if [[ ${tmp} && -d ${tmp} ]]; then
 else
   new_relnotes="${cvsftp}/${new_relnotes_fname}"
   new_record="${cvsftp}/${new_record_fname}"
+fi
+
+
+# Update the ftp_record.txt file
+current_path=`pwd`
+cd ${cvsftp}
+cvs update ${record_fname}
+cd ${current_path}
+
+
+# Generate the new relnotes.txt and ftp_record.txt files
+tag_release=`perl ${perldir}/update_relnotes.pl -cvs_dir ${cvspath} -xml_dir ${pubpath} ${tmpdir}`
+
+
+# Check the new tag release
+if [[ ! ${tag_release} || ${tag_release} != release_[0-9]*_[0-9]* ]] ; then 
+  if [[ ${tag_release} == 'No difference found' ]] ; then
+    echo "${tag_release} on the FTP. The release version won't be modified."
+  else
+    echo "Can't retrieve the LRG release from the script update_relnotes.pl"
+  fi
+  exit 1
 fi
 
 
