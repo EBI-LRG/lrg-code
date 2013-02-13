@@ -15,13 +15,15 @@ tmp_dir=$4
 skip_check0=$5  # Skip primary HealthCheck (check existing LRG in the EBI FTP site)
 is_test=$6      # Test the Ensembl annotations
 
-if [[ -z ${skip_check0} ]] ; then
+if [[ -n ${skip_check0} && ${skip_check0} != 0 ]] ; then
+echo "YES"
   skip_check0='-skip_check0'
 else
+	echo "NO"
   skip_check0=''
 fi
 
-if [[ -z ${is_test} ]] ; then
+if [[ -n ${is_test} && ${is_test} != 0 ]] ; then
   is_test='-is_test'
 else
   is_test=''
