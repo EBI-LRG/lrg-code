@@ -154,19 +154,27 @@ foreach my $xml (@xmlfiles) {
 	# Status
 	$add_fields->addNode('field',{'name' => 'status'})->content($xml->{'status'}) if (defined($xml->{'status'}));
 
-	# Locus + synonyms
+	
+	# Synonym
+  # > Locus
+	my %synonyms;
 	my $loci = $lrg->findNodeArray('updatable_annotation/annotation_set/lrg_locus');
 	foreach my $locus (@{$loci}) {
 		my $l_content = $locus->content;
-		$add_fields->addNode('field',{'name' => 'synonym'})->content($l_content) if ($l_content ne $hgnc);
+    $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
 	}
-
-	# Symbol
+	# > Symbol
 	my $symbols = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/symbol');
 	foreach my $symbol (@{$symbols}) {
 		my $s_content = $symbol->content;
-		$add_fields->addNode('field',{'name' => 'synonym'})->content($s_content) if ($s_content ne $hgnc);
+		$synonyms{$s_content} = 1 if ($s_content ne $hgnc);
 	}
+
+	# > Synonyms
+	foreach my $syn (keys(%synonyms)) {
+		$add_fields->addNode('field',{'name' => 'synonym'})->content($syn);
+	}
+
 
   # Organism
   $add_fields->addNode('field',{'name' => 'organism'})->content($species);
