@@ -1073,21 +1073,23 @@ sub parse_source {
 		my $stmt;
 		my $lsdb_id;
 		if (defined($lsdb_name) && ($lsdb_name ne '' || $lsdb_url ne '')) {
-      $lsdb_name = ($lsdb_name ne '') ? "= '$lsdb_name'" : ' is null';
-      $lsdb_url  = ($lsdb_url ne '') ?  "= '$lsdb_url'" : ' is null';
+      my $sel_lsdb_name = ($lsdb_name ne '') ? "= '$lsdb_name'" : ' is null';
+      my $sel_lsdb_url  = ($lsdb_url ne '') ?  "= '$lsdb_url'" : ' is null';
     	$stmt = qq{
         SELECT
             lsdb_id
         FROM
             lsdb
         WHERE
-            name $lsdb_name AND
-            url $lsdb_url
+            name $sel_lsdb_name AND
+            url $sel_lsdb_url
         LIMIT 1
     	};
 
 			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
+				$lsdb_name = 'null' if ($lsdb_name eq '');
+        $lsdb_url  = 'null' if ($lsdb_url eq '');
         $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
         $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
         $lsdb_ins_sth_1->execute();
