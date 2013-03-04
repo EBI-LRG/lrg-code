@@ -92,7 +92,7 @@ if [[ -e ${new_relnotes} ]] ; then
 		
 		echo "Copy, commit & tag the new relnotes.txt on CVS"
     cp ${new_relnotes} "./${relnotes_fname}"
-    cvs ci -m 'New relnote file ${tag_release}' ${relnotes_fname}
+    cvs ci -m "New relnote file ${tag_release}" ${relnotes_fname}
     cvs tag ${tag_release} ${relnotes_fname}
 
     # 2 - Copy the committed relnotes.txt to the EBI FTP.
@@ -105,7 +105,7 @@ if [[ -e ${new_relnotes} ]] ; then
 
     echo "Copy, commit & tag the new ftp_record.txt on CVS"
     cp ${new_record}  "./${record_fname}"
-    cvs ci -m 'FTP record of the release ${tag_release}' ${record_fname}
+    cvs ci -m "FTP record of the release ${tag_release}" ${record_fname}
     cvs tag ${tag_release} ${record_fname}
 
 		# 4 - Tag the LRG XML files
