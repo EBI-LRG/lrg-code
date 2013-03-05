@@ -607,7 +607,7 @@ sub get_source {
     my $lsdb_id = shift;
     my $db_adaptor = shift;
     my $skip_contact = shift;
-    
+
     # Get the lsdb data
     my $stmt = qq{
         SELECT
@@ -626,7 +626,7 @@ sub get_source {
     $source->addNode('url')->content($lsdb_url) if (defined($lsdb_url) && length($lsdb_url) > 0);
     
     # If we skip contact information, return here
-    return $source if ($skip_contact);
+    return $source if (defined($skip_contact));
     
     # Get the source data for the requesters
     $stmt = qq{
