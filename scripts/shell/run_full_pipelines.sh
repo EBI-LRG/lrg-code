@@ -16,10 +16,8 @@ skip_check0=$5  # Skip primary HealthCheck (check existing LRG in the EBI FTP si
 is_test=$6      # Test the Ensembl annotations
 
 if [[ -n ${skip_check0} && ${skip_check0} != 0 ]] ; then
-echo "YES"
   skip_check0='-skip_check0'
 else
-	echo "NO"
   skip_check0=''
 fi
 
