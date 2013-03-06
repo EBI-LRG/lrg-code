@@ -1989,7 +1989,7 @@
   <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
   <xsl:variable name="lrg_strand" select="coordinates[@coord_system = $lrg_coord_system]/@strand" />
   
-	  <div class="left_annotation">
+    <div class="left_annotation">
       <p>
     <xsl:for-each select="long_name">
       <xsl:value-of select="."/><br/>
@@ -2075,7 +2075,6 @@
         </p>
          
 <!--Transcripts-->
-<!--   <td class="gene_transcript_cell" style="width:66%">-->
     </div>
     <div class="right_annotation">
       
