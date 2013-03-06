@@ -105,18 +105,17 @@ td.sequence_cell {
   color:#000;
 }
 
-tr.gene_info_cell {
-  vertical-align: top;
-  margin:0px;
-  padding:0px;
-  border:none;
+div.left_annotation {
+	float:left;
+	width:33%;
+	padding-left:3px;
 }
 
-td.gene_info_cell {
-  border: none;
-  padding-right:0px;
+div.right_annotation {
+	float:right;
+	width:66%;
+	padding-left:0px;
 }
-
 
 div.transcript_mapping{
   margin:0px 6px 20px;

@@ -1891,8 +1891,7 @@
         
         <h3 class="sub_subsection blue_bg">Gene annotations</h3>        
         <div class="transcript_mapping blue_bg">
-          <div class="sub_transcript_mapping">
-            <table>
+          <div class="sub_transcript_mapping" style="padding:2px">
               <xsl:call-template name="updatable_gene">
                 <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
                 <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
@@ -1900,7 +1899,6 @@
 				        <xsl:with-param name="mapping_anchor">#<xsl:value-of select="$mapping_anchor" /></xsl:with-param>
                 <xsl:with-param name="display_symbol"><xsl:value-of select="$display_symbol" /></xsl:with-param>
               </xsl:call-template>
-            </table>
           </div>
         </div>
      
@@ -1958,8 +1956,7 @@
 			    <xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
           <h3 class="sub_subsection">Gene <xsl:value-of select="$display_symbol" /></h3>
           <div class="transcript_mapping">
-            <div class="sub_transcript_mapping">
-              <table>
+            <div class="sub_transcript_mapping" style="padding:2px">
                 <xsl:call-template name="updatable_gene">
                   <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
                   <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
@@ -1967,7 +1964,6 @@
 				          <xsl:with-param name="mapping_anchor">#<xsl:value-of select="$mapping_anchor" /></xsl:with-param>
                   <xsl:with-param name="display_symbol"><xsl:value-of select="$display_symbol" /></xsl:with-param>
                 </xsl:call-template>
-              </table>
             </div>
           </div>
           <br />
@@ -1993,8 +1989,7 @@
   <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
   <xsl:variable name="lrg_strand" select="coordinates[@coord_system = $lrg_coord_system]/@strand" />
   
-  <tr class="gene_info_cell">
-    <td class="gene_info_cell" style="width:33%">
+	  <div class="left_annotation">
       <p>
     <xsl:for-each select="long_name">
       <xsl:value-of select="."/><br/>
@@ -2078,21 +2073,24 @@
       </xsl:for-each>
     </xsl:if>
         </p>
-     </td>
-          
+         
 <!--Transcripts-->
-    <td class="gene_transcript_cell" style="width:66%">
+<!--   <td class="gene_transcript_cell" style="width:66%">-->
+    </div>
+    <div class="right_annotation">
+      
     <xsl:choose>
       <xsl:when test="transcript">
+				
         <table style="width:100%;padding:0px;margin:0px">
    
           <tr>
-            <th>Transcript ID</th>
-            <th>Source</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>External identifiers</th>
-            <th>Other</th>
+            <th style="width:14%">Transcript ID</th>
+            <th style="width:7%">Source</th>
+            <th style="width:8%">Start</th>
+            <th style="width:8%">End</th>
+            <th style="width:20%">External identifiers</th>
+            <th style="width:43%px">Other</th>
           </tr>
           
         <xsl:for-each select="transcript">
@@ -2136,12 +2134,12 @@
           <tr><td colspan="6" class="legend">> Click on a transcript/protein to highlight the transcript and protein pair</td></tr>
         
         </table>
- 
+
      </xsl:when>
      <xsl:otherwise><div class="no_data"><br />No transcript identified for this gene in this source</div></xsl:otherwise>
     </xsl:choose>
-      </td>
-    </tr>
+    </div>
+    <div style="clear:both" />
 </xsl:template>
 
 
@@ -2194,8 +2192,8 @@
   </xsl:choose>
     </td>
     <td><xsl:value-of select="@source"/></td>
-    <td><xsl:value-of select="$lrg_start"/></td>
-    <td><xsl:value-of select="$lrg_end"/></td>
+    <td style="text-align:right"><xsl:value-of select="$lrg_start"/></td>
+    <td style="text-align:right"><xsl:value-of select="$lrg_end"/></td>
     <td>
   <xsl:for-each select="db_xref|protein_product/db_xref">
     <xsl:choose>
@@ -2284,8 +2282,8 @@
   </xsl:choose>
     </td>
     <td><xsl:value-of select="@source"/></td>
-    <td><xsl:value-of select="$lrg_start"/></td>
-    <td><xsl:value-of select="$lrg_end"/></td>
+    <td style="text-align:right"><xsl:value-of select="$lrg_start"/></td>
+    <td style="text-align:right"><xsl:value-of select="$lrg_end"/></td>
     <td>
   <xsl:for-each select="db_xref[(@source='RefSeq' and substring(@accession,1,2)='NP') or @source='GI' or @source='UniProtKB']">
     <xsl:apply-templates select="."/>
