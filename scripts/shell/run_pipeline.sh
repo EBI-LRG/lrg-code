@@ -24,7 +24,7 @@ if [[ ! ${skip_hc} ]] ; then
 fi
 
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
-
+warning=''
 
 #### METHODS ##########################################################################
 
@@ -36,6 +36,14 @@ function check_script_result {
 			echo  "failed" >> ${report_file}
 		fi
 		exit 1 #exit shell script
+	fi
+}
+
+function check_script_warning {
+	if [[ -s ${error_log} ]] ; then
+		echo_stderr  "WARNING: at least one NCBI transcript has a polyA!"
+		echo_stderr  "Please, look at the error log file ${error_log} for more details"
+		warning=1
 	fi
 }
 
@@ -61,16 +69,18 @@ function echo_stderr {
 
 function end_of_script {
   xmlfile=$1
+  comment=''
   if [ -n "${report_file}" ] ; then
     is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
- 
-    if [[ -n ${is_partial} ]] ; then
-      echo "ran successfully - Partial gene/transcript/protein found!" >> ${report_file}
-    elif [[ ${skip_hc} == 1 ]] ; then
-      echo "ran successfully - HealthChecks skipped for this LRG!" >> ${report_file}
-    else
-     echo "ran successfully" >> ${report_file}
-    fi 
+    
+    if [[ ${skip_hc} == 1 ]] ; then
+      comment="${comment} - HealthChecks skipped for this LRG"
+    elif [[ ${warning} == 1 ]] ; then
+      comment="${comment} - WARNING: at least one NCBI transcript has a polyA sequence"
+    elif [[ -n ${is_partial} ]] ; then
+      comment="${comment} - Partial gene/transcript/protein found"
+    fi
+    echo "ran successfully${comment}" >> ${report_file}
   fi
 }
 
@@ -81,11 +91,22 @@ echo_stderr  "#### ${lrg_id} ####" >&2
 
 # Preliminary test
 if [[ ! ${skip_check0} || ${skip_check0} == 0 ]] ; then
-  echo_stderr  "# Preliminary check: compare with existing LRG entry ... " >&2
+  echo_stderr  "# Preliminary check: compare sequences with existing LRG entry ... " >&2
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
+  echo_stderr  ""
+fi
+
+
+# Test PolyA sequence
+if [ ${skip_hc} == 0 ] ; then 
+  echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check poly_a" 2> ${error_log}
+  check_script_warning
+  echo_stderr  "> checking polyA done" 
   echo_stderr  ""
 fi
 
