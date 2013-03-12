@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-
-<!-- Last modified on 2011-08-08 by Pontus Larsson -->
    
 <xsl:output method="html" doctype-public="-//W3C//DTD HTML 4.0 Transitional//EN"/>
 
@@ -94,10 +92,10 @@
       <li><a href="#set_2_anchor" class="menu">NCBI annotation</a></li>
       <li><a href="#set_3_anchor" class="menu">Ensembl annotation</a></li>
     </ul>
-    <xsl:if test="count(updatable_annotation/annotation_set) &gt; 3">
+<!--    <xsl:if test="count(updatable_annotation/annotation_set) &gt; 3"> -->
       <xsl:call-template name="lrg_right_arrow_green" /><a href="#additional_data_anchor" style="vertical-align:middle;font-weight:bold">Additional data sources</a>
       <br />
-    </xsl:if>
+<!--    </xsl:if> -->
   </div>
 
 <!-- FIXED ANNOTATION -->
@@ -1180,12 +1178,20 @@
 	<xsl:for-each	select="coding_region">
 		<xsl:variable name="pepname" select="translation/@name" />
 		<xsl:variable name="peptide_coord_system" select="concat($lrg_id,'_',$pepname)" />
+    <xsl:variable name="ref_protein" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript/protein_product[@fixed_id = $pepname]" />
 
   <li class="transcript_label">
     <a>
       <xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
     </a>
     <span class="transcript_label">Translated sequence: <xsl:value-of select="$pepname"/></span> 
+    <xsl:if test="$ref_protein">
+      (<a>
+      <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="$ref_protein/@accession" /></xsl:attribute>
+      <xsl:attribute name="target">_blank</xsl:attribute> 
+      <xsl:value-of select="$ref_protein/@accession" /><xsl:call-template name="external_link_icon" />
+      </a>) 
+    </xsl:if>
     <a>
       <xsl:attribute name="href">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>show/hide
     </a>
@@ -1407,23 +1413,36 @@
   </div>
   
 <!-- Add the additional LSDB data -->
-  <xsl:if test="annotation_set[source/name!=$lrg_source_name and source/name!=$ncbi_source_name and source/name!=$ensembl_source_name]">
-    <div id="additional_data_div" class="oddDiv">
-      <a name="additional_data_anchor" />
-       <div class="section">
-         <xsl:call-template name="lrg_right_arrow_green_large" /><h2 class="section">ADDITIONAL DATA SOURCES FOR <xsl:value-of select="$lrg_gene_name"/></h2>
-       </div>
-      <br />
-      <div class="source" style="margin-left:0px"><span class="source">Source: <span class="source_name">Locus Specific Database (LSDB)</span></span></div>
-      <br />
-      <xsl:for-each select="annotation_set[source/name!=$lrg_source_name and source/name!=$ncbi_source_name and source/name!=$ensembl_source_name]">
-        <xsl:apply-templates select="source">
-          <xsl:with-param name="external" select="1" />
-        </xsl:apply-templates>
-      </xsl:for-each>
+  <div id="additional_data_div" class="oddDiv">
+    <a name="additional_data_anchor" />
+    <div class="section">
+      <xsl:call-template name="lrg_right_arrow_green_large" /><h2 class="section">ADDITIONAL DATA SOURCES FOR <xsl:value-of select="$lrg_gene_name"/></h2>
     </div>
     <br />
-  </xsl:if>
+      
+    <div class="source" style="margin-left:0px"><span class="source">Source: <span class="source_name">Locus Specific Database (LSDB)</span></span></div>
+    <br />
+
+    <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
+    <xsl:variable name="lsdb_url">http://grenada.lumc.nl/LSDB_list/lsdbs/<xsl:value-of select="$lrg_gene_name"/></xsl:variable>
+    <xsl:if test="annotation_set[source/name!=$lsdb_list]">
+    <div>
+      <xsl:attribute name="class">external_source</xsl:attribute>
+      <div class="other_source"><span class="other_source">Database: <span class="source_name"><xsl:value-of select="$lsdb_list"/></span></span></div>
+      <table>
+        <tr>
+          <td style="border: 0px; padding: 0px; padding-top:2px">
+            <strong>Website: </strong>
+            <xsl:call-template name="url">
+              <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
+            </xsl:call-template>
+          </td>
+        </tr>
+      </table>
+    </div>
+    </xsl:if>
+  </div>
+  <br />
 </xsl:template> 
  
 <!-- ANNOTATION SET -->
