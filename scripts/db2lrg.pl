@@ -463,39 +463,15 @@ while ($sth->fetch()) {
 
 # If we should add external LSDBs, add these as separate annotation sets
 if (defined($include_external)) {
-    $stmt = qq{
-        SELECT DISTINCT
-            lg.lsdb_id
-        FROM
-            lsdb_gene lg,
-            lsdb l
-        WHERE
-            lg.lsdb_id = l.lsdb_id AND
-            lg.gene_id = $gene_id AND
-            l.name is not null AND
-            l.url is not null AND
-            NOT EXISTS (
-                SELECT
-                    *
-                FROM
-                    lrg_annotation_set las
-                WHERE
-                    las.gene_id = '$gene_id' AND
-                    las.source = lg.lsdb_id
-            )
-        ORDER BY
-            lg.lsdb_id ASC
-    };
-    $sth = $db_adaptor->dbc->prepare($stmt);
-    $sth->execute();
-    $sth->bind_columns(\$lsdb_id);
-    while ($sth->fetch()) {
-        my $annotation_set = $updatable->addNode('annotation_set');
-        # Add source information
-        $annotation_set->addExisting(get_source($lsdb_id,$db_adaptor,1));
-        # Add modification date
-        $annotation_set->addNode('modification_date')->content(LRG::LRG::date());
-    }
+    # LSDBs list link
+    my $lsdb_name = "List of locus specific databases for $hgnc_symbol";
+    my $lsdb_url  = "http://grenada.lumc.nl/LSDB_list/lsdbs/$hgnc_symbol";
+    my $annotation_set = $updatable->addNode('annotation_set');
+    my $source = LRG::Node::new('source');
+    $source->addNode('name')->content($lsdb_name);
+    $source->addNode('url')->content($lsdb_url);
+    $annotation_set->addExisting($source);
+    $annotation_set->addNode('modification_date')->content(LRG::LRG::date());
 }
 
 # Dump XML to output_file
