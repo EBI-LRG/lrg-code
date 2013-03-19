@@ -19,7 +19,7 @@
     <title>Genomic sequence
       <xsl:value-of select="$lrg_id"/> -
       <xsl:value-of select="$lrg_gene_name"/>
-	
+
       <xsl:if test="$pending=1">
         *** PENDING APPROVAL ***
       </xsl:if>
@@ -92,10 +92,8 @@
       <li><a href="#set_2_anchor" class="menu">NCBI annotation</a></li>
       <li><a href="#set_3_anchor" class="menu">Ensembl annotation</a></li>
     </ul>
-<!--    <xsl:if test="count(updatable_annotation/annotation_set) &gt; 3"> -->
-      <xsl:call-template name="lrg_right_arrow_green" /><a href="#additional_data_anchor" style="vertical-align:middle;font-weight:bold">Additional data sources</a>
-      <br />
-<!--    </xsl:if> -->
+    <xsl:call-template name="lrg_right_arrow_green" /><a href="#additional_data_anchor" style="vertical-align:middle;font-weight:bold">Additional data sources</a>
+    <br />
   </div>
 
 <!-- FIXED ANNOTATION -->
@@ -1173,25 +1171,16 @@
   <xsl:param name="transname" />
   <xsl:param name="lrg_coord_system" />
   <xsl:param name="cdna_coord_system" />
-<!--  <xsl:param name="peptide_coord_system" />-->
 
 	<xsl:for-each	select="coding_region">
 		<xsl:variable name="pepname" select="translation/@name" />
 		<xsl:variable name="peptide_coord_system" select="concat($lrg_id,'_',$pepname)" />
-    <xsl:variable name="ref_protein" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript/protein_product[@fixed_id = $pepname]" />
 
   <li class="transcript_label">
     <a>
       <xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
     </a>
-    <span class="transcript_label">Translated sequence: <xsl:value-of select="$pepname"/></span> 
-    <xsl:if test="$ref_protein">
-      (<a>
-      <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="$ref_protein/@accession" /></xsl:attribute>
-      <xsl:attribute name="target">_blank</xsl:attribute> 
-      <xsl:value-of select="$ref_protein/@accession" /><xsl:call-template name="external_link_icon" />
-      </a>) 
-    </xsl:if>
+    <span class="transcript_label">Translated sequence: <xsl:value-of select="$pepname"/></span>
     <a>
       <xsl:attribute name="href">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>show/hide
     </a>
