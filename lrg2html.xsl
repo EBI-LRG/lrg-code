@@ -649,7 +649,7 @@
 <!-- Display the NCBI accession for the transcript -->
   <xsl:variable name="ref_transcript" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]" />
   <xsl:if test="$ref_transcript">
-    <strong> Source: </strong>This transcript is identical to the RefSeq transcript 
+    <strong> Comment: </strong>This transcript is identical to the RefSeq transcript 
     <a>
     <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="$ref_transcript/@accession" /></xsl:attribute>
     <xsl:attribute name="target">_blank</xsl:attribute>
@@ -718,7 +718,7 @@
     <a>
       <xsl:attribute name="name">cdna_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
     </a>
-    <span class="transcript_label">cDNA sequence</span> 
+    <span class="transcript_label">Transcript sequence</span> 
     <a>
       <xsl:attribute name="href">javascript:showhide('cdna_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide
     </a>
@@ -1408,26 +1408,17 @@
       <xsl:call-template name="lrg_right_arrow_green_large" /><h2 class="section">ADDITIONAL DATA SOURCES FOR <xsl:value-of select="$lrg_gene_name"/></h2>
     </div>
     <br />
-      
-    <div class="source" style="margin-left:0px"><span class="source">Source: <span class="source_name">Locus Specific Database (LSDB)</span></span></div>
-    <br />
 
     <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
     <xsl:variable name="lsdb_url">http://grenada.lumc.nl/LSDB_list/lsdbs/<xsl:value-of select="$lrg_gene_name"/></xsl:variable>
     <xsl:if test="annotation_set[source/name!=$lsdb_list]">
     <div>
       <xsl:attribute name="class">external_source</xsl:attribute>
-      <div class="other_source"><span class="other_source">Database: <span class="source_name"><xsl:value-of select="$lsdb_list"/></span></span></div>
-      <table>
-        <tr>
-          <td style="border: 0px; padding: 0px; padding-top:2px">
-            <strong>Website: </strong>
-            <xsl:call-template name="url">
-              <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
-            </xsl:call-template>
-          </td>
-        </tr>
-      </table>
+      <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
+      <strong>Website: </strong>
+      <xsl:call-template name="url">
+        <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
+      </xsl:call-template>
     </div>
     </xsl:if>
   </div>
