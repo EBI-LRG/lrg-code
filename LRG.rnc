@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
 # Version $Revision: 1.7 $
-# Last modified: 2012-10-17
+# Last modified: 2013-03-26
 
 start = LRG
 LRG = element lrg { 
@@ -38,9 +38,7 @@ FIXED_ANNOTATION = element fixed_annotation {
    element creation_date {
       xsd:date
    },
-   element comment {
-     text
-   }?,
+   COMMENT?,
    DNA_SEQUENCE,
    FX_TRANSCRIPT+
    
@@ -86,6 +84,7 @@ FX_TRANSCRIPT = element transcript {
         pattern = 't[0-9]+'
       }
    }, # e.g. "t1", "t2"
+   COMMENT*,
 
    LRG_COORDS, # location of transcript in LRG coordinates
 
@@ -211,7 +210,7 @@ UPDATABLE_ANNOTATION = element updatable_annotation {
 ANNOTATION_SET = element annotation_set {
    SOURCE,
    
-   element comment { text }?,
+   COMMENT?,
    
    element modification_date { xsd:date }, 
    
