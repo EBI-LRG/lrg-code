@@ -72,6 +72,16 @@ sub fetch_by_exon_label {
   return $objs->[0];
 }
 
+# Fetch transcript comment(s)
+sub fetch_all_by_transcript {
+  my $self = shift;
+  my $transcript = shift;
+  my $objs = $self->_fetch_all_by_element_names($transcript,['comment']);
+  return undef unless(scalar(@{$objs}));
+  return $objs;
+}
+
+
 # Fetch transcript annotation comments
 sub fetch_by_transcript_annotation {
   my $self = shift;

@@ -30,10 +30,11 @@ sub objs_from_xml {
   $xml = $self->wrap_array($xml);
   
   my @objs;
-  my $c_adaptor = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
-  my $s_adaptor = $self->xml_adaptor->get_SequenceXMLAdaptor();
+  my $m_adaptor   = $self->xml_adaptor->get_MetaXMLAdaptor();
+  my $c_adaptor   = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
+  my $s_adaptor   = $self->xml_adaptor->get_SequenceXMLAdaptor();
   my $cds_adaptor = $self->xml_adaptor->get_CodingRegionXMLAdaptor();
-  my $e_adaptor = $self->xml_adaptor->get_ExonXMLAdaptor();
+  my $e_adaptor   = $self->xml_adaptor->get_ExonXMLAdaptor();
   
   foreach my $transcript (@{$xml}) {
     
@@ -42,6 +43,8 @@ sub objs_from_xml {
     
     # Get the transcript name attribute
     my $name = $transcript->data->{name};
+    # Get the comment(s) (optional)
+    my $comment = $m_adaptor->fetch_all_by_transcript($transcript);
     # Get a coordinates object
     my $coords = $c_adaptor->fetch_by_transcript($transcript);
     # Get a cDNA sequence object
@@ -52,7 +55,7 @@ sub objs_from_xml {
     my $exons = $e_adaptor->fetch_all_by_transcript($transcript);
     
     # Create the transcript object
-    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds);
+    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds,$comment);
     push(@objs,$obj);
   }
   
@@ -67,10 +70,11 @@ sub xml_from_objs {
   map {$self->assert_ref($_,'LRG::API::Transcript')} @{$objs};
   
   my @xml;
-  my $c_adaptor = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
-  my $s_adaptor = $self->xml_adaptor->get_SequenceXMLAdaptor();
+  my $m_adaptor   = $self->xml_adaptor->get_MetaXMLAdaptor();
+  my $c_adaptor   = $self->xml_adaptor->get_CoordinatesXMLAdaptor();
+  my $s_adaptor   = $self->xml_adaptor->get_SequenceXMLAdaptor();
   my $cds_adaptor = $self->xml_adaptor->get_CodingRegionXMLAdaptor();
-  my $e_adaptor = $self->xml_adaptor->get_ExonXMLAdaptor();
+  my $e_adaptor   = $self->xml_adaptor->get_ExonXMLAdaptor();
   
   foreach my $obj (@{$objs}) {
     
@@ -78,18 +82,17 @@ sub xml_from_objs {
     my $transcript = LRG::Node::newEmpty('transcript');
     $transcript->addData({'name' => $obj->name()});
     
+    # Add a comment node(s)
+    map {$transcript->addExisting($_)} @{$m_adaptor->xml_from_objs($obj->comment())};
+
     # Different cases depending on schema version to use
     if ($self->xml_adaptor->schema_version() >= 1.7) {
-    
       # Add a coordinates node
       map {$transcript->addExisting($_)} @{$c_adaptor->xml_from_objs($obj->coordinates())};
-      
     }
     else {
-      
       # Add coordinates attributes
       $c_adaptor->transcript_from_obj($obj->coordinates(),$transcript);
-      
     }
     
     # Add a cDNA node
@@ -99,7 +102,7 @@ sub xml_from_objs {
     
     # Add a coding region node
     map {$transcript->addExisting($_)} @{$cds_adaptor->xml_from_objs($obj->coding_region())};
-    
+
     # Add exon-intron nodes
     map {$transcript->addExisting($_)} @{$e_adaptor->xml_from_objs($obj->exons())};
     
