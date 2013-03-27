@@ -158,16 +158,19 @@ if (defined($list_lsdbs)) {
 # Statement to get the lrg_data
 $stmt = qq{
     SELECT
-        organism,
-        taxon_id,
-        moltype,
-        creation_date,
-				sequence_source,
-        comment
+        ld.organism,
+        ld.taxon_id,
+        ld.moltype,
+        ld.creation_date,
+				ld.sequence_source,
+        lc.comment
     FROM
-        lrg_data
+        lrg_data ld,
+        gene g
+        LEFT JOIN lrg_comment lc ON (g.gene_id=lc.gene_id AND g.symbol=lc.name)
     WHERE
-        gene_id = '$gene_id'
+        ld.gene_id = $gene_id AND
+        ld.gene_id = g.gene_id
     LIMIT 1
 };
 $sth = $db_adaptor->dbc->prepare($stmt);
@@ -292,6 +295,18 @@ my $cds_stmt = qq{
     ORDER BY
         cds_id ASC
 };
+my $com_stmt = qq{
+    SELECT
+        comment
+    FROM
+        lrg_comment
+    WHERE
+        gene_id = $gene_id AND
+        name=?
+    ORDER BY
+        comment_id ASC
+};
+
 $stmt = qq{
     SELECT
         lt.transcript_id,
@@ -303,7 +318,7 @@ $stmt = qq{
         lrg_transcript lt JOIN
         lrg_cdna cdna USING (transcript_id)
     WHERE
-        lt.gene_id = '$gene_id'
+        lt.gene_id = $gene_id 
     ORDER BY
         lt.transcript_name ASC
 };
@@ -314,15 +329,23 @@ my $e_sth    = $db_adaptor->dbc->prepare($e_stmt);
 my $ep_sth   = $db_adaptor->dbc->prepare($ep_stmt);
 my $p_sth    = $db_adaptor->dbc->prepare($p_stmt);
 my $cds_sth  = $db_adaptor->dbc->prepare($cds_stmt);
+my $com_sth  = $db_adaptor->dbc->prepare($com_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
-my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start);
+my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start,$tr_comment);
 $sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end);
 while ($sth->fetch()) {
     my $transcript = $fixed->addNode('transcript',{'name' => $t_name});
     my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
     $transcript->addExisting($coords);
     
+    # Transcript comment (optional)
+    $com_sth->execute($t_name);
+    $com_sth->bind_columns(\$tr_comment);
+    while ($com_sth->fetch()) {
+      $transcript->addNode('comment')->content($tr_comment) if (defined($tr_comment));
+    }
+
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
 

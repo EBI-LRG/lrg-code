@@ -7,6 +7,7 @@ use List::Util qw (min max);
 use LRG::LRG;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
+use LWP::Simple;
 
 my $xmlfile;
 my $host;
@@ -25,6 +26,7 @@ my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
 my $error_log;
+my $additional_comment;
 
 my $lsdb_code_id = 1;
 
@@ -45,6 +47,7 @@ GetOptions(
   'delete_request!'     => \$delete_request,
   'replace_updatable=s' => \@update_annotation_set,
   'error_log=s'         => \$error_log,
+  'comment=s'           => \$additional_comment,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -324,11 +327,23 @@ if (defined($node)) {
 	$other_val .= ",'".$node->content()."'";
 	$other_col .= ",sequence_source";
 }
+
 # Get the comment (optional)
-$node = $fixed->findNode('comment');
+$node = $fixed->findNodeSingle('comment');
 if (defined($node)) {
-	$other_val .= ",'".$node->content()."'";
-	$other_col .= ",comment";
+  my $f_comment = $node->content();
+  my $com_stmt = qq{
+    REPLACE INTO
+        lrg_comment (
+            gene_id,
+            name,
+            comment
+        )
+        SELECT gene_id, symbol, '$f_comment'
+        FROM gene WHERE symbol='$hgnc_symbol'
+  };
+  print STDOUT localtime() . "\tAdding LRG comment for $lrg_id to database\n" if ($verbose);
+  $db_adaptor->dbc->do($com_stmt);
 }
 
 
@@ -382,7 +397,7 @@ $db_adaptor->dbc->do($stmt);
 # Insert the sequence
 add_sequence($gene_id,'genomic',$db_adaptor,$lrg_seq);
 
-# Some usefule prepared statements
+# Some useful prepared statements
 my $tr_ins_stmt = qq{
     INSERT INTO
         lrg_transcript (
@@ -390,10 +405,27 @@ my $tr_ins_stmt = qq{
             transcript_name
         )
     VALUES (
-        '$gene_id',
+        $gene_id,
         ?
     )
 };
+
+
+my $tr_com_ins_stmt = qq{
+    REPLACE INTO
+        lrg_comment (
+            gene_id,
+            name,
+            comment
+        )
+    VALUES (
+        $gene_id,
+        ?,
+        ?
+    )
+};
+
+
 my $cdna_ins_stmt = qq{
     INSERT INTO
         lrg_cdna (
@@ -486,6 +518,7 @@ my $intron_ins_stmt = qq{
     )
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
+my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
 my $ce_ins_sth = $db_adaptor->dbc->prepare($ce_ins_stmt);
 my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
@@ -528,6 +561,22 @@ while (my $transcript = shift(@{$transcripts})) {
     $tr_ins_sth->bind_param(1,$name,SQL_VARCHAR);
     $tr_ins_sth->execute();
     my $transcript_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+
+    # Insert comment if exists (optional)
+    my $tr_com_nodes = $transcript->findNodeArray('comment');
+    if (defined($tr_com_nodes)) {
+      while (my $tr_com_node = shift(@{$tr_com_nodes})) {
+        my $tr_comment = $tr_com_node->content();
+
+        # Check if the comment is already in the database
+        my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name='$name' AND comment='$tr_comment'};
+        next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
+
+		    $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+        $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
+        $tr_com_ins_sth->execute();
+      }
+    }
     
     # Get the cdna
     $node = $transcript->findNode('cdna/sequence') or warn("Could not get cdna sequence for transcript $name\, skipping this transcript");
