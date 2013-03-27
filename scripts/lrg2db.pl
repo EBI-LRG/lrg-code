@@ -26,7 +26,6 @@ my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
 my $error_log;
-my $additional_comment;
 
 my $lsdb_code_id = 1;
 
@@ -47,7 +46,6 @@ GetOptions(
   'delete_request!'     => \$delete_request,
   'replace_updatable=s' => \@update_annotation_set,
   'error_log=s'         => \$error_log,
-  'comment=s'           => \$additional_comment,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
