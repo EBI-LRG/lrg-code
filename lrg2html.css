@@ -53,6 +53,10 @@ h1.separator{
   font-weight: bold;
 }
 
+.float_left {
+  float:left;
+}
+
 h3.gene_name{
   padding: 4px 5px;
   margin: 10px 6px 0px;
@@ -103,6 +107,11 @@ td.sequence_cell {
   border: 0px;
   vertical-align:middle;
   color:#000;
+}
+
+span.line_header {
+  font-weight:bold;
+  padding-right:5px;
 }
 
 div.left_annotation {
@@ -166,13 +175,13 @@ ul.ext_id{
 ul.transcript_label{
   list-style-type:disc;
   color: #003399;
-  margin-top: 2px;
-  padding-bottom: 6px;
+  margin-top: 0px;
+  padding-bottom: 3px;
 }
 
 li.transcript_label{
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 0px;
+  padding-bottom: 3px;
 }
 
 span.transcript_label{
@@ -540,7 +549,7 @@ div.lrg_source {
 }
 
 div.lrg_transcript {
-	padding: 2px 0px;
+	padding: 8px 0px 2px;
   text-decoration:underline;
   font-weight:bold;
   font-size:1.1em;

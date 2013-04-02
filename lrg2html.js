@@ -157,6 +157,35 @@ function clear_highlight(trans) {
   }
 }
 
+// function to replace a text by a link
+function create_external_link (pending) {
+  var external_icon = get_external_icon(pending);
+
+  // Links with http
+  h_elements = document.getElementsByClassName('http_link');
+  for (var i=0;i<h_elements.length;i++) {
+    var exp = /((http|ftp)(s)?:\/\/\S+)/g;
+   h_elements[i].innerHTML= h_elements[i].innerHTML.replace(exp,"<a href='$1' target='_blank'>$1"+external_icon+"</a>");
+  }
+
+  // Links to NCBI
+  elements = document.getElementsByClassName('external_link');
+  for (var i=0;i<elements.length;i++) {
+    var exp = /((NM_|NG_)[0-9]+\.?[0-9]?)/g;
+    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1"+external_icon+"</a>");
+  }
+}
+
+// function to build the HTML code to display the external icon
+function get_external_icon (pending) {
+  var src="img/external_link_green.png";
+  if (pending == 1) {
+    src = "../"+src
+  }
+  return '<img src="'+src+'" class="external_link" alt="External link" title="External link" />';
+}
+
+// function to retrieve the LRG name into a text file listing the LRG entries which are also stored in Ensembl
 function search_in_ensembl(lrg_id, pending) {
 
   var filePath = 'lrgs_in_ensembl.txt';
@@ -176,8 +205,8 @@ function search_in_ensembl(lrg_id, pending) {
   var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
   var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
  
-  var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
-  var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle" alt="right_arrow"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle" alt="right_arrow"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
   
   for (var i = 0; i < fileArray.length; i++) {
     var id = fileArray[i];
