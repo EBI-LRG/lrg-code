@@ -395,7 +395,6 @@ sub xref {
     },
     'Bio::EnsEMBL::Translation' => {
       'RefSeq_peptide'  =>  'RefSeq',
-      'Uniprot/SPTREMBL'  =>  'UniProtKB',
       'Uniprot/SWISSPROT'  =>  'UniProtKB',
       'GI' => 'GI'
     }
