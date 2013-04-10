@@ -24,7 +24,8 @@ if [[ ! ${skip_hc} ]] ; then
 fi
 
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
-warning=''
+warning_log=${tmp_dir}/warning_log_${lrg_id}.txt
+warning='none'
 
 #### METHODS ##########################################################################
 
@@ -40,10 +41,10 @@ function check_script_result {
 }
 
 function check_script_warning {
-	if [[ -s ${error_log} ]] ; then
+	if [[ -s ${warning_log} ]] ; then
 		echo_stderr  "WARNING: at least one NCBI transcript has a polyA!"
-		echo_stderr  "Please, look at the error log file ${error_log} for more details"
-		warning=1
+		echo_stderr  "Please, look at the warning log file ${warning_log} for more details"
+		warning='polyA'
 	fi
 }
 
@@ -75,7 +76,7 @@ function end_of_script {
     
     if [[ ${skip_hc} == 1 ]] ; then
       comment="${comment} - HealthChecks skipped for this LRG"
-    elif [[ ${warning} == 1 ]] ; then
+    elif [[ ${warning} == 'polyA' ]] ; then
       comment="${comment} - WARNING: at least one NCBI transcript has a polyA sequence"
     elif [[ -n ${is_partial} ]] ; then
       comment="${comment} - Partial gene/transcript/protein found"
@@ -104,7 +105,9 @@ fi
 if [ ${skip_hc} == 0 ] ; then 
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check poly_a" 2> ${error_log}
+  rm -f ${warning_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check poly_a" 1> ${warning_log} 2> ${error_log}
+  check_script_result
   check_script_warning
   echo_stderr  "> checking polyA done" 
   echo_stderr  ""
@@ -149,7 +152,7 @@ fi
 
 # STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc} ${error_log}
+bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc} ${error_log} ${warning}
 check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
