@@ -26,6 +26,7 @@ my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
 my $error_log;
+my $warning;
 
 my $lsdb_code_id = 1;
 
@@ -46,6 +47,7 @@ GetOptions(
   'delete_request!'     => \$delete_request,
   'replace_updatable=s' => \@update_annotation_set,
   'error_log=s'         => \$error_log,
+  'warning=s'           => \$warning,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -66,6 +68,13 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 
 $lrg_id =~ /(LRG_\d+)/;
 $lrg_id = $1;
+
+my $warning_log;
+if (defined($error_log)) {
+  $warning_log = $error_log;
+  $warning_log =~ s/error_log/warning_log/;
+}
+
 
 # If the database should be purged of all LRG XML-related data, do that
 if ($purge) {
@@ -548,9 +557,32 @@ my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could
 
 # Parse and add each transcript to the database separately
 while (my $transcript = shift(@{$transcripts})) {
-    
+
     # Transcript name
     my $name = $transcript->data()->{'name'};
+
+    # Check PolyA
+    if ($warning eq 'polyA') {
+      if (-e $warning_log && !-z $warning_log) {
+			  my $info = `grep -w $name $warning_log`;
+        
+        if (defined($info)) {
+          foreach my $inf (split("\n",$info)) {
+            chomp $inf;
+            my (undef,$refseq_with_poly_a) = split(' ',$inf);
+            $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));
+          }
+        }
+      }
+      else {
+        my $refseq_with_poly_a = check_refseq_has_poly_a($transcript);
+        $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));
+      }
+    } 
+    elsif ($warning eq '' || !defined($warning)) { # You can skip this part by using the value "none" for the parameter "-warning" for example.
+      my $refseq_with_poly_a = check_refseq_has_poly_a($transcript);
+      $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));   
+    }
     
     # Get LRG coords
     my (undef,$lrg_start,$lrg_end) = parse_coordinates($transcript->findNode('coordinates'));
@@ -567,7 +599,7 @@ while (my $transcript = shift(@{$transcripts})) {
         my $tr_comment = $tr_com_node->content();
 
         # Check if the comment is already in the database
-        my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name='$name' AND comment='$tr_comment'};
+        my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
         next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
 
 		    $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
@@ -1347,6 +1379,33 @@ sub parse_coordinates {
   
   return @attribs;
 }
+
+sub check_refseq_has_poly_a {
+  my $transcript = shift;
+
+  my $tr_name = $transcript->data()->{'name'};
+	my $tr_full_seq  = $transcript->findNode('sequence')->content;
+	my $tr_sub_seq = lc(substr($tr_full_seq,-20));
+
+	my $rs_transcripts = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
+	
+  if (scalar(@$rs_transcripts)) {
+    foreach my $rs_tr (@$rs_transcripts) {
+      my $nm = $rs_tr->data()->{'accession'};
+      next if ($rs_tr->data()->{'source'} ne 'RefSeq' || !$nm);
+		   
+      my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='.$nm.'&rettype=fasta&retmode=text';
+
+		  my $rs_full_seq = LWP::Simple::get($url);
+		  next if (!defined($rs_full_seq));
+		  $rs_full_seq =~ s/\n//g;
+		  my $rs_sub_seq = lc(substr($rs_full_seq,-20));
+      return $nm if ($tr_sub_seq ne $rs_sub_seq);
+		}
+  }
+  return undef;
+}
+
 
 sub error_msg {
 	my $msg = shift;
