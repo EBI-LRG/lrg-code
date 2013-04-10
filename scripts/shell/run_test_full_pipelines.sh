@@ -17,7 +17,7 @@ skip_check0=$5  # Skip primary HealthCheck (check existing LRG in the EBI FTP si
 if [ ${skip_check0} ] ; then
   skip_check0='1'
 else
-  skip_check0=''
+  skip_check0='0'
 fi
 
 bashdir=${CVSROOTDIR}/code/scripts/shell
