@@ -440,7 +440,7 @@
       </p>
     </xsl:if>
     <xsl:if test="comment">
-      <p>
+      <p class="external_link">
         <span class="line_header" style="color:red">Note:</span>
 				<xsl:value-of select="comment"/>
       </p>
@@ -476,9 +476,7 @@
 
   <a name="genomic_sequence_anchor" />
   <div class="main_subsection"><xsl:call-template name="lrg_right_arrow_blue" /><h3 class="main_subsection">Genomic sequence</h3>
-    <a class="subsection">
-      <xsl:attribute name="href">javascript:showhide('sequence');</xsl:attribute>show/hide
-    </a>
+    <a class="show_hide"><xsl:attribute name="href">javascript:showhide('sequence');</xsl:attribute>show/hide</a>
   </div>
 
   <xsl:variable name="fasta_dir">
@@ -597,7 +595,8 @@
             <td class="showhide">
           <a>
   <xsl:attribute name="href">#genomic_sequence_anchor</xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('sequence');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('sequence');</xsl:attribute><xsl:call-template name="hide_button" />
           </a>
         </td>
       </tr>
@@ -672,7 +671,7 @@
     <xsl:if test="$ref_transcript"> 
       <xsl:variable name="long_name" select="$ref_transcript/protein_product/long_name" />
       <xsl:if test="$long_name">
-        Encodes <xsl:value-of select="$long_name" />.
+        The RefSeq transcript encodes the <xsl:value-of select="$long_name" />.
       </xsl:if>
     </xsl:if>
 
@@ -733,7 +732,7 @@
         <xsl:attribute name="name">cdna_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
       </a>
       <span class="transcript_label">Transcript sequence</span> 
-      <a>
+      <a class="show_hide">
         <xsl:attribute name="href">javascript:showhide('cdna_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide
       </a>
     </li>
@@ -897,7 +896,8 @@
         <td class="showhide">
           <a>
   <xsl:attribute name="href">#cdna_sequence_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('cdna_<xsl:value-of select="$transname"/>');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('cdna_<xsl:value-of select="$transname"/>');</xsl:attribute><xsl:call-template name="hide_button" />
           </a>
         </td>
       </tr>
@@ -907,13 +907,12 @@
           <a>
   <xsl:attribute name="name">cdna_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
           </a>
-          <a>
-  <xsl:attribute name="href">javascript:showhide('cdna_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute>Show/hide
-          </a> sequence in FASTA format
+          <br />
+          > The transcript sequence in FASTA format <a class="show_hide"><xsl:attribute name="href">javascript:showhide('cdna_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide</a>
         </td>
       </tr>
-  
     </table>
+    <br />
     
     <div class="hidden">
   <xsl:attribute name="id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:attribute>
@@ -932,18 +931,18 @@
     <xsl:with-param name="transname" select="$transname"/>
     <xsl:with-param name="first_exon_start" select="$first_exon_start"/>
   </xsl:call-template>
-  
-        <tr>
-          <td class="showhide">
-            <a>
-  <xsl:attribute name="href">#cdna_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('cdna_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute>^^ hide ^^
-            </a>
-          </td>
-        </tr>
-        
       </table>
+ 
+      <div style="padding:5px 0px">
+	      <a>
+  <xsl:attribute name="href">#cdna_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('cdna_fasta_<xsl:value-of select="$transname"/>');</xsl:attribute><xsl:call-template name="hide_button" />
+        </a>
+      </div>
+      
     </div>
+    <br />
   </div>
 </xsl:template>
     
@@ -968,7 +967,7 @@
         <xsl:attribute name="name">exon_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
       </a>
       <span class="transcript_label">Exons</span> 
-      <a>
+      <a class="show_hide">
         <xsl:attribute name="href">javascript:showhide('exontable_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide
       </a>
     </li>
@@ -1171,7 +1170,8 @@
     <p>
       <a>
   <xsl:attribute name="href">#exon_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('exontable_<xsl:value-of select="$transname"/>');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('exontable_<xsl:value-of select="$transname"/>');</xsl:attribute><xsl:call-template name="hide_button" />
       </a>
     </p>
     
@@ -1197,7 +1197,7 @@
         <xsl:attribute name="name">translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
       </a>
       <span class="transcript_label">Translated sequence: <xsl:value-of select="$pepname"/></span>
-      <a>
+      <a class="show_hide">
         <xsl:attribute name="href">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>show/hide
       </a>
     </li>
@@ -1341,7 +1341,8 @@
         <td class="showhide">
           <a>
   <xsl:attribute name="href">#translated_sequence_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>^^ hide ^^
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute><xsl:call-template name="hide_button" />
           </a>
         </td>
       </tr>
@@ -1351,14 +1352,12 @@
           <a>
   <xsl:attribute name="name">translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
           </a>
-          <a>
-  <xsl:attribute name="href">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>
-            Show/hide
-          </a> sequence in FASTA format
+          <br />
+          > The translated sequence in FASTA format <a class="show_hide"><xsl:attribute name="href">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>show/hide</a>
         </td>
       </tr>
     </table>
-    
+    <br />
     <div class="hidden">
   <xsl:attribute name="id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
       <table border="0" cellpadding="0" cellspacing="0" class="sequence">
@@ -1376,18 +1375,17 @@
 		<xsl:with-param name="transname" select="$transname"/>
 		<xsl:with-param name="first_exon_start" select="$first_exon_start"/>
   </xsl:call-template>
-  
-	      <tr>
-	        <td class="showhide">
-	          <a>
+     
+     </table>
+     <div style="padding:5px 0px">
+	     <a>
   <xsl:attribute name="href">#translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
-  <xsl:attribute name="onclick">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>^^ hide ^^
-	          </a>
-	        </td>
-	      </tr>
-      
-      </table>
+  <xsl:attribute name="class">hide_button</xsl:attribute>
+  <xsl:attribute name="onclick">javascript:showhide('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute><xsl:call-template name="hide_button" />
+	     </a>
+     </div>
     </div>
+    <br />
   </div>
 	</xsl:for-each>
 </xsl:template>
@@ -1698,10 +1696,7 @@
   <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>MAPS=ugHs,genes,rnaHs,rna-r<xsl:text>&amp;</xsl:text>query=<xsl:value-of select="$region_id"/></xsl:variable>
   <h3 class="mapping">Mapping of transcript <xsl:value-of select="$region_name"/> to <xsl:value-of select="$lrg_id"/></h3>
-  <span class="showhide"><a>
-    <xsl:attribute name="href">javascript:showhide('<xsl:value-of select="$region_name"/>');</xsl:attribute>show/hide
-  </a></span><br />
-  
+  <a class="show_hide"><xsl:attribute name="href">javascript:showhide('<xsl:value-of select="$region_name"/>');</xsl:attribute>show/hide</a><br />
  
   <p>
     <ul><li>
@@ -2441,6 +2436,21 @@
     <xsl:when test="$pending=0">link1_shadow</xsl:when>
     <xsl:otherwise>link2_shadow</xsl:otherwise>
   </xsl:choose>
+</xsl:template> 
+
+<xsl:template name="hide_button">
+  <xsl:variable name="img_src"><xsl:if test="$pending=1">../</xsl:if>img/top_arrow_green.png</xsl:variable>
+  <img>
+    <xsl:attribute name="src"><xsl:value-of select="$img_src"/></xsl:attribute>
+    <xsl:attribute name="style">vertical-align:middle;margin-right:0px;padding-right:2px</xsl:attribute>
+    <xsl:attribute name="alt">Hide sequence</xsl:attribute>
+  </img>
+  <span style="vertical-align:middle">hide</span>
+  <img>
+    <xsl:attribute name="src"><xsl:value-of select="$img_src" /></xsl:attribute>
+    <xsl:attribute name="style">vertical-align:middle;margin-right:0px;padding-left:2px</xsl:attribute>
+    <xsl:attribute name="alt">Hide sequence</xsl:attribute>
+  </img>
 </xsl:template> 
 
 </xsl:stylesheet>

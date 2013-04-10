@@ -386,6 +386,7 @@ h3.mapping {
 
 .showhide {
   border: 0px;
+  padding-left:0px;
 }
 
 .partial {
@@ -573,3 +574,28 @@ div.fixed_transcript_annotation {
   text-align:center;
   font-weight:bold;
 }
+
+.hide_button {
+  vertical-align:middle;
+  border:1px solid #3f9221;
+  padding:2px;
+  text-decoration:none;
+  background-color: #48a726;
+  color:#FFF;
+}
+.hide_button:hover {
+  border:1px solid #003399;
+  text-decoration:underline;
+}
+
+.show_hide {
+  border:1px solid #CCC;
+  padding:1px;
+  margin-left:5px;
+}
+.show_hide:hover {
+  border:1px solid #48a726;
+  text-decoration:none;
+}
+
+
