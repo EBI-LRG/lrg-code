@@ -47,7 +47,7 @@ GetOptions(
   'jing=s'		   => \$jing_jar,
   'rnc=s' 		   => \$rnc_file,
   'list_checks!' => \$list,
-  'verbose!' 		 => \$verbose,
+  'verbose|v!' 	 => \$verbose,
   'help!'        => \$help
 );
 
