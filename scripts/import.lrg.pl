@@ -533,9 +533,12 @@ while (my $lrg_id = shift(@lrg_ids)) {
       }
       my $lrg_gene;
       foreach my $gene (@{ $annotation_set_ensembl->findNodeArray('features/gene') }) {
-        for my $symbol (@{ $gene->findNodeArray('symbol') } ) {
-          if ($symbol->content() eq $hgnc_name) {
-            $lrg_gene = $gene;
+        my $symbols = $gene->findNodeArray('symbol', {'source' => 'HGNC'});
+        if (defined $symbols) {
+          for my $symbol (@$symbols  ) {
+            if ($symbol->content() eq $hgnc_name) {
+              $lrg_gene = $gene;
+            }
           }
         }
       }
