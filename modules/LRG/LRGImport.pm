@@ -833,22 +833,20 @@ sub add_meta_coord {
   my $cs_id      = shift;
   my $max_length = shift;
 
-  my $stmt = qq{
-	INSERT INTO
-	    meta_coord (
-	      table_name,
-	      coord_system_id,
-	      max_length
-	    )
-	VALUES (
-	    '$table',
-	    $cs_id,
-	    $max_length
-	)
-	ON DUPLICATE KEY UPDATE
-	    max_length = $max_length
-    };
-  $dbCore->dbc->do($stmt);
+  my $current_max_length = $dbCore->dbc->sql_helper->execute_single_result(
+    -SQL => 'select max_length from meta_coord where table_name =? and coord_system_id=?',
+    -PARAMS => [$table, $cs_id]
+  );
+
+  if($current_max_length < $max_length) {
+    my $sql = <<SQL;
+INSERT INTO meta_coord (table_name, coord_system_id, max_length)
+VALUES ('$table', $cs_id, $max_length)
+ON DUPLICATE KEY UPDATE max_length = $max_length
+SQL
+    $dbCore->dbc->do($sql);
+  }
+  return;
 }
 
 # Add a meta key/value pair
