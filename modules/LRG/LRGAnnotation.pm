@@ -151,7 +151,7 @@ sub transcript {
     # Translation
     my $translation = $self->translation($slice,$transcript);
     
-    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id(),$coords,$xrefs,$meta,$exon,$translation));
+    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id().".".$transcript->version(),$coords,$xrefs,$meta,$exon,$translation));
   }
 
   return \@objs;
@@ -301,12 +301,12 @@ sub long_name {
     # Primarily use the RefSeq xref description
     my $dbe = $feature->get_all_DBEntries('RefSeq_mRNA'); 
     if ($dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
+      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
     }
-    $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
-    unless (($name && length($name)) || !$dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
-    }
+    #$dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
+    #unless (($name && length($name)) || !$dbe) {
+    #  $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+    #}
     
     # Secondarily, use the gene description in Ensembl
     unless ($name && length($name)) {
