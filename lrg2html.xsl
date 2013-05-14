@@ -1425,7 +1425,7 @@
     <br />
 
     <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
-    <xsl:variable name="lsdb_url">http://grenada.lumc.nl/LSDB_list/lsdbs/<xsl:value-of select="$lrg_gene_name"/></xsl:variable>
+    <xsl:variable name="lsdb_url">http://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
     <xsl:if test="annotation_set[source/name!=$lsdb_list]">
     <div>
       <xsl:attribute name="class">external_source</xsl:attribute>
