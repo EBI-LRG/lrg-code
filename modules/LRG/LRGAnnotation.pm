@@ -151,7 +151,7 @@ sub transcript {
     # Translation
     my $translation = $self->translation($slice,$transcript);
     
-    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id().".".$transcript->version(),$coords,$xrefs,$meta,$exon,$translation));
+    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id(),$coords,$xrefs,$meta,$exon,$translation));
   }
 
   return \@objs;
