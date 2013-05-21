@@ -845,7 +845,7 @@
               </span>
             
               <span class="utr">
-            <xsl:value-of select="substring($seq,$stop_start + 3,($cdna_end - $stop_start - 3))"/>
+            <xsl:value-of select="substring($seq,$stop_start + 3,($cdna_end - $stop_start - 2))"/>
               </span>
             
           </xsl:when>
