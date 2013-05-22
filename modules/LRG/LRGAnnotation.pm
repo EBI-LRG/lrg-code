@@ -303,10 +303,10 @@ sub long_name {
     if ($dbe) {
       $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
     }
-    #$dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
-    #unless (($name && length($name)) || !$dbe) {
-    #  $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
-    #}
+    $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
+    unless (($name && length($name)) || !$dbe) {
+      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+    }
     
     # Secondarily, use the gene description in Ensembl
     unless ($name && length($name)) {
@@ -327,7 +327,7 @@ sub long_name {
     # Primarily use the RefSeq xref description
     my $dbe = $feature->get_all_DBEntries('RefSeq_peptide'); 
     if ($dbe) {
-      $name = join(", ",map {$_->description()} @{$dbe});
+      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
     }
   }
   
