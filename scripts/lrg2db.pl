@@ -574,14 +574,6 @@ while (my $transcript = shift(@{$transcripts})) {
           }
         }
       }
-      else {
-        my $refseq_with_poly_a = check_refseq_has_poly_a($transcript);
-        $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));
-      }
-    } 
-    elsif ($warning eq '' || !defined($warning)) { # You can skip this part by using the value "none" for the parameter "-warning" for example.
-      my $refseq_with_poly_a = check_refseq_has_poly_a($transcript);
-      $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));   
     }
     
     # Get LRG coords
@@ -1409,8 +1401,9 @@ sub check_refseq_has_poly_a {
 
 sub error_msg {
 	my $msg = shift;
-  print STDERR "$error_log: $msg\n";
+
 	if (defined($error_log)) {
+    print STDERR "$error_log: $msg\n";
 		open LOG, "> $error_log" or die "Error log file $error_log can't be opened";
     print LOG "$msg\n";
     close(LOG);
