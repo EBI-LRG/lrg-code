@@ -35,8 +35,7 @@ our @CHECKS = (
     'coordinates'
 );
 our @PRELIMINARY_CHECKS = (
-    'existing_entry',
-    'poly_a'
+    'existing_entry'
 );
 
 # Constructor
@@ -262,69 +261,6 @@ sub existing_entry {
 
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed; 
-}
-
-
-# Compare the cDNA sequence(s) and the NM RefSeq sequence(s) to see if the NM has a poly A but not the LRG.
-sub poly_a {
-  my $self = shift; 
-  my $passed = 1;
-  my $failed = 0;
-  
-	# Name of this check
-  my $name = sub_name();
-
-  my $transcripts = $self->get_transcripts($name);
-	TR: foreach my $transcript (@$transcripts) {
-		# Get the name
-    my $tr_name = $transcript->data()->{'name'};
-		my $tr_full_seq  = $transcript->findNode('sequence')->content;
-		my $tr_sub_seq = lc(substr($tr_full_seq,-20));
-		my $rs_transcripts = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
-
-		if (scalar(@$rs_transcripts) == 0) {
-      $failed ++;
-			$self->{'check'}{$name}{'message'} .= "Could not find a corresponding RefSeq transcript sequence for transcript $tr_name in XML file//";
-      next;
-    }
-		my $success = 0;
-    my $warning = 0;
-    my $nb = 0;
-		foreach my $rs_tr (@$rs_transcripts) {
-			my $nm = $rs_tr->data()->{'accession'};
-			next if ($rs_tr->data()->{'source'} ne 'RefSeq' || !$nm);
-
-			my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='.$nm.'&rettype=fasta&retmode=text';
-      my $rs_full_seq = LWP::Simple::get($url);
-			if (!defined($rs_full_seq)) {
-        $self->{'check'}{$name}{'message'} .= "Could not retrieve the RefSeq transcript sequence for $nm from the NCBI website//";
-        $failed++;
-        last TR;
-      }
-
-			$rs_full_seq =~ s/\n//g;
-			my $rs_sub_seq = lc(substr($rs_full_seq,-20));
-       if (length($rs_sub_seq) == 20 && $tr_sub_seq eq $rs_sub_seq) {
-				$success++;
-				$self->{'check'}{$name}{'message'} .= "The tails of the transcript $tr_name and $nm are identical//";
-			} elsif (length($rs_sub_seq) != 20) {
-				$self->{'check'}{$name}{'message'} .= "Could not find the RefSeq transcript sequence for $nm//";
-			} elsif ($tr_sub_seq ne $rs_sub_seq) {
-         $warning++;
-				 $self->{'check'}{$name}{'message'} .= "The tails of the transcript $tr_name and $nm are differents: LRG_$tr_name (...$tr_sub_seq) | $nm (...$rs_sub_seq)//";
-         $self->{'check'}{$name}{'warning'} .= "The tails of the following LRG and RefSeq transcripts are differents://";
-         $self->{'check'}{$name}{'warning'} .= "$tr_name $nm//";
-			}
-		}
-		if ($success == 0 && $warning == 0) {
-			$failed ++;
-			$self->{'check'}{$name}{'message'} .= "> Could not find a correct alignment between the tails of the transcript $tr_name and the RefSeq transcript(s)//";			
-		}
-	}
-	$passed = $failed > 0 ? 0 : 1;
-
-	$self->{'check'}{$name}{'passed'} = $passed;
-  return $passed;
 }
 
 
