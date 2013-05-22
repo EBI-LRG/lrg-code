@@ -297,27 +297,27 @@ sub long_name {
     
   }
   elsif (ref($feature) eq 'Bio::EnsEMBL::Transcript') {
+
+    # First, use the external name
+    $name = $feature->external_name();
     
-    # Primarily use the RefSeq xref description
-    my $dbe = $feature->get_all_DBEntries('RefSeq_mRNA'); 
-    if ($dbe) {
-      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+    # Secondarily, use the RefSeq xref description
+    unless ($name && length($name)) {
+      my $dbe = $feature->get_all_DBEntries('RefSeq_mRNA'); 
+      if ($dbe) {
+        $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+      }
+      $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
+      unless (($name && length($name)) || !$dbe) {
+        $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+      }
     }
-    $dbe = $feature->get_all_DBEntries('RefSeq_ncRNA');
-    unless (($name && length($name)) || !$dbe) {
-      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
-    }
-    
-    # Secondarily, use the gene description in Ensembl
+
+    # Thirdly, use the gene description in Ensembl
     unless ($name && length($name)) {
       $name = $feature->description();
     }
-    
-    # Thirdly, use the external name
-    unless ($name && length($name)) {
-      $name = $feature->external_name();
-    }
-    
+
     # Append the biotype
     $name .= sprintf(" (\%s)",$feature->biotype());
     
