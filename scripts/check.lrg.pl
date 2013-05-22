@@ -79,24 +79,17 @@ foreach my $check (@checks) {
 my $count_passed;
 my $count_total = scalar (@checks);
 my $msg;
-my $warning;
 foreach my $check (@checks) {
     $msg .= "$check\t" . ($hc->{'check'}{$check}{'passed'} ? "PASSED" : "FAILED") . "!\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
 		$count_passed ++ if ($hc->{'check'}{$check}{'passed'});
     if (exists($hc->{'check'}{$check}{'message'})) {
       $msg .= "\t" . join("\n\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
     }
-    if (defined($hc->{'check'}{$check}{'warning'}) && $hc->{'check'}{$check}{'passed'}) {
-      $warning .= join("\n",split(/\/\//,$hc->{'check'}{$check}{'warning'})) . "\n";
-    }
 }
 
 if ($count_passed != $count_total) {
   print STDERR "$msg\n";
   print STDERR "Healthcheck FAILED\n";
-}
-elsif (defined($warning)) {
-  print STDOUT "$warning\n";
 }
 
 sub usage {
