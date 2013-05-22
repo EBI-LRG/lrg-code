@@ -80,9 +80,11 @@ function clear_exon_highlight(eclass) {
 }
 
 // function to highlight exons
-function highlight_exon(num) {
+function highlight_exon(tname,ename) {
+  var num = tname+'_'+ename;
   var tableobj = document.getElementById('table_exon_'+num);
-  
+  var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+ename);
+
   // we only want to get the genomic exon if this is transcript t1
   var genobj;
   var exon_select;
@@ -113,6 +115,15 @@ function highlight_exon(num) {
 
 	    cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
 	    pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+	  }
+  }
+  
+  if(othertableobj) {
+	  if(othertableobj.className.length > 11) {
+	    othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	  }
+	  else {
+	    othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
 	  }
   }
 }
@@ -146,7 +157,13 @@ function clear_highlight(trans) {
 	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
 	  i++;
   }
-  
+  i = 1;
+  while(document.getElementById('table_exon_'+trans+'_other_naming_'+i)) {
+	  obj = document.getElementById('table_exon_'+trans+'_other_naming_'+i);
+	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	  i++;
+  }
+
   // clear peptide
   i = 1;
   while(document.getElementById('peptide_exon_'+trans+'_'+i)) {
