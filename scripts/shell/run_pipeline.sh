@@ -26,6 +26,7 @@ fi
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
 warning_log=${tmp_dir}/warning_log_${lrg_id}.txt
 warning='none'
+pass='7Ntoz3HH'
 
 #### METHODS ##########################################################################
 
@@ -106,7 +107,7 @@ if [ ${skip_hc} == 0 ] ; then
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
   rm -f ${warning_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check poly_a" 1> ${warning_log} 2> ${error_log}
+  bash code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${pass} ${error_log}
   check_script_result
   check_script_warning
   echo_stderr  "> checking polyA done" 
@@ -152,7 +153,7 @@ fi
 
 # STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new 7Ntoz3HH ${hgnc} ${error_log} ${warning}
+bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${pass} ${hgnc} ${error_log} ${warning}
 check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
