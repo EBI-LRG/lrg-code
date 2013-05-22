@@ -84,7 +84,6 @@ TR: foreach my $transcript (@$transcripts) {
     $rs_seq = fetch_refseq_seq_from_db($nm);
     
     if (!defined($rs_seq)) {
-print STDERR "RefSeq $nm not found in the database!\n";
       # Get the sequence from the NCBI
 		  my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='.$nm.'&rettype=fasta&retmode=text';
       $rs_seq = LWP::Simple::get($url);
