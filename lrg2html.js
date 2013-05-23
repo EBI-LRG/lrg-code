@@ -188,7 +188,7 @@ function create_external_link (pending) {
   // Links to NCBI
   elements = document.getElementsByClassName('external_link');
   for (var i=0;i<elements.length;i++) {
-    var exp = /((NM_|NG_)[0-9]+\.?[0-9]?)/g;
+    var exp = /(N[A-Z]_[0-9]+\.?[0-9]?)/g;
     elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1"+external_icon+"</a>");
   }
 }
