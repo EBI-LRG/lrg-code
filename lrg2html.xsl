@@ -453,9 +453,7 @@
   <xsl:for-each select="source">
     <xsl:if test="name!=$ncbi_source_name">
       <xsl:apply-templates select=".">         
-        <xsl:with-param name="requester">
-          <xsl:if test="position()!=last()">1</xsl:if>
-        </xsl:with-param>
+        <xsl:with-param name="requester">1</xsl:with-param>
       </xsl:apply-templates>
     </xsl:if>
   </xsl:for-each>  
