@@ -111,7 +111,7 @@ sub add_annotation {
     my $cds_end   = $cds_coord->data->{'end'};
 
     # Insert transcript entry into db
-    my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
+    my $transcript_stable_id = $lrg_name . $transcript_name;
     my $transcript_id = add_transcript(
       undef,             $gene_id,        $transcript_stable_id,        $analysis_id, $seq_region_id,
       $transcript_start, $transcript_end, 1,            $biotype,
