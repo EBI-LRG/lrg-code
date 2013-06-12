@@ -860,20 +860,21 @@ sub sort_nodes {
       'source'  =>  3,
       'mol_type' =>  4,
       'creation_date' =>  5,
-      'sequence'  =>  6,
-      'transcript'  =>  7
+      'comment' => 6,
+      'sequence'  =>  7,
+      'transcript'  =>  8
     },
     
     'transcript'  =>  {
-      'coordinates' =>  1,
-      'cdna'  =>  2,
-      'coding_region' =>  3,
+      'comment' =>  1,
+      'coordinates' =>  2,
+      'cdna'  =>  3,
+      'coding_region' =>  4,
       'partial' =>  5,
       'long_name' =>  6,
-      'comment' =>  7,
-      'db_xref' =>  8,
-      'exon'  =>  9,
-      'protein_product' =>  10
+      'db_xref' =>  7,
+      'exon'  =>  8,
+      'protein_product' =>  9
     },
     
     'coding_region' =>  {
@@ -981,7 +982,11 @@ sub sort_nodes {
     if (defined($a->data->{'name'}) && defined($b->data->{'name'})) {
       return ($a->data->{'name'} cmp $b->data->{'name'});
     }
-	
+    # Sort the updatable genes and transcripts (in the updatable annotation feature) according to their coordinates.
+	  if (defined($a->data->{'accession'}) && defined($b->data->{'accession'}) && ($a->name eq 'transcript' or $a->name eq 'gene')) {
+      return ($a->findNode('coordinates')->data->{'start'} <=> $b->findNode('coordinates')->data->{'start'});
+    }
+
 	  # If not, sort by position if applicable.
     if ((defined($a->data->{'start'}) && defined($b->data->{'start'})) || (defined($a->data->{'lrg_start'}) && defined($b->data->{'lrg_start'}))) {
    

@@ -26,6 +26,13 @@ sub add_analysis {
     };
     $dbCore->dbc->do($stmt);
     $analysis_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  } else {
+    my $stmt = qq{
+    UPDATE analysis
+    SET created = now()
+    WHERE analysis_id = $analysis_id
+    };
+    $dbCore->dbc->do($stmt);
   }
 
   return $analysis_id;
@@ -91,38 +98,32 @@ sub add_annotation {
   foreach my $transnode ( @{$transnodes} ) {
 
     # Get the transcript start and end
-    my $transcript_start  = $transnode->data->{'start'};
-    my $transcript_end    = $transnode->data->{'end'};
+    my $trans_coord = $transnode->findNode('coordinates');
+    my $transcript_start  = $trans_coord->data->{'start'};
+    my $transcript_end    = $trans_coord->data->{'end'};
     my $transcript_length = $transcript_end - $transcript_start + 1;
     my $transcript_name   = $transnode->data->{'name'};
 
     # Get the coding start and end coordinates
     my $cds_node  = $transnode->findNode('coding_region');
-    my $cds_start = $cds_node->data->{'start'};
-    my $cds_end   = $cds_node->data->{'end'};
+    my $cds_coord = $cds_node->findNode('coordinates');
+    my $cds_start = $cds_coord->data->{'start'};
+    my $cds_end   = $cds_coord->data->{'end'};
 
     # Insert transcript entry into db
+    my $transcript_stable_id = $lrg_name . $transcript_name;
     my $transcript_id = add_transcript(
-      undef,             $gene_id,        $analysis_id, $seq_region_id,
+      undef,             $gene_id,        $transcript_stable_id,        $analysis_id, $seq_region_id,
       $transcript_start, $transcript_end, 1,            $biotype,
       1
     );
 
-    # Insert transcript_stable_id (we already know what it should be)
-    my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
-    add_stable_id( $transcript_id, $transcript_stable_id, 'transcript' );
-
 # If we are processing the first transcript of the gene, the gene needs to be added to the database
     if ( !defined($gene_id) ) {
-      $gene_id =
-        add_gene( $biotype, $analysis_id, $seq_region_id, $transcript_start,
-        $transcript_end, 1, 'LRG database', $transcript_id );
-
-      # For genes, use the LRG identifier as gene name
       my $gene_stable_id = $lrg_name;
-
-      # Insert gene stable id into gene_stable_id table
-      add_stable_id( $gene_id, $gene_stable_id, 'gene' );
+      $gene_id =
+        add_gene( $biotype, $gene_stable_id, $analysis_id, $seq_region_id, $transcript_start,
+        $transcript_end, 1, 'LRG database', $transcript_id );
 
       print "Gene:\t" . $gene_id . "\t" . $gene_stable_id . "\n";
     }
@@ -162,18 +163,12 @@ sub add_annotation {
         }
 
         $exon_count++;
-        my $lrg_coords  = $exon->findNode('lrg_coords');
+        my $lrg_coords  = $exon->findNode('coordinates', {'coord_system' => $lrg_name});
         my $exon_start  = $lrg_coords->data->{'start'};
         my $exon_end    = $lrg_coords->data->{'end'};
         my $exon_length = ( $exon_end - $exon_start + 1 );
-        $exon_id = add_exon( $seq_region_id, $exon_start, $exon_end, 1 );
-
-        # Get the next free exon stable id for this transcript
-        my $exon_stable_id =
-          get_next_stable_id( 'exon_stable_id', $transcript_stable_id . '_e' );
-
-        # Insert exon stable id into exon_stable_id table
-        add_stable_id( $exon_id, $exon_stable_id, 'exon' );
+        my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
+        $exon_id = add_exon( $exon_stable_id, $seq_region_id, $exon_start, $exon_end, 1 );
 
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
 
@@ -213,17 +208,24 @@ sub add_annotation {
 
 # Insert translation into db (if available, the gene could be non-protein coding)
     if ( $exon_count > 0 ) {
+      my $translation_stable_id = $transcript_stable_id;
+      $translation_stable_id =~ s/t(\d+)$/p$1/;
+
       my $translation_id =
-        add_translation( $transcript_id, $cds_start, $start_exon_id, $cds_end,
+        add_translation( $transcript_id, $translation_stable_id, $cds_start, $start_exon_id, $cds_end,
         $end_exon_id );
 
-      # Get the next free translation stable_id
-      my $translation_stable_id =
-        get_next_stable_id( 'translation_stable_id',
-        $transcript_stable_id . '_p' );
+      my $tr_excep = $transnode->findNode('coding_region/translation_exception');
+      if ($tr_excep) {
+        my $codon = $tr_excep->data->{'codon'};
+        my $change = $tr_excep->findNode('sequence')->content();
+        if ($change eq 'U') {
+          my $edit = "$codon $codon U";
+          add_seq_edit($translation_id, $edit, '_selenocysteine');
+        }
+      }
 
-      # Insert translation stable id into translation_stable_id table
-      add_stable_id( $translation_id, $translation_stable_id, 'translation' );
+
       print "\tTranslation:\t"
         . $translation_id . "\t"
         . $translation_stable_id . "\n";
@@ -405,29 +407,50 @@ sub add_dna {
 
 # Add an exon
 sub add_exon {
+  my $stable_id         = shift;
   my $seq_region_id     = shift;
   my $seq_region_start  = shift;
   my $seq_region_end    = shift;
   my $seq_region_strand = shift;
 
   my $stmt = qq{
+      SELECT
+           exon_id
+      FROM
+           exon
+      WHERE
+          seq_region_id = '$seq_region_id' AND
+          seq_region_start = '$seq_region_start' AND
+          seq_region_end = '$seq_region_end' AND
+          stable_id = '$stable_id'
+  };
+  my $exon_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+  if (!$exon_id) {
+    $stmt = qq{
       INSERT INTO
 	exon (
+          stable_id,
 	  seq_region_id,
 	  seq_region_start,
 	  seq_region_end,
-	  seq_region_strand
+	  seq_region_strand,
+          created_date,
+          modified_date
 	)
       VALUES
 	(
+          '$stable_id',
 	  $seq_region_id,
 	  $seq_region_start,
 	  $seq_region_end,
-	  $seq_region_strand
+	  $seq_region_strand,
+          now(),
+          now()
 	)
     };
-  $dbCore->dbc->do($stmt);
-  my $exon_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    $dbCore->dbc->do($stmt);
+    $exon_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  }
 
   return $exon_id;
 }
@@ -438,7 +461,19 @@ sub add_exon_transcript {
   my $transcript_id = shift;
   my $rank          = shift;
 
-  my $stmt = qq {
+  my $stmt = qq{
+        SELECT
+             exon_id
+        FROM
+             exon_transcript
+        WHERE
+             transcript_id = '$transcript_id' AND
+             rank = '$rank'
+    };
+  my $result = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$result) {
+    $stmt = qq {
 	INSERT INTO
 	    exon_transcript (
 		exon_id,
@@ -451,7 +486,8 @@ sub add_exon_transcript {
 	    $rank
 	)
     };
-  $dbCore->dbc->do($stmt);
+    $dbCore->dbc->do($stmt);
+  }
 }
 
 #ÊAdds an external db if it does not exist
@@ -528,6 +564,7 @@ sub add_external_db {
 # Add a gene
 sub add_gene {
   my $biotype                 = shift;
+  my $stable_id               = shift;
   my $analysis_id             = shift;
   my $seq_region_id           = shift;
   my $seq_region_start        = shift;
@@ -542,9 +579,26 @@ sub add_gene {
   $status     ||= 'KNOWN';
 
   my $stmt = qq{
+         SELECT
+              gene_id
+         FROM
+              gene
+         WHERE
+              biotype = '$biotype' AND
+              seq_region_id = '$seq_region_id' AND
+              seq_region_start = '$seq_region_start' AND
+              seq_region_end = '$seq_region_end' AND
+              stable_id = '$stable_id'
+         };
+
+  my $gene_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$gene_id) {
+    $stmt = qq{
 	INSERT INTO
 	    gene (
 		biotype,
+                stable_id,
 		analysis_id,
 		seq_region_id,
 		seq_region_start,
@@ -553,10 +607,13 @@ sub add_gene {
 		source,
 		is_current,
 		canonical_transcript_id,
-		status
+		status,
+                created_date,
+                modified_date
 	    )
 	VALUES (
 	    '$biotype',
+            '$stable_id',
 	    $analysis_id,
 	    $seq_region_id,
 	    $seq_region_start,
@@ -565,11 +622,14 @@ sub add_gene {
 	    '$source',
 	    $is_current,
 	    $canonical_transcript_id,
-	    '$status'
+	    '$status',
+            now(),
+            now()
 	)
     };
-  $dbCore->dbc->do($stmt);
-  my $gene_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    $dbCore->dbc->do($stmt);
+    $gene_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+  }
 
   return $gene_id;
 }
@@ -629,10 +689,8 @@ sub add_mapping {
 
   # Need the mapping to contig and also to chromosome via contig
   my $meta_value = $lrg_coord_system . '#contig';
-  foreach my $append ( ( '', '#chromosome:' . $assembly ) ) {
-    my $id = add_meta_key_value( $meta_key, $meta_value . $append );
-    push( @meta_id, $id );
-  }
+  push( @meta_id, add_meta_key_value ($meta_key, $meta_value));
+  push( @meta_id, add_meta_key_value ($meta_key, 'chromosome:' . $assembly . "#" . $lrg_coord_system));
 
   # Add a seq_region for the LRG if it doesn't exist
   my @seq_region_ids;
@@ -642,41 +700,20 @@ sub add_mapping {
   #ÊAdd a seq_region_attrib indicating that it is toplevel
   my $attrib_type_id = get_attrib_type_id('toplevel')
     or warn("Could not get attrib_type_id for toplevel attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
 
-  #ÊAdd a seq_region_attrib indicating that it is non-reference
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
+
+  # Add a seq_region_attrib indicating that it is non-reference
   $attrib_type_id = get_attrib_type_id('non_ref')
     or warn("Could not get attrib_type_id for non_ref attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
 
-  #ÊAdd a seq_region_attrib indicating that it is a LRG
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
+
+  # Add a seq_region_attrib indicating that it is a LRG
   $attrib_type_id = get_attrib_type_id('LRG')
     or warn("Could not get attrib_type_id for LRG attribute!\n");
-  insert_row(
-    {
-      'seq_region_id'  => $q_seq_region_id,
-      'attrib_type_id' => $attrib_type_id,
-      'value'          => 1
-    },
-    'seq_region_attrib',
-    1
-  );
+
+  add_object_attrib( $q_seq_region_id, $attrib_type_id, 1, 'seq_region' );
 
   # Get the seq_region_id for the target contig
   my $ctg_cs_id = get_coord_system_id('contig');
@@ -687,7 +724,6 @@ sub add_mapping {
 
 #ÊLoop over the pairs array. For each mapping span, first get a chromosomal slice and project this one to contigs
   foreach my $pair ( sort { $a->[3] <=> $b->[3] } @{$pairs} ) {
-
     # Each span is represented by a 'DNA' type
     if ( $pair->[0] eq 'DNA' ) {
       die(
@@ -699,6 +735,10 @@ sub add_mapping {
       my $chr_slice =
         $sa->fetch_by_region( 'chromosome', $mapping->{'chr_name'},
         $pair->[3], $pair->[4], 1, $assembly );
+      my $chr_id = $sa->get_seq_region_id($chr_slice);
+
+      add_assembly_mapping ($chr_id, $q_seq_region_id, $pair->[3],
+        $pair->[4], $pair->[1], $pair->[2], $pair->[5]);
 
       #ÊProject the chromosomal slice to contig
       my $segments = $chr_slice->project('contig');
@@ -793,22 +833,20 @@ sub add_meta_coord {
   my $cs_id      = shift;
   my $max_length = shift;
 
-  my $stmt = qq{
-	INSERT INTO
-	    meta_coord (
-	      table_name,
-	      coord_system_id,
-	      max_length
-	    )
-	VALUES (
-	    '$table',
-	    $cs_id,
-	    $max_length
-	)
-	ON DUPLICATE KEY UPDATE
-	    max_length = $max_length
-    };
-  $dbCore->dbc->do($stmt);
+  my $current_max_length = $dbCore->dbc->sql_helper->execute_single_result(
+    -SQL => 'select max_length from meta_coord where table_name =? and coord_system_id=?',
+    -PARAMS => [$table, $cs_id]
+  );
+
+  if($current_max_length < $max_length) {
+    my $sql = <<SQL;
+INSERT INTO meta_coord (table_name, coord_system_id, max_length)
+VALUES ('$table', $cs_id, $max_length)
+ON DUPLICATE KEY UPDATE max_length = $max_length
+SQL
+    $dbCore->dbc->do($sql);
+  }
+  return;
 }
 
 # Add a meta key/value pair
@@ -900,6 +938,19 @@ sub add_object_attrib {
   my $key   = $object_type . '_id';
 
   my $stmt = qq{
+        SELECT
+            value
+        FROM
+            $table
+        WHERE
+            $key = '$object_id' AND
+            attrib_type_id = '$attrib_type_id' AND
+            value = '$value'
+     };
+  my $entry = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+  if (!$entry) {
+    $stmt = qq{
 	INSERT IGNORE INTO
 	    $table (
 		$key,
@@ -912,50 +963,46 @@ sub add_object_attrib {
 	    '$value'
 	)
     };
-  $dbCore->dbc->do($stmt);
+    $dbCore->dbc->do($stmt);
+  }
+
 }
 
 # Add stable id for a gene/transcript/translation. If one already exists, replace it
+
 sub add_stable_id {
   my $object_id        = shift;
   my $object_stable_id = shift;
   my $object_type      = shift;
   my $version          = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
+  
   $version ||= 1;
-
-  # Insert object stable id into object_stable_id table
-  my $stmt = qq{
-      INSERT INTO
-	$table (
-	  $key,
-	  stable_id,
-	  version,
-	  created_date,
-	  modified_date
-	)
-      VALUES (
-	$object_id,
-	'$object_stable_id',
-	$version,
-	NOW(),
-	NOW()
-      )
-      ON DUPLICATE KEY UPDATE
-	stable_id = '$object_stable_id',
-	version = $version,
-	modified_date = NOW()
-    };
-  $dbCore->dbc->do($stmt);
+  
+  my ($q_table, $q_field) = @{$dbCore->dbc()->quote_identifier(lc($object_type), lc($object_type).'_id')};
+  my $sql = qq{select count(*) from $q_table where $q_field =?};
+  my $count = $dbCore->dbc()->sql_helper()->execute_single_result(-SQL => $sql, -PARAMS => [$object_stable_id]);
+  
+  my $dml;
+  my $params;
+  if($count) {
+    $dml = qq{UPDATE $q_table set stable_id =?, version =?, created_date =NOW(), modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $version, $object_id];
+  }
+  else {
+    $dml = qq{UPDATE $q_table set stable_id =?, modified_date=NOW() where $q_field =?};
+    $params = [$object_stable_id, $object_id];
+  }
+  
+  $dbCore->dbc()->sql_helper()->execute_update(-SQL => $dml, -PARAMS => $params);
+  
+  return;
 }
 
 # Add a transcript or update one with gene_id if a transcript_id is specified
 sub add_transcript {
   my $transcript_id     = shift;
   my $gene_id           = shift;
+  my $stable_id         = shift;
   my $analysis_id       = shift;
   my $seq_region_id     = shift;
   my $seq_region_start  = shift;
@@ -987,11 +1034,28 @@ sub add_transcript {
   # Else, insert transcript entry into db
   else {
 
-# Will this properly set gene_id to NULL if undef provided? Will not really matter though since it is updated later
     $stmt = qq{
+              SELECT 
+                  transcript_id
+              FROM
+                  transcript
+              WHERE
+                  seq_region_id = '$seq_region_id' AND
+                  seq_region_start = '$seq_region_start' AND
+                  seq_region_end = '$seq_region_end' AND
+                  biotype = '$biotype' AND
+                  stable_id = '$stable_id'
+              };
+
+    $transcript_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+
+# Will this properly set gene_id to NULL if undef provided? Will not really matter though since it is updated later
+    if (!defined($transcript_id)) {
+      $stmt = qq{
 	    INSERT INTO
 	      transcript (
 		gene_id,
+                stable_id,
 		analysis_id,
 		seq_region_id,
 		seq_region_start,
@@ -999,10 +1063,13 @@ sub add_transcript {
 		seq_region_strand,
 		biotype,
 		is_current,
-		status
+		status,
+                created_date,
+                modified_date
 	      )
 	    VALUES (
 	      $gene_id,
+              '$stable_id',
 	      $analysis_id,
 	      $seq_region_id,
 	      $seq_region_start,
@@ -1010,11 +1077,14 @@ sub add_transcript {
 	      $seq_region_strand,
 	      '$biotype',
 	      $is_current,
-	      '$status'
+	      '$status',
+              now(),
+              now()
 	    )
 	};
-    $dbCore->dbc->do($stmt);
-    $transcript_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+      $dbCore->dbc->do($stmt);
+      $transcript_id = $dbCore->dbc->db_handle->{'mysql_insertid'};
+    }
   }
 
   return $transcript_id;
@@ -1023,6 +1093,7 @@ sub add_transcript {
 # Add a translation
 sub add_translation {
   my $transcript_id = shift;
+  my $stable_id     = shift;
   my $cds_start     = shift;
   my $start_exon_id = shift;
   my $cds_end       = shift;
@@ -1037,17 +1108,23 @@ sub add_translation {
 	    INSERT INTO
 		translation (
 		    transcript_id,
+                    stable_id,
 		    seq_start,
 		    start_exon_id,
 		    seq_end,
-		    end_exon_id
+		    end_exon_id,
+                    created_date,
+                    modified_date
 		)
 	    VALUES (
 		$transcript_id,
+                '$stable_id',
 		$cds_start,
 		$start_exon_id,
 		$cds_end,
-		$end_exon_id
+		$end_exon_id,
+                now(),
+                now()
 	    ) 
 	};
     $dbCore->dbc->do($stmt);
@@ -1063,7 +1140,8 @@ sub add_translation {
 		seq_start = $cds_start,
 		start_exon_id = $start_exon_id,
 		seq_end = $cds_end,
-		end_exon_id = $end_exon_id
+		end_exon_id = $end_exon_id,
+                stable_id = '$stable_id'
 	    WHERE
 		translation_id = $translation_id
 	};
@@ -1071,6 +1149,19 @@ sub add_translation {
   }
 
   return $translation_id;
+}
+
+sub add_seq_edit {
+  my ($seq, $edit, $code) = @_;
+
+  my $stmt = qq{
+    INSERT into translation_attrib
+    SELECT $seq, attrib_type_id, '$edit'
+    FROM attrib_type
+    WHERE code = '$code'
+    };
+  $dbCore->dbc->do($stmt);
+
 }
 
 sub add_xref {
@@ -1365,21 +1456,17 @@ sub get_max_key {
     'coord_system'          => 'coord_system_id',
     'dna'                   => 'seq_region_id',
     'exon'                  => 'exon_id',
-    'exon_stable_id'        => 'exon_id',
     'exon_transcript'       => 'exon_id',
     'external_db'           => 'external_db_id',
     'gene'                  => 'gene_id',
     'gene_attrib'           => 'gene_id',
-    'gene_stable_id'        => 'gene_id',
     'meta'                  => 'meta_id',
     'meta_coord'            => 'coord_system_id',
     'object_xref'           => 'object_xref_id',
     'seq_region'            => 'seq_region_id',
     'seq_region_attrib'     => 'seq_region_id',
     'transcript'            => 'transcript_id',
-    'transcript_stable_id'  => 'transcript_id',
     'translation'           => 'translation_id',
-    'translation_stable_id' => 'translation_id',
     'xref'                  => 'xref_id'
   };
 
@@ -1417,32 +1504,6 @@ sub get_max_length {
   return $max_length;
 }
 
-# Get the next free stable id for a *_stable_id table.
-sub get_next_stable_id {
-  my $table  = shift;
-  my $prefix = shift;
-
-  my $stable_id;
-  my $suflength = 9;
-  my $prelength = length($prefix);
-
-  my $stmt = qq{
-    SELECT
-      MAX(CONVERT(SUBSTR(stable_id,$prelength+1),UNSIGNED INTEGER))
-    FROM
-      $table
-    WHERE
-      stable_id LIKE '$prefix%'
-  };
-  my $max = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-  $max ||= 0;
-
-  $max++;
-  $stable_id = $prefix . sprintf( "%u", $max );
-
-  return $stable_id;
-}
-
 sub get_object_ids_by_seq_region_id {
   my $object_type   = shift;
   my $seq_region_id = shift;
@@ -1475,7 +1536,7 @@ sub get_object_id_by_stable_id {
   my $stable_id   = shift;
 
   my $key      = 'stable_id';
-  my $table    = $object_type . '_stable_id';
+  my $table    = $object_type;
   my $id_field = $object_type . '_id';
 
   my $rows = get_rows( $stable_id, $key, $table, $id_field );
@@ -1570,28 +1631,6 @@ sub get_rows {
   return fetch_rows( $fields, [$table], ["$key = '$id'"] );
 }
 
-# Get stable id for an object type and object id
-sub get_stable_id {
-  my $object_id   = shift;
-  my $object_type = shift;
-
-  my $table = $object_type . "_stable_id";
-  my $key   = $object_type . "_id";
-
-  my $stmt = qq{
-	SELECT
-	    stable_id
-	FROM
-	    $table
-	WHERE
-	    $key = $object_id
-	LIMIT 1
-    };
-  my $stable_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-
-  return $stable_id;
-}
-
 # Get translation id for a transcript
 sub get_translation_id {
   my $transcript_id = shift;
@@ -1655,20 +1694,8 @@ sub purge_db {
 
         # Translations have to be removed by the corresponding transcript ids
         if ( $object_type eq 'transcript' ) {
-          my $stmt = qq{
-		    DELETE FROM
-			t,
-			tsi
-		    USING
-			translation t,
-			translation_stable_id tsi
-		    WHERE
-			tsi.translation_id = t.translation_id AND
-			t.transcript_id = $oid
-		    };
-          $dbCore->dbc->do($stmt);
-
           my $translation_id = get_translation_id($oid);
+          remove_row( [qq{translation_id = $translation_id}], 'translation');
 
           # Remove from object_xref
           remove_row(
@@ -1682,12 +1709,12 @@ sub purge_db {
 
           #ÊRemove entries in the exon_transcript table
           remove_row( [qq{transcript_id = '$oid'}], 'exon_transcript' );
+          # Remove potential translation_attrib assigned to it
+          remove_row( [qq{translation_id = $translation_id}], 'translation_attrib' ) if defined($translation_id);
         }
 
-        # Remove rows with this object id (also from associated stable_id table)
+        # Remove rows with this object id
         remove_row( [ $object_type . '_id' . qq{ = $oid} ], $object_type );
-        remove_row( [ $object_type . '_id' . qq{ = $oid} ],
-          $object_type . '_stable_id' );
 
 #ÊRemove xref objects linked to this object id. Does not remove the xref itself, just the row in object_xref
         remove_row(
@@ -1700,9 +1727,8 @@ sub purge_db {
       }
     }
 
-    # Delete from assembly
-    remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
     remove_row( [qq{cmp_seq_region_id = $seq_region_id}], 'assembly' );
+    remove_row( [qq{asm_seq_region_id = $seq_region_id}], 'assembly' );
 
     # Delete from seq_region_attrib
     remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region_attrib' );
@@ -1712,6 +1738,7 @@ sub purge_db {
 
     # Delete from seq_region
     remove_row( [qq{seq_region_id = $seq_region_id}], 'seq_region' );
+
   }
 
   #ÊGet any xrefs for this LRG
@@ -1754,7 +1781,7 @@ qq{x.display_label = '$lrg_name' OR x.display_label LIKE '$lrg_name\_t%' OR x.di
     # Remove meta_coord entries
     remove_row( [qq{coord_system_id = $cs_id}], 'meta_coord' );
 
-    #ÊRemove meta table entries
+    # Remove meta table entries
     my $ids = fetch_rows(
       ["meta_id"],
       ["meta"],
