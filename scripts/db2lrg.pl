@@ -57,6 +57,9 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbose);
 
+# Give write permission for the group
+umask(0002);
+
 # Get the gene_id
 my $stmt;
 my $sth;
@@ -155,22 +158,26 @@ if (defined($list_lsdbs)) {
 # Statement to get the lrg_data
 $stmt = qq{
     SELECT
-        organism,
-        taxon_id,
-        moltype,
-        creation_date,
-				sequence_source
+        ld.organism,
+        ld.taxon_id,
+        ld.moltype,
+        ld.creation_date,
+				ld.sequence_source,
+        lc.comment
     FROM
-        lrg_data
+        lrg_data ld,
+        gene g
+        LEFT JOIN lrg_comment lc ON (g.gene_id=lc.gene_id AND g.symbol=lc.name)
     WHERE
-        gene_id = '$gene_id'
+        ld.gene_id = $gene_id AND
+        ld.gene_id = g.gene_id
     LIMIT 1
 };
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 
-my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source);
-$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source);
+my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source,$fcomment);
+$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source,\$fcomment);
 $sth->fetch();
 
 # Create LRG root elements and fixed_annotation element
@@ -180,6 +187,7 @@ my $fixed = $lrg->addNode('fixed_annotation');
 
 # Set the data
 $fixed->addNode('id')->content($lrg_id);
+
 if (defined($sequence_source)) {
 	$fixed->addNode('sequence_source')->content($sequence_source);
 }
@@ -202,11 +210,15 @@ $sth->execute();
 my $lsdb_id;
 $sth->bind_columns(\$lsdb_id);
 while ($sth->fetch()) {
-    $fixed->addExisting(get_source($lsdb_id,$db_adaptor));
+  $fixed->addExisting(get_source($lsdb_id,$db_adaptor));
 }
 
 $fixed->addNode('mol_type')->content($moltype);
 $fixed->addNode('creation_date')->content($creation_date);
+if (defined($fcomment)) {
+	$fixed->addNode('comment')->content($fcomment);
+}
+
 my $sequence = get_sequence($gene_id,'genomic',$db_adaptor);
 $fixed->addNode('sequence')->content($sequence);
 
@@ -283,6 +295,18 @@ my $cds_stmt = qq{
     ORDER BY
         cds_id ASC
 };
+my $com_stmt = qq{
+    SELECT
+        comment
+    FROM
+        lrg_comment
+    WHERE
+        gene_id = $gene_id AND
+        name=?
+    ORDER BY
+        comment_id ASC
+};
+
 $stmt = qq{
     SELECT
         lt.transcript_id,
@@ -294,7 +318,7 @@ $stmt = qq{
         lrg_transcript lt JOIN
         lrg_cdna cdna USING (transcript_id)
     WHERE
-        lt.gene_id = '$gene_id'
+        lt.gene_id = $gene_id 
     ORDER BY
         lt.transcript_name ASC
 };
@@ -305,15 +329,23 @@ my $e_sth    = $db_adaptor->dbc->prepare($e_stmt);
 my $ep_sth   = $db_adaptor->dbc->prepare($ep_stmt);
 my $p_sth    = $db_adaptor->dbc->prepare($p_stmt);
 my $cds_sth  = $db_adaptor->dbc->prepare($cds_stmt);
+my $com_sth  = $db_adaptor->dbc->prepare($com_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
-my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start);
+my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start,$tr_comment);
 $sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end);
 while ($sth->fetch()) {
     my $transcript = $fixed->addNode('transcript',{'name' => $t_name});
     my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
     $transcript->addExisting($coords);
     
+    # Transcript comment (optional)
+    $com_sth->execute($t_name);
+    $com_sth->bind_columns(\$tr_comment);
+    while ($com_sth->fetch()) {
+      $transcript->addNode('comment')->content($tr_comment) if (defined($tr_comment));
+    }
+
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
 
@@ -440,6 +472,11 @@ while ($sth->fetch()) {
     
     # Add lrg_gene_name
     $annotation_set->addNode('lrg_locus',{'source' => 'HGNC'})->content($lrg_gene_name) if (defined($lrg_gene_name));
+   
+    # /!\ HACK /!\ # Waiting for the NCBI to change it in their XML files
+    $xml =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/ if ($xml);
+    # /!\ HACK /!\ # End
+    
     # Add the remaining XML
     my $lrg = LRG::LRG::newFromString($xml);
     while (my $node = shift(@{$lrg->{'nodes'}})) {
@@ -449,44 +486,15 @@ while ($sth->fetch()) {
 
 # If we should add external LSDBs, add these as separate annotation sets
 if (defined($include_external)) {
-    $stmt = qq{
-        SELECT DISTINCT
-            lg.lsdb_id
-        FROM
-            lsdb_gene lg
-        WHERE
-            lg.gene_id = $gene_id AND
-            NOT EXISTS (
-                SELECT
-                    *
-                FROM
-                    lrg_request lr
-                WHERE
-                    lr.gene_id = '$gene_id' AND
-                    lr.lsdb_id = lg.lsdb_id
-            ) AND
-            NOT EXISTS (
-                SELECT
-                    *
-                FROM
-                    lrg_annotation_set las
-                WHERE
-                    las.gene_id = '$gene_id' AND
-                    las.source = lg.lsdb_id
-            )
-        ORDER BY
-            lg.lsdb_id ASC
-    };
-    $sth = $db_adaptor->dbc->prepare($stmt);
-    $sth->execute();
-    $sth->bind_columns(\$lsdb_id);
-    while ($sth->fetch()) {
-        my $annotation_set = $updatable->addNode('annotation_set');
-        # Add source information
-        $annotation_set->addExisting(get_source($lsdb_id,$db_adaptor,1));
-        # Add modification date
-        $annotation_set->addNode('modification_date')->content(LRG::LRG::date());
-    }
+    # LSDBs list link
+    my $lsdb_name = "List of locus specific databases for $hgnc_symbol";
+    my $lsdb_url  = "http://grenada.lumc.nl/LSDB_list/lsdbs/$hgnc_symbol";
+    my $annotation_set = $updatable->addNode('annotation_set');
+    my $source = LRG::Node::new('source');
+    $source->addNode('name')->content($lsdb_name);
+    $source->addNode('url')->content($lsdb_url);
+    $annotation_set->addExisting($source);
+    $annotation_set->addNode('modification_date')->content(LRG::LRG::date());
 }
 
 # Dump XML to output_file
@@ -598,7 +606,7 @@ sub get_source {
     my $lsdb_id = shift;
     my $db_adaptor = shift;
     my $skip_contact = shift;
-    
+
     # Get the lsdb data
     my $stmt = qq{
         SELECT
@@ -617,7 +625,7 @@ sub get_source {
     $source->addNode('url')->content($lsdb_url) if (defined($lsdb_url) && length($lsdb_url) > 0);
     
     # If we skip contact information, return here
-    return $source if ($skip_contact);
+    return $source if (defined($skip_contact));
     
     # Get the source data for the requesters
     $stmt = qq{

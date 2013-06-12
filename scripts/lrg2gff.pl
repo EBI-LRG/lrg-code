@@ -25,6 +25,9 @@ GetOptions(
 
 die("An LRG XML input file or LRG identifier is required") unless (defined($xmlfile) || defined($lrgid));
 
+# Give write permission for the group
+umask(0002);
+
 # If no xml file was specified, attempt to fetch it from the website
 if (!defined($xmlfile) && defined($lrgid)) {
     
@@ -49,6 +52,16 @@ if (!defined($xmlfile) && defined($lrgid)) {
         die($message . "\n");
     }
 }
+
+# Check if the gff directory exists
+$outfile =~ /^(.*)\/LRG_\d+\.xml\.gff/;
+my $gff_dir = $1;
+if(defined($gff_dir)) {
+  unless(-d $gff_dir){
+    mkdir $gff_dir or die "Directory $gff_dir doesn't exist and can't be created";
+  }
+}
+
 
 # If no output file has been specified, use the xmlfile and add a .gff suffix
 $outfile = $xmlfile . '.gff' if (!defined($outfile));

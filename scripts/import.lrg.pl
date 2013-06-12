@@ -18,7 +18,7 @@ EXAMPLE
     perl import.lrg.pl -help
     
   Import a LRG and add xrefs, will download XML record from website:
-    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -import -xrefs
+    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -import
     
   Add gene_attribs for Ensembl genes overlapping a LRG:
     perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -overlap
@@ -39,12 +39,13 @@ use LRG::LRGImport;
 use LRG::LRGMapping;
 
 use Bio::EnsEMBL::Registry;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 # Some constants
 my $SPECIES = q{human};
 my $LRG_COORD_SYSTEM_NAME = q{lrg};
 my $LRG_BIOTYPE = q{LRG_gene};
-my $LRG_ANALYSIS_LOGIC_NAME = q{LRG_import};
+my $LRG_ANALYSIS_LOGIC_NAME = q{lrg_import};
 my $LRG_ANALYSIS_DESCRIPTION = q{Data from LRG database};
 my $LRG_ANALYSIS_DISPLAY_LABEL = q{LRG Genes};
 my $LRG_ANALYSIS_WEB_DATA = qq{{'colour_key' => 'rna_[status]','caption' => 'LRG gene','label_key' => '[text_label] [display_label]','name' => 'LRG Genes','default' => {'MultiTop' => 'gene_label','contigviewbottom' => 'transcript_label','MultiBottom' => 'collapsed_label','contigviewtop' => 'gene_label','alignsliceviewbottom' => 'as_collapsed_label','cytoview' => 'gene_label'},'multi_caption' => 'LRG genes'}};
@@ -78,7 +79,6 @@ my $overlap;
 my @lrg_ids;
 my $input_file;
 my $import;
-my $add_xrefs;
 my $max_values;
 my $revert;
 my $verify;
@@ -88,6 +88,7 @@ my $cdnadb;
 my $vegadb;
 my $rnaseqdb;
 my $purge;
+my $do_all;
 
 usage() if (!scalar(@ARGV));
 
@@ -106,10 +107,10 @@ GetOptions(
   'lrg_id=s' 		=> \@lrg_ids,
   'input_file=s' 	=> \$input_file,
   'import!' 		=> \$import,
-  'xrefs!' 		=> \$add_xrefs,
   'max!' 		=> \$max_values,
   'revert!' 		=> \$revert,
   'verify!'		=> \$verify,
+  'do_all!'             => \$do_all,
   'otherfeatures=s'	=> \$otherfeaturesdb,
   'cdna=s'		=> \$cdnadb,
   'vega=s'		=> \$vegadb,
@@ -121,7 +122,7 @@ usage() if (defined($help));
 die("Database credentials (-host, -port, -core, -user) need to be specified!") unless (defined($host) && defined($port) && defined($coredb) && defined($user));
 
 # If an input XML file was specified, this will override any specified lrg_id. So get the identifier from within the file
-if ((defined($import) || defined($verify) || defined($add_xrefs) || defined($overlap) || defined($clean)) && defined($input_file)) {
+if ((defined($import) || defined($verify) || defined($overlap) || defined($clean)) && defined($input_file)) {
 
   die("ERROR: Input file $input_file does not exist!") unless(-e $input_file);
   
@@ -141,30 +142,32 @@ if ((defined($import) || defined($verify) || defined($add_xrefs) || defined($ove
 die("Supplied LRG id is not in the correct format ('LRG_NNN')") if (grep($_ !~ m/^LRG\_[0-9]+$/,@lrg_ids));
 
 # If doing something requiring the XML file but without specified input XML file or LRG ids, get a listing of published LRGs available at the ftp site
-if ((defined($import) || defined($clean) || defined($overlap) || defined($verify) || defined($add_xrefs)) && !scalar(@lrg_ids)) {
+if ((defined($import) || defined($clean) || defined($overlap) || defined($verify)) && !scalar(@lrg_ids)) {
   
   print STDOUT localtime() . "\tNo input XML file and no LRG id specified, fetching a LRG listing from the LRG server\n" if ($verbose);
   my $result = LRG::LRGImport::fetch_remote_lrg_ids([$LRG_EXTERNAL_XML]);
   
   if ($result->{$LRG_EXTERNAL_XML}{'success'}) {
     my @available = @{$result->{$LRG_EXTERNAL_XML}{'lrg_id'}};
-    print "The following LRGs are available for import from the LRG public ftp server:\n";
-    print "\t" . join("\n\t",@available) . "\n";
     my %entered;
-    print "Enter the LRG ids you want to import (enter for all), enter a blank line when finished\n";
-    my $id = 1;
-    while ($id) {
-      print "\tLRG id: ";
-      $id = <>;
-      chomp($id);
-      if (grep($_ eq $id,@available)) {
-	$entered{$id} = 1;
-      }
-      elsif (length($id) > 0) {
-	print "\tLRG identifier not recognized!\n";
+    if(!defined $do_all) {
+      print "The following LRGs are available for import from the LRG public ftp server:\n";
+      print "\t" . join("\n\t",@available) . "\n";
+      print "Enter the LRG ids you want to import (enter for all), enter a blank line when finished\n";
+      my $id = 1;
+      while ($id) {
+        print "\tLRG id: ";
+        $id = <>;
+        chomp($id);
+        if (grep($_ eq $id,@available)) {
+	       $entered{$id} = 1;
+        }
+        elsif (length($id) > 0) {
+	       print "\tLRG identifier not recognized!\n";
+        }
       }
     }
-    
+
     if (scalar(keys(%entered)) == 0) {
       @lrg_ids = @available;
     }
@@ -358,7 +361,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
     }
   }
   
-  if ($import || $add_xrefs || $verify) {
+  if ($import || $verify) {
     
   # If lrg_id has been specified but not input_file and a XML file is required, try to fetch it from the LRG website to the /tmp directory
     if (!defined($input_file)) {
@@ -392,14 +395,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Check if the LRG already exists in the database (if the seq_region exists), in which case it should first be deleted
       my $cs_id = LRG::LRGImport::add_coord_system($LRG_COORD_SYSTEM_NAME);
-      my $seq_region_id = LRG::LRGImport::get_seq_region_id($lrg_id,$cs_id);
-      if (defined($seq_region_id)) {
-	warn("$lrg_id already exists in $coredb\. If you want to replace it, delete it first using the -clean parameter. Will skip it for now");
-	# Undefine the input_file so that the next one will be fetched
-	undef($input_file);
-	# Note, this will also skip xref and verify methods for this LRG
-        next;
-      }
       
       # Get the assembly that the database uses
       print STDOUT localtime() . "\tGetting assembly name from core db\n" if ($verbose);
@@ -411,8 +406,17 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $updatable_annotation = $lrg->findNode("updatable_annotation");
       my $annotation_sets = $updatable_annotation->findNodeArray("annotation_set");
       my $mapping_node;
+      my $cs_node;
+      my $cs;
       foreach my $annotation_set (@{$annotation_sets}) {
-	$mapping_node = $annotation_set->findNode("mapping",{'coord_system' => $db_assembly});
+        $cs_node = $annotation_set->findNode("mapping");
+        $cs = $cs_node->data->{'coord_system'};
+        if ($cs =~ /$db_assembly/){
+          $mapping_node = $cs_node;
+          if ($cs_node->data->{'other_name'} =~ /HS/){
+            throw("LRG is being mapped against a patch/haplotype region");
+          }
+        }
 	last unless !$mapping_node;
       }
       
@@ -424,9 +428,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	# Note, this will also skip xref and verify methods for this LRG
 	next;
       }
-      
-      # Warn if the assembly used is not flagged as the most recent
-      warn("Assembly $db_assembly is currently not flagged as the most recent in the $lrg_id XML file!") unless ($mapping_node->{'data'}{'most_recent'} == 1);
       
       my $assembly = $mapping_node->data->{'coord_system'};
       print STDOUT localtime() . "\tMapped assembly is $assembly\n" if ($verbose);
@@ -494,7 +495,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       print STDOUT localtime() . "\tImport done!\n" if ($verbose);
     }
-    if ($add_xrefs) {
       
       # This should no longer be done from this script but be included in the main core xref mapping. Will allow it for now.
       # die("Adding xrefs is no longer done from this script. Exiting!");
@@ -502,39 +502,45 @@ while (my $lrg_id = shift(@lrg_ids)) {
       # Get the Ensembl gene_id for the LRG gene
       my $gene_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$lrg_name);
       if (!$gene_id) {
-      	warn("Could not find gene with stable id $lrg_name in core database! Skipping $lrg_name");
-      	# Undefine the input_file so that the next one will be fetched
-      	undef($input_file);
-      	# Note, this will also skip verify method for this LRG
+	warn("Could not find gene with stable id $lrg_name in core database! Skipping $lrg_name");
+	# Undefine the input_file so that the next one will be fetched
+	undef($input_file);
+	# Note, this will also skip verify method for this LRG
         next;
       }
       
       # Get the HGNC identifier from the XML 
       my $lrg_gene_name_node = $lrg->findNode("updatable_annotation/annotation_set/lrg_locus",{'source' => 'HGNC'});
       if (!$lrg_gene_name_node) {
-      	warn("Could not find HGNC identifier in XML file! Skipping $lrg_name");
-      	# Undefine the input_file so that the next one will be fetched
-      	undef($input_file);
-      	# Note, this will also skip xref and verify methods for this LRG
+	warn("Could not find HGNC identifier in XML file! Skipping $lrg_name");
+	# Undefine the input_file so that the next one will be fetched
+	undef($input_file);
+	# Note, this will also skip xref and verify methods for this LRG
         next;
       }
       my $hgnc_name = $lrg_gene_name_node->content();
       
       # A bit cumbersome but.. get the HGNC accession from the XML
       my $annotation_sets = $lrg->findNodeArray('updatable_annotation/annotation_set');
-      my $annotation_set_ensembl;
+      my ($annotation_set_ensembl, $annotation_set_refseq);
       while (my $annotation_set = shift(@{$annotation_sets})) {
-      	if ($annotation_set->findNode('source/name')->content() eq 'Ensembl') {
-      	  $annotation_set_ensembl = $annotation_set;
-      	  last;
-	       }
+	if ($annotation_set->findNode('source/name')->content() eq 'Ensembl') {
+	  $annotation_set_ensembl = $annotation_set;
+	}
+        if ($annotation_set->findNode('source/name')->content() eq 'NCBI RefSeqGene') {
+          $annotation_set_refseq = $annotation_set;
+        }
       }
-      # Locate the Ensembl gene annotations for the gene that corresponds to the one the LRG was created for 
       my $lrg_gene;
-      foreach my $up_gene (@{$annotation_set_ensembl->findNodeArray('features/gene') || []}) {
-        next unless (grep {$_->content() eq $hgnc_name} @{$up_gene->findNodeArraySingle('symbol') || []});
-        $lrg_gene = $up_gene;
-        last;
+      foreach my $gene (@{ $annotation_set_ensembl->findNodeArray('features/gene') }) {
+        my $symbols = $gene->findNodeArray('symbol', {'source' => 'HGNC'});
+        if (defined $symbols) {
+          for my $symbol (@$symbols  ) {
+            if ($symbol->content() eq $hgnc_name) {
+              $lrg_gene = $gene;
+            }
+          }
+        }
       }
       my $hgnc_accession = $lrg_gene->findNode('db_xref',{'source' => 'HGNC'})->data()->{'accession'};
       
@@ -542,12 +548,40 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $object_xref_id;
       
       if (defined($hgnc_accession)) {
-      	# Add HGNC entry to xref table (or get xref_id if it already exists)
-      	$xref_id = LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name);
-      	# Add an object_xref for the HGNC xref
-      	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
+	# Add HGNC entry to xref table (or get xref_id if it already exists)
+	$xref_id = LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name);
+	# Add an object_xref for the HGNC xref
+	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
       }
       
+=head
+Skip this, this is done by the external data files 
+      # Add the LRG website as an external db (if not already present)
+      LRG::LRGImport::add_external_db(
+	$LRG_EXTERNAL_DB_NAME,
+	$LRG_EXTERNAL_STATUS,
+	$LRG_EXTERNAL_PRIORITY,
+	$LRG_EXTERNAL_DB_DISPLAY_NAME,
+	$LRG_EXTERNAL_DB_RELEASE,
+	$LRG_EXTERNAL_DB_ACC_LINKABLE,
+	$LRG_EXTERNAL_DB_LABEL_LINKABLE,
+	$LRG_EXTERNAL_TYPE
+      );
+      
+      # Add the Ensembl LRG display as an external db (if not already present). One each for Gene, Transcript
+      foreach my $type (('gene','transcript')) {
+	LRG::LRGImport::add_external_db(
+	  $LRG_ENSEMBL_DB_NAME . '_' . $type,
+	  $LRG_ENSEMBL_STATUS,
+	  $LRG_ENSEMBL_PRIORITY,
+	  $LRG_ENSEMBL_DB_DISPLAY_NAME,
+	  $LRG_ENSEMBL_DB_RELEASE,
+	  $LRG_ENSEMBL_DB_ACC_LINKABLE,
+	  $LRG_ENSEMBL_DB_LABEL_LINKABLE,
+	  $LRG_ENSEMBL_TYPE
+	);
+      }
+=cut      
       # Add external LRG link to xref table
       my $ext_xref_id = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
       
@@ -559,62 +593,69 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       # Add xrefs to the Ensembl coordinate system for the LRG gene
       
-      ### NOTE: This is required for Ian's xref-mapping pipeline to work ###
-      my $stable_id = $lrg_gene->data->{accession};
-      if ($stable_id) {
-        $xref_id = LRG::LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
-        # Add an object_xref for the LRG xref
-        $object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
-        
-        # Do the same for the Ensembl gene to the Ensembl LRG display
-        $xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$lrg_name,$lrg_name);
-        # Get the gene_id for the Ensembl gene
-        my $core_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$stable_id);
-        $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$xref_id);
-        # Add xref to the external LRG database
-        $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$ext_xref_id);
-      }
-      else {
-        warn (sprintf("The required xref between Ensembl and LRG could not be added for \%s",$lrg_name));
+      # Get the annotated Ensembl xrefs from the XML file for the LRG gene
+      my $lrg_gene_xrefs = $lrg_gene->findNodeArray('db_xref',{'source' => 'Ensembl'});
+      
+      # Add or get xref_ids for the Ensembl xrefs, the external_db name is Ens_Hs_gene
+      foreach my $lrg_gene_xref (@{$lrg_gene_xrefs}) {
+	my $stable_id = $lrg_gene_xref->data->{'accession'};
+	
+	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
+	# Add an object_xref for the LRG xref
+	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
+	
+	my $core_stable_id = $lrg_name;
+	
+	# Do the same for the Ensembl gene to the Ensembl LRG display
+	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$core_stable_id,$lrg_name);
+	# Get the gene_id for the Ensembl gene
+	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$stable_id);
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$xref_id);
+	# Add xref to the external LRG database
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$ext_xref_id);
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
-      ### NOTE: This will never be added because we don't store fixed_id on Ensembl transcripts anymore
-      my $lrg_transcripts = $lrg_gene->findNodeArray('transcript',{'source' => 'Ensembl'});
+      my $lrg_transcripts = $lrg_gene->findNodeArray('transcript', {'source' => 'Ensembl'});
       foreach my $lrg_transcript (@{$lrg_transcripts}) {
-      	my $fixed_id = $lrg_transcript->{'data'}{'fixed_id'};
-      	my $core_accession = $lrg_transcript->{'data'}{'accession'};
-      	next unless(defined($fixed_id) && defined($core_accession));
-      	
-      	# Get the core db LRG transcript_id for this transcript
-      	my $core_stable_id = $lrg_name . '_' . $fixed_id;
-      	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_stable_id);
-      	next unless(defined($core_id));
-      	
-      	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
-      	# Add an object_xref for the LRG xref
-      	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
-      	
-      	# Do the same for the Ensembl transcript to the Ensembl LRG display
-      	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
-      	# Get the gene_id for the Ensembl gene
-      	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
-      	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
-      	
-      	# Do the same for the translation
-      	my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
-      	next unless(defined($lrg_protein));
-      	$core_accession = $lrg_protein->{'data'}{'accession'};
-      	next unless(defined($core_accession));
-      	$core_id = LRG::LRGImport::get_translation_id($core_id);
-      	
-      	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
-      	# Add an object_xref for the LRG xref
-      	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+        my $refseq = $lrg_transcript->findNode('db_xref', {'source' => 'RefSeq'});
+        if (!defined $refseq) { next; }
+	my $refseq_accession = $refseq->{'data'}{'accession'};
+        my $refseq_annotation = $annotation_set_refseq->findNode('features/transcript', {'accession' => $refseq_accession});
+        if (!defined $refseq_annotation) { next; }
+        my $fixed_id = $refseq_annotation->{'data'}{'fixed_id'};
+	my $core_accession = $lrg_transcript->{'data'}{'accession'};
+	next unless(defined($fixed_id) && defined($core_accession));
+	
+	# Get the core db LRG transcript_id for this transcript
+	my $core_stable_id = $lrg_name . '_' . $fixed_id;
+	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_stable_id);
+	next unless(defined($core_id));
+	
+	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
+	# Add an object_xref for the LRG xref
+	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
+	
+	# Do the same for the Ensembl transcript to the Ensembl LRG display
+	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
+	# Get the gene_id for the Ensembl gene
+	$core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
+        if ($core_id) {
+          $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
+	
+       	  # Do the same for the translation
+	  my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
+	  next unless(defined($lrg_protein));
+	  $core_accession = $lrg_protein->{'data'}{'accession'};
+	  next unless(defined($core_accession));
+	  $core_id = LRG::LRGImport::get_translation_id($core_id);
+	
+	  $xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
+	  # Add an object_xref for the LRG xref
+	  $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+        }
 	
       }
-      
-    }
     
     # Check that the mapping stored in the database give the same sequences as those stored in the XML file
     if ($verify) {
@@ -661,7 +702,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	  # Get the ensembl transcript with the corresponding stable_id
 	  my @db_tr = grep {$_->stable_id() eq $stable_id} @{$transcripts_db};
 	  # Check that we got one transcript back
-	  if (!defined(@db_tr) || scalar(@db_tr) != 1) {
+	  if (!@db_tr || scalar(@db_tr) != 1) {
 	    $msg = "Could not unambiguously get the correct Ensembl transcript corresponding to $lrg_id $fixed_id";
 	    warn($msg);
 	    print STDOUT "$msg\n" if ($verbose);
@@ -771,13 +812,6 @@ sub usage {
 			API gets when accessing the core db. Will check genomic sequence, cDNA (spliced transcript)
 			and peptide translation.
       
-      -xrefs		This will add xrefs to HGNC, the external LRG website as well as to the
-			corresponding Ensembl genes for genes on the lrg coordinate system.
-			Will also add xrefs to the corresponding Ensembl genes, linking them to
-			the external LRG website and to the genes on the lrg coordinate system.
-			This should only need to be run for release 58. Subsequent releases will
-			take care of this through the normal xref pipeline, using HGNC data
-			
       -overlap		For the LRG specified by the -lrg_id argument, find all Ensembl genes in the
 			chromosome coordinate system that overlap. Add a gene_attrib to these, indicating
 			that they overlap a LRG region, either partially or completely. Note that the LRG
@@ -799,6 +833,11 @@ sub usage {
 			added after the -max command was run, not necessarily just your own!
 			
       -verbose		Progress information is printed
+
+      -do_all           Same as hitting Enter when asked for a list of lrgs. That is all will be selected.
+                        This just save pressing enter but is useful if you redirect the output and forget
+                        you still have to do something
+
       -help		Print this message
       
   };

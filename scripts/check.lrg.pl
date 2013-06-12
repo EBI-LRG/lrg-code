@@ -41,14 +41,14 @@ my $help;
 
 # get options from command line
 GetOptions(
-  'xml_file=s'		=> \$xml_file,
-  'check=s'		=> \@checks,
-  'java=s'		=> \$java_executable,
-  'jing=s'		=> \$jing_jar,
-  'rnc=s' 		=> \$rnc_file,
-  'list_checks!'        => \$list,
-  'verbose!' 		=> \$verbose,
-  'help!'               => \$help
+  'xml_file=s'	 => \$xml_file,
+  'check=s'		   => \@checks,
+  'java=s'		   => \$java_executable,
+  'jing=s'		   => \$jing_jar,
+  'rnc=s' 		   => \$rnc_file,
+  'list_checks!' => \$list,
+  'verbose|v!' 	 => \$verbose,
+  'help!'        => \$help
 );
 
 usage() if (defined($help));
@@ -69,7 +69,7 @@ $LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
 
 my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
-    if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS)) {
+    if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS) && !grep(/^$check$/,@LRG::LRGHealthcheck::PRELIMINARY_CHECKS)) {
         print STDOUT "Unknown healthcheck '$check'\n";
         next;
     }
@@ -83,13 +83,14 @@ foreach my $check (@checks) {
     $msg .= "$check\t" . ($hc->{'check'}{$check}{'passed'} ? "PASSED" : "FAILED") . "!\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
 		$count_passed ++ if ($hc->{'check'}{$check}{'passed'});
     if (exists($hc->{'check'}{$check}{'message'})) {
-        $msg .= "\t" . join("\n\t\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
+      $msg .= "\t" . join("\n\t",split(/\/\//,$hc->{'check'}{$check}{'message'})) . "\n" if ($verbose || !$hc->{'check'}{$check}{'passed'});
     }
 }
 
-print STDERR "$msg\n" if ($verbose || $count_passed != $count_total);
-print STDERR "Healthcheck FAILED\n" if ($count_passed != $count_total);
-
+if ($count_passed != $count_total) {
+  print STDERR "$msg\n";
+  print STDERR "Healthcheck FAILED\n";
+}
 
 sub usage {
     

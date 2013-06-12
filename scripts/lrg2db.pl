@@ -7,6 +7,7 @@ use List::Util qw (min max);
 use LRG::LRG;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
+use LWP::Simple;
 
 my $xmlfile;
 my $host;
@@ -25,6 +26,7 @@ my $keep_updatable;
 my $delete_request;
 my @update_annotation_set;
 my $error_log;
+my $warning;
 
 my $lsdb_code_id = 1;
 
@@ -45,6 +47,7 @@ GetOptions(
   'delete_request!'     => \$delete_request,
   'replace_updatable=s' => \@update_annotation_set,
   'error_log=s'         => \$error_log,
+  'warning=s'           => \$warning,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -65,6 +68,13 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 
 $lrg_id =~ /(LRG_\d+)/;
 $lrg_id = $1;
+
+my $warning_log;
+if (defined($error_log)) {
+  $warning_log = $error_log;
+  $warning_log =~ s/error_log/warning_log/;
+}
+
 
 # If the database should be purged of all LRG XML-related data, do that
 if ($purge) {
@@ -315,14 +325,34 @@ my $moltype = $node->content();
 $node = $fixed->findNode('creation_date') or error_msg("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
 
+
+my $other_val;
+my $other_col;
 # Get the RefSeqGene ID
 $node = $fixed->findNode('sequence_source');
-my $sequence_source_val;
-my $sequence_source_col;
 if (defined($node)) {
-	$sequence_source_val = ",'".$node->content()."'";
-	$sequence_source_col = ",sequence_source";
+	$other_val .= ",'".$node->content()."'";
+	$other_col .= ",sequence_source";
 }
+
+# Get the comment (optional)
+$node = $fixed->findNodeSingle('comment');
+if (defined($node)) {
+  my $f_comment = $node->content();
+  my $com_stmt = qq{
+    REPLACE INTO
+        lrg_comment (
+            gene_id,
+            name,
+            comment
+        )
+        SELECT gene_id, symbol, '$f_comment'
+        FROM gene WHERE symbol='$hgnc_symbol'
+  };
+  print STDOUT localtime() . "\tAdding LRG comment for $lrg_id to database\n" if ($verbose);
+  $db_adaptor->dbc->do($com_stmt);
+}
+
 
 # Get the LRG sequence
 $node = $fixed->findNode('sequence') or error_msg("ERROR: Could not find LRG sequence tag");
@@ -357,7 +387,7 @@ $stmt = qq{
             taxon_id,
             moltype,
             creation_date
-						$sequence_source_col
+						$other_col
         )
     VALUES (
         '$gene_id',
@@ -365,7 +395,7 @@ $stmt = qq{
         $taxon_id,
         '$moltype',
         '$creation_date'
-				$sequence_source_val
+				$other_val
     )
 };
 print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
@@ -374,7 +404,7 @@ $db_adaptor->dbc->do($stmt);
 # Insert the sequence
 add_sequence($gene_id,'genomic',$db_adaptor,$lrg_seq);
 
-# Some usefule prepared statements
+# Some useful prepared statements
 my $tr_ins_stmt = qq{
     INSERT INTO
         lrg_transcript (
@@ -382,10 +412,27 @@ my $tr_ins_stmt = qq{
             transcript_name
         )
     VALUES (
-        '$gene_id',
+        $gene_id,
         ?
     )
 };
+
+
+my $tr_com_ins_stmt = qq{
+    REPLACE INTO
+        lrg_comment (
+            gene_id,
+            name,
+            comment
+        )
+    VALUES (
+        $gene_id,
+        ?,
+        ?
+    )
+};
+
+
 my $cdna_ins_stmt = qq{
     INSERT INTO
         lrg_cdna (
@@ -478,6 +525,7 @@ my $intron_ins_stmt = qq{
     )
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
+my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
 my $ce_ins_sth = $db_adaptor->dbc->prepare($ce_ins_stmt);
 my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
@@ -509,9 +557,24 @@ my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could
 
 # Parse and add each transcript to the database separately
 while (my $transcript = shift(@{$transcripts})) {
-    
+
     # Transcript name
     my $name = $transcript->data()->{'name'};
+
+    # Check PolyA
+    if ($warning eq 'polyA') {
+      if (-e $warning_log && !-z $warning_log) {
+			  my $info = `grep -w $name $warning_log`;
+        
+        if (defined($info)) {
+          foreach my $inf (split("\n",$info)) {
+            chomp $inf;
+            my (undef,$refseq_with_poly_a) = split(' ',$inf);
+            $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));
+          }
+        }
+      }
+    }
     
     # Get LRG coords
     my (undef,$lrg_start,$lrg_end) = parse_coordinates($transcript->findNode('coordinates'));
@@ -520,6 +583,22 @@ while (my $transcript = shift(@{$transcripts})) {
     $tr_ins_sth->bind_param(1,$name,SQL_VARCHAR);
     $tr_ins_sth->execute();
     my $transcript_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+
+    # Insert comment if exists (optional)
+    my $tr_com_nodes = $transcript->findNodeArray('comment');
+    if (defined($tr_com_nodes)) {
+      while (my $tr_com_node = shift(@{$tr_com_nodes})) {
+        my $tr_comment = $tr_com_node->content();
+
+        # Check if the comment is already in the database
+        my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
+        next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
+
+		    $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+        $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
+        $tr_com_ins_sth->execute();
+      }
+    }
     
     # Get the cdna
     $node = $transcript->findNode('cdna/sequence') or warn("Could not get cdna sequence for transcript $name\, skipping this transcript");
@@ -735,6 +814,10 @@ sub parse_annotation_set {
 
     # Get and parse the source
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
+    my $source_name = $source->findNode('name')->content;
+
+   	return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
+
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
     
@@ -783,6 +866,10 @@ sub parse_annotation_set {
 			}
     }
     
+    # /!\ HACK /!\ # Waiting for the NCBI to change it in their XML files
+    $xml_out =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/ if ($xml_out);
+    # /!\ HACK /!\ # End
+
     $as_ins_sth->bind_param(1,$source_id,SQL_INTEGER);
     $as_ins_sth->bind_param(2,$comment,SQL_VARCHAR);
     $as_ins_sth->bind_param(3,$modification_date,SQL_VARCHAR);
@@ -1060,19 +1147,24 @@ sub parse_source {
     # Enter the LSDB info into db
 		my $stmt;
 		my $lsdb_id;
-		if (defined($lsdb_name) && $lsdb_name ne '' || $lsdb_url ne '') {
+		if (defined($lsdb_name) && ($lsdb_name ne '' || $lsdb_url ne '')) {
+      my $sel_lsdb_name = ($lsdb_name ne '') ? "= '$lsdb_name'" : ' is null';
+      my $sel_lsdb_url  = ($lsdb_url ne '') ?  "= '$lsdb_url'" : ' is null';
     	$stmt = qq{
         SELECT
             lsdb_id
         FROM
             lsdb
         WHERE
-            name = '$lsdb_name' AND
-            url = '$lsdb_url'
+            name $sel_lsdb_name AND
+            url $sel_lsdb_url
         LIMIT 1
     	};
+
 			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
+				$lsdb_name = 'null' if ($lsdb_name eq '');
+        $lsdb_url  = 'null' if ($lsdb_url eq '');
         $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
         $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
         $lsdb_ins_sth_1->execute();
@@ -1090,6 +1182,7 @@ sub parse_source {
             code = '$lsdb_code'
         LIMIT 1
     	};
+
     	$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
         $lsdb_ins_sth_2->bind_param(1,$lsdb_code,SQL_VARCHAR);
@@ -1279,10 +1372,38 @@ sub parse_coordinates {
   return @attribs;
 }
 
+sub check_refseq_has_poly_a {
+  my $transcript = shift;
+
+  my $tr_name = $transcript->data()->{'name'};
+	my $tr_full_seq  = $transcript->findNode('sequence')->content;
+	my $tr_sub_seq = lc(substr($tr_full_seq,-20));
+
+	my $rs_transcripts = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
+	
+  if (scalar(@$rs_transcripts)) {
+    foreach my $rs_tr (@$rs_transcripts) {
+      my $nm = $rs_tr->data()->{'accession'};
+      next if ($rs_tr->data()->{'source'} ne 'RefSeq' || !$nm);
+		   
+      my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='.$nm.'&rettype=fasta&retmode=text';
+
+		  my $rs_full_seq = LWP::Simple::get($url);
+		  next if (!defined($rs_full_seq));
+		  $rs_full_seq =~ s/\n//g;
+		  my $rs_sub_seq = lc(substr($rs_full_seq,-20));
+      return $nm if ($tr_sub_seq ne $rs_sub_seq);
+		}
+  }
+  return undef;
+}
+
+
 sub error_msg {
 	my $msg = shift;
-  print STDERR "$error_log: $msg\n";
+
 	if (defined($error_log)) {
+    print STDERR "$error_log: $msg\n";
 		open LOG, "> $error_log" or die "Error log file $error_log can't be opened";
     print LOG "$msg\n";
     close(LOG);

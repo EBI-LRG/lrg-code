@@ -3,6 +3,7 @@
 use strict;
 use LRG::LRG;
 use Getopt::Long;
+use Cwd;
 
 my ($xml_dir,$index_dir,$help);
 GetOptions(
@@ -17,15 +18,20 @@ usage() if (defined($help));
 
 my $species = 'Homo sapiens';
 my $taxo_id = 9606;
-#my $lrg_list = 'lrgs_in_ensembl.txt';
+my $lrg_list = 'lrgs_in_ensembl.txt';
+
+# Give write permission for the group
+umask(0002);
 
 # List of LRG IDs which are stored in Ensembl
-#print "Generating the file with the list of LRGs in Ensembl ...";
-#my $lrg_from_ensembl = `perl get_LRG_from_Ensembl.pl $index_dir`;
-#die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
-#if (-s "$index_dir/tmp_$lrg_list") {
-#  `mv $index_dir/tmp_$lrg_list $index_dir/$lrg_list`;
-#}
+print "Generating the file with the list of LRGs in Ensembl ...";
+$0 =~ /(.+)\//;
+my $script_path = ($1) ? $1 : '.';
+my $lrg_from_ensembl = `perl $script_path/get_LRG_from_Ensembl.pl $index_dir`;
+die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
+if (-s "$index_dir/tmp_$lrg_list") {
+  `mv $index_dir/tmp_$lrg_list $index_dir/../$lrg_list`;
+}
 print " done\n";
 
 # A directory handle
@@ -88,7 +94,7 @@ foreach my $xml (@xmlfiles) {
 	$entry->addNode('name')->content($hgnc);
 
 	# Get information by source
-	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $last_modified);
+	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified);
 
 	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
 
@@ -119,6 +125,9 @@ foreach my $xml (@xmlfiles) {
 			$chr_name  = $coord->data->{other_name};
 			$chr_start = $coord->data->{other_start};
 			$chr_end   = $coord->data->{other_end};
+
+      my $mapping_span = $coord->findNode('mapping_span');
+      $chr_strand = $mapping_span ->data->{strand};
     }
 	}
   
@@ -136,27 +145,36 @@ foreach my $xml (@xmlfiles) {
 	$add_fields->addNode('field',{'name' => 'chr_name'})->content($chr_name);
   $add_fields->addNode('field',{'name' => 'chr_start'})->content($chr_start);
 	$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
+  $add_fields->addNode('field',{'name' => 'chr_strand'})->content($chr_strand);
 
   ## In ensembl
-  #my $in_ensembl = (`grep -w $lrg_id $index_dir/$lrg_list`) ? 1 : 0;
-  #$add_fields->addNode('field',{'name' => 'in_ensembl'})->content($in_ensembl);
+  my $in_ensembl = (`grep -w $lrg_id $index_dir/../$lrg_list`) ? 1 : 0;
+  $add_fields->addNode('field',{'name' => 'in_ensembl'})->content($in_ensembl);
 
 	# Status
 	$add_fields->addNode('field',{'name' => 'status'})->content($xml->{'status'}) if (defined($xml->{'status'}));
 
-	# Locus + synonyms
+	
+	# Synonym
+  # > Locus
+	my %synonyms;
 	my $loci = $lrg->findNodeArray('updatable_annotation/annotation_set/lrg_locus');
 	foreach my $locus (@{$loci}) {
 		my $l_content = $locus->content;
-		$add_fields->addNode('field',{'name' => 'synonym'})->content($l_content) if ($l_content ne $hgnc);
+    $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
 	}
-
-	# Symbol
+	# > Symbol
 	my $symbols = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/symbol');
 	foreach my $symbol (@{$symbols}) {
 		my $s_content = $symbol->content;
-		$add_fields->addNode('field',{'name' => 'synonym'})->content($s_content) if ($s_content ne $hgnc);
+		$synonyms{$s_content} = 1 if ($s_content ne $hgnc);
 	}
+
+	# > Synonyms
+	foreach my $syn (keys(%synonyms)) {
+		$add_fields->addNode('field',{'name' => 'synonym'})->content($syn);
+	}
+
 
   # Organism
   $add_fields->addNode('field',{'name' => 'organism'})->content($species);
@@ -208,7 +226,6 @@ foreach my $xml (@xmlfiles) {
   # Count
   $count_files ++;
   get_count();
-  
 }
 
 

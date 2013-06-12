@@ -12,11 +12,17 @@ a:hover {
   text-decoration: underline;
 }
 
+img {
+  vertical-align:middle;
+  margin-right:4px;
+  border:none;
+}
+
 h1 {
-  color: #FFFFFF;
-  background: #003399;
-  border: 2px solid black;
-  padding: 10px;
+  display:inline;
+  vertical-align:middle;
+  padding:0px;
+  margin:0px;
 }
 
 h2 {
@@ -32,6 +38,11 @@ h4 {
   font-style: italic;
 }
 
+h1.separator{
+  color:#ffc600;
+  margin: 0px 8px;
+}
+
 .blue{
   color: #003399;
   font-weight: bold;
@@ -42,10 +53,19 @@ h4 {
   font-weight: bold;
 }
 
-.gene_name{
-  font-size:1.1em;
-  padding-left:0px;
-  border: 0px;
+.float_left {
+  float:left;
+}
+
+h3.gene_name{
+  padding: 4px 5px;
+  margin: 10px 6px 0px;
+  background-color: #E2E2F2;
+}
+
+img.external_link {
+ margin-left:4px;
+ vertical-align:top;
 }
 
 th {
@@ -89,34 +109,62 @@ td.sequence_cell {
   color:#000;
 }
 
-tr.gene_info_cell {
-  vertical-align: top;
-  margin:0px;
-  padding:0px;
+span.line_header {
+  font-weight:bold;
+  padding-right:5px;
 }
 
-td.gene_info_cell {
-  border-right: 0px;
-  padding-right:0px;
+div.left_annotation {
+	float:left;
+	width:33%;
+	padding-left:3px;
+}
+
+div.right_annotation {
+	float:right;
+	width:66%;
+	padding-left:0px;
+}
+
+div.transcript_mapping{
+  margin:0px 6px 20px;
+	padding:0px 2px 2px;
+  background-color: #003399;
+}
+
+div.sub_transcript_mapping{
+  background-color:#FFF;
+}
+
+
+table.mapping_detail{
+  background-color:#FFF;
+}
+
+td.mapping{
+  padding-left:10px;
+  padding-right:5px;
 }
 
 td.transcript_mapping{
   border:0px;
-  padding-right:0px;
 }
 
 td.gene_transcript_cell {
-	padding:0px; 
-  margin:0px;
-	border-left:0px;
+	border:none;
+  padding:2px;
 }
 
 ul{
   margin-left:20px;
   padding-left:5px;
   margin-top:2px;
-  margin-bottom:6px;
+  margin-bottom:8px;
   list-style-type:circle;
+}
+
+li {
+  padding-bottom:2px;
 }
 
 ul.ext_id{
@@ -127,13 +175,13 @@ ul.ext_id{
 ul.transcript_label{
   list-style-type:disc;
   color: #003399;
-  margin-top: 2px;
-  padding-bottom: 6px;
+  margin-top: 0px;
+  padding-bottom: 3px;
 }
 
 li.transcript_label{
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 0px;
+  padding-bottom: 3px;
 }
 
 span.transcript_label{
@@ -142,6 +190,9 @@ span.transcript_label{
   padding-right: 5px;
 }
 
+a.menu {
+  color: #003399;
+}
 
 td.quicklinks {
   border: 0px;
@@ -151,9 +202,35 @@ td.quicklinks {
   padding-left: 10px;
 }
 
+div.banner{
+  color: #FFFFFF;
+  border: 1px solid #C0C0C0;
+  margin-bottom:0px;
+  padding-bottom:0px;
+}
+
+#link1_banner.banner{
+  background:url(img/gradient_back.png) repeat-x;
+}
+
+#link2_banner.banner{
+  background:url(../img/gradient_back.png) repeat-x;
+}
+
+div.banner_left{
+  float:left;
+  padding: 10px;
+}
+
+div.banner_right{
+  float:right;
+  padding: 5px;
+}
+
 div.pending {
   border: 2px solid #F00;
   background-color: #FDFDFD;
+  margin-bottom:15px;
 }
 
 .pending_banner {
@@ -169,20 +246,37 @@ div.pending {
   padding:5px;
 }
 
+div.menu{
+  margin-top:0px;
+  padding-top:2px;
+}
+
+#link1_shadow.menu{
+  background:url(img/shadow_top.png) no-repeat 50% 0%;
+}
+
+#link2_shadow.menu{
+  background:url(../img/shadow_top.png) no-repeat 50% 0%;
+}
+
 div.section{
   border-top: 2px solid #003399;
   border-bottom: 1px dotted #003399;
-  padding: 0px;
+  background-color:#FFF;
+  padding: 5px 0px;
+  margin-bottom:15px;
 }
 
 h2.section{
-  padding: 5px;
+  padding: 2px;
   margin: 0px;
+  vertical-align:middle;
+  display:inline;
 }
 
 div.source{
-  margin-left:-5px;
-  padding:5px;
+  margin-left:0px;
+  padding:5px 2px;
   background-color:#E0E0E0;
   border-top: 1px solid #003399;
   border-bottom: 1px dotted #003399;
@@ -191,11 +285,54 @@ div.source{
 span.source{
   color: #003399;
   font-size: 1.3em;
+  padding-left:2px;
   font-weight:bold;
+  vertical-align:middle;
 }
 
 span.source_name{
   color: #000;
+}
+
+div.other_source{
+  margin-left:-2px;
+  padding:10px 0px;
+  background-color:#E0E0E0;
+}
+
+span.other_source{
+  color: #003399;
+  font-size: 1.1em;
+  padding-left:2px;
+  font-weight:bold;
+  vertical-align:middle;
+}
+
+div.main_subsection {
+  background-color: #E0E0E0;
+  padding: 4px;
+  margin-top: 15px;
+  margin-bottom: 0px;
+}
+
+h3.main_subsection {
+  padding-left:2px;
+  vertical-align:middle;
+  display:inline;
+}
+
+h3.subsection {
+  background-color: #E0E0E0;
+  padding: 4px;
+  margin-top: 15px;
+  margin-bottom: 0px;
+}
+
+h3.sub_subsection {
+  background-color: #003399;
+  padding: 2px 5px;
+  margin: 10px 6px 0px;
+  color: #FFF;
 }
 
 td.subsection{
@@ -203,30 +340,33 @@ td.subsection{
   margin-bottom: 4px;
 }
 
-h3.subsection {
-  background-color: #EBEBEB;
-  padding: 4px;
-  margin-top: 15px;
-  margin-bottom: 0px;
-}
-
-h3.sub_subsection {
-  background-color: #F8F8F8;
-  padding: 4px;
-  margin-top: 15px;
-  margin-bottom: 0px;
-}
-
 a.subsection{
   font-weight:normal;
   font-size:14px;
+  padding-left:6px;
+  vertical-align:middle;
 }
 
+div.mapping {
+  padding-left:25px;
+}
+
+h3.mapping {
+  display:inline;
+  padding-right:10px;
+}
 
 .contact_lbl {
   border: 0px;
   padding: 0px;
   font-weight: bold;
+}
+
+.contact_lbl_long {
+  border: 0px;
+  padding: 0px;
+  font-weight: bold;
+  width:70px;
 }
 
 .contact_val {
@@ -253,6 +393,7 @@ a.subsection{
 
 .showhide {
   border: 0px;
+  padding-left:0px;
 }
 
 .partial {
@@ -284,11 +425,13 @@ a.subsection{
 .exon_odd {
   font-family: monospace;
   color: #003399;
+	background: #FFF;
 }
 
 .exon_even {
   font-family: monospace;
   color: #000000;
+	background: #FFF;
 }
 
 .exon_odd_select {
@@ -298,7 +441,7 @@ a.subsection{
 }
 .exon_even_select {
   font-family: monospace;
-  color: #EEE;
+  color: #FFF;
   background: #68C746;
 }
 
@@ -369,13 +512,13 @@ a.subsection{
 }
 
 .oddDiv {
-  background: #F8F8F8;
-  margin: 5px;
+  background: #F9F9F9;
+  margin: 5px 5px 60px;
 }
      
 .evenDiv {
   background: #FFFFFF;
-  margin: 5px;
+  margin: 5px 5px 60px;
 }
 
 .hidden {
@@ -388,6 +531,11 @@ a.subsection{
 	display: inline;
 }
 
+div.meta_source {
+  background: #F9F9F9;
+  margin-top:20px;
+}
+
 div.requester_source {
 	background-color: #E0E0E0; 
 	border-style: dashed; 
@@ -397,17 +545,21 @@ div.requester_source {
 }
 
 div.external_source {
-	background-color: #F0F0F0; 
-	padding-left: 5px;
+	background-color: #E0E0E0; 
+	border-style: dashed; 
+	border-width: 1px; 
+	padding-left: 5px; 
+	padding-bottom: 10px
 }
 
 div.lrg_source {
 	background-color: #F0F0F0; 
 	padding-left: 5px;
+  padding-top: 2px;
 }
 
 div.lrg_transcript {
-	padding: 2px 0px;
+	padding: 8px 0px 2px;
   text-decoration:underline;
   font-weight:bold;
   font-size:1.1em;
@@ -418,3 +570,91 @@ div.fixed_transcript_annotation {
   padding-left: 5px;
   clear: both;
 }
+
+div.key_left {
+  float:left;
+  font-weight:bold;
+  margin-top:5px;
+}
+
+div.key_right {
+  float:left;
+  margin-left:5px;
+  padding:5px;
+  background-color:#FFF;
+  border:1px solid #EEE;
+  border-radius:10px;
+}
+
+ul.key{
+  margin-left:10px;
+  margin-bottom:0px;
+}
+li.key {
+  margin-bottom:5px;
+}
+
+.legend {
+	text-align:center;
+	margin:2px 0px;
+	border:none;
+	font-size:0.9em;
+}
+
+.no_data{
+  padding: 4px;
+  text-align:center;
+  font-weight:bold;
+}
+
+.hide_button {
+  vertical-align:middle;
+  border:1px solid #3f9221;
+  border-radius:8px;
+  padding:1px 2px;
+  text-decoration:none;
+  background-color: #48a726;
+  color:#FFF;
+}
+.hide_button:hover {
+  border:1px solid #003399;
+  text-decoration:underline;
+}
+
+.show_hide {
+  border:1px solid #AAA;
+  border-radius:8px;
+  padding:1px 2px;
+  margin-left:5px;
+}
+.show_hide:hover {
+  border:1px solid #48a726;
+  text-decoration:none;
+  background-color:#FFF;
+}
+
+a.show_hide_anno {
+  vertical-align:middle;
+  border:1px solid #3f9221;
+  border-radius:9px;
+  padding:2px;
+  left:350px;
+  position:absolute;
+  text-decoration:none;
+  background-color: #48a726;
+  color:#FFF;
+}
+a.show_hide_anno:hover {
+  border:1px solid #48a726;
+  text-decoration:none;
+  background-color: #FFF;
+  color: #48a726;
+}
+
+div.top_up_anno_link {
+  float:right;
+  padding:0px 4px 4px;
+  font-size:0.9em;
+  background-color:#F9F9F9;
+}
+
