@@ -17,7 +17,6 @@ my @option_defs = (
   'species=s',
   'assembly=s',
   'replace!',
-  'registry=s',
 	'lrg_id=s',
   'locus_source=s',
   'help!'
@@ -28,7 +27,7 @@ my %option;
 GetOptions(\%option,@option_defs);
 
 # Use default database (public) unless otherwise specified
-$option{species} ||= 'Homo_sapiens';
+$option{species} ||= 'homo_sapiens';
 $option{lrg_set_name} ||= 'LRG';
 $option{locus_source} ||= 'HGNC';
 if (!defined($option{lrg_id})) {
@@ -38,11 +37,14 @@ if (!defined($option{lrg_id})) {
 
 # Load the registry from the database
 my $registry = 'Bio::EnsEMBL::Registry';
-$registry->load_all( $option{registry} );
+$registry->load_registry_from_db(
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
+);
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
-my $schema_version = $mca->get_schema_version();
+my $ens_db_version = $mca->get_schema_version();
 
 # Get the current date
 my (undef,undef,undef,$mday,$mon,$year,undef,undef,undef) = localtime;
@@ -96,7 +98,7 @@ else {
 }
 
 # Update the meta information for the annotation_set
-$ensembl_aset->comment(sprintf("Annotation is based on Ensembl release \%d",$schema_version));
+$ensembl_aset->comment(sprintf("Annotation is based on Ensembl release \%d",$ens_db_version));
 $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
