@@ -17,7 +17,7 @@ my @option_defs = (
   'species=s',
   'assembly=s',
   'replace!',
-	'lrg_id=s',
+  'lrg_id=s',
   'locus_source=s',
   'help!'
 );
@@ -31,8 +31,8 @@ $option{species} ||= 'homo_sapiens';
 $option{lrg_set_name} ||= 'LRG';
 $option{locus_source} ||= 'HGNC';
 if (!defined($option{lrg_id})) {
-	$option{xmlfile} =~ /(LRG_\d+)/;
-	$option{lrg_id} = $1;
+  $option{xmlfile} =~ /(LRG_\d+)/;
+  $option{lrg_id} = $1;
 }
 
 # Load the registry from the database
@@ -41,6 +41,9 @@ $registry->load_registry_from_db(
     -host => 'ensembldb.ensembl.org',
     -user => 'anonymous'
 );
+
+
+my @set_list = ('LRG' , 'NCBI RefSeqGene', 'Ensembl', 'Community');
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
@@ -92,9 +95,24 @@ else {
   warn (sprintf("A new Ensembl annotation set will be added"));
   $ensembl_aset = LRG::API::EnsemblAnnotationSet->new();
   
-  # Attach the Ensembl annotation set to the LRG object
-  $lrg->updatable_annotation->annotation_set([@{$lrg->updatable_annotation->annotation_set()},$ensembl_aset]);
+  my %sets;
+  foreach my $set (@{$lrg->updatable_annotation->annotation_set()}) {
+    my $name = $set->source->name;
+    $sets{$name} = $set;
+  }
   
+  # Attach the Ensembl annotation set to the LRG object, keeping the right order
+  my @set_data;
+  foreach my $set_name (@set_list) {
+    push @set_data, $sets{$set_name} if ($sets{$set_name});
+    if (!$sets{$set_name} && $set_name eq 'Ensembl') {
+      push @set_data, $ensembl_aset;
+    }
+  }
+  foreach my $set_name (keys(%sets)) {
+    push @set_data, $sets{$set_name} if (!grep { $set_name eq $_ } @set_list);
+  }
+  $lrg->updatable_annotation->annotation_set(\@set_data);
 }
 
 # Update the meta information for the annotation_set
@@ -148,48 +166,48 @@ my $lrg_locus;
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'LRG');
   $lrg_aset = $aset;
-	$lrg_locus = $lrg_aset->lrg_locus->value;
-	# Check LRG locus source (sometimes lost when parsing the XML file ...)
-	$lrg_aset->lrg_locus->attribute([LRG::API::Meta->new('source',$option{locus_source})]) if (!$lrg_aset->lrg_locus->attribute) ;
+  $lrg_locus = $lrg_aset->lrg_locus->value;
+  # Check LRG locus source (sometimes lost when parsing the XML file ...)
+  $lrg_aset->lrg_locus->attribute([LRG::API::Meta->new('source',$option{locus_source})]) if (!$lrg_aset->lrg_locus->attribute) ;
   last;
 }
 
 #my $diffs_list;
 my $diffs_list = get_diff($asets);
 foreach my $f (@ens_feature) {
-	foreach my $g (@{$f->gene}) {
+  foreach my $g (@{$f->gene}) {
     next if($g->source ne 'Ensembl');
 
-		# Check gene name
-		my $gene_flag = 0;
-		my $symbols = $g->symbol();	
+    # Check gene name
+    my $gene_flag = 0;
+    my $symbols = $g->symbol();  
 
-		foreach my $sym (@$symbols) {
-			if ($sym->name eq $lrg_locus) {	
-				$gene_flag = 1;
-				last;
-			}
-		}
+    foreach my $sym (@$symbols) {
+      if ($sym->name eq $lrg_locus) {  
+        $gene_flag = 1;
+        last;
+      }
+    }
 
-		# Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
-		if ($gene_flag) {
-			my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
-			$ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
-		}
-		
-		remove_grc_coordinates($g);
-		foreach my $t (@{$g->transcript}) {
-			remove_grc_coordinates($t);
-			foreach my $e (@{$t->exon}) {
-				remove_grc_coordinates($e);
-			}
-			if ($t->translation) {
-				foreach my $trans (@{$t->translation}) {
-					remove_grc_coordinates($trans);
-				}
-			}
-		}
-	}
+    # Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
+    if ($gene_flag) {
+      my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
+      $ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
+    }
+    
+    remove_grc_coordinates($g);
+    foreach my $t (@{$g->transcript}) {
+      remove_grc_coordinates($t);
+      foreach my $e (@{$t->exon}) {
+        remove_grc_coordinates($e);
+      }
+      if ($t->translation) {
+        foreach my $trans (@{$t->translation}) {
+          remove_grc_coordinates($trans);
+        }
+      }
+    }
+  }
 }
 
 # Attach the features and mappings to the Ensembl annotation set
@@ -212,29 +230,29 @@ warn("Done!\n");
 
 # /!\ Needs to check the assemblies first (TODO) /!\ #
 sub get_diff {
-	my $sets = shift;
-	my %diffs_list;
-	foreach my $set (@{$sets}) {
-  	next unless ($set->source->name() eq 'LRG');
-  	
-		foreach my $m (@{$set->mapping() || []}) {
-			foreach my $ms (@{$m->mapping_span()}) {
-				foreach my $diff (@{$ms->mapping_diff}) {
-					$diffs_list{$diff->lrg_coordinates->start} = $diff;
-				}
-			}
-		}
-  	last;
-	}
-	return \%diffs_list;
+  my $sets = shift;
+  my %diffs_list;
+  foreach my $set (@{$sets}) {
+    next unless ($set->source->name() eq 'LRG');
+    
+    foreach my $m (@{$set->mapping() || []}) {
+      foreach my $ms (@{$m->mapping_span()}) {
+        foreach my $diff (@{$ms->mapping_diff}) {
+          $diffs_list{$diff->lrg_coordinates->start} = $diff;
+        }
+      }
+    }
+    last;
+  }
+  return \%diffs_list;
 }
 
 sub remove_grc_coordinates {
-	my $obj = shift;
-	my @coord;
-	foreach my $c (@{$obj->coordinates}) {
-		push (@coord,$c) if ($c->coordinate_system =~ /^LRG/);
-	}
-	$obj->coordinates(\@coord);
+  my $obj = shift;
+  my @coord;
+  foreach my $c (@{$obj->coordinates}) {
+    push (@coord,$c) if ($c->coordinate_system =~ /^LRG/);
+  }
+  $obj->coordinates(\@coord);
 }
 
