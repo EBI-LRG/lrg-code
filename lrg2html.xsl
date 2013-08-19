@@ -1000,30 +1000,32 @@
   <xsl:param name="transname" />
   <xsl:param name="cdna_coord_system" />
   <xsl:param name="peptide_coord_system" />
-
-  <a>
-  <xsl:attribute name="name">exons_<xsl:value-of select="$transname"/></xsl:attribute>
-  </a>
-
-  <ul class="transcript_label">
-    <li class="transcript_label">
-      <a>
-        <xsl:attribute name="name">exon_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-      </a>
-      <span class="transcript_label">Exons</span> 
-      <a class="show_hide">
-        <xsl:attribute name="href">javascript:showhide('exontable_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide
-      </a>
-    </li>
-  </ul>
-        
-  <!-- EXONS -->
-  <xsl:call-template name="exons">
-    <xsl:with-param name="exons_id"><xsl:value-of select="$transname" /></xsl:with-param>
-    <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
-    <xsl:with-param name="show_other_exon_naming">0</xsl:with-param>
-  </xsl:call-template>
   
+  <xsl:if test="/*/fixed_annotation/transcript/exon">
+    <a>
+      <xsl:attribute name="name">exons_<xsl:value-of select="$transname"/></xsl:attribute>
+    </a>
+
+    <ul class="transcript_label">
+      <li class="transcript_label">
+        <a>
+          <xsl:attribute name="name">exon_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
+        </a>
+        <span class="transcript_label">Exons</span> 
+        <a class="show_hide">
+          <xsl:attribute name="href">javascript:showhide('exontable_<xsl:value-of select="$transname"/>');</xsl:attribute>show/hide
+        </a>
+      </li>
+    </ul>
+        
+    <!-- EXONS -->
+    <xsl:call-template name="exons">
+      <xsl:with-param name="exons_id"><xsl:value-of select="$transname" /></xsl:with-param>
+      <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
+      <xsl:with-param name="show_other_exon_naming">0</xsl:with-param>
+    </xsl:call-template>
+
+  </xsl:if>
 </xsl:template>
 
 
@@ -1946,6 +1948,16 @@
       </xsl:for-each>
       </table>
     </xsl:for-each>
+
+    <!-- Non coding exons -->
+    <xsl:if test="not(/*/fixed_annotation/transcript[@name = $transname]/coding_region)">
+      <xsl:call-template name="non_coding_exons">
+        <xsl:with-param name="exons_id"><xsl:value-of select="$exons_id" /></xsl:with-param>
+        <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
+        <xsl:with-param name="cdna_coord_system"><xsl:value-of select="$cdna_coord_system" /></xsl:with-param>
+        <xsl:with-param name="show_other_exon_naming"><xsl:value-of select="$show_other_exon_naming" /></xsl:with-param>
+      </xsl:call-template>
+    </xsl:if>
       <p>
         <a>
           <xsl:attribute name="href">#exon_anchor_<xsl:value-of select="$exons_id"/></xsl:attribute>
@@ -1957,6 +1969,109 @@
     </div>
   </div>
 </xsl:template>
+
+
+<xsl:template name="non_coding_exons">
+  <xsl:param name="exons_id"/>
+  <xsl:param name="transname"/>
+  <xsl:param name="cdna_coord_system" />
+  <xsl:param name="show_other_exon_naming"/>
+    <table>
+    
+        <tr>
+          <th colspan="2">LRG genomic</th>
+          <th colspan="2">Transcript</th>
+          <th>Intron</th>
+        <xsl:if test="$show_other_exon_naming=1 and /*/updatable_annotation/annotation_set/fixed_transcript_annotation[@name = $transname]/other_exon_naming">
+          <th class="exon_separator"> </th>
+          <th colspan="100" class="exon_label">Source of exon numbering</th>
+        </xsl:if>
+
+        </tr>
+      
+        <tr>
+          <th>Start</th><th>End</th>
+          <th>Start</th><th>End</th>
+          <th>Phase</th>
+
+      <xsl:if test="$show_other_exon_naming=1">
+        <xsl:for-each select="/*/updatable_annotation/annotation_set">
+          <xsl:variable name="setnum" select="position()"/>
+          <xsl:variable name="setname" select="source[1]/name" />
+          <xsl:for-each select="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
+            <xsl:if test="position()=1">
+              <th class="exon_separator"></th>
+            </xsl:if>
+              <th class="exon_label">
+                <a class="exon_label">
+                  <xsl:attribute name="href">#fixed_transcript_annotation_aa_set_<xsl:value-of select="$setnum"/></xsl:attribute>
+                  <xsl:attribute name="title"><xsl:value-of select="@description"/></xsl:attribute>
+                  <xsl:value-of select="@description"/>
+                </a>
+              </th>
+          </xsl:for-each>
+        </xsl:for-each>
+      </xsl:if>
+        </tr>
+     
+      <xsl:for-each select="/*/fixed_annotation/transcript[@name = $transname]/exon">
+        <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+        <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+        <xsl:variable name="cdna_start" select="coordinates[@coord_system = $cdna_coord_system]/@start" />
+        <xsl:variable name="cdna_end" select="coordinates[@coord_system = $cdna_coord_system]/@end" />
+        <xsl:variable name="exon_number" select="position()"/>
+
+        <tr align="right">
+          <xsl:attribute name="id">table_exon_<xsl:value-of select="$exons_id"/>__<xsl:value-of select="$exon_number"/></xsl:attribute>
+          <xsl:attribute name="onclick">javascript:highlight_exon('<xsl:value-of select="$transname"/>','<xsl:value-of select="$exon_number"/>')</xsl:attribute>
+          <xsl:choose>
+            <xsl:when test="round(position() div 2) = (position() div 2)">
+              <xsl:attribute name="class">exontable</xsl:attribute>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:attribute name="class">introntable</xsl:attribute>
+            </xsl:otherwise>
+          </xsl:choose>
+        
+          <td><xsl:value-of select="$lrg_start"/></td>
+          <td><xsl:value-of select="$lrg_end"/></td>
+          <td><xsl:value-of select="$cdna_start"/></td>
+          <td><xsl:value-of select="$cdna_end"/></td>
+    
+          <td>
+        <xsl:choose>
+          <xsl:when test="name(following-sibling::*[1]) = 'intron'">
+            <xsl:value-of select="following-sibling::intron[1]/@phase"/>
+          </xsl:when>
+          <xsl:otherwise>-</xsl:otherwise>
+        </xsl:choose>
+          </td>
+    
+        <xsl:if test="$show_other_exon_naming=1">  
+          <xsl:for-each select="/*/updatable_annotation/annotation_set">
+            <xsl:if test="position()=1">
+            <th class="exon_separator" />
+            </xsl:if>
+			      <xsl:for-each select="fixed_transcript_annotation[@name = $transname]/other_exon_naming">
+      	      <xsl:variable name="setnum" select="position()"/>
+      	      <xsl:variable name="label" select="exon[coordinates[@coord_system = $lrg_coord_system and @start=$lrg_start and @end=$lrg_end]]" />
+        	  <td>
+        	    <xsl:choose>
+            	  <xsl:when test="$label">
+            	   	<xsl:value-of select="$label"/>
+            	  </xsl:when>
+                <xsl:otherwise>-</xsl:otherwise>
+        	    </xsl:choose>
+				    </td>
+		  	    </xsl:for-each>
+          </xsl:for-each>
+        </xsl:if>
+        </tr>
+      
+      </xsl:for-each>
+      </table>
+</xsl:template>
+
 
 
 <!-- UPDATABLE ANNOTATION FEATURES -->  
