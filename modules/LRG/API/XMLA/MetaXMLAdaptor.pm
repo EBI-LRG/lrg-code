@@ -101,6 +101,14 @@ sub _fetch_all_by_element_names {
   $attributes = $self->wrap_array($attributes);
   foreach my $attribute (@{$attributes}) {
     my $elements = $node->findNodeArraySingle($attribute);
+
+    foreach my $e (@{$elements}) {
+      next if (!$e->content);
+      my $content = $e->content();
+      $content =~ s/^\s+|\s+$//g;
+      $content =~ s/\s,/,/g;
+      $e->content($content);
+    }
     push(@objs,@{$self->objs_from_xml($elements)});
   }
   return \@objs;  
@@ -128,6 +136,7 @@ sub objs_from_xml {
     
     # Create the Meta object
     my $obj = LRG::API::Meta->new($key,$value,$attribute);
+
     push(@objs,$obj);
     
   }
@@ -144,15 +153,18 @@ sub xml_from_objs {
   
   my @xml;
   foreach my $obj (@{$objs}) {
-    
+
     # Determine the type of meta value and call the appropriate dump method
     my $meta_node = LRG::Node::newEmpty($obj->key());
     # Add any attributes
     foreach my $attrib (@{$obj->attribute() || []}) {
       $meta_node->addData({$attrib->key() => $attrib->value()});
     }
-    
-    $meta_node->content($obj->value());
+    my $value = $obj->value();
+    $value =~ s/^\s+|\s+$//g;
+    $value =~ s/\s,/,/g;
+
+    $meta_node->content($value);
     push(@xml,$meta_node);
     
   }
