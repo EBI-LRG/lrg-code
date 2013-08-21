@@ -1937,7 +1937,7 @@
             	  <xsl:when test="$label">
             	   	<xsl:value-of select="$label"/>
             	  </xsl:when>
-                <xsl:otherwise>-</xsl:otherwise>
+                <xsl:otherwise>Same as the specific numbering</xsl:otherwise>
         	    </xsl:choose>
 				    </td>
 		  	    </xsl:for-each>
