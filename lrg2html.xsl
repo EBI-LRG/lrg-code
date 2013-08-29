@@ -7,7 +7,7 @@
 <!-- LRG names -->
 <xsl:variable name="lrg_gene_name" select="/lrg/updatable_annotation/annotation_set/lrg_locus"/>
 <xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
-<xsl:variable name="pending" select="0"/>
+<xsl:variable name="pending" select="1"/>
 
 <!-- Source names -->
 <xsl:variable name="lrg_source_name">LRG</xsl:variable>
