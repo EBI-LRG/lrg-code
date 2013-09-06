@@ -50,6 +50,14 @@ GetOptions(
   'warning=s'           => \$warning,
 );
 
+
+my %allowed_up_annotation_sets = (
+ 'LRG'             => 1,
+ 'NCBI RefSeqGene' => 1,
+ 'Ensembl'         => 1,
+ 'Community'       => 1,
+);
+
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
 error_msg("An input LRG XML file must be specified") unless (defined($xmlfile) || defined($purge));
 error_msg("A correspondiong HGNC symbol must be specified") unless (defined($hgnc_symbol) || (defined($purge) && defined($lrg_id)));
@@ -816,7 +824,7 @@ sub parse_annotation_set {
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-   	return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
+   	return undef if (!$allowed_up_annotation_sets{$source_name});
 
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
@@ -1163,10 +1171,20 @@ sub parse_source {
 
 			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
-				$lsdb_name = 'null' if ($lsdb_name eq '');
-        $lsdb_url  = 'null' if ($lsdb_url eq '');
-        $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
-        $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
+				if ($lsdb_name eq '') {
+          $lsdb_name = 'NULL';
+          $lsdb_ins_sth_1->bind_param(1,$lsdb_name);
+        } 
+        else {
+          $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
+        }
+        if ($lsdb_url eq '') {
+          $lsdb_url  = 'NULL';
+          $lsdb_ins_sth_1->bind_param(2,$lsdb_url);
+        }
+        else {
+          $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
+        }
         $lsdb_ins_sth_1->execute();
         $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
     	}
