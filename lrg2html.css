@@ -87,6 +87,8 @@ a.exon_label {
 th.exon_separator {
 	background:#000000;
 	border-color:#000000;
+  width:5px;
+  padding:0px;
 }
 
 table {
@@ -175,7 +177,7 @@ ul.ext_id{
 ul.transcript_label{
   list-style-type:disc;
   color: #003399;
-  margin-top: 0px;
+  margin-top: 10px;
   padding-bottom: 3px;
 }
 
@@ -356,10 +358,34 @@ h3.mapping {
   padding-right:10px;
 }
 
+.source_left {
+  border: 0px;
+  padding: 5px 0px 5px;
+  font-weight:bold;
+  font-size:1.1em;
+  vertical-align:top;
+  width: 80px;
+}
+.source_right {
+  border: 0px;
+  padding: 5px 0px 5px;
+}
+
+.source_contact {
+  margin-bottom:5px;
+  vertical-align:top;
+  background-color:#F9F9F9;
+  border: 1px solid #CCC;
+  border-radius:5px;
+  padding:2px 4px;
+}
+
 .contact_lbl {
   border: 0px;
   padding: 0px;
   font-weight: bold;
+  color:#005;
+  text-align:right;
 }
 
 .contact_lbl_long {
@@ -367,6 +393,8 @@ h3.mapping {
   padding: 0px;
   font-weight: bold;
   width:70px;
+  color:#005;
+  text-align:right;
 }
 
 .contact_val {
@@ -531,6 +559,11 @@ h3.mapping {
 	display: inline;
 }
 
+div.unhidden_content {
+  background-color: #EEE;
+  padding:2px 5px 5px;
+}
+
 div.meta_source {
   background: #F9F9F9;
   margin-top:20px;
@@ -541,7 +574,7 @@ div.requester_source {
 	border-style: dashed; 
 	border-width: 1px; 
 	padding-left: 5px; 
-	padding-bottom: 10px
+	padding-bottom: 10px;
 }
 
 div.external_source {
@@ -582,7 +615,7 @@ div.key_right {
   margin-left:5px;
   padding:5px;
   background-color:#FFF;
-  border:1px solid #EEE;
+  border:1px solid #CCC;
   border-radius:10px;
 }
 
@@ -623,6 +656,7 @@ li.key {
 
 .show_hide {
   border:1px solid #AAA;
+  background-color:#FFF;
   border-radius:8px;
   padding:1px 2px;
   margin-left:5px;
@@ -630,7 +664,6 @@ li.key {
 .show_hide:hover {
   border:1px solid #48a726;
   text-decoration:none;
-  background-color:#FFF;
 }
 
 a.show_hide_anno {

@@ -17,11 +17,10 @@ function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);
   
   if(lyrobj.className == "hidden") {
-	lyrobj.className = "unhidden";
+	  lyrobj.className = "unhidden";
   }
-  
   else {
-	lyrobj.className = "hidden";
+	  lyrobj.className = "hidden";
   }
 }
 
@@ -80,22 +79,24 @@ function clear_exon_highlight(eclass) {
 }
 
 // function to highlight exons
-function highlight_exon(tname,ename) {
+function highlight_exon(tname,ename,pname) {
   var num = tname+'_'+ename;
-  var tableobj = document.getElementById('table_exon_'+num);
-  var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+ename);
+  var pnum = tname+'_'+pname+'_'+ename;
+  var tableobj = document.getElementById('table_exon_'+pnum);
+  var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename);
 
   // we only want to get the genomic exon if this is transcript t1
-  var genobj;
-  var exon_select;
+  var genob, exon_select;
   if(num.substr(0,2) == 't1') {
 	  genobj = document.getElementById('genomic_exon_'+num);
   }
   
   var cdnaobj = document.getElementById('cdna_exon_'+num);
-  var pepobj = document.getElementById('peptide_exon_'+num);
+  var pepobj = document.getElementById('peptide_exon_'+pnum);
 
-  var exon_select = retrieve_exon_class(cdnaobj);
+  if (cdnaobj) {
+    exon_select = retrieve_exon_class(cdnaobj);
+  }
 
   if(tableobj) {
 	  if(tableobj.className.length > 11) {
@@ -103,19 +104,27 @@ function highlight_exon(tname,ename) {
 	    if(num.substr(0,2) == 't1') {
 		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
 	    }
-	    cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
-	    pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+     
+      if (cdnaobj) {
+	      cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+      }
+      if (pepobj) { 
+	      pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+      }
 	  }
-	
 	  else {
 	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
 	    if(num.substr(0,2) == 't1') {
 		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
 	    }
 
-	    cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
-	    pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
-	  }
+      if (cdnaobj) {
+        cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+      }
+      if (pepobj) { 
+	      pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+      }
+    }
   }
   
   if(othertableobj) {
@@ -129,9 +138,8 @@ function highlight_exon(tname,ename) {
 }
 
 // function to clear exon highlighting
-function clear_highlight(trans) {
-  var i;
-  var obj;
+function clear_highlight(trans,pep) {
+  var i, j, obj, exon_select;
   
   // clear genomic
   i = 1;
@@ -145,34 +153,66 @@ function clear_highlight(trans) {
   i = 1;
   while(document.getElementById('cdna_exon_'+trans+'_'+i)) {
 	  obj = document.getElementById('cdna_exon_'+trans+'_'+i);
-    var exon_select = clear_exon_highlight(obj);
+    exon_select = clear_exon_highlight(obj);
 	  obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
 	  i++;
   }
   
-  // clear exons
-  i = 1;
-  while(document.getElementById('table_exon_'+trans+'_'+i)) {
-	  obj = document.getElementById('table_exon_'+trans+'_'+i);
-	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	  i++;
-  }
-  i = 1;
-  while(document.getElementById('table_exon_'+trans+'_other_naming_'+i)) {
-	  obj = document.getElementById('table_exon_'+trans+'_other_naming_'+i);
-	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	  i++;
-  }
+  if (pep) {
+    // clear exons
+    i = 1;
+    while(document.getElementById('table_exon_'+trans+'_'+pep+'_'+i)) {
+	    obj = document.getElementById('table_exon_'+trans+'_'+pep+'_'+i);
+	    obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	    i++;
+    }
+    i = 1;
+    while(document.getElementById('table_exon_'+trans+'_other_naming_'+pep+'_'+i)) {
+	    obj = document.getElementById('table_exon_'+trans+'_other_naming_'+pep+'_'+i);
+	    obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+	    i++;
+    }
 
-  // clear peptide
-  i = 1;
-  while(document.getElementById('peptide_exon_'+trans+'_'+i)) {
-	  obj = document.getElementById('peptide_exon_'+trans+'_'+i);
-    var exon_select = clear_exon_highlight(obj);
-	  obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
-	  i++;
+    // clear peptide
+    i = 1;
+    while(document.getElementById('peptide_exon_'+trans+'_'+pep+'_'+i)) {
+	    obj = document.getElementById('peptide_exon_'+trans+'_'+pep+'_'+i);
+      exon_select = clear_exon_highlight(obj);
+	    obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+	    i++;
+    }
+  }
+  else {
+    // clear exons
+    var table_exon_list = getElementsByIdStartsWith('tr','table_exon_'+trans);
+    for (j = 0; j < table_exon_list.length; j++) {
+      obj = table_exon_list[j];
+      obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+    }
+
+    // clear peptide
+    var peptide_exon_list = getElementsByIdStartsWith('span','peptide_exon_'+trans);
+    for (j = 0; j < peptide_exon_list.length; j++) {
+      obj = peptide_exon_list[j];
+      exon_select = clear_exon_highlight(obj);
+	    obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+    }
   }
 }
+
+
+function getElementsByIdStartsWith(selectorTag, prefix) {
+    var items = [];
+    var myPosts = document.getElementsByTagName(selectorTag);
+    for (var i = 0; i < myPosts.length; i++) {
+        //omitting undefined null check for brevity
+        if (myPosts[i].id.lastIndexOf(prefix, 0) === 0) {
+            items.push(myPosts[i]);
+        }
+    }
+    return items;
+}
+
 
 // function to replace a text by a link
 function create_external_link (pending) {
