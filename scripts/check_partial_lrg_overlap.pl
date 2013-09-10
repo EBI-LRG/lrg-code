@@ -49,7 +49,9 @@ if ($datalist) {
   open F, "< $datalist" or die $!;
   while (<F>) {
     chomp $_;
-    my $xmlfile = "$xmldir/$_.xml";
+    my $file = $_;
+       $file =~ s/\s//g;
+    my $xmlfile = "$xmldir/$file.xml";
     push(@files,$xmlfile);
     die(sprintf("XML file '\%s' does not exist",$xmlfile)) unless (-e $xmlfile);
   }
