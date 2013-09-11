@@ -51,6 +51,7 @@ if ($datalist) {
     chomp $_;
     my $file = $_;
        $file =~ s/\s//g;
+    next if ($file !~ /^LRG_\d+$/i);
     my $xmlfile = "$xmldir/$file.xml";
     push(@files,$xmlfile);
     die(sprintf("XML file '\%s' does not exist",$xmlfile)) unless (-e $xmlfile);
