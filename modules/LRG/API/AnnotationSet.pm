@@ -43,6 +43,11 @@ sub lrg_locus {
   return $self->_meta('lrg_locus',@_);
 }
 
+sub remove_lrg_locus {
+  my $self = shift;
+  return $self->_remove_meta('lrg_locus');
+}
+
 sub _meta {
   my $self = shift;
   my $key = shift;
@@ -67,6 +72,21 @@ sub _meta {
   #$self->meta([@keep,$value]);
 
   return $value;
+}
+
+sub _remove_meta {
+  my $self = shift;
+  my $key = shift;
+  
+  # Locate the meta object that contains the key
+  my @keep;
+  foreach my $m (@{$self->meta() || []}) {
+    next if ($m->key() eq $key);
+    push(@keep,$m);
+  }
+  
+  # Update the meta with the existing list except the removed metadata
+  $self->meta(\@keep);
 }
 
 1;

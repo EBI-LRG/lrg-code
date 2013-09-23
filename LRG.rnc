@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
-# Version $Revision: 1.7 $
-# Last modified: 2013-03-26
+# Version $Revision: 1.8 $
+# Last modified: 2013-08-28
 
 start = LRG
 LRG = element lrg { 
@@ -22,6 +22,9 @@ FIXED_ANNOTATION = element fixed_annotation {
          pattern = 'LRG_[0-9]+'
       }
    },
+   element hgnc_id {
+     xsd:integer
+   }?,
    element sequence_source {
       text #seq-id of the sequence that LRG is based on, normally RefSeqGene
    }?,  
@@ -160,6 +163,7 @@ PEPTIDE_SEQUENCE = element sequence {
 
 # exon element - coordinates given in three systems
 FX_EXON = element exon {
+   attribute label { xsd:string }, #Exon number based on LRG's t# transcripts
    LRG_COORDS,
    LRG_CDNA_COORDS,
    LRG_PEPTIDE_COORDS*
@@ -169,7 +173,7 @@ FX_EXON = element exon {
 LRG_CDNA_COORDS = element coordinates {
    attribute coord_system {
       xsd:string {
-         pattern = 'LRG_[0-9]+_t[0-9]+'
+         pattern = 'LRG_[0-9]+t[0-9]+'
       }
    },  
    COORD_ATTRIBS
@@ -179,7 +183,7 @@ LRG_CDNA_COORDS = element coordinates {
 LRG_PEPTIDE_COORDS = element coordinates {
    attribute coord_system {
       xsd:string {
-         pattern = 'LRG_[0-9]+_p[0-9]+[A-Za-z]*'
+         pattern = 'LRG_[0-9]+p[0-9]+[A-Za-z]*'
       }
    },  
    COORD_ATTRIBS
@@ -239,8 +243,6 @@ FIXED_TRANSCRIPT_ANNOTATION = element fixed_transcript_annotation {
          pattern = 't[0-9]+'
       }
    },
-   
-   COMMENT?,
 
    OTHER_EXON_NAMING*,
    ALT_AA_NUMBERING*
@@ -251,7 +253,11 @@ COMMENT = element comment { text }
 OTHER_EXON_NAMING = element other_exon_naming {
 
    attribute description { text },
-   
+ 
+   element url {
+      text
+   }?,
+   COMMENT?,
    element exon {
       LRG_COORDS,
       element label { text }
@@ -261,7 +267,11 @@ OTHER_EXON_NAMING = element other_exon_naming {
 ALT_AA_NUMBERING = element alternate_amino_acid_numbering {
 
    attribute description { text },
-         
+   
+   element url {
+      text
+   }?, 
+   COMMENT?,     
    element align {
       attribute lrg_start { xsd:integer },
       attribute lrg_end {xsd:integer },
@@ -322,6 +332,7 @@ UP_GENE = element gene {
    
    FEATURE_SOURCE,
    FEATURE_ACCESSION,
+   SYMBOL,
    
    # LRG coordinates should always be provided
    LRG_COORDS,
@@ -330,14 +341,12 @@ UP_GENE = element gene {
    
    # indicates if the gene only partially overlaps the LRG
    PARTIAL*,
-   SYMBOL*,
    LONG_NAME*,
    COMMENT*,
    DB_XREF*,
    
    # genes may contain zero or more transcripts
-   UP_TRANSCRIPT*
-   
+   UP_TRANSCRIPT* 
 }
 
 FEATURE_ACCESSION = attribute accession {
@@ -356,8 +365,9 @@ PARTIAL = element partial {
 }
          
 SYMBOL = element symbol {
+   attribute name { text },
    FEATURE_SOURCE?,
-   text
+   SYNONYM*
 }
 
 LONG_NAME = element long_name {
@@ -425,3 +435,5 @@ UP_PROTEIN_PRODUCT = element protein_product {
    COMMENT*,
    DB_XREF*
 }
+
+

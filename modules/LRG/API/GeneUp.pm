@@ -13,7 +13,7 @@ sub initialize {
   my ($source,$accession,$coordinates,$xref,$meta,$symbol,$transcript) = @_;
   
   $self->SUPER::initialize($source,$accession,$coordinates,$xref,$meta);  
-  $self->symbol($symbol,'LRG::API::Symbol',1);
+  $self->symbol($symbol,'LRG::API::Symbol');
   $self->transcript($transcript,'LRG::API::TranscriptUp',1);
 }
 

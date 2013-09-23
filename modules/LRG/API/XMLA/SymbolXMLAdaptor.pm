@@ -30,11 +30,13 @@ sub objs_from_xml {
     
     # Get the symbol source attribute
     my $source = $node->data->{source};    
-    # Get the name 
-    my $name = $node->content();
+    # Get the symbol name attribute
+    my $name = $node->data->{name};
+    # Get any synonyms
+    my @synonym = map {$_->content()} @{$node->findNodeArraySingle('synonym') || []};
     
     # Create the symbol object
-    my $obj = LRG::API::Symbol->new($source,$name);
+    my $obj = LRG::API::Symbol->new($source,$name,\@synonym);
     push(@objs,$obj);
   }
   
@@ -52,13 +54,17 @@ sub xml_from_objs {
   my @xml;
   foreach my $obj (@{$objs}) {
     
-    # Create the node
-    my $node = LRG::Node::newEmpty('symbol');
-    if ($obj->source()) {
-      $node->addData({'source' => $obj->source()});
-    }
-    $node->content($obj->name());
-    push(@xml,$node);
+    # Create the node symbol
+    my $symbol = LRG::Node::newEmpty('symbol',undef,{'name' => $obj->name()});
+    $symbol->addData({'source' => $obj->source()}) if ($obj->source());
+
+    # Add synonyms
+    foreach my $synonym (@{$obj->synonym() || []}) {
+      my $node = LRG::Node::newEmpty('synonym');
+      $node->content($synonym);
+      $symbol->addExisting($node);
+    } 
+    push(@xml,$symbol);
     
   }
   

@@ -24,6 +24,8 @@ sub objs_from_xml {
   
   $xml = $self->wrap_array($xml);
   my @objs;
+  
+  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $e_adaptor = $self->xml_adaptor->get_ExonLabelXMLAdaptor();
 
   foreach my $node (@{$xml}) {
@@ -33,11 +35,13 @@ sub objs_from_xml {
     
     # Get the description
     my $description = $node->data->{description};
+    # Get the url and comment
+    my $meta = $m_adaptor->fetch_all_by_other_naming($node);
     # Get the labels
     my $label = $e_adaptor->fetch_all_by_naming($node);
     
     # Create the naming object
-    my $obj = LRG::API::ExonNaming->new($description,$label);
+    my $obj = LRG::API::ExonNaming->new($description,$meta,$label);
     push(@objs,$obj);
   }
   
@@ -52,6 +56,7 @@ sub xml_from_objs {
   $objs = $self->wrap_array($objs);
   map {$self->assert_ref($_,'LRG::API::ExonNaming')} @{$objs};
   
+  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $e_adaptor = $self->xml_adaptor->get_ExonLabelXMLAdaptor();
   my @xml;
   foreach my $obj (@{$objs}) {
@@ -59,6 +64,10 @@ sub xml_from_objs {
     # Create the node
     my $node = LRG::Node::newEmpty('other_exon_naming');
     $node->addData({'description' => $obj->description()});
+    
+    # Add element nodes for the meta values (url and comment)
+    $m_adaptor->other_naming_from_objs($obj->meta(),$node);
+    
     map {$node->addExisting($_)} @{$e_adaptor->xml_from_objs($obj->exon_label())};
     
     push(@xml,$node);

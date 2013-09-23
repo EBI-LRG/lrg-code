@@ -856,13 +856,14 @@ sub sort_nodes {
     
     'fixed_annotation'  =>  {
       'id'  =>  1,
-      'organism'  =>  2,
-      'source'  =>  3,
-      'mol_type' =>  4,
-      'creation_date' =>  5,
-      'comment' => 6,
-      'sequence'  =>  7,
-      'transcript'  =>  8
+      'hgnc_id' => 2,
+      'organism'  =>  3,
+      'source'  =>  4,
+      'mol_type' =>  5,
+      'creation_date' =>  6,
+      'comment' => 7,
+      'sequence'  =>  8,
+      'transcript'  =>  9
     },
     
     'transcript'  =>  {
@@ -932,11 +933,15 @@ sub sort_nodes {
     },
     
     'other_exon_naming' =>  {
-      'exon'  =>  1
+      'url' => 1,
+      'comment' => 2,
+      'exon'  =>  3
     },
     
     'alternate_amino_acid_numbering'  =>  {
-      'align' =>  1
+      'url' => 1,
+      'comment' => 2,
+      'align' =>  3
     },
     
     'mapping' =>  {
@@ -952,9 +957,9 @@ sub sort_nodes {
     },
     
     'gene'  =>  {
-      'coordinates' =>  1,
-      'partial' =>  2,
-      'symbol'  =>  3,
+      'symbol'  =>  1,
+      'coordinates' =>  2,
+      'partial' =>  3,
       'long_name' =>  4,
       'comment' =>  5,
       'db_xref' =>  6,
@@ -980,7 +985,13 @@ sub sort_nodes {
   	# However, first we need to check if they have a name attribute. If they do, they should be sorted by that instead
 	  # (this is to make sure fixed transcripts are sorted according to the order they are specified and not their coordinates)
     if (defined($a->data->{'name'}) && defined($b->data->{'name'})) {
-      return ($a->data->{'name'} cmp $b->data->{'name'});
+      if ($a->name eq 'transcript') {
+        my $a_id = substr($a->data->{'name'},1); # Remove the "t";
+        my $b_id = substr($b->data->{'name'},1); # Remove the "t";
+        return ($a_id <=> $b_id);
+      } else {
+        return ($a->data->{'name'} cmp $b->data->{'name'});
+      }
     }
     # Sort the updatable genes and transcripts (in the updatable annotation feature) according to their coordinates.
 	  if (defined($a->data->{'accession'}) && defined($b->data->{'accession'}) && ($a->name eq 'transcript' or $a->name eq 'gene')) {

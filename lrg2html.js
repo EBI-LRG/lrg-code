@@ -1,3 +1,6 @@
+// Interval time
+var interval = 20;
+var max_tr_id = 18;
 
 // function to add to element content
 function append(id,content,clear) {
@@ -17,12 +20,102 @@ function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);
   
   if(lyrobj.className == "hidden") {
+	  fadeIn(lyrobj);
 	  lyrobj.className = "unhidden";
+	  rotate90('img_'+lyr);
   }
   else {
+    fadeOut(lyrobj);
 	  lyrobj.className = "hidden";
+	  rotate90('img_'+lyr, 1);
+	  
   }
 }
+
+// function to show layers
+function show_content(lyr,lyr_anchor) {
+  var lyrobj = document.getElementById(lyr);
+  if(lyrobj.className == "hidden") {
+	  fadeIn(lyrobj);
+	  lyrobj.className = "unhidden";
+	  rotate90('img_'+lyr);
+  }
+  if (lyr_anchor) {
+    var anchor_obj = document.getElementById(lyr_anchor);
+    anchor_obj.scrollIntoView(true);
+  }
+  else {
+	  lyrobj.scrollIntoView(true);
+	}
+}
+
+function fadeIn(element) {
+    var op = 0;  // initial opacity
+    element.style.display = "inline";
+    var timer = setInterval(function () {
+        if (op >= 0.9){
+          clearInterval(timer);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op += 0.1;
+    }, interval);
+}
+
+function fadeOut(element) {
+    var op = 1;  // initial opacity
+    var timer = setInterval(function () {
+        if (op <= 0.1){
+          clearInterval(timer);
+          element.style.display = "none";
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op -= 0.1;
+    }, interval);
+}
+
+// function to rotate image
+function rotate90(img,reset) {
+  var imgobj = document.getElementById(img);
+  var angle_start = 0;
+  var angle_stop = 90;
+  if (imgobj) {
+    if (reset) {
+      angle_start = 90;
+      angle_stop = 0;
+      
+      var angle = angle_start;
+      var timer = setInterval(function () {
+        if (angle <= 0){
+          clearInterval(timer);
+        }
+        rotate_obj(imgobj,angle);
+	      angle -= 10;
+	    }, interval);
+	  }
+	  else {
+      var angle = angle_start;
+      var timer = setInterval(function () {
+        if (angle >= 90){
+          clearInterval(timer);
+        }
+       rotate_obj(imgobj,angle);
+	      angle += 10;
+	    }, interval);
+	  }
+	}
+}
+
+// Rotate an object
+function rotate_obj(obj,angle){
+  obj.style.webkitTransform = "rotate("+angle+"deg)";
+	obj.style.MozTransform = "rotate("+angle+"deg)";
+	obj.style.msTransform = "rotate("+angle+"deg)";
+	obj.style.OTransform = "rotate("+angle+"deg)";
+	obj.style.transform = "rotate("+angle+"deg)";
+}
+
 
 // function to show layers
 function show(lyr) {
@@ -79,7 +172,7 @@ function clear_exon_highlight(eclass) {
 }
 
 // function to highlight exons
-function highlight_exon(tname,ename,pname) {
+function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var num = tname+'_'+ename;
   var pnum = tname+'_'+pname+'_'+ename;
   var tableobj = document.getElementById('table_exon_'+pnum);
@@ -87,7 +180,7 @@ function highlight_exon(tname,ename,pname) {
 
   // we only want to get the genomic exon if this is transcript t1
   var genob, exon_select;
-  if(num.substr(0,2) == 't1') {
+  if(tname == 't1') {
 	  genobj = document.getElementById('genomic_exon_'+num);
   }
   
@@ -101,11 +194,11 @@ function highlight_exon(tname,ename,pname) {
   if(tableobj) {
 	  if(tableobj.className.length > 11) {
 	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	    if(num.substr(0,2) == 't1') {
+	    if(tname == 't1' && !no_gene_tr_highlight) {
 		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
 	    }
      
-      if (cdnaobj) {
+      if (cdnaobj && !no_gene_tr_highlight) {
 	      cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
       }
       if (pepobj) { 
@@ -114,11 +207,11 @@ function highlight_exon(tname,ename,pname) {
 	  }
 	  else {
 	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-	    if(num.substr(0,2) == 't1') {
+	    if(tname == 't1' && !no_gene_tr_highlight) {
 		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
 	    }
 
-      if (cdnaobj) {
+      if (cdnaobj && !no_gene_tr_highlight) {
         cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
       }
       if (pepobj) { 
@@ -136,6 +229,24 @@ function highlight_exon(tname,ename,pname) {
 	  }
   }
 }
+
+// function to highlight exons from a transcript
+/*function highlight_exon_from_transcript(tname,ename) {
+  var no_gene_tr_highlight;
+  
+  for (var i=1;i<=max_tr_id;i++) {
+    if(document.getElementById('table_exon_'+tname+'_p'+i+'_'+ename)) {
+      var pname= "p"+i;
+      if (!no_gene_tr_highlight) {
+        highlight_exon(tname,ename,pname);
+        no_gene_tr_highlight = 1;
+      }  
+      else {
+        highlight_exon(tname,ename,pname,no_gene_tr_highlight);
+      }
+    }
+  }
+}*/
 
 // function to clear exon highlighting
 function clear_highlight(trans,pep) {
@@ -262,8 +373,8 @@ function search_in_ensembl(lrg_id, pending) {
   var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
   var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
  
-  var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle" alt="right_arrow"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
-  var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle" alt="right_arrow"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
   
   for (var i = 0; i < fileArray.length; i++) {
     var id = fileArray[i];

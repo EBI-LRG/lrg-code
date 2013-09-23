@@ -60,14 +60,11 @@ sub xml_from_objs {
     # Create the root transcript element
     my $xref = LRG::Node::newEmpty('db_xref',undef,{'source' => $obj->source(), 'accession' => $obj->accession()});
 
-    # Different cases depending on schema version to use
-    if ($self->xml_adaptor->schema_version() >= 1.7) {
-      # Add synonyms
-      foreach my $synonym (@{$obj->synonym()}) {
-        my $node = LRG::Node::newEmpty('synonym');
-        $node->content($synonym);
-        $xref->addExisting($node);
-      } 
+    # Add synonyms
+    foreach my $synonym (@{$obj->synonym() || []}) {
+      my $node = LRG::Node::newEmpty('synonym');
+      $node->content($synonym);
+      $xref->addExisting($node); 
     }
     push(@xml,$xref);
       

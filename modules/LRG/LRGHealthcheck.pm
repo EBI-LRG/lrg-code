@@ -23,11 +23,12 @@ our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
 our @CHECKS = (
     'schema',
     'id',
+    'requester',
     'cDNA',
     'translation',
     'exons',
     'phases',
-    'exon_labels',
+    'other_exon_labels',
     'mappings',
     'gene_name',
     'partial',
@@ -101,7 +102,11 @@ sub existing_entry {
     my $existing_lrg = LRG::LRG::newFromFile($existing_file) or die("Could not create LRG object from XML file $existing_file");
       
     ## Compare "sequence_source", "organism", "mol_type", "creation_date"
-    foreach my $tag ('sequence_source','organism','mol_type','creation_date') {
+    foreach my $tag ('hgnc_id','sequence_source','organism','mol_type','creation_date') {
+   
+      # Temporary check (during the transition between schema 1.7 and schema 1.8)
+      next if (!$existing_lrg->findNode("fixed_annotation/".$tag));
+      
       my $new_content = $self->{'lrg'}->findNode("fixed_annotation/".$tag)->content;
       my $existing_content = $existing_lrg->findNode("fixed_annotation/".$tag)->content;
       if ($new_content ne $existing_content) {
@@ -264,6 +269,22 @@ sub existing_entry {
 }
 
 
+# Check that LRG has at least one contact as requester
+sub requester {
+    my $self = shift;
+
+    # Name of this check
+    my $name = sub_name();
+
+    my $sources = $self->get_sources($name);
+    
+    my $passed = (defined($sources) && scalar(@$sources) != 0) ? 1 : 0;
+    $self->{'check'}{$name}{'passed'} = $passed;
+    
+    return $passed;
+}
+
+
 # Check that the cDNA constructed from genomic sequence and exon coordinates is identical to the cDNA specified within the record
 sub cDNA {
     my $self = shift;
@@ -351,7 +372,7 @@ sub coordinates {
 }
   
 # Check that all other_exon_namings have a corresponding exon in the fixed section and that all or none of the exons have other_exon_namiong
-sub exon_labels {
+sub other_exon_labels {
     my $self = shift;
     my $passed = 1;
     
@@ -483,20 +504,51 @@ sub exons {
         my $exons = $self->get_exons($name,$transcript) or ($passed = 0);
         next if (!defined($exons));
         
-        #ÊCheck each exon
+
+        
+        # Check each exon
         my $lrg_last_end;
         my $cdna_last_end;
         my $peptide_last_end;
         my $last_phase;
         my $last_expected_phase = 0;
-
+        my $last_exon_label = 0;
+        my $last_label_suffix = '';
+        my %list_exon_label;
+        
         foreach my $exon (@{$exons}) {
+         
+          # Check exon labels
+          my $label = $exon->data()->{'label'};
+             $label =~ /^(\d+)([a-z]*)$/g;
+          my $label_prefix = $1;
+          my $label_suffix = ($2) ? $2 : '';
+          
+          # Check duplicated labels
+          if ($list_exon_label{$label}) {
+            if ($list_exon_label{$label} == 1) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "Duplicated label '$label' for the exons of the transcript $tr_name//";
+            }
+            $list_exon_label{$label} ++;
+          }
+          else {
+            $list_exon_label{$label} = 1;
+          } 
+          # Check not ordered labels
+          if ($label_prefix < $last_exon_label) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "Exon label '$label' of the transcript $tr_name is less than its previous exon label '$last_exon_label$last_label_suffix'.//";
+          }  
+          $last_exon_label = $label_prefix;
+          $last_label_suffix = $label_suffix; 
+            
             
           # Get LRG coordinates (these are required by the schema)
           my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
           my $lrg_length = ($lrg_end - $lrg_start + 1);
             
-          #ÊGet the cdna coordinates (these are optional)
+          # Get the cdna coordinates (these are optional)
           my ($cdna_start,$cdna_end) = $self->get_coordinates($exon,'cdna');
           if (defined($cdna_start)) {
             my $cdna_length = ($cdna_end - $cdna_start + 1);
@@ -829,13 +881,9 @@ sub partial_gene {
         foreach my $gene (@{$gene_sets}) {
             
             my $is_lrg_gene = 0; 
-            my $symbols = $gene->findNodeArray('symbol');
-            foreach my $symbol (@{$symbols}) {
-              if ($symbol->content eq $lrg_gene_name) {
-                $is_lrg_gene = 1;
-                last;
-              }
-            }
+            my $symbol = $gene->findNode('symbol');
+            $is_lrg_gene = 1 if ($symbol->data->{name} eq $lrg_gene_name);
+
             next if ($is_lrg_gene == 0);
             
             my $gene_name = $gene->data->{accession};
@@ -917,11 +965,14 @@ sub partial {
                 $partial{$node->content()} = 1;
               }
             }
-            
+               
             # Check if the gene symbol corresponds to the lrg_gene_name and if partial is indicated 
-            if (scalar(keys(%partial)) > 0 && defined($lrg_gene_name) && exists($gene->data()->{'symbol'}) && $gene->data()->{'symbol'} eq $lrg_gene_name) {
+            my $symbol = $gene->findNode('symbol');
+            if (scalar(keys(%partial)) > 0 && defined($lrg_gene_name) && defined($symbol)) {
+              if ($symbol->data()->{name} eq $lrg_gene_name) {
                 $passed = 0;
                 $self->{'check'}{$name}{'message'} .= "The LRG gene $lrg_gene_name itself is indicated as partial in the $source updatable annotation//";                
+              }
             }
             
             #ÊGet the transcripts
@@ -1070,8 +1121,12 @@ sub schema {
             $self->{'check'}{$name}{'message'} .= "Could not open RelaxNG Compact XML definition file for reading//";
         }
         if ($lrg_version ne $rnc_version) {
-            $passed = 0;
-            $self->{'check'}{$name}{'message'} .= "RelaxNG Compact XML definition file version $rnc_version is different than LRG XML version $lrg_version//";
+            my @lrg_v = split(/\./,$lrg_version);
+            my @rnc_v = split(/\./,$rnc_version);
+            if ($lrg_v[0] ne $rnc_v[0] || $lrg_v[1] ne $rnc_v[1]) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "RelaxNG Compact XML definition file version $rnc_version is different from the LRG XML version $lrg_version//";
+            }
         }
     }
     else {
@@ -1379,7 +1434,7 @@ sub get_sources {
         
     # Get the LRG id
     my $lrg_id = $self->{'lrg_id'};
-        
+    
     $self->{'check'}{$name}{'passed'} = 0;
     $self->{'check'}{$name}{'message'} .= "Could not find any requester information for $lrg_id//";
         

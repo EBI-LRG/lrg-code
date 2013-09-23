@@ -24,6 +24,8 @@ sub objs_from_xml {
   
   $xml = $self->wrap_array($xml);
   my @objs;
+  
+  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $a_adaptor = $self->xml_adaptor->get_AminoAcidAlignXMLAdaptor();
 
   foreach my $node (@{$xml}) {
@@ -33,11 +35,13 @@ sub objs_from_xml {
     
     # Get the description
     my $description = $node->data->{description};
+    # Get the url and comment
+    my $meta = $m_adaptor->fetch_all_by_other_naming($node);
     # Get the aligns
     my $align = $a_adaptor->fetch_all_by_numbering($node);
     
     # Create the numbering object
-    my $obj = LRG::API::AminoAcidNumbering->new($description,$align);
+    my $obj = LRG::API::AminoAcidNumbering->new($description,$meta,$align);
     push(@objs,$obj);
   }
   
@@ -52,6 +56,7 @@ sub xml_from_objs {
   $objs = $self->wrap_array($objs);
   map {$self->assert_ref($_,'LRG::API::AminoAcidNumbering')} @{$objs};
   
+  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $a_adaptor = $self->xml_adaptor->get_AminoAcidAlignXMLAdaptor();
   my @xml;
   foreach my $obj (@{$objs}) {
@@ -59,6 +64,10 @@ sub xml_from_objs {
     # Create the node
     my $node = LRG::Node::newEmpty('alternate_amino_acid_numbering');
     $node->addData({'description' => $obj->description()});
+    
+    # Add element nodes for the meta values (url and comment)
+    $m_adaptor->other_naming_from_objs($obj->meta(),$node);
+    
     map {$node->addExisting($_)} @{$a_adaptor->xml_from_objs($obj->align())};
     
     push(@xml,$node);

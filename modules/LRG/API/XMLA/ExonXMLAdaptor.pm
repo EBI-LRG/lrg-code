@@ -13,16 +13,21 @@ sub fetch_all_by_transcript {
   my $self = shift;
   my $transcript = shift;
   
+  # Get the LRG XML object from the xml_adaptor
+  my $xml = $self->xml_adaptor->xml() or die ("Could not get XML from XMLAdaptor");
+  my $lrg_id = $xml->findNodeSingle('fixed_annotation/id')->content();
+
   # Grep out the exons and introns from the transcript's child elements
   my @elements = grep { $_->name() =~ m/exon|intron/ } @{$transcript->{nodes}};
   
-  my $objs = $self->objs_from_xml(\@elements);
+  my $objs = $self->objs_from_xml(\@elements,$lrg_id.$transcript->data()->{'name'});
   return $objs;
 }
 
 sub objs_from_xml {
   my $self = shift;
   my $xml = shift;
+  my $transcript_name = shift;
   
   # Expect an array of xml elements
   $xml = $self->wrap_array($xml);
@@ -33,18 +38,27 @@ sub objs_from_xml {
   my $start_phase;
   my $end_phase;
   
+  my $count = 1;
   foreach my $element (@{$xml}) {
     
     if ($element->name() eq 'exon') {
       
+      # Get the exon label attribute
+      my $label = $element->data->{label};
+         $label = $count if(!defined($label));      
+      
+      # Get the exon full name
+      my $full_name = $transcript_name.'e'.$label;
+
       # Get a coordinates element
       my $coords = $c_adaptor->fetch_all_by_exon($element);
 			
       # Set the start phase to equal the last end phase
       $start_phase = $end_phase;
       # Create the Exon object
-      $obj = LRG::API::Exon->new($coords,$start_phase);
+      $obj = LRG::API::Exon->new($label,$coords,$start_phase,undef,$full_name);
       push(@objs,$obj);
+      $count ++;
       next;
       
     }
@@ -75,6 +89,7 @@ sub xml_from_objs {
     
     # Create an exon object 
     my $exon = LRG::Node::newEmpty('exon');
+    $exon->addData({'label' => $obj->label()});
 
     # Add LRG coordinates
 		map {$exon->addExisting($_)} @{$c_adaptor->xml_from_objs($obj->coordinates())};

@@ -13,7 +13,7 @@ our @ISA = "LRG::API::XMLA::BaseXMLAdaptor";
 sub fetch_all_by_locus_reference {
   my $self = shift;
   my $lrg = shift;
-  my $attributes = shift || ['sequence_source','organism','mol_type','creation_date','comment'];
+  my $attributes = shift || ['hgnc_id','sequence_source','organism','mol_type','creation_date','comment'];
   
   return $self->_fetch_all_by_element_names($lrg,$attributes);
 }
@@ -70,6 +70,15 @@ sub fetch_by_exon_label {
   my $objs = $self->_fetch_all_by_element_names($exon,['label']);
   return undef unless(scalar(@{$objs}));
   return $objs->[0];
+}
+
+# Fetch url and comment for other_exon_naming and alternate_amino_acid_numbering
+sub fetch_all_by_other_naming {
+  my $self = shift;
+  my $other_naming = shift;
+  my $objs = $self->_fetch_all_by_element_names($other_naming,['url','comment']);
+  return undef unless(scalar(@{$objs}));
+  return $objs;
 }
 
 # Fetch transcript comment(s)
@@ -291,6 +300,32 @@ sub annotation_set_from_objs {
   $lrg_gene_name_node->addData($lrg_gene_name_data) if (defined($lrg_gene_name_node));
   
   return $annotation_set;
+}
+
+# Populate an exon label or amino acid numbering object with the meta objects
+sub other_naming_from_objs {
+  my $self = shift;
+  my $objs = shift;
+  my $other_naming = shift;
+  
+  $self->assert_ref($other_naming,'LRG::Node');
+  
+  map {$other_naming->addExisting($_)} @{$self->xml_from_objs($objs)};
+  return $other_naming;
+  
+  $objs = $self->wrap_array($objs);
+  map {$self->assert_ref($_,'LRG::API::Meta')} @{$objs};
+  
+  foreach my $obj (@{$objs}) {
+    # URL and comment
+    if (($obj->key() eq 'url' || $obj->key() eq 'comment') && $obj->value()) {
+      my $node =  LRG::Node->newEmpty($obj->key());
+      $node->content($obj->value());
+      $other_naming->addExisting($node);
+    }
+  }
+  
+  return $other_naming;
 }
 
 1;

@@ -10,16 +10,18 @@ our @ISA = "LRG::API::Base";
 
 sub initialize {
   my $self = shift;
-  my ($source,$name) = @_;
+  my ($source,$name,$synonym) = @_;
   
   $self->source($source);
   $self->name($name);
+  $self->synonym($synonym);
 }
 
 sub _permitted {
   return [
     'source',
-    'name'
+    'name',
+    'synonym'
   ];
 }
 

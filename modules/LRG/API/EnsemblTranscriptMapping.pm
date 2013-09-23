@@ -60,8 +60,11 @@ sub get_transcripts_mappings {
 		my $tr_span;
 		
 		# Mapping tag	
-    my $enst = $self->tr_adaptor->fetch_by_stable_id($t->accession);
-		my $tr_accession = $t->accession.".".$enst->version; 
+    my $t_acc = $t->accession;
+       $t_acc =~ /^(.+)\./;
+       $t_acc = ($1) ? $1 : $t_acc;
+    my $enst = $self->tr_adaptor->fetch_by_stable_id($t_acc);
+		my $tr_accession = $t_acc.".".$enst->version; 
 
 		foreach my $tc (@{$t->coordinates}) {
 			if ($tc->coordinate_system !~ /LRG/) {
@@ -94,7 +97,7 @@ sub get_transcripts_mappings {
 				else {
 					my $ense = $self->ex_adaptor->fetch_by_stable_id($e->accession);
 					my @coords = $enst->genomic2cdna($ense->start,$ense->end,$ense->strand);
-					foreach my $ce (@coords) {
+					foreach my $ce (@coords) {        
 						$o_coord = LRG::API::Coordinates->new( $e->accession,
                                                    $ce->start,
                                                    $ce->end,

@@ -56,7 +56,8 @@ sub xml_from_objs {
     my $node = LRG::Node::newEmpty('align');
     foreach my $coords ($obj->lrg_coordinates(),$obj->other_coordinates()) {
       foreach my $dir (('start','end')) {
-        $node->addData({sprintf("\%s$dir",$coords->prefix()) => $coords->$dir()});  
+        my $prefix = ($coords->prefix() eq 'lrg_') ? $coords->prefix() : ''; # start and end instead of other_start and other_end
+        $node->addData({sprintf("\%s$dir",$prefix) => $coords->$dir()});  
       }
     }
     push(@xml,$node);

@@ -246,15 +246,15 @@ sub symbol {
   my $self = shift;
   my $feature = shift;
   
-  my @symbols;
-  
+  my $symbol;
+
   if (ref($feature) eq 'Bio::EnsEMBL::Gene') {
     my $name = $feature->external_name();
     my $source = $feature->external_db();
-    push(@symbols,LRG::API::Symbol->new($source,$name));
+    $symbol = LRG::API::Symbol->new($source,$name);
   }
   
-  return \@symbols;
+  return $symbol;
 }
 
 sub comment {

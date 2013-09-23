@@ -14,18 +14,20 @@ sub fetch_all {
   
   # Get the LRG XML object from the xml_adaptor
   my $xml = $self->xml_adaptor->xml() or die ("Could not get XML from XMLAdaptor");
-  
+  my $lrg_id = $xml->findNodeSingle('fixed_annotation/id')->content();
+
   # Get the transcripts
   my $transcripts = $xml->findNodeArraySingle('fixed_annotation/transcript');
-  
-  my $objs = $self->objs_from_xml($transcripts);
+
+  my $objs = $self->objs_from_xml($transcripts,$lrg_id);
   
   return $objs; 
 }
 
 sub objs_from_xml {
-  my $self = shift;
-  my $xml = shift;
+  my $self   = shift;
+  my $xml    = shift;
+  my $lrg_id = shift;
   
   $xml = $self->wrap_array($xml);
   
@@ -43,6 +45,8 @@ sub objs_from_xml {
     
     # Get the transcript name attribute
     my $name = $transcript->data->{name};
+    # Get the transcript full name
+    my $full_name = $lrg_id.$name;
     # Get the comment(s) (optional)
     my $comment = $m_adaptor->fetch_all_by_transcript($transcript);
     # Get a coordinates object
@@ -55,7 +59,7 @@ sub objs_from_xml {
     my $exons = $e_adaptor->fetch_all_by_transcript($transcript);
     
     # Create the transcript object
-    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds,$comment);
+    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds,$comment,$full_name);
     push(@objs,$obj);
   }
   
