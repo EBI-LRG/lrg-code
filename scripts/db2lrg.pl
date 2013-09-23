@@ -16,14 +16,13 @@ my $pass;
 my $dbname;
 my $verbose;
 my $hgnc_symbol;
+my $hgnc_id;
 my $lrg_id;
 my $include_external;
 my $list_lsdbs;
 my @filter_list_name;
 my @filter_list_lsdb;
 my @filter_list_url;
-
-my $LRG_SCHEMA_VERSION = "1.7";
 
 GetOptions(
   'host=s'		=> \$host,
@@ -69,6 +68,7 @@ if (defined($lrg_id)) {
         SELECT
             gene_id,
             symbol,
+            hgnc_id,
             lrg_id
         FROM
             gene
@@ -77,13 +77,14 @@ if (defined($lrg_id)) {
     };
     $stmt .= qq{ AND symbol = '$hgnc_symbol'} if (defined($hgnc_symbol));
     $stmt .= qq{ LIMIT 1};
-    ($gene_id,$hgnc_symbol,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to LRG id $lrg_id" . (defined($hgnc_symbol) ? " and HGNC symbol $hgnc_symbol" : ""));
+    ($gene_id,$hgnc_symbol,$hgnc_id,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to LRG id $lrg_id" . (defined($hgnc_symbol) ? " and HGNC symbol $hgnc_symbol" : ""));
 }
 else {
     $stmt = qq{
         SELECT
             gene_id,
             symbol,
+            hgnc_id,
             lrg_id
         FROM
             gene
@@ -91,7 +92,7 @@ else {
             symbol = '$hgnc_symbol'
         LIMIT 1
     };
-    ($gene_id,$hgnc_symbol,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to HGNC symbol $hgnc_symbol");
+    ($gene_id,$hgnc_symbol,$hgnc_id,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to HGNC symbol $hgnc_symbol");
 }
 
 # If a list of LSDBs were asked for, print that
@@ -182,11 +183,19 @@ $sth->fetch();
 
 # Create LRG root elements and fixed_annotation element
 my $lrg_root = LRG::LRG::new($xmlfile);
+
+my $stmt_version = qq{ SELECT meta_value FROM meta WHERE meta_key='schema' LIMIT 1 };
+my $LRG_SCHEMA_VERSION = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt_version)->[0][0] or die ("Could not find the LRG schema version in the database");
 my $lrg = $lrg_root->addNode('lrg',{'schema_version' => $LRG_SCHEMA_VERSION});
+
 my $fixed = $lrg->addNode('fixed_annotation');
 
 # Set the data
 $fixed->addNode('id')->content($lrg_id);
+
+if (defined($hgnc_id)) {
+	$fixed->addNode('hgnc_id')->content($hgnc_id);
+}
 
 if (defined($sequence_source)) {
 	$fixed->addNode('sequence_source')->content($sequence_source);
@@ -248,6 +257,7 @@ my $cfs_stmt = qq{
 my $e_stmt = qq{
     SELECT
 				e.exon_id,
+        e.exon_label,
         e.lrg_start,
         e.lrg_end,
         e.cdna_start,
@@ -390,10 +400,10 @@ while ($sth->fetch()) {
  
     $e_sth->bind_param(1,$t_id,SQL_INTEGER);
     $e_sth->execute();
-    my ($e_id,$e_lrg_start,$e_lrg_end,$e_cdna_start,$e_cdna_end,$e_peptide_name,$e_peptide_start,$e_peptide_end,$phase);
-    $e_sth->bind_columns(\$e_id,\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$phase);
+    my ($e_id,$e_label,$e_lrg_start,$e_lrg_end,$e_cdna_start,$e_cdna_end,$e_peptide_name,$e_peptide_start,$e_peptide_end,$phase);
+    $e_sth->bind_columns(\$e_id,\$e_label,\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$phase);
     while ($e_sth->fetch()) {
-				my $exon = $transcript->addNode('exon');
+				my $exon = $transcript->addNode('exon',{'label' => $e_label});
 
 				# Add LRG coordinates
         $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
@@ -401,7 +411,7 @@ while ($sth->fetch()) {
 
 				# Add cDNA coordinates if defined
         if (defined($e_cdna_start) && defined($e_cdna_end)) {
-          $coords = coords_node("${lrg_id}_${t_name}",$e_cdna_start,$e_cdna_end);
+          $coords = coords_node("${lrg_id}${t_name}",$e_cdna_start,$e_cdna_end);
           $exon->addExisting($coords);
         }
 
@@ -409,7 +419,7 @@ while ($sth->fetch()) {
 				$ep_sth->execute($e_id);
 				$ep_sth->bind_columns(\$e_peptide_name,\$e_peptide_start,\$e_peptide_end);
 				while ($ep_sth->fetch()) {
-          $coords = coords_node("${lrg_id}_${e_peptide_name}",$e_peptide_start,$e_peptide_end);
+          $coords = coords_node("${lrg_id}${e_peptide_name}",$e_peptide_start,$e_peptide_end);
           $exon->addExisting($coords);
         }
         
@@ -483,6 +493,138 @@ while ($sth->fetch()) {
         $annotation_set->addExisting($node);
     }
 }
+
+
+# Check for other exon naming & alternative amino acid numbering
+my $other_exon_stmt = qq{
+    SELECT
+      other_exon_id, 
+      description,
+      url,
+      comment
+    FROM
+      other_exon
+    WHERE 
+      gene_id = '$gene_id' AND
+      lrg_id = '$lrg_id' AND
+      transcript_name = ?
+};
+my $other_exon_label_stmt = qq{
+    SELECT
+      o.other_exon_label, 
+      e.lrg_start,
+      e.lrg_end
+    FROM
+      other_exon_label o,
+      lrg_exon e
+    WHERE 
+      e.exon_label = o.lrg_exon_label AND
+      e.transcript_id = ? AND 
+      o.other_exon_id = ?
+    ORDER BY 
+      e.exon_id
+};
+my $other_aa_stmt = qq{
+    SELECT
+      other_aa_id, 
+      description,
+      url,
+      comment
+    FROM
+      other_aa
+    WHERE 
+      gene_id = '$gene_id' AND
+      lrg_id = '$lrg_id' AND
+      transcript_name = ?
+};
+my $other_aa_number_stmt = qq{
+    SELECT 
+      lrg_start,
+      lrg_end,
+      start,
+      end
+    FROM
+      other_aa_number
+    WHERE 
+      other_aa_id = ?
+    ORDER BY 
+      other_aa_id
+};
+my $other_exon_sth       = $db_adaptor->dbc->prepare($other_exon_stmt);
+my $other_exon_label_sth = $db_adaptor->dbc->prepare($other_exon_label_stmt);
+my $other_aa_sth         = $db_adaptor->dbc->prepare($other_aa_stmt);
+my $other_aa_number_sth  = $db_adaptor->dbc->prepare($other_aa_number_stmt);
+
+my $community_source = LRG::Node::new('source');
+   $community_source->addNode('name')->content("Community");
+
+my $community_aset = LRG::Node::new('annotation_set');
+   $community_aset->addExisting($community_source);
+   $community_aset->addNode('modification_date')->content(LRG::LRG::date());
+my $community_flag = 0;
+
+my $fixed_transcript_annotation= LRG::Node::new('fixed_transcript_annotation');
+foreach my $tr (@{$fixed->findNodeArray('transcript')}) {
+  my $tr_name = $tr->data()->{'name'};
+  
+  my $tr_id_stmt = qq{ SELECT transcript_id FROM lrg_transcript WHERE gene_id = '$gene_id' AND transcript_name = '$tr_name'};
+  my $tr_id = $db_adaptor->dbc->db_handle->selectall_arrayref($tr_id_stmt)->[0][0];
+
+  my $fixed_transcript_annotation = LRG::Node::new('fixed_transcript_annotation', undef, {'name' => $tr_name});
+
+  # Other exon naming
+  $other_exon_sth->bind_param(1,$tr_name,SQL_VARCHAR);
+  $other_exon_sth->execute();
+  my ($other_exon_id, $other_exon_desc, $other_exon_url, $other_exon_comment);
+  $other_exon_sth->bind_columns(\$other_exon_id, \$other_exon_desc, \$other_exon_url, \$other_exon_comment);
+ 
+  while ($other_exon_sth->fetch()) {
+    $community_flag = 1;
+    my $other_exon_naming = LRG::Node::new('other_exon_naming', undef, {'description' => $other_exon_desc});
+    $other_exon_naming->addNode('url')->content($other_exon_url) if (defined($other_exon_url));
+    $other_exon_naming->addNode('comment')->content($other_exon_comment) if (defined($other_exon_comment));
+    
+    $other_exon_label_sth->bind_param(1,$tr_id,SQL_INTEGER);
+    $other_exon_label_sth->bind_param(2,$other_exon_id,SQL_INTEGER);
+    $other_exon_label_sth->execute();
+    my ($other_exon_label, $e_lrg_start, $e_lrg_end);
+    $other_exon_label_sth->bind_columns(\$other_exon_label, \$e_lrg_start, \$e_lrg_end);
+    while ($other_exon_label_sth->fetch()) {
+      my $other_exon = LRG::Node::new('exon');
+      my $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
+      $other_exon->addExisting($coords);
+      $other_exon->addNode('label')->content($other_exon_label);
+      $other_exon_naming->addExisting($other_exon);
+    }
+    $fixed_transcript_annotation->addExisting($other_exon_naming);
+  }
+  # Other amino acid numbering 
+  $other_aa_sth->bind_param(1,$tr_name,SQL_VARCHAR);
+  $other_aa_sth->execute();
+  my ($other_aa_id, $other_aa_desc, $other_aa_url, $other_aa_comment);
+  $other_aa_sth->bind_columns(\$other_aa_id, \$other_aa_desc, \$other_aa_url, \$other_aa_comment);
+
+  while ($other_aa_sth->fetch()) {
+    $community_flag = 1;
+    my $other_aa_numbering = LRG::Node::new('alternate_amino_acid_numbering', undef, {'description' => $other_exon_desc});
+    $other_aa_numbering->addNode('url')->content($other_aa_url) if (defined($other_aa_url));
+    $other_aa_numbering->addNode('comment')->content($other_aa_comment) if (defined($other_aa_comment));
+    
+    $other_aa_number_sth->bind_param(1,$other_aa_id,SQL_INTEGER);
+    $other_aa_number_sth->execute();
+    my ($lrg_start, $lrg_end, $a_start, $a_end);
+    $other_aa_number_sth->bind_columns(\$lrg_start, \$lrg_end, \$a_start, \$a_end);
+    while ($other_aa_number_sth->fetch()) {
+      my $other_aa = LRG::Node::new('align', undef, {'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'start' => $a_start, 'end' => $a_end});
+      $other_aa_numbering->addExisting($other_aa);
+    }
+    $fixed_transcript_annotation->addExisting($other_aa_numbering);
+  }
+
+  $community_aset->addExisting($fixed_transcript_annotation);
+}
+$updatable->addExisting($community_aset) if ($community_flag == 1);
+
 
 # If we should add external LSDBs, add these as separate annotation sets
 if (defined($include_external)) {

@@ -74,9 +74,9 @@ while (my ($name,$obj) = each(%sets)) {
   next if ($name eq $option{lrg_set_name});
   if (defined($obj->lrg_locus()) && $obj->lrg_locus->value() ne $option{locus}) {
     my @src = map {$_->value()} @{$obj->lrg_locus->attribute() || []};
-    warn (sprintf("The pre-existing lrg_locus '\%s' (source '\%s') in annotation set from '\%s' will be replaced by the specified lrg_locus '\%s' (source '\%s')"),$obj->lrg_locus->value(),join("', '",@src),$name,$option{locus},$option{locus_source});
+    warn (sprintf("The pre-existing lrg_locus '\%s' (source '\%s') in annotation set from '\%s' will be replaced by the specified lrg_locus '\%s' (source '\%s')",$obj->lrg_locus->value(),join("', '",@src),$name,$option{locus},$option{locus_source}));
   }
-  $obj->lrg_locus(undef,undef,undef,1);
+  $obj->remove_lrg_locus;
 } 
 
 # Next, attempt to find the desired mapping in the existing annotation sets and move it to the LRG annotation set (possibly merging with any pre-existing)

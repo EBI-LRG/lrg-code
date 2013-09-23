@@ -10,10 +10,8 @@ assembly=$3
 xml_dir=$4
 new_dir=$5
 tmp_dir=$6
-report_file=$7
-skip_hc=$8
-skip_check0=$9
-annotation_test=${10}
+skip_hc=$7
+annotation_test=${8}
 
 if [ -z ${tmp_dir} ] ; then
 	tmp_dir='.'
@@ -23,10 +21,10 @@ if [[ ! ${skip_hc} ]] ; then
   skip_hc=0
 fi
 
+report_file=${tmp_dir}/pipeline_reports.txt
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
 warning_log=${tmp_dir}/warning_log_${lrg_id}.txt
 warning='none'
-pass='7Ntoz3HH'
 
 #### METHODS ##########################################################################
 
@@ -73,26 +71,43 @@ function end_of_script {
   xmlfile=$1
   comment=''
   if [ -n "${report_file}" ] ; then
-    is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
     
-    if [[ ${skip_hc} == 1 ]] ; then
-      comment="${comment} - HealthChecks skipped for this LRG"
-    elif [[ ${warning} == 'polyA' ]] ; then
-      comment="${comment} - WARNING: at least one NCBI transcript has a polyA sequence"
-    elif [[ -n ${is_partial} ]] ; then
-      comment="${comment} - Partial gene/transcript/protein found"
+    if [[ ${skip_hc} == 1 || ${skip_hc} == 3 ]] ; then
+      comment="${comment} - Fixed section checks skipped for this LRG"
     fi
+    if [[ ${skip_hc} == 2 || ${skip_hc} == 3 ]] ; then
+      comment="${comment} - HealthChecks skipped for this LRG"
+    fi
+    if [[ ${warning} == 'polyA' ]] ; then
+      comment="${comment} - WARNING: at least one NCBI transcript has a polyA sequence"
+    fi
+    if [[ ${skip_hc} != 2 && ${skip_hc} != 3 ]] ; then
+      is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
+      if [[ -n ${is_partial} ]] ; then
+        comment="${comment} - Partial gene/transcript/protein found"
+        echo "failed${comment}" >> ${report_file}
+        return 1
+      fi
+    fi  
+    
     echo "ran successfully${comment}" >> ${report_file}
   fi
 }
 
 
 #### PIPELINE #########################################################################################################
-
-echo_stderr  "#### ${lrg_id} ####" >&2
+comment="#=="
+for i in $(seq 1 ${#lrg_id})
+do
+ comment="$comment="
+done
+comment="$comment==#"
+echo_stderr  $comment >&2
+echo_stderr  "#|  ${lrg_id}  |#" >&2
+echo_stderr  $comment >&2
 
 # Preliminary test
-if [[ ! ${skip_check0} || ${skip_check0} == 0 ]] ; then
+if [[ ${skip_hc} != 1 && ${skip_hc} != 3 ]] ; then
   echo_stderr  "# Preliminary check: compare sequences with existing LRG entry ... " >&2
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
@@ -103,11 +118,11 @@ fi
 
 
 # Test PolyA sequence
-if [ ${skip_hc} == 0 ] ; then 
+if [[ ${skip_hc} != 2 && ${skip_hc} != 3 ]] ; then 
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
   rm -f ${warning_log}
-  bash code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${pass} ${error_log}
+  bash code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${error_log}
   check_script_result
   check_script_warning
   echo_stderr  "> checking polyA done" 
@@ -116,7 +131,7 @@ fi
 
 
 # STEP1: HealthCheck 1 - check raw data
-if [ ${skip_hc} == 0 ] ; then
+if [[ ${skip_hc} < 2 ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${error_log}
@@ -133,7 +148,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 
 
 # STEP3: HealthCheck 2 - check annotation data
-if [ ${skip_hc} == 0 ] ; then
+if [[ ${skip_hc} < 2 ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new 2> ${error_log}
@@ -153,7 +168,7 @@ fi
 
 # STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${pass} ${hgnc} ${error_log} ${warning}
+bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${hgnc} ${error_log} ${warning}
 check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
@@ -166,7 +181,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
 # STEP6: HealthCheck 3 - check the exported data
-if [ ${skip_hc} == 0 ] ; then
+if [[ ${skip_hc} < 2 ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp 2> ${error_log}

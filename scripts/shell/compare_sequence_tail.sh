@@ -1,16 +1,17 @@
 #! /bin/bash
 . ~/.bashrc
 . ~/.lrgpaths
+. ~/.lrgpass
 
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
+pass=${LRGDBPASS}
 perldir=${CVSROOTDIR}/code/scripts/
 
 xmlfile=$1
-pass=$2
-error_log=$3
+error_log=$2
 
 # Use the value "none" for warning, if you want to skip the check of the polyA between the RefSeq transcript sequences and the LRG transcript sequences
 

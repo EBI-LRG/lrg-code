@@ -27,6 +27,7 @@ my $delete_request;
 my @update_annotation_set;
 my $error_log;
 my $warning;
+my $stmt;
 
 my $lsdb_code_id = 1;
 
@@ -48,14 +49,6 @@ GetOptions(
   'replace_updatable=s' => \@update_annotation_set,
   'error_log=s'         => \$error_log,
   'warning=s'           => \$warning,
-);
-
-
-my %allowed_up_annotation_sets = (
- 'LRG'             => 1,
- 'NCBI RefSeqGene' => 1,
- 'Ensembl'         => 1,
- 'Community'       => 1,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -88,7 +81,7 @@ if (defined($error_log)) {
 if ($purge) {
     
     # Get the database gene_id for the HGNC symbol and LRG id
-    my $stmt = qq{
+    $stmt = qq{
         SELECT
             gene_id,
             symbol,
@@ -257,21 +250,24 @@ my $node = $fixed->findNode('id') or error_msg("ERROR: Could not find LRG identi
 $lrg_id = $node->content();
 
 # Get the database gene_id for the HGNC symbol and LRG id
-my $stmt = qq{
+my $hgnc_symbol_stmt = qq{
     SELECT
         gene_id
     FROM
         gene
     WHERE
-        symbol = '$hgnc_symbol' AND
+        symbol = ? AND
         (
             lrg_id IS NULL OR
             lrg_id = '$lrg_id'
         )
     LIMIT 1
 };
-$gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];# or error_msg("No gene could be find with HGNC symbol $hgnc_symbol and LRG id $lrg_id");
 
+my $hgnc_symbol_sth = $db_adaptor->dbc->prepare($hgnc_symbol_stmt);
+$hgnc_symbol_sth->bind_param(1,$hgnc_symbol,SQL_VARCHAR);
+$hgnc_symbol_sth->execute();
+$gene_id = ($hgnc_symbol_sth->fetchrow_array)[0];
 
 # Insert LRG entry into the gene table
 if (!defined($gene_id)) {
@@ -283,7 +279,41 @@ if (!defined($gene_id)) {
 			last;
 		}
 	}
-	# RefSeq ID
+	if (defined($hgnc_symbol)) {
+		$hgnc_symbol_sth->bind_param(1,$hgnc_symbol,SQL_VARCHAR);
+    $hgnc_symbol_sth->execute();
+    $gene_id = ($hgnc_symbol_sth->fetchrow_array)[0];
+		if (!defined($gene_id)) {
+		  $stmt = qq{ SELECT gene_id FROM gene WHERE lrg_id = '$lrg_id' };
+		  $gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+		}
+	}
+}	
+
+# HGNC ID
+my $hgnc_id = $fixed->findNode('hgnc_id')->content;
+
+
+if (defined($gene_id)) { # Check HGNC symbol and ID
+
+  $stmt = qq{ SELECT symbol,hgnc_id FROM gene WHERE gene_id=$gene_id };
+  my ($db_symbol,$db_hgnc_id) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+  
+  # Update the HGNC symbol
+  if (defined($hgnc_symbol)) {
+	  $db_adaptor->dbc->do("UPDATE gene SET symbol='$hgnc_symbol' WHERE gene_id=$gene_id;")if ((!defined($db_symbol)) || (defined($db_symbol) && $db_symbol ne $hgnc_symbol));
+	}
+	# Update the HGNC ID
+	if (defined($hgnc_id)) {
+	  $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
+	}
+}
+else { # Create new "gene" entry
+  
+  # HGNC ID
+  $hgnc_id = 'NULL' if (!defined($hgnc_id));
+  
+  # RefSeq ID
 	my $refseq = $fixed->findNode('sequence_source')->content;
 
 	# Get gene_id
@@ -299,6 +329,7 @@ if (!defined($gene_id)) {
     	INSERT INTO
 		     gene (
 		          gene_id,
+		          hgnc_id,
 							ncbi_gene_id,
 		    			symbol,
 							refseq,
@@ -306,6 +337,7 @@ if (!defined($gene_id)) {
 		      )
 		  VALUES (
 		       $gene_id,
+		       $hgnc_id,
 		       $gene_id,
 		      '$hgnc_symbol',
 		      '$refseq',
@@ -375,11 +407,8 @@ if (scalar(@update_annotation_set)) {
     $annotation_sets ||= [];
     
     while (my $annotation_set = shift(@{$annotation_sets})) {
-    
-        parse_annotation_set($annotation_set,$gene_id,$db_adaptor,\@update_annotation_set);
-        
+      parse_annotation_set($annotation_set,$gene_id,$db_adaptor,\@update_annotation_set)  
     }
-    
     exit(0);
 }
 
@@ -440,6 +469,9 @@ my $tr_com_ins_stmt = qq{
     )
 };
 
+my $tr_com_up_stmt = qq{
+    UPDATE lrg_comment SET comment = ? WHERE comment_id = ?
+};
 
 my $cdna_ins_stmt = qq{
     INSERT INTO
@@ -490,6 +522,7 @@ my $ce_ins_stmt = qq{
 my $exon_ins_stmt = qq{
     INSERT INTO
         lrg_exon (
+            exon_label,
             transcript_id,
             lrg_start,
             lrg_end,
@@ -497,6 +530,7 @@ my $exon_ins_stmt = qq{
             cdna_end
         )
     VALUES (
+        ?,
         ?,
         ?,
         ?,
@@ -534,6 +568,7 @@ my $intron_ins_stmt = qq{
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
 my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
+my $tr_com_up_sth  = $db_adaptor->dbc->prepare($tr_com_up_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
 my $ce_ins_sth = $db_adaptor->dbc->prepare($ce_ins_stmt);
 my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
@@ -578,7 +613,7 @@ while (my $transcript = shift(@{$transcripts})) {
           foreach my $inf (split("\n",$info)) {
             chomp $inf;
             my (undef,$refseq_with_poly_a) = split(' ',$inf);
-            $transcript->addNode('comment')->content("This transcript is identical to the RefSeq transcript $refseq_with_poly_a but with the polyA tail removed.") if (defined($refseq_with_poly_a));
+            $transcript->addNode('comment')->content(get_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
           }
         }
       }
@@ -601,10 +636,18 @@ while (my $transcript = shift(@{$transcripts})) {
         # Check if the comment is already in the database
         my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
         next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
-
-		    $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
-        $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
-        $tr_com_ins_sth->execute();
+		    
+		    my $comment_id = check_existing_comment($name,$tr_comment);
+		    if (defined($comment_id)) {
+		      $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
+          $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
+          $tr_com_up_sth->execute();
+		    }
+		    else {
+		      $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+          $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
+          $tr_com_ins_sth->execute();
+        }
       }
     }
     
@@ -702,6 +745,8 @@ while (my $transcript = shift(@{$transcripts})) {
         # If we have an exon, parse out the data
         if ($child->name() eq 'exon') {
 
+            my $exon_label = $child->data()->{'label'};
+
             my $exon_lrg_start;
             my $exon_lrg_end;
             
@@ -730,11 +775,12 @@ while (my $transcript = shift(@{$transcripts})) {
             warn("Could not get cDNA coordinates for one or more exons in $name") unless (defined($cdna_start) && defined($cdna_end));
 
             # Insert the exon into db
-            $exon_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
-            $exon_ins_sth->bind_param(2,$exon_lrg_start,SQL_INTEGER);
-            $exon_ins_sth->bind_param(3,$exon_lrg_end,SQL_INTEGER);
-            $exon_ins_sth->bind_param(4,$cdna_start,SQL_INTEGER);
-            $exon_ins_sth->bind_param(5,$cdna_end,SQL_INTEGER);
+            $exon_ins_sth->bind_param(1,$exon_label,SQL_VARCHAR);
+            $exon_ins_sth->bind_param(2,$transcript_id,SQL_INTEGER);
+            $exon_ins_sth->bind_param(3,$exon_lrg_start,SQL_INTEGER);
+            $exon_ins_sth->bind_param(4,$exon_lrg_end,SQL_INTEGER);
+            $exon_ins_sth->bind_param(5,$cdna_start,SQL_INTEGER);
+            $exon_ins_sth->bind_param(6,$cdna_end,SQL_INTEGER);
             $exon_ins_sth->execute();
             my $exon_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
             
@@ -824,7 +870,7 @@ sub parse_annotation_set {
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-   	return undef if (!$allowed_up_annotation_sets{$source_name});
+   	return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
 
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
@@ -1171,20 +1217,10 @@ sub parse_source {
 
 			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     	if (!defined($lsdb_id)) {
-				if ($lsdb_name eq '') {
-          $lsdb_name = 'NULL';
-          $lsdb_ins_sth_1->bind_param(1,$lsdb_name);
-        } 
-        else {
-          $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
-        }
-        if ($lsdb_url eq '') {
-          $lsdb_url  = 'NULL';
-          $lsdb_ins_sth_1->bind_param(2,$lsdb_url);
-        }
-        else {
-          $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
-        }
+				$lsdb_name = 'null' if ($lsdb_name eq '');
+        $lsdb_url  = 'null' if ($lsdb_url eq '');
+        $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
+        $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
         $lsdb_ins_sth_1->execute();
         $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
     	}
@@ -1414,6 +1450,28 @@ sub check_refseq_has_poly_a {
 		}
   }
   return undef;
+}
+
+sub check_existing_comment { 
+  my $transcript = shift;
+  my $comment = shift;
+  
+  my $stmt = qq{
+            SELECT comment_id 
+            FROM lrg_comment 
+            WHERE gene_id=$gene_id AND 
+                  name="$transcript" AND
+                  comment LIKE "This transcript is identical to the RefSeq transcript%" AND
+                  comment NOT LIKE "$comment"
+        };
+  my $comment_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+  
+  return (defined($comment_id)) ? $comment_id : undef;
+}
+
+sub get_comment_sentence {
+  my $refseq_id = shift;
+  return "This transcript is identical to the RefSeq transcript $refseq_id but with the polyA tail removed.";
 }
 
 

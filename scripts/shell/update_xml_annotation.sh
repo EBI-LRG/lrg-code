@@ -15,7 +15,7 @@ echo "> Creating the LRG annotation set and moving ${assembly} assembly mappings
 perl ${perldir}/add_LRG_annotation_set.pl -xmlfile ${xmlfile} -locus ${locus} -assembly ${assembly} -replace > ${tmpfile}
 echo ""
 echo "> Adding Ensembl annotation set to ${xmlfile}" >&2 
-perl ${perldir}/add_ensembl_annotation.pl -xmlfile ${tmpfile} -assembly ${assembly} -registry ${REGISTRYFILE} -replace > ${outfile}
+perl ${perldir}/add_ensembl_annotation.pl -xmlfile ${tmpfile} -assembly ${assembly} -replace > ${outfile}
 
 rm ${tmpfile}
 
