@@ -105,13 +105,21 @@ sub add_annotation {
     my $transcript_name   = $transnode->data->{'name'};
 
     # Get the coding start and end coordinates
+    my ($cds_start, $cds_end);
     my $cds_node  = $transnode->findNode('coding_region');
-    my $cds_coord = $cds_node->findNode('coordinates');
-    my $cds_start = $cds_coord->data->{'start'};
-    my $cds_end   = $cds_coord->data->{'end'};
+    my $translation_name;
+    if ($cds_node) {
+      my $cds_coord = $cds_node->findNode('coordinates');
+      $cds_start = $cds_coord->data->{'start'};
+      $cds_end   = $cds_coord->data->{'end'};
+      $translation_name = $cds_node->findNode('translation')->data->{'name'}
+    } else {
+      $cds_start = $transcript_end;
+      $cds_end = $transcript_start;
+    }
 
     # Insert transcript entry into db
-    my $transcript_stable_id = $lrg_name . '_' . $transcript_name;
+    my $transcript_stable_id = $lrg_name . $transcript_name;
     my $transcript_id = add_transcript(
       undef,             $gene_id,        $transcript_stable_id,        $analysis_id, $seq_region_id,
       $transcript_start, $transcript_end, 1,            $biotype,
@@ -167,8 +175,10 @@ sub add_annotation {
         my $exon_start  = $lrg_coords->data->{'start'};
         my $exon_end    = $lrg_coords->data->{'end'};
         my $exon_length = ( $exon_end - $exon_start + 1 );
-        my $exon_stable_id = sprintf('%s_%s_e%d', $lrg_name, $transcript_name, $exon_count);
-        $exon_id = add_exon( $exon_stable_id, $seq_region_id, $exon_start, $exon_end, 1 );
+        my $exon_label = $exon->data->{'label'};
+        my $exon_name = "e$exon_label";
+        my $exon_stable_id = $lrg_name . $transcript_name . $exon_name;
+        $exon_id = add_exon( $exon_stable_id, $seq_region_id, $exon_start, $exon_end, 1, $transcript_id );
 
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
 
@@ -208,8 +218,7 @@ sub add_annotation {
 
 # Insert translation into db (if available, the gene could be non-protein coding)
     if ( $exon_count > 0 ) {
-      my $translation_stable_id = $transcript_stable_id;
-      $translation_stable_id =~ s/t(\d+)$/p$1/;
+      my $translation_stable_id = $lrg_name . $translation_name;
 
       my $translation_id =
         add_translation( $transcript_id, $translation_stable_id, $cds_start, $start_exon_id, $cds_end,
@@ -412,20 +421,33 @@ sub add_exon {
   my $seq_region_start  = shift;
   my $seq_region_end    = shift;
   my $seq_region_strand = shift;
+  my $transcript_id     = shift;
 
   my $stmt = qq{
       SELECT
-           exon_id
+           e.exon_id
       FROM
-           exon
+           exon e, exon_transcript et
       WHERE
           seq_region_id = '$seq_region_id' AND
           seq_region_start = '$seq_region_start' AND
           seq_region_end = '$seq_region_end' AND
-          stable_id = '$stable_id'
+          e.exon_id = et.exon_id AND
+          transcript_id = '$transcript_id'
   };
   my $exon_id = $dbCore->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-  if (!$exon_id) {
+  if ($exon_id) {
+    $stmt = qq{
+            UPDATE
+                exon
+            SET
+                stable_id = '$stable_id'
+            WHERE
+                exon_id = $exon_id
+        };
+    $dbCore->dbc->do($stmt);
+
+  } else {
     $stmt = qq{
       INSERT INTO
 	exon (
