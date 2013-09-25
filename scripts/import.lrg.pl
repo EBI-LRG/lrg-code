@@ -519,6 +519,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
         next;
       }
       my $hgnc_name = $lrg_gene_name_node->content();
+      my $hgnc_accession = $lrg->findNode("fixed_annotation/hgnc_id")->content();
       
       # A bit cumbersome but.. get the HGNC accession from the XML
       my $annotation_sets = $lrg->findNodeArray('updatable_annotation/annotation_set');
@@ -533,16 +534,14 @@ while (my $lrg_id = shift(@lrg_ids)) {
       }
       my $lrg_gene;
       foreach my $gene (@{ $annotation_set_ensembl->findNodeArray('features/gene') }) {
-        my $symbols = $gene->findNodeArray('symbol', {'source' => 'HGNC'});
-        if (defined $symbols) {
-          for my $symbol (@$symbols  ) {
-            if ($symbol->content() eq $hgnc_name) {
-              $lrg_gene = $gene;
-            }
+        my $hgnc_node = $gene->findNode('symbol', {'source' => 'HGNC'});
+        if ($hgnc_node) {
+          my $symbol = $hgnc_node->data->{'name'};
+          if ($symbol eq $hgnc_name) {
+            $lrg_gene = $gene;
           }
         }
       }
-      my $hgnc_accession = $lrg_gene->findNode('db_xref',{'source' => 'HGNC'})->data()->{'accession'};
       
       my $xref_id;
       my $object_xref_id;
@@ -554,34 +553,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
       }
       
-=head
-Skip this, this is done by the external data files 
-      # Add the LRG website as an external db (if not already present)
-      LRG::LRGImport::add_external_db(
-	$LRG_EXTERNAL_DB_NAME,
-	$LRG_EXTERNAL_STATUS,
-	$LRG_EXTERNAL_PRIORITY,
-	$LRG_EXTERNAL_DB_DISPLAY_NAME,
-	$LRG_EXTERNAL_DB_RELEASE,
-	$LRG_EXTERNAL_DB_ACC_LINKABLE,
-	$LRG_EXTERNAL_DB_LABEL_LINKABLE,
-	$LRG_EXTERNAL_TYPE
-      );
-      
-      # Add the Ensembl LRG display as an external db (if not already present). One each for Gene, Transcript
-      foreach my $type (('gene','transcript')) {
-	LRG::LRGImport::add_external_db(
-	  $LRG_ENSEMBL_DB_NAME . '_' . $type,
-	  $LRG_ENSEMBL_STATUS,
-	  $LRG_ENSEMBL_PRIORITY,
-	  $LRG_ENSEMBL_DB_DISPLAY_NAME,
-	  $LRG_ENSEMBL_DB_RELEASE,
-	  $LRG_ENSEMBL_DB_ACC_LINKABLE,
-	  $LRG_ENSEMBL_DB_LABEL_LINKABLE,
-	  $LRG_ENSEMBL_TYPE
-	);
-      }
-=cut      
       # Add external LRG link to xref table
       my $ext_xref_id = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
       
