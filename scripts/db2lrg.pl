@@ -606,7 +606,7 @@ foreach my $tr (@{$fixed->findNodeArray('transcript')}) {
 
   while ($other_aa_sth->fetch()) {
     $community_flag = 1;
-    my $other_aa_numbering = LRG::Node::new('alternate_amino_acid_numbering', undef, {'description' => $other_exon_desc});
+    my $other_aa_numbering = LRG::Node::new('alternate_amino_acid_numbering', undef, {'description' => $other_aa_desc});
     $other_aa_numbering->addNode('url')->content($other_aa_url) if (defined($other_aa_url));
     $other_aa_numbering->addNode('comment')->content($other_aa_comment) if (defined($other_aa_comment));
     
