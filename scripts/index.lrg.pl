@@ -96,21 +96,20 @@ foreach my $xml (@xmlfiles) {
 	# Get information by source
 	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified);
 
-	my $asets = $lrg->findNodeArray('updatable_annotation/annotation_set')	;
+	my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set')	;
 
 	foreach my $set (@$asets) {
     my $s_name = $set->findNode('source/name')->content;
     
 		# Gene description
     if ($s_name =~ /NCBI/) {
-	    my $genes = $set->findNodeArray('features/gene');
-		  DESC: foreach my $gene (@{$genes}) {
-		    foreach my $symbol (@{$gene->findNodeArray('symbol')}) {
-			    if ($symbol->content eq $hgnc) {
-            $desc = ($gene->findNodeArray('long_name'))->[0]->content;
-            last DESC;
-		      }
-	      }
+	    my $genes = $set->findNodeArraySingle('features/gene');
+		  foreach my $gene (@{$genes}) {
+		    my $symbol = $gene->findNodeSingle('symbol');
+		    if ($symbol->data->{name} eq $hgnc) {
+            $desc = ($gene->findNodeArraySingle('long_name'))->[0]->content;
+            last;
+		    }
       }
     }
 
@@ -127,7 +126,7 @@ foreach my $xml (@xmlfiles) {
 			$chr_end   = $coord->data->{other_end};
 
       my $mapping_span = $coord->findNode('mapping_span');
-      $chr_strand = $mapping_span ->data->{strand};
+      $chr_strand = $mapping_span->data->{strand};
     }
 	}
   
@@ -158,16 +157,20 @@ foreach my $xml (@xmlfiles) {
 	# Synonym
   # > Locus
 	my %synonyms;
-	my $loci = $lrg->findNodeArray('updatable_annotation/annotation_set/lrg_locus');
-	foreach my $locus (@{$loci}) {
-		my $l_content = $locus->content;
-    $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
-	}
+	my $locus = $lrg->findNodeSingle('updatable_annotation/annotation_set/lrg_locus');
+	my $l_content = $locus->content;
+  $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
 	# > Symbol
-	my $symbols = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/symbol');
+	my $symbols = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/symbol');
 	foreach my $symbol (@{$symbols}) {
-		my $s_content = $symbol->content;
+	  my $s_content = $symbol->data->{name};
 		$synonyms{$s_content} = 1 if ($s_content ne $hgnc);
+		# > Symbol synonym(s)
+		my $symbol_syn = $symbol->findNodeArraySingle('synonym');
+	  foreach my $synonym (@{$symbol_syn}) {
+		  my $syn_content = $synonym->content;
+		  $synonyms{$syn_content} = 1 if ($syn_content ne $hgnc);
+		}
 	}
 
 	# > Synonyms
@@ -185,17 +188,17 @@ foreach my $xml (@xmlfiles) {
 	my $cross_refs;
 
 	# Gene xref
-	my $x_genes = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene');
+	my $x_genes = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene');
 	$cross_refs = get_cross_refs($x_genes,$cross_refs);
 	my $seq_source = $lrg->findNode('fixed_annotation/sequence_source')->content;
 	$cross_refs->{$seq_source} = 'RefSeq' if (defined($seq_source));
 
 	# Transcript xref
-	my $x_trans = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript');
+	my $x_trans = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/transcript');
 	$cross_refs = get_cross_refs($x_trans,$cross_refs);
 
 	# Protein xref
-	my $x_proteins = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript/protein_product');
+	my $x_proteins = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/transcript/protein_product');
 	$cross_refs = get_cross_refs($x_proteins,$cross_refs);
 	
   # Cross references + Xref (additional fields)
@@ -237,7 +240,7 @@ sub get_cross_refs {
 		my $dbname = $x_node->data->{'source'};
 		my $dbkey  = $x_node->data->{'accession'};
 		$cross_refs->{$dbkey} = $dbname;
-		my $db_xrefs = $x_node->findNodeArray('db_xref');
+		my $db_xrefs = $x_node->findNodeArraySingle('db_xref');
 		next if (!scalar $db_xrefs);
 		foreach my $x_ref (@{$db_xrefs}) {
 			my $dbname2 = $x_ref->data->{'source'};
