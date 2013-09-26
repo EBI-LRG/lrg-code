@@ -669,7 +669,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	  # Get the fixed id
 	  my $fixed_id = $transcript_xml->{'data'}{'name'};
 	  # The expected transcript_stable_id based on the XML fixed id
-	  my $stable_id = $lrg_id . '_' . $fixed_id;
+	  my $stable_id = $lrg_id . $fixed_id;
 	  # Get the ensembl transcript with the corresponding stable_id
 	  my @db_tr = grep {$_->stable_id() eq $stable_id} @{$transcripts_db};
 	  # Check that we got one transcript back
