@@ -2297,6 +2297,7 @@
   <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
   <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
   <xsl:variable name="lrg_strand" select="coordinates[@coord_system = $lrg_coord_system]/@strand" />
+  <xsl:variable name="gene_symbol_source" select="symbol/@source" />
   
     <div class="left_annotation">
       <p>
@@ -2312,8 +2313,8 @@
       </xsl:for-each>
     </xsl:if>
         <strong>Synonym(s): </strong>
-    <xsl:variable name="gene_symbol" select="symbol[not(.=$display_symbol)]"/>
-    <xsl:if test="$gene_symbol">
+     <xsl:variable name="gene_symbol" select="symbol/synonym[not(.=$display_symbol)]"/>
+     <xsl:if test="$gene_symbol">
       <xsl:for-each select="$gene_symbol">
         <xsl:value-of select="." />
         <xsl:if test="position() != last()"><xsl:text>, </xsl:text></xsl:if>
@@ -2328,7 +2329,6 @@
       </xsl:for-each>
     </xsl:if>
     <xsl:if test="not($gene_symbol) and not($gene_synonym)">-</xsl:if>
-  
 
         <br/>
         <strong>LRG coords: </strong>
@@ -2364,7 +2364,7 @@
     </xsl:for-each>
       </ul>
 <!-- Mapping link only if the gene name corresponds to the LRG gene name -->
-    <xsl:if test="$display_symbol=$lrg_gene_name">
+    <xsl:if test="$display_symbol=$lrg_gene_name and $gene_symbol_source=$symbol_source">
       <strong>Mappings: </strong>
 		  <a>
 			  <xsl:attribute name="href">
