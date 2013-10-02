@@ -180,14 +180,9 @@ foreach my $f (@ens_feature) {
 
     # Check gene name
     my $gene_flag = 0;
-    my $symbols = $g->symbol();  
+    my $symbol = $g->symbol();  
 
-    foreach my $sym (@$symbols) {
-      if ($sym->name eq $lrg_locus) {  
-        $gene_flag = 1;
-        last;
-      }
-    }
+    $gene_flag = 1 if ($symbol->name eq $lrg_locus && $symbol->source eq $option{locus_source});
 
     # Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
     if ($gene_flag) {
