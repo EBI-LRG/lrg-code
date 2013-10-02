@@ -17,6 +17,7 @@
 
 <!-- Other general variables -->
 <xsl:variable name="lrg_coord_system" select="$lrg_id" />
+<xsl:variable name="symbol_source">HGNC</xsl:variable>
 <xsl:variable name="hgnc_url">http://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
 
 <xsl:template match="/lrg">
@@ -90,37 +91,38 @@
     </div>
     <div style="clear:both" />
   </div>	 
-  <div class="menu_title">
-    <span><b>Jump to:</b></span>
+ <div class="menu_title">
+   <b>Jump to:</b>
   </div>
-  
+ 
   <!-- Create the menu with within-page navigation  -->
   <div class="menu">  
       <div class="submenu">
-        <div class="submenu_header">
-          <xsl:call-template name="lrg_right_arrow_green" /><a href="#fixed_annotation_anchor" style="vertical-align:middle;font-weight:bold">Fixed annotation</a>
-        </div>
-        <ul>
-          <li><a href="#genomic_sequence_anchor" class="menu_item">Genomic sequence</a></li>
-          <li><a href="#transcripts_anchor" class="menu_item">Transcripts</a></li>
-        </ul>
-        <div class="submenu_header following_header">
-          <xsl:call-template name="lrg_right_arrow_green" /><a href="#updatable_annotation_anchor" style="vertical-align:middle;font-weight:bold">Updatable annotation</a>
-        </div>  
-        <ul>
-          <li><a href="#set_1_anchor" class="menu_item">LRG annotation</a></li>
-          <li><a href="#set_2_anchor" class="menu_item">NCBI annotation</a></li>
-          <li><a href="#set_3_anchor" class="menu_item">Ensembl annotation</a></li>
-        <xsl:if test="/*/updatable_annotation/annotation_set[source/name=$community_source_name]">
-          <li><a href="#set_4_anchor" class="menu_item">Community annotation</a></li>
-        </xsl:if>
-        </ul>
-        <div class="submenu_header following_header"> 
-          <xsl:call-template name="lrg_right_arrow_green" /><a href="#additional_data_anchor" style="vertical-align:middle;font-weight:bold">Additional data sources</a>
-        </div>
-        <ul>
-          <li><a href="#additional_data_anchor" class="menu_item">LSDB website</a></li>
-        </ul> 
+          <div class="submenu_section">
+            <xsl:call-template name="lrg_right_arrow_green" /><a href="#fixed_annotation_anchor">Fixed annotation</a>
+          </div>
+          <ul>
+            <li><a href="#genomic_sequence_anchor" class="menu_item">Genomic sequence</a></li>
+            <li><a href="#transcripts_anchor" class="menu_item">Transcripts</a></li>
+          </ul>
+          <div class="submenu_section following_section">
+            <xsl:call-template name="lrg_right_arrow_green" /><a href="#updatable_annotation_anchor">Updatable annotation</a>
+          </div>  
+          <ul>
+            <li><a href="#set_1_anchor" class="menu_item">LRG annotation</a></li>
+            <li><a href="#set_2_anchor" class="menu_item">NCBI annotation</a></li>
+            <li><a href="#set_3_anchor" class="menu_item">Ensembl annotation</a></li>
+          <xsl:if test="/*/updatable_annotation/annotation_set[source/name=$community_source_name]">
+            <li><a href="#set_4_anchor" class="menu_item">Community annotation</a></li>
+          </xsl:if>
+          </ul>
+          <div class="submenu_section following_section"> 
+            <xsl:call-template name="lrg_right_arrow_green" /><a href="#additional_data_anchor">Additional data sources</a>
+          </div>
+          <ul style="margin-bottom:0px">
+            <li><a href="#additional_data_anchor" class="menu_item">LSDB website</a></li>
+          </ul> 
+       <!-- </div>-->
     </div>
     <div class="summary">
       <div class="summary_header">Summary information</div>
@@ -2181,17 +2183,31 @@
 <!--  Display the genes -->
   <xsl:if test="gene/*">
     
+    <xsl:variable name="has_hgnc_symbol">
+      <xsl:choose>
+        <xsl:when test="gene/symbol[@name=$lrg_gene_name and @source=$symbol_source]">1</xsl:when>
+         <xsl:otherwise>0</xsl:otherwise>
+      </xsl:choose>
+    
+    </xsl:variable>
+    
     <xsl:for-each select="gene">
       <xsl:variable name="gene_idx" select="position()"/>
       <xsl:variable name="display_symbol"><xsl:value-of select="symbol/@name" /></xsl:variable>
+      <xsl:variable name="display_symbol_source"><xsl:value-of select="symbol/@source" /></xsl:variable>
 
       <xsl:if test="$display_symbol=$lrg_gene_name">
-			  <xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
-        <h3 class="subsection">Gene <xsl:value-of select="$lrg_gene_name"/></h3>
+        <xsl:if test="($has_hgnc_symbol=1 and $display_symbol_source=$symbol_source) or ($has_hgnc_symbol=0 and $display_symbol_source!=$symbol_source)">
+			    <xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
+          <h3 class="subsection">Gene <xsl:value-of select="$lrg_gene_name"/>
+            <xsl:if test="$display_symbol_source!=$symbol_source">
+              <span class="gene_source"> (<xsl:value-of select="$display_symbol_source"/>)</span>
+            </xsl:if>
+          </h3>
         
-        <h3 class="sub_subsection blue_bg">Gene annotations</h3>        
-        <div class="transcript_mapping blue_bg">
-          <div class="sub_transcript_mapping" style="padding:4px 2px">
+          <h3 class="sub_subsection blue_bg">Gene annotations</h3>        
+          <div class="transcript_mapping blue_bg">
+            <div class="sub_transcript_mapping" style="padding:4px 2px">
               <xsl:call-template name="updatable_gene">
                 <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
                 <xsl:with-param name="setnum"><xsl:value-of select="$setnum" /></xsl:with-param>
@@ -2199,37 +2215,38 @@
 				        <xsl:with-param name="mapping_anchor">#<xsl:value-of select="$mapping_anchor" /></xsl:with-param>
                 <xsl:with-param name="display_symbol"><xsl:value-of select="$display_symbol" /></xsl:with-param>
               </xsl:call-template>
+            </div>
           </div>
-        </div>
-    
-			  <!-- Displays the transcript mappings only if the gene name corresponds to the LRG gene name -->
+      
+			    <!-- Displays the transcript mappings only if the gene name corresponds to the LRG gene name -->
      
-        <!-- Insert the transcript mapping tables -->
-		    <xsl:if test="transcript/*">
-        <h3 class="sub_subsection blue_bg"><xsl:attribute name="id"><xsl:value-of select="$mapping_anchor"/></xsl:attribute>Mappings for <xsl:value-of select="$lrg_gene_name"/> transcript(s)</h3>
-        <div class="transcript_mapping blue_bg">
-          <div class="sub_transcript_mapping">
-            <table>
-              <tr><td class="transcript_mapping mapping"><br /></td></tr>
+          <!-- Insert the transcript mapping tables -->
+		      <xsl:if test="transcript/*">
+          <h3 class="sub_subsection blue_bg"><xsl:attribute name="id"><xsl:value-of select="$mapping_anchor"/></xsl:attribute>Mappings for <xsl:value-of select="$lrg_gene_name"/> transcript(s)</h3>
+          <div class="transcript_mapping blue_bg">
+            <div class="sub_transcript_mapping">
+              <table>
+                <tr><td class="transcript_mapping mapping"><br /></td></tr>
 				    <xsl:for-each select="transcript">
 					    <xsl:variable name="transcript_id" select="@accession" />
 						    <xsl:for-each select="../../../mapping">
 							    <xsl:variable name="other_name_no_version" select="substring-before(@other_name,'.')" />
 					  	    <xsl:if test="(@other_name=$transcript_id) or ($other_name_no_version=$transcript_id)">
-							<tr><td class="transcript_mapping mapping">
+						  	<tr><td class="transcript_mapping mapping">
     					 		  <xsl:call-template name="t_mapping">
 									   <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
 									   <xsl:with-param name="transcript_id"><xsl:value-of select="$transcript_id" /></xsl:with-param>
 									 </xsl:call-template>
-              </td></tr>
+                </td></tr>
             	    </xsl:if>
 						   </xsl:for-each>
 				    </xsl:for-each>
-            </table>
+              </table>
+            </div>
           </div>
-        </div>
-        <br />
-			  </xsl:if>
+          <br />
+			    </xsl:if>
+		    </xsl:if>
 		  </xsl:if>
     </xsl:for-each>
 		
@@ -2238,20 +2255,16 @@
       <h3 class="subsection">Overlapping gene(s)</h3>
       <xsl:for-each select="gene">
         <xsl:variable name="gene_idx" select="position()"/>
-        <xsl:variable name="display_symbol">  
-          <xsl:choose>
-	          <xsl:when test="symbol[@source = 'HGNC']">
-	            <xsl:value-of select="symbol/@name" />
-	          </xsl:when>
-            <xsl:otherwise>
-              <xsl:text>gene_</xsl:text><xsl:value-of select="$gene_idx" />
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>
+        <xsl:variable name="display_symbol"><xsl:value-of select="symbol/@name" /></xsl:variable>
+        <xsl:variable name="display_symbol_source"><xsl:value-of select="symbol/@source" /></xsl:variable>
         
-        <xsl:if test="$display_symbol!=$lrg_gene_name">
+        <xsl:if test="($display_symbol!=$lrg_gene_name) or ($has_hgnc_symbol=1 and $display_symbol_source!=$symbol_source)">
 			    <xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
-          <h3 class="sub_subsection">Gene <xsl:value-of select="$display_symbol" /></h3>
+          <h3 class="sub_subsection">Gene <xsl:value-of select="$display_symbol" /> 
+            <xsl:if test="$display_symbol_source!=$symbol_source">
+              <span class="gene_source"> (<xsl:value-of select="$display_symbol_source"/>)</span>
+            </xsl:if>
+          </h3>
           <div class="transcript_mapping">
             <div class="sub_transcript_mapping" style="padding:2px">
                 <xsl:call-template name="updatable_gene">

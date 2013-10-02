@@ -164,7 +164,7 @@ div.summary{
   /*border:1px solid #CCC;*/
   border-radius:5px;
   box-shadow: 2px 4px 2px #888;
-  margin-top:-20px;
+  /*margin-top:-20px;*/
   margin-right:5px;
    /* Old browsers */
   background: #0E4C87;
@@ -336,7 +336,7 @@ div.pending {
 
 
 div.menu_title{
-  padding:14px 0px 8px;
+  padding:8px 0px 2px;
   background:url(img/shadow_top.png) no-repeat 50% 0%;
 }
 
@@ -357,12 +357,24 @@ div.submenu{
 }
 
 div.submenu_header{
+  text-align:center;
+  font-weight:bold;
+  padding:2px 0px 4px;
+  color:#FFF;
+}
+
+div.submenu_section{
   border-bottom:1px dotted #003399;
-  padding-bottom:2px;
+  padding:2px;
   margin-bottom:2px;
 }
 
-div.following_header{
+div.submenu_section a {
+  vertical-align:middle;
+  font-weight:bold;
+ }
+
+div.following_section{
   border-top:1px dotted #003399;
 }
 
@@ -818,6 +830,12 @@ div.top_up_anno_link {
   padding:0px 4px 4px;
   font-size:0.9em;
   background-color:#F9F9F9;
+}
+
+.gene_source {
+  font-weight:normal;
+  font-size:0.9em;
+  padding-left:5px;
 }
 
 
