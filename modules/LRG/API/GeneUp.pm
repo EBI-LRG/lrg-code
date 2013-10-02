@@ -22,23 +22,9 @@ sub _permitted {
   
   return [
     @{$self->SUPER::_permitted()},
-    '_symbol',
-    '_transcript'
+    'symbol',
+    'transcript'
   ];
-}
-
-sub symbol {
-  my $self = shift;
-  my $value = shift;
-  
-  $self->_symbol($value,'LRG::API::Symbol',1);
-}
-
-sub transcript {
-  my $self = shift;
-  my $value = shift;
-  
-  $self->_transcript($value,'LRG::API::TranscriptUp',1);
 }
 
 sub remap {

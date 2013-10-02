@@ -42,11 +42,6 @@ sub _permitted {
   ];
 }
 
-
-#my $diffs_list;
-#$diffs_list = $lrg_slice->get_all_differences if ($lrg_slice);
-
-
 sub get_transcripts_mappings {
 	my $self = shift;
 	my $gene = $self->gene;

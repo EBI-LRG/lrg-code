@@ -32,7 +32,7 @@ sub objs_from_xml {
   foreach my $node (@{$xml}) {
     
     # Get the symbol elements
-    my $symbol = $s_adaptor->fetch_all_by_gene($node);
+    my $symbol = $s_adaptor->fetch_by_gene($node);
     # Get the transcripts
     my $transcript = $t_adaptor->fetch_all_by_gene($node);
     

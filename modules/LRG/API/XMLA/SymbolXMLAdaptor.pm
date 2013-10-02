@@ -9,11 +9,11 @@ use LRG::API::Symbol;
 # Inherit from Base adaptor class
 our @ISA = "LRG::API::XMLA::BaseXMLAdaptor";
 
-sub fetch_all_by_gene {
+sub fetch_by_gene {
   my $self = shift;
   my $gene = shift;
   
-  return $self->objs_from_xml($gene->findNodeArraySingle('symbol'));
+  return $self->objs_from_xml($gene->findNodeSingle('symbol'));
 }
 
 sub objs_from_xml {
