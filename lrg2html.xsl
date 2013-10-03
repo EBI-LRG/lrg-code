@@ -2031,7 +2031,11 @@
             	   	     <xsl:value-of select="$label"/>
                      </xsl:when>  
                      <xsl:otherwise>
-                       <span class="blue"><xsl:value-of select="$label"/></span>
+                       <span class="blue">
+                         <xsl:attribute name="style">cursor:default</xsl:attribute>
+                         <xsl:attribute name="title">Different from the LRG-specific exon numbering (<xsl:value-of select="$exon_label"/>)</xsl:attribute>
+                         <xsl:value-of select="$label"/>
+                       </span>
                      </xsl:otherwise>
                    </xsl:choose>
             	  </xsl:when>
