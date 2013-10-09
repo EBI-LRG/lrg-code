@@ -20,6 +20,8 @@ usage() if (defined($help));
 # Give write permission for the group
 umask(0002);
 
+my $separator = "\n\n\n";
+
 my @xml_list;
 if ($lrg_file) {
 	@xml_list = join(',',$lrg_file);
@@ -63,7 +65,7 @@ foreach my $xml (@xml_list) {
 	  my $lrg_tr_seq = $tr->findNode('sequence')->content;
 	  $lrg_tr_seq =~	s/(.{60})/$1\n/g;
 	  
-	  print FASTA "\n\n>$lrg_tr_name (transcript $tr_name of $lrg_id)\n";
+	  print FASTA "$separator>$lrg_tr_name (transcript $tr_name of $lrg_id)\n";
 	  print FASTA $lrg_tr_seq;
 	}
 
@@ -79,7 +81,7 @@ foreach my $xml (@xml_list) {
 	    my $lrg_pr_seq = $pr->findNode('sequence')->content;
 	    $lrg_pr_seq =~	s/(.{60})/$1\n/g;
 	  
-	    print FASTA "\n\n>$lrg_pr_name (protein translated from transcript $tr_name of $lrg_id)\n";
+	    print FASTA "$separator>$lrg_pr_name (protein translated from transcript $tr_name of $lrg_id)\n";
 	    print FASTA $lrg_pr_seq;
 	  }
 	}
