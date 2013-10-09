@@ -47,12 +47,43 @@ foreach my $xml (@xml_list) {
 
 #	>LRG_5g (genomic sequence)
 	my $lrg_seq = $lrg->findNode('fixed_annotation/sequence')->content;
-	open FASTA, "> $fasta_dir/$lrg_id.fasta" or die $!;
-	print FASTA ">$lrg_id"."g (genomic sequence)\n";
-	
 	$lrg_seq =~	s/(.{60})/$1\n/g;
 	
+	open FASTA, "> $fasta_dir/$lrg_id.fasta" or die $!;
+	print FASTA ">$lrg_id"."g (genomic sequence)\n";
 	print FASTA $lrg_seq;
+	
+	
+# >LRG_5t1 (transcript t1 of LRG_5)	
+	my $lrg_tr = $lrg->findNodeArraySingle('fixed_annotation/transcript');
+	foreach my $tr (@$lrg_tr) {
+	  my $tr_name = $tr->data->{'name'};
+	  my $lrg_tr_name = $lrg_id.$tr_name;
+	  
+	  my $lrg_tr_seq = $tr->findNode('sequence')->content;
+	  $lrg_tr_seq =~	s/(.{60})/$1\n/g;
+	  
+	  print FASTA "\n\n>$lrg_tr_name (transcript $tr_name of $lrg_id)\n";
+	  print FASTA $lrg_tr_seq;
+	}
+
+# >LRG_5p1 (protein translated from transcript t1 of LRG_5)	
+	foreach my $tr (@$lrg_tr) {
+	  my $tr_name = $tr->data->{'name'};
+	  my $lrg_pr = $tr->findNodeArraySingle('coding_region/translation');
+	  
+	  foreach my $pr (@$lrg_pr) {
+	    my $pr_name = $pr->data->{'name'};
+	    my $lrg_pr_name = $lrg_id.$pr_name; 
+	  
+	    my $lrg_pr_seq = $pr->findNode('sequence')->content;
+	    $lrg_pr_seq =~	s/(.{60})/$1\n/g;
+	  
+	    print FASTA "\n\n>$lrg_pr_name (protein translated from transcript $tr_name of $lrg_id)\n";
+	    print FASTA $lrg_pr_seq;
+	  }
+	}
+	
 	close(FASTA);
 }
 
