@@ -129,3 +129,43 @@ if [[ -e ${new_relnotes} ]] ; then
   fi
 fi
 
+
+# FASTA ZIP
+echo "# FASTA - Create a ZIP file containing the LRG fasta files ..."
+fasta_zip_file='LRG_fasta_files.zip'
+fasta_zip_path=${tmp}/${fasta_zip_file}
+fasta_dir=${pubpath}/fasta
+
+zip -j ${fasta_zip_path} ${fasta_dir}/*.fasta
+
+if [[ -e ${fasta_zip_path} && -s ${fasta_zip_path} ]] ; then
+  echo "# FASTA - ZIP file of the fasta files created"
+  chmod 664 ${fasta_zip_path}
+  mv ${fasta_zip_path} ${fasta_dir};
+  echo "# FASTA - ZIP file moved to ${fasta_dir}"
+else 
+  echo ">> FASTA - Error while generating the ZIP file!"
+  exit 1
+fi
+echo "# FASTA - Done"
+
+
+# XML ZIP
+echo "# XML - Create a ZIP file containing the LRG xml files ..."
+xml_zip_file='LRG_xml_files.zip'
+xml_zip_path=${tmp}/${xml_zip_file}
+xml_dir=${cvspath}/xml
+
+zip -j ${xml_zip_path} ${xml_dir}/*.xml
+
+if [[ -e ${xml_zip_path} && -s ${xml_zip_path} ]] ; then
+  echo "# XML - ZIP file of the xml files created"
+  chmod 664 ${xml_zip_path}
+  mv ${xml_zip_path} ${pubpath};
+  echo "# XML - ZIP file moved to ${pubpath}"
+else 
+  echo ">> XML - Error while generating the ZIP file!"
+  exit 1
+fi
+echo "# XML - Done"
+
