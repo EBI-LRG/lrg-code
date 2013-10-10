@@ -113,9 +113,6 @@ sub add_annotation {
       $cds_start = $cds_coord->data->{'start'};
       $cds_end   = $cds_coord->data->{'end'};
       $translation_name = $cds_node->findNode('translation')->data->{'name'}
-    } else {
-      $cds_start = $transcript_end;
-      $cds_end = $transcript_start;
     }
 
     # Insert transcript entry into db
@@ -183,26 +180,28 @@ sub add_annotation {
         print "\t\tExon:\t" . $exon_id . "\t" . $exon_stable_id;
 
 # If the coding start is within this exon, save this exon id as start_exon_id and calculate the coding start offset within the exon
-        if ( !defined($start_exon_id)
-          && $exon_start <= $cds_start
-          && $exon_end >= $cds_start )
-        {
-          $start_exon_id = $exon_id;
-          $cds_start     = $cds_start - $exon_start + 1;
-          print "\t[First coding]";
-        }
+        if ($cds_node) {
+          if ( !defined($start_exon_id)
+            && $exon_start <= $cds_start
+            && $exon_end >= $cds_start )
+          {
+            $start_exon_id = $exon_id;
+            $cds_start     = $cds_start - $exon_start + 1;
+            print "\t[First coding]";
+          }
 
 # If the coding end is within this exon, save this exon id as end exon id and calculate end offset within the exon
-        if ( !defined($end_exon_id)
-          && $exon_start <= $cds_end
-          && $exon_end >= $cds_end )
-        {
-          $end_exon_id = $exon_id;
-          $cds_end     = $cds_end - $exon_start + 1;
+          if ( !defined($end_exon_id)
+            && $exon_start <= $cds_end
+            && $exon_end >= $cds_end )
+          {
+            $end_exon_id = $exon_id;
+            $cds_end     = $cds_end - $exon_start + 1;
 
-          # The end phase will be -1 since translation stops within this exon
-          $end_phase = -1;
-          print "\t[Last coding]";
+            # The end phase will be -1 since translation stops within this exon
+            $end_phase = -1;
+            print "\t[Last coding]";
+          }
         }
 
         # Update the exon with the phases
@@ -217,7 +216,7 @@ sub add_annotation {
     }
 
 # Insert translation into db (if available, the gene could be non-protein coding)
-    if ( $exon_count > 0 ) {
+    if ( $cds_node) {
       my $translation_stable_id = $lrg_name . $translation_name;
 
       my $translation_id =
