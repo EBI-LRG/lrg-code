@@ -230,24 +230,6 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   }
 }
 
-// function to highlight exons from a transcript
-/*function highlight_exon_from_transcript(tname,ename) {
-  var no_gene_tr_highlight;
-  
-  for (var i=1;i<=max_tr_id;i++) {
-    if(document.getElementById('table_exon_'+tname+'_p'+i+'_'+ename)) {
-      var pname= "p"+i;
-      if (!no_gene_tr_highlight) {
-        highlight_exon(tname,ename,pname);
-        no_gene_tr_highlight = 1;
-      }  
-      else {
-        highlight_exon(tname,ename,pname,no_gene_tr_highlight);
-      }
-    }
-  }
-}*/
-
 // function to clear exon highlighting
 function clear_highlight(trans,pep) {
   var i, j, obj, exon_select;
@@ -385,3 +367,28 @@ function search_in_ensembl(lrg_id, pending) {
   }
 }
 
+
+// function to display information about the download of LRG files
+function show_download_help() {
+  var client_browser = navigator.appName;
+  if (client_browser == "Microsoft Internet Explorer" || client_browser == "Safari") {
+    var element = document.getElementById('download_msg');
+    element.className = "unhidden";
+  }
+}
+
+// function to display information about different sections of the LRG page
+function show_help(id) {
+  var element = document.getElementById(id);
+  var help_text = element.getAttribute('data-help'); 
+  var help_div = document.getElementById('help_box');
+  help_div.className = "unhidden help_box";
+  help_div.style.top = element.offsetTop+'px';
+  help_div.innerHTML="> "+help_text;
+}
+
+// function to hide help information
+function hide_help(id) {
+  var element = document.getElementById(id);
+  element.className = "hidden";
+}
