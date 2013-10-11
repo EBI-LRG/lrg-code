@@ -132,41 +132,74 @@ fi
 
 
 # FASTA ZIP
-echo "# FASTA - Create a ZIP file containing the LRG fasta files ..."
-fasta_zip_file='LRG_fasta_files.zip'
-fasta_zip_path="${tmp}/${fasta_zip_file}"
-fasta_dir="${pubpath}/fasta"
+echo "#=================#"
+echo "# FASTA ZIP FILES #"
+echo "#=================#"
+for type in 'public' 'pending'  
+do
+  echo "# FASTA ${type} - Create a ZIP file containing the ${type} LRG fasta files ..."
 
-zip -j ${fasta_zip_path} ${fasta_dir}/*.fasta
+  fasta_zip_file="LRG_${type}_fasta_files.zip"
+  fasta_zip_path="${tmp}/${fasta_zip_file}"
+  fasta_dir="${pubpath}/fasta"
 
-if [[ -e ${fasta_zip_path} && -s ${fasta_zip_path} ]] ; then
-  echo "# FASTA - ZIP file of the fasta files created"
-  chmod 664 ${fasta_zip_path}
-  mv ${fasta_zip_path} ${fasta_dir};
-  echo "# FASTA - ZIP file moved to ${fasta_dir}"
-else 
-  echo ">> FASTA - Error while generating the ZIP file!"
-  exit 1
-fi
-echo "# FASTA - Done"
+  if [[ ${type} == 'public' ]]; then
+    xml_file_dir=${pubpath}
+  else
+    xml_file_dir="${pubpath}/${type}"
+  fi
+
+  files_list=''
+  for file in `ls -a ${xml_file_dir}/LRG_*.xml`
+  do
+    lrg_id=`basename ${file} | cut -d . -f 1`
+    files_list="${files_list} ${fasta_dir}/${lrg_id}.fasta"
+  done
+  
+  zip -jq ${fasta_zip_path} ${files_list}
+
+  if [[ -e ${fasta_zip_path} && -s ${fasta_zip_path} ]] ; then
+    echo "# FASTA ${type} - ZIP file of the ${type} fasta files created"
+    chmod 664 ${fasta_zip_path}
+    mv ${fasta_zip_path} ${fasta_dir};
+    echo "# FASTA ${type} - ZIP file moved to ${fasta_dir}"
+  else 
+    echo ">> FASTA ${type} - Error while generating the ZIP file!"
+    exit 1
+  fi
+  echo "# FASTA ${type} - Done"
+  echo ""
+done
 
 
 # XML ZIP
-echo "# XML - Create a ZIP file containing the LRG xml files ..."
-xml_zip_file='LRG_xml_files.zip'
-xml_zip_path="${tmp}/${xml_zip_file}"
-xml_dir="${cvspath}/xml"
+echo "#===============#"
+echo "# XML ZIP FILES #"
+echo "#===============#"
+for type in 'public' 'pending'  
+do
+  echo "# XML ${type} - Create a ZIP file containing the LRG xml files ..."
+  xml_zip_file="LRG_${type}_xml_files.zip"
+  xml_zip_path="${tmp}/${xml_zip_file}"
+  xml_dir="${cvspath}/xml"
 
-zip -j ${xml_zip_path} ${xml_dir}/*.xml
+  if [[ ${type} == 'public' ]]; then
+    xml_file_dir=${pubpath}
+  else
+    xml_file_dir="${pubpath}/${type}"
+  fi
 
-if [[ -e ${xml_zip_path} && -s ${xml_zip_path} ]] ; then
-  echo "# XML - ZIP file of the xml files created"
-  chmod 664 ${xml_zip_path}
-  mv ${xml_zip_path} ${pubpath};
-  echo "# XML - ZIP file moved to ${pubpath}"
-else 
-  echo ">> XML - Error while generating the ZIP file!"
-  exit 1
-fi
-echo "# XML - Done"
+  zip -jq ${xml_zip_path} ${xml_file_dir}/LRG_*.xml
 
+  if [[ -e ${xml_zip_path} && -s ${xml_zip_path} ]] ; then
+    echo "# XML ${type} - ZIP file of the ${type} xml files created"
+    chmod 664 ${xml_zip_path}
+    mv ${xml_zip_path} ${pubpath};
+    echo "# XML ${type} - ZIP file moved to ${pubpath}"
+  else 
+    echo ">> XML ${type} - Error while generating the ZIP file!"
+    exit 1
+  fi
+  echo "# XML ${type} - Done"
+  echo ""
+done
