@@ -40,6 +40,7 @@ if [[ ${tmp} && -d ${tmp} ]]; then
   new_relnotes="${tmp}/${new_relnotes_fname}"
   new_record="${tmp}/${new_record_fname}"
 else
+  tmp=${cvsftp}
   new_relnotes="${cvsftp}/${new_relnotes_fname}"
   new_record="${cvsftp}/${new_record_fname}"
 fi
@@ -133,8 +134,8 @@ fi
 # FASTA ZIP
 echo "# FASTA - Create a ZIP file containing the LRG fasta files ..."
 fasta_zip_file='LRG_fasta_files.zip'
-fasta_zip_path=${tmp}/${fasta_zip_file}
-fasta_dir=${pubpath}/fasta
+fasta_zip_path="${tmp}/${fasta_zip_file}"
+fasta_dir="${pubpath}/fasta"
 
 zip -j ${fasta_zip_path} ${fasta_dir}/*.fasta
 
@@ -153,8 +154,8 @@ echo "# FASTA - Done"
 # XML ZIP
 echo "# XML - Create a ZIP file containing the LRG xml files ..."
 xml_zip_file='LRG_xml_files.zip'
-xml_zip_path=${tmp}/${xml_zip_file}
-xml_dir=${cvspath}/xml
+xml_zip_path="${tmp}/${xml_zip_file}"
+xml_dir="${cvspath}/xml"
 
 zip -j ${xml_zip_path} ${xml_dir}/*.xml
 
