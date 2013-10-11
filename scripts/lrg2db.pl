@@ -318,7 +318,7 @@ else { # Create new "gene" entry
 
 	# Get gene_id
 	foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
-		$symbol = $gene->findNodeSingle('symbol');
+		my $symbol = $gene->findNodeSingle('symbol');
 		$gene_id = $gene->data->{accession} if ($symbol->data->{name} eq $hgnc_symbol && $symbol->data->{source} eq 'HGNC' && $gene->data->{source} =~ /NCBI/i); # get the GeneID 
 	}
 
