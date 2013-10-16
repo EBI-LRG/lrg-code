@@ -60,8 +60,8 @@ close(OLD);
 
 
 #### XML directory #### 
-my $pub_count  = `ls $xml_dir/LRG_* | wc -l`;
-my $pend_count = `ls $xml_dir/pending/LRG_* | wc -l`;
+my $pub_count  = `ls $xml_dir/LRG_*.xml | wc -l`;
+my $pend_count = `ls $xml_dir/pending/LRG_*.xml | wc -l`;
 chomp($pub_count);
 chomp($pend_count);
 
