@@ -38,10 +38,12 @@
       <xsl:when test="$pending=0">  
         <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
         <script type="text/javascript" src="lrg2html.js" />
+        <link rel="icon" type="image/ico" href="img/favicon_public.ico" />
        </xsl:when>
       <xsl:otherwise>
         <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
         <script type="text/javascript" src="../lrg2html.js" />
+        <link rel="icon" type="image/ico" href="../img/favicon_pending.ico" />
       </xsl:otherwise>
     </xsl:choose>  
   </head>
@@ -130,9 +132,10 @@
         </li>
       </ul> 
     </div>
-<!-- TEST -->
+    
+    <!-- Empty space for Help message -->
     <div class="hidden help_box" id="help_box"></div>
-<!-- TEST -->
+    
     <div class="right_side">
     <div class="summary gradient_color1">
       <div class="summary_header">Summary information</div>
@@ -207,6 +210,7 @@
       <xsl:attribute name="onmouseover">show_download_help()</xsl:attribute>
       <xsl:attribute name="onmouseout">hide_help('download_msg')</xsl:attribute>
       <xsl:call-template name="download"/>
+      <span class="icon icon-functional" data-icon="="></span>
 	    <span style="padding-left:2px;padding-right:15px;color:#FFF;font-weight:bold">Downloads:</span>
 	      <xsl:variable name="xml_file_name"><xsl:value-of select="$lrg_id" />.xml</xsl:variable>
         <a class="download_button" title="File containing all the LRG data in a XML file">
