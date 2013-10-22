@@ -878,10 +878,3 @@ div.footer {
   background: linear-gradient(to bottom, #80786d 0%, #403c37 10%);
 }
 
-
-.embl_ebi_logo {
-  width:100px;
-  height:156px;
-  border:none;
-  background:url(.img/embl-ebi_logo.jpg) repeat-x;
-}

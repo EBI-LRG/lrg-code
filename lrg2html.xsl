@@ -38,7 +38,7 @@
       <xsl:when test="$pending=0">  
         <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
         <script type="text/javascript" src="lrg2html.js" />
-        <link rel="icon" type="image/ico" href="http://www.ebi.ac.uk/~lgil/LRG/test/.img/favicon_public.ico" />
+        <link rel="icon" type="image/ico" href=".img/favicon_public.ico" />
        </xsl:when>
       <xsl:otherwise>
         <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
