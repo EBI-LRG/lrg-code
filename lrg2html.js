@@ -328,7 +328,7 @@ function create_external_link (pending) {
 
 // function to build the HTML code to display the external icon
 function get_external_icon (pending) {
-  var src="img/external_link_green.png";
+  var src=".img/external_link_green.png";
   if (pending == 1) {
     src = "../"+src
   }
