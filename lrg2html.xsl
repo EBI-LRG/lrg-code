@@ -2246,7 +2246,7 @@
             </xsl:if>
           </h3>
         
-          <h3 class="sub_subsection gradient_color2 blue_bg">Gene annotations</h3>        
+          <h3 class="sub_subsection gradient_color2">Gene annotations</h3>        
           <div class="transcript_mapping blue_bg">
             <div class="sub_transcript_mapping" style="padding:4px 2px">
               <xsl:call-template name="updatable_gene">
@@ -2301,7 +2301,7 @@
         
         <xsl:if test="($display_symbol!=$lrg_gene_name) or ($has_hgnc_symbol=1 and $display_symbol_source!=$symbol_source)">
 			    <xsl:variable name="mapping_anchor">mapping_anchor_<xsl:value-of select="@accession"/></xsl:variable>
-          <h3 class="sub_subsection">Gene 
+          <h3 class="sub_subsection gradient_color2">Gene 
             <xsl:choose>
               <xsl:when test="$display_symbol_source=$symbol_source">
                 <xsl:value-of select="$display_symbol" /> 
