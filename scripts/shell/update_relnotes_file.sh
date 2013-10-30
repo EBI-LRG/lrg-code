@@ -131,6 +131,13 @@ if [[ -e ${new_relnotes} ]] ; then
 fi
 
 
+# BED file
+echo "#==========#"
+echo "# BED FILE #"
+echo "#==========#"
+perl ${perldir}/lrg2bed.pl -bed_dir ${pubpath} -xml_dir ${pubpath} ${tmpdir}
+
+
 # FASTA ZIP
 echo "#=================#"
 echo "# FASTA ZIP FILES #"
