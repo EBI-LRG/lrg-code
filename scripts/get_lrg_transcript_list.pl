@@ -15,7 +15,7 @@ GetOptions(
 my $assembly = 'GRCh37';
 
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex';
-$tmp_dir ||= './';
+$tmp_dir ||= '~/';
 
 my $pending_dir = "$xml_dir/pending";
 my %pendings;
