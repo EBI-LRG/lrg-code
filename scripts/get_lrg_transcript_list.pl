@@ -3,15 +3,25 @@
 use strict;
 use File::stat;
 use LRG::LRG;
+use Getopt::Long;
+
+my ($xml_dir,$tmp_dir);
+GetOptions(
+  'xml_dir=s'	=> \$xml_dir,
+  'tmp_dir=s' => \$tmp_dir,
+);
+
 
 my $assembly = 'GRCh37';
-my $public_dir = '/ebi/ftp/pub/databases/lrgex/';
-my $pending_dir = '/ebi/ftp/pub/databases/lrgex/pending';
+
+$xml_dir ||= '/ebi/ftp/pub/databases/lrgex';
+$tmp_dir ||= './';
+
+my $pending_dir = "$xml_dir/pending";
 my %pendings;
 
 my $f_name = "list_LRGs_transcripts_$assembly.txt";
-my $list_file  = ($ARGV[0]) ? $ARGV[0] : '/ebi/ftp/pub/databases/lrgex';
-   $list_file .= "/$f_name";
+my $output_file = "$tmp_dir/$f_name";
 my $dh;
 
 # Time
@@ -30,14 +40,14 @@ my $time = "$mday-$mon-$year\@$hour:$min:$sec";
 umask(0002);
 
 # Open text file to fill
-open LIST, "> $list_file" or die $!;
+open LIST, "> $output_file" or die $!;
 print LIST "# Last modified: $time\n# LRG_TRANSCRIPT\tHGNC_SYMBOL\tCHROMOSOME\tSTRAND\tTRANSCRIPT_START\tTRANSCRIPT_STOP\tEXONS_COORDS\tLRG_PROTEIN\tCDS_START\tCDS_STOP\n";
 
 
 # Open a directory handle
 # Public
-opendir($dh,$public_dir);
-warn("Could not process directory $public_dir") unless (defined($dh));
+opendir($dh,$xml_dir);
+warn("Could not process directory $xml_dir") unless (defined($dh));
 my @public_files = readdir($dh);
 @public_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @public_files;
 # Close the dir handle
@@ -64,8 +74,8 @@ my @files = (@public_files,@pending_files);
 # Loop over the files in the directory and store the file names of LRG XML files
 foreach my $file (@files) {
   next if ($file !~ m/^LRG\_[0-9]+\.xml$/);
-print "FILE: $file\n";
-  my $file_path = ($pendings{$file}) ? "$pending_dir/$file" : "$public_dir/$file";
+  #print "FILE: $file\n";
+  my $file_path = ($pendings{$file}) ? "$pending_dir/$file" : "$xml_dir/$file";
   my $lrg = LRG::LRG::newFromFile($file_path) or die "ERROR: Could not load the index file $file!";
 
   my ($hgnc,$chr,$g_start,$g_end,$strand);
@@ -150,6 +160,16 @@ print "FILE: $file\n";
     }
   }  
 }
+close(LIST);
+
+
+# Copy the file generated to the FTP directory
+if (-e $output_file ) {
+  my $size = -s $output_file;
+  if ($size > 150) {
+    `mv $output_file $xml_dir/$f_name`;
+  }
+}
 
 
 sub complete_with_2_numbers {
@@ -183,5 +203,4 @@ sub lrg2genomic {
     }
   }
   return ($l_start == 1) ? $coord+$new_g_start-1 : $coord+$new_g_start-($l_start+1);
-
 }
