@@ -31,8 +31,10 @@ else {
 	my @files = readdir(DIR);
   close(DIR);
 	foreach my $file (@files) {
-		print "FILE: $file\n";
-		push (@xml_list,$file) if ($file =~ /^LRG_\d+\.xml$/);
+	  if ($file =~ /^LRG_\d+\.xml$/) {
+		  print "FILE: $file\n";
+		  push (@xml_list,$file);
+		}
 	}
 }
 
