@@ -11,21 +11,25 @@ my $port;
 my $user;
 my $pass;
 my $dbname;
+my $tmp_dir;
 my $dir;
 my $output_file = 'lrg_current_status.txt';
 
 
 GetOptions(
-  'host=s'	 => \$host,
-  'port=i'	 => \$port,
-  'dbname=s' => \$dbname,
-  'user=s'	 => \$user,
-  'pass=s'	 => \$pass,
-  'dir=s'    => \$dir
+  'host=s'	  => \$host,
+  'port=i'	  => \$port,
+  'dbname=s'  => \$dbname,
+  'user=s'	  => \$user,
+  'pass=s'	  => \$pass,
+  'dir=s'     => \$dir,
+  'tmp_dir=s' => \$tmp_dir
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
 die("An output directory must be specified") unless (defined($dir));
+
+$tmp_dir = $dir if (!defined($tmp_dir));
 
 # Get a database connection
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -40,7 +44,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 # Give write permission for the group
 umask(0002);
 
-open OUT, "> $dir/$output_file" or die $!;
+open OUT, "> $tmp_dir/$output_file" or die $!;
 print OUT "# LRG ID\tTitle\tStatus\tDescription\tFrom date\tTo date\n";
 
 # Get the status
@@ -71,4 +75,8 @@ while ($sth->fetch()) {
 } 
 $sth->finish();
 close(OUT);
+
+if ($tmp_dir ne $dir) {
+  `mv $tmp_dir/$output_dir $dir`;
+}
 
