@@ -15,7 +15,7 @@ GetOptions(
 my $assembly = 'GRCh37';
 
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex';
-$tmp_dir ||= '~/';
+$tmp_dir ||= './';
 
 my $pending_dir = "$xml_dir/pending";
 my %pendings;
@@ -131,8 +131,14 @@ foreach my $file (@files) {
   foreach my $transcript (@$transcripts) {
     my $t_name = $lrg_id.$transcript->data->{name};
     my $t_coords = $transcript->findNode('coordinates');
-    my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,\%diff);
-    my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,\%diff);
+    my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+    my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+    if ($strand == -1) {
+      my $t_tmp = $t_start;
+      $t_start = $t_end;
+      $t_end = $t_tmp;
+    }
+    
     
     # Exons
     my @exons_list; 
@@ -141,20 +147,33 @@ foreach my $file (@files) {
       foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
         next if ($e_coords->data->{coord_system} ne $lrg_id);        
 
-        my $e_start  = lrg2genomic($e_coords->data->{start},$l_start,$g_start,\%diff);
-        my $e_end    = lrg2genomic($e_coords->data->{end},$l_start,$g_start,\%diff);
+        my $e_start  = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+        my $e_end    = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+        if ($strand == -1) {
+          my $e_tmp = $e_start;
+          $e_start = $e_end;
+          $e_end = $e_tmp;
+        }
+        
         push(@exons_list,"$e_start-$e_end");
       }
     }
-
+    @exons_list = reverse(@exons_list) if ($strand == -1);
 
     # Protein
     my $codings = $transcript->findNodeArray('coding_region');
     foreach my $coding (@$codings) {
       my $cds_coords = $coding->findNode('coordinates');
-      my $cds_start  = lrg2genomic($cds_coords->data->{start},$l_start,$g_start,\%diff);
-      my $cds_end    = lrg2genomic($cds_coords->data->{end},$l_start,$g_start,\%diff);
+      my $cds_start  = lrg2genomic($cds_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+      my $cds_end    = lrg2genomic($cds_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
       my $p_name     = $lrg_id.$coding->findNode('translation')->data->{name};
+      
+      if ($strand == -1) {
+        my $cds_tmp = $cds_start;
+        $cds_start = $cds_end;
+        $cds_end = $cds_tmp;
+      }
+        
       #LRG_TRANSCRIPT\tHGNC_SYMBOL\tCHROMOSOME\tSTRAND\tTRANSCRIPT_START\tTRANSCRIPT_STOP\tEXONS_COORDS\tLRG_PROTEIN\tCDS_START\tCDS_STOP
       print LIST "$t_name\t$hgnc\t$chr\t$strand\t$t_start\t$t_end\t".join(',',@exons_list)."\t$p_name\t$cds_start\t$cds_end\n";
     }
@@ -182,25 +201,51 @@ sub lrg2genomic {
   my $coord   = shift;
   my $l_start = shift;
   my $g_start = shift;
+  my $g_end   = shift;
   my $diff    = shift;
+  my $strand  = shift;
 
-  my $tmp_coord = ($l_start == 1) ? $coord+$g_start-1 : $coord+$g_start-($l_start+1);
-  my $new_g_start = $g_start;  
-
-  foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
-    if ($diff_start <= $tmp_coord) {
-      my $size = $diff->{$diff_start}{size};
-      my $type   = $diff->{$diff_start}{type};
+  my ($tmp_coord, $new_g_start);
+  if ($strand == -1) {
+    $tmp_coord = $g_end-$coord+$l_start;
+    my $new_g_end = $g_end; 
+    
+    foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
+      if ($diff_start >= $tmp_coord) {
+        my $size = $diff->{$diff_start}{size};
+        my $type = $diff->{$diff_start}{type};
  
-      if ($type eq 'lrg_ins') { 
-        $new_g_start -= $size;
-      } else {
-        $new_g_start += $size;
+        if ($type eq 'lrg_ins') { 
+          $new_g_end -= $size;
+        } else {
+          $new_g_end += $size;
+        }
+      }
+      else {
+        last;
       }
     }
-    else {
-      last;
-    }
+    return $new_g_end-$coord+$l_start;;
   }
-  return ($l_start == 1) ? $coord+$new_g_start-1 : $coord+$new_g_start-($l_start+1);
+  else {
+    $tmp_coord = $coord+$g_start-$l_start;
+    $new_g_start = $g_start; 
+
+    foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
+      if ($diff_start <= $tmp_coord) {
+        my $size = $diff->{$diff_start}{size};
+        my $type = $diff->{$diff_start}{type};
+ 
+        if ($type eq 'lrg_ins') { 
+          $new_g_start -= $size;
+        } else {
+          $new_g_start += $size;
+        }
+      }
+      else {
+        last;
+      }
+    }
+    return $coord+$new_g_start-$l_start;
+  }  
 }
