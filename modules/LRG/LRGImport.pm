@@ -854,9 +854,11 @@ sub add_meta_coord {
   my $cs_id      = shift;
   my $max_length = shift;
 
-  my $current_max_length = $dbCore->dbc->sql_helper->execute_single_result(
+  my $current_max_length = 0;
+  $current_max_length = $dbCore->dbc->sql_helper->execute_single_result(
     -SQL => 'select max_length from meta_coord where table_name =? and coord_system_id=?',
-    -PARAMS => [$table, $cs_id]
+    -PARAMS => [$table, $cs_id],
+    -NO_ERROR => 1
   );
 
   if($current_max_length < $max_length) {
