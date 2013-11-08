@@ -17,7 +17,6 @@ else
   tmpdir="-tmp_dir ${CVSROOTDIR}"
 fi
 
-echo "Generating LRG status report ..."
+export PERL5LIB
 perl ${perldir}/get_status_from_db.pl -host ${host} -port ${port} -user ${user} -pass "" -dbname ${dbname} -dir ${dir} ${tmpdir}
 
-echo "A new LRG status report file has been generated from the lrg status in the database at the following location: ${dir}"

@@ -1,9 +1,7 @@
 #!perl -w
 
 use strict;
-
 use Getopt::Long;
-use LRG::LRG;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 my $host;
@@ -77,6 +75,6 @@ $sth->finish();
 close(OUT);
 
 if ($tmp_dir ne $dir) {
-  `mv $tmp_dir/$output_dir $dir`;
+  `mv $tmp_dir/$output_file $dir`;
 }
 
