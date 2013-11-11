@@ -81,7 +81,7 @@ if (defined($bed_dir)) {
 
 my %lrg_gene;
 my %lrg_trans;
-my %lrg_prot;
+#my %lrg_prot;
 
 my %chr_names = (
                 '1' => 1,
@@ -142,7 +142,8 @@ foreach my $status (keys(%lrg_meta)) {
 	    $strand = $mapping_span->data()->{'strand'};
 	    $strand_operator = ($strand == 1) ? '+' : '-';
 	    
-	    my $line_content = "chr$chr\t$start\t$end\t$lrg_id ($gene_name)\t0\t$strand_operator";
+	    #my $line_content = "chr$chr\t$start\t$end\t$lrg_id ($gene_name)\t0\t$strand_operator";
+	    my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator";
 	  
 		  if ($lrg_gene{$status}{$chr_name}{$start}) {
 	      push(@{$lrg_gene{$status}{$chr_name}{$start}}, $line_content);
@@ -177,7 +178,7 @@ foreach my $status (keys(%lrg_meta)) {
 	  }
 	  
 	  # Transcript coordinates
-	  my %protein_list;
+	  #my %protein_list;
     my $transcripts = $lrg->findNodeArraySingle('fixed_annotation/transcript');
     foreach my $transcript (@$transcripts) {
       my $t_short_name = $transcript->data->{name};
@@ -228,7 +229,7 @@ foreach my $status (keys(%lrg_meta)) {
       my $exons_sizes_list = join(',',@exons_sizes);
       my $exons_starts_list = join(',',@exons_starts);
       
-      my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name\t0\t$strand_operator\t$t_start\t$t_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
+      my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$t_start\t$t_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
       if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
 	      push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
@@ -243,41 +244,42 @@ foreach my $status (keys(%lrg_meta)) {
         $lrg_trans{$status}{$chr_name} = {$t_start => { $t_number => [$t_line_content]}};
 		  }
 
-      # Protein coordinates
-      my $codings = $transcript->findNodeArraySingle('coding_region');
-      foreach my $coding (@$codings) {
-        my $p_short_name = $coding->findNodeSingle('translation')->data->{name};
-        
-        next if ($protein_list{$p_short_name});
-        $protein_list{$p_short_name} = 1;
-        
-        my $p_name   = $lrg_id.$p_short_name;
-        my $p_number = substr($p_short_name,1);
-        my $p_coords = $coding->findNode('coordinates');
-        my $p_start  = lrg2genomic($p_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
-        my $p_end    = lrg2genomic($p_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
-        
-        if ($strand == -1) {
-          my $p_tmp = $p_start;
-          $p_start = $p_end;
-          $p_end = $p_tmp;
-        }
-        
-        my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name ($lrg_id protein $p_number)\t0\t$strand_operator";
-
-        if ($lrg_prot{$status}{$chr_name}{$p_start}{$p_number}) {
-	        push(@{$lrg_prot{$status}{$chr_name}{$p_start}{$p_number}}, $p_line_content);
-	      }
-        elsif ($lrg_prot{$status}{$chr_name}{$p_start}) {
-	        $lrg_prot{$status}{$chr_name}{$p_start}{$p_number} = [$p_line_content];
-		    }
-		    elsif ($lrg_prot{$status}{$chr_name}) {
-		      $lrg_prot{$status}{$chr_name}{$p_start} = {$p_number => [$p_line_content]};
-		    }
-		    else {
-          $lrg_prot{$status}{$chr_name} = {$p_start => { $p_number => [$p_line_content]}};
-		    }
-      }  
+      ## Protein coordinates
+      #my $codings = $transcript->findNodeArraySingle('coding_region');
+      #foreach my $coding (@$codings) {
+      #  my $p_short_name = $coding->findNodeSingle('translation')->data->{name};
+      #  
+      #  next if ($protein_list{$p_short_name});
+      #  $protein_list{$p_short_name} = 1;
+      #  
+      #  my $p_name   = $lrg_id.$p_short_name;
+      #  my $p_number = substr($p_short_name,1);
+      #  my $p_coords = $coding->findNode('coordinates');
+      #  my $p_start  = lrg2genomic($p_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+      #  my $p_end    = lrg2genomic($p_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+      #  
+      #  if ($strand == -1) {
+      #    my $p_tmp = $p_start;
+      #    $p_start = $p_end;
+      #    $p_end = $p_tmp;
+      #  }
+      #  
+      #  #my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name ($lrg_id protein $p_number)\t0\t$strand_operator";
+      #  my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name(protein$p_number)\t0\t$strand_operator";
+      #
+      #  if ($lrg_prot{$status}{$chr_name}{$p_start}{$p_number}) {
+	    #    push(@{$lrg_prot{$status}{$chr_name}{$p_start}{$p_number}}, $p_line_content);
+	    #  }
+      #  elsif ($lrg_prot{$status}{$chr_name}{$p_start}) {
+	    #    $lrg_prot{$status}{$chr_name}{$p_start}{$p_number} = [$p_line_content];
+		  #  }
+		  #  elsif ($lrg_prot{$status}{$chr_name}) {
+		  #    $lrg_prot{$status}{$chr_name}{$p_start} = {$p_number => [$p_line_content]};
+		  #  }
+		  #  else {
+      #    $lrg_prot{$status}{$chr_name} = {$p_start => { $p_number => [$p_line_content]}};
+		  #  }
+      #}  
 	  }
 	}
 	print STDOUT "LRG DATA: $status LRG data fetched\n";
@@ -294,7 +296,8 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   my $add_status_to_name = ($status eq 'pending') ? ' [pending]' : '';
   
   # Genomic track
-  print BED "track name=\"$track_name$add_status_to_name\" type=bedDetail description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  #print BED "track name=\"$track_name$add_status_to_name\" type=bedDetail description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  print BED "track name=\"$track_name$add_status_to_name\" description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
   foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_gene{$status}})) {
     foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_gene{$status}{$lrg_chr}})) {
       foreach my $lrg_line (@{$lrg_gene{$status}{$lrg_chr}{$lrg_start}}) {
@@ -323,23 +326,24 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   print STDOUT "BED FILE: $status - LRG transcript data written in the BED file\n";
   $priority ++;
   
-  # Protein track
-  $track_colour = $lrg_meta{$status}{'colour'}{'prot'};
-  
-  my $pr_desc = $track_desc;
-  $pr_desc =~ s/sequence/protein/i;
-  print BED "track name=\"$track_name proteins$add_status_to_name\" type=bedDetail description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
-  foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_prot{$status}})) {
-    foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}})) {
-      foreach my $p_number (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}{$lrg_start}})) {
-        foreach my $lrg_line (@{$lrg_prot{$status}{$lrg_chr}{$lrg_start}{$p_number}}) {
-          print BED "$lrg_line\n";
-        }
-      }  
-    }
-  }
-  print STDOUT "BED FILE: $status - LRG protein data written in the BED file\n";
-  $priority ++;
+#  # Protein track
+#  $track_colour = $lrg_meta{$status}{'colour'}{'prot'};
+#  
+#  my $pr_desc = $track_desc;
+#  $pr_desc =~ s/sequence/protein/i;
+#  #print BED "track name=\"$track_name proteins$add_status_to_name\" type=bedDetail description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+#  print BED "track name=\"$track_name proteins$add_status_to_name\" description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+#  foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_prot{$status}})) {
+#    foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}})) {
+#      foreach my $p_number (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}{$lrg_start}})) {
+#        foreach my $lrg_line (@{$lrg_prot{$status}{$lrg_chr}{$lrg_start}{$p_number}}) {
+#          print BED "$lrg_line\n";
+#        }
+#      }  
+#    }
+#  }
+#  print STDOUT "BED FILE: $status - LRG protein data written in the BED file\n";
+#  $priority ++;
 }
 close(BED);
 `mv $tmp_dir/$bed_file $bed_dir/`;
