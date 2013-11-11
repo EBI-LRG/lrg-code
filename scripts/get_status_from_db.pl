@@ -43,7 +43,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 umask(0002);
 
 open OUT, "> $tmp_dir/$output_file" or die $!;
-print OUT "# LRG ID\tTitle\tStatus\tDescription\tFrom date\tTo date\n";
+print OUT "# LRG ID\tHGNC symbol\tTitle\tStatus\tDescription\tFrom date\tTo date\n";
 
 # Get the status
 my $stmt = qq{
@@ -53,7 +53,10 @@ my $stmt = qq{
             lrg_status
         ORDER BY SUBSTRING(lrg_id, 5) asc
     };
+my $stmt_hgnc = qq{ SELECT symbol FROM gene WHERE lrg_id=? };
+
 my $sth = $db_adaptor->dbc->prepare($stmt);
+my $sth_hgnc = $db_adaptor->dbc->prepare($stmt_hgnc);
 
 $sth->execute();
 my ($lrg_id,$title,$status,$description,$from_date,$to_date);
@@ -69,9 +72,15 @@ while ($sth->fetch()) {
   
   $description =~ s/\n/ /g;
   
-  print OUT "$lrg_id\t$title\t$status\t$description\t$from_date\t$to_date\n";
+  # HGNC symbol
+  $sth_hgnc->execute($lrg_id);
+  my $hgnc_symbol = ($sth_hgnc->fetchrow_array)[0];
+  $hgnc_symbol = '' if (!defined($hgnc_symbol));
+
+  print OUT "$lrg_id\t$hgnc_symbol\t$title\t$status\t$description\t$from_date\t$to_date\n";
 } 
 $sth->finish();
+$sth_hgnc->finish();
 close(OUT);
 
 if ($tmp_dir ne $dir) {
