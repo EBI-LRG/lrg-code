@@ -19,7 +19,7 @@
 <xsl:variable name="lrg_coord_system" select="$lrg_id" />
 <xsl:variable name="symbol_source">HGNC</xsl:variable>
 <xsl:variable name="hgnc_url">http://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
-<xsl:variable name="lrg_bed_file_location">http://www.ebi.ac.uk/~lgil/LRG/LRG.bed</xsl:variable>
+<xsl:variable name="lrg_bed_file_location">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/LRG.bed</xsl:variable>
 
 <xsl:template match="/lrg">
 
