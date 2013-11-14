@@ -19,6 +19,7 @@
 <xsl:variable name="lrg_coord_system" select="$lrg_id" />
 <xsl:variable name="symbol_source">HGNC</xsl:variable>
 <xsl:variable name="hgnc_url">http://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
+<xsl:variable name="lrg_bed_file_location">http://www.ebi.ac.uk/~lgil/LRG/LRG.bed</xsl:variable>
 
 <xsl:template match="/lrg">
 
@@ -211,19 +212,19 @@
       <xsl:attribute name="onmouseout">hide_help('download_msg')</xsl:attribute>
       <xsl:call-template name="download"/>
       <span class="icon icon-functional" data-icon="="></span>
-	    <span style="padding-left:2px;padding-right:15px;color:#FFF;font-weight:bold">Downloads:</span>
+	    <span style="padding-left:2px;margin-right:5px;color:#FFF;font-weight:bold">Download <xsl:value-of select="$lrg_id" /> data in </span>
 	      <xsl:variable name="xml_file_name"><xsl:value-of select="$lrg_id" />.xml</xsl:variable>
-        <a class="download_button" title="File containing all the LRG data in a XML file">
+        <a class="download_button" style="text-align:center" title="File containing all the LRG data in a XML file">
 	        <xsl:attribute name="download"><xsl:value-of select="$xml_file_name"/></xsl:attribute>
-	        <xsl:attribute name="href"><xsl:value-of select="$xml_file_name"/></xsl:attribute>
-	        XML
-	      </a>
+	        <xsl:attribute name="href"><xsl:value-of select="$xml_file_name"/></xsl:attribute>XML</a>
+	        
+        <span style="margin-left:2px;margin-right:8px;color:#FFF;font-weight:bold">or</span>
+        
 	      <xsl:variable name="fasta_file_name"><xsl:value-of select="$lrg_id" />.fasta</xsl:variable>
-	      <a class="download_button" style="margin-left:10px" title="FASTA file containing the LRG genomic, transcript and protein sequences">
+	      <a class="download_button" style="text-align:center" title="FASTA file containing the LRG genomic, transcript and protein sequences">
 	        <xsl:attribute name="download"><xsl:value-of select="$fasta_file_name"/></xsl:attribute>
-	        <xsl:attribute name="href"><xsl:if test="$pending=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>
-	        FASTA
-	      </a>
+	        <xsl:attribute name="href"><xsl:if test="$pending=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>FASTA</a>
+	       <span style="margin-left:2px;margin-right:4px;color:#FFF;font-weight:bold">format</span>
 	      <div class="hidden" id="download_msg"><div style="color:#FFF;padding-top:5px"><small>Right click on the button and then click on "Save target as..." to download the file.</small></div></div>
     </div>
     
@@ -1525,14 +1526,15 @@
 <xsl:template name="g_mapping">
 	<xsl:param name="lrg_id" />
 	
-	<xsl:variable name="coord_system" select="@coord_system" />
-  <xsl:variable name="region_name" select="@other_name" />
-  <xsl:variable name="region_id" select="@other_id" />
-  <xsl:variable name="region_start" select="@other_start" />
-  <xsl:variable name="region_end" select="@other_end" />
+	<xsl:variable name="coord_system"  select="@coord_system" />
+  <xsl:variable name="region_name"   select="@other_name" />
+  <xsl:variable name="region_id"     select="@other_id" />
+  <xsl:variable name="region_start"  select="@other_start" />
+  <xsl:variable name="region_end"    select="@other_end" />
+  <xsl:variable name="main_assembly" select="substring-before($coord_system,'.')" />
   <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
     <xsl:choose>  
-      <xsl:when test="$coord_system='NCBI36'">
+      <xsl:when test="$main_assembly='NCBI36'">
 				<xsl:text>ncbi36</xsl:text>
 			</xsl:when>
       <xsl:otherwise>
@@ -1545,7 +1547,7 @@
   <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>BEG=<xsl:value-of select="$region_start"/><xsl:text>&amp;</xsl:text>END=<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ucsc_url">http://genome.ucsc.edu/cgi-bin/hgTracks?</xsl:variable>
-  <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
+  <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/><xsl:text>&amp;</xsl:text>hgt.customText=<xsl:value-of select="$lrg_bed_file_location" /></xsl:variable>
   
 	<xsl:choose>
 		<xsl:when test="$coord_system='NCBI37'">
@@ -1558,50 +1560,48 @@
 
   <p>
     <span class="line_header">Region covered:</span><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/>
-      <a>
-        <xsl:attribute name="target">_blank</xsl:attribute>
-        <xsl:attribute name="href">
-          <xsl:value-of select="$ensembl_url" />
-          <xsl:value-of select="$ensembl_region" />
-          <xsl:if test="$coord_system!='NCBI36'">
-			      <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
-            <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
-          </xsl:if>
-        </xsl:attribute>
-        [Ensembl]
-      </a>
-      
-      <a>
-        <xsl:attribute name="target">_blank</xsl:attribute>
-        <xsl:attribute name="href">
-          <xsl:value-of select="$ncbi_url" />
-          <xsl:value-of select="$ncbi_region" />
-          <xsl:if test="$coord_system='NCBI36'">
-            <xsl:text>&amp;</xsl:text>build=previous
-          </xsl:if>
-        </xsl:attribute>
-        [NCBI]
-      </a>
-      
-      <a>
-        <xsl:attribute name="target">_blank</xsl:attribute>
-        <xsl:attribute name="href">
-          <xsl:value-of select="$ucsc_url" />
-          <xsl:value-of select="$ucsc_region" />
-          <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
-          <xsl:choose>
-            <xsl:when test="($coord_system='GRCh37') or ($coord_system='NCBI37')"><xsl:text>19</xsl:text></xsl:when>
-            <xsl:when test="$coord_system='NCBI36'"><xsl:text>18</xsl:text></xsl:when>
-          </xsl:choose>
-          <xsl:text>&amp;</xsl:text><xsl:text>pix=800</xsl:text>
-        </xsl:attribute>
-        [UCSC]
-      </a>
-      <xsl:call-template name="external_link_icon" />
+    <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
+    <span style="margin-right:10px;font-weight:bold">See in:</span>
+    <a>
+      <xsl:attribute name="target">_blank</xsl:attribute>
+      <xsl:attribute name="href">
+        <xsl:value-of select="$ensembl_url" />
+        <xsl:value-of select="$ensembl_region" />
+        <xsl:if test="$coord_system!='NCBI36'">
+			    <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
+          <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
+        </xsl:if>
+      </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
+    </a>
+    
+    <span style="margin-left:5px;margin-right:10px">/</span>
+    <a>
+      <xsl:attribute name="target">_blank</xsl:attribute>
+      <xsl:attribute name="href">
+        <xsl:value-of select="$ncbi_url" />
+        <xsl:value-of select="$ncbi_region" />
+        <xsl:if test="$coord_system='NCBI36'">
+          <xsl:text>&amp;</xsl:text>build=previous
+        </xsl:if>
+      </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
+    </a>
+    <span style="margin-left:5px;margin-right:10px">/</span>
+    <a>
+      <xsl:attribute name="target">_blank</xsl:attribute>
+      <xsl:attribute name="href">
+        <xsl:value-of select="$ucsc_url" />
+        <xsl:value-of select="$ucsc_region" />
+        <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
+        <xsl:choose>
+          <xsl:when test="($main_assembly='GRCh37') or ($main_assembly='NCBI37')"><xsl:text>19</xsl:text></xsl:when>
+          <xsl:when test="$main_assembly='NCBI36'"><xsl:text>18</xsl:text></xsl:when>
+        </xsl:choose>
+      </xsl:attribute>UCSC<xsl:call-template name="external_link_icon" />
+    </a>
   </p>
     
 	<table class="mapping_detail">
-		<tr class="header gradient_color2">
+		<tr class="gradient_color2">
 			<th>Strand</th>
 			<th>LRG start</th>
 			<th>LRG end</th>
@@ -1616,28 +1616,7 @@
         <td><xsl:value-of select="@lrg_end"/></td>
         <td><xsl:value-of select="@other_start"/></td>
         <td><xsl:value-of select="@other_end"/></td>
-        <td>
-    		<xsl:for-each select="diff">
-          <span class="line_header"><xsl:value-of select="@type"/>:</span>
-          (Ref:<xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if>)
-          <b>
-      		<xsl:choose>
-        		<xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
-        		<xsl:otherwise>-</xsl:otherwise>
-      		</xsl:choose>
-          </b>
-          
-          <span style="padding-left:5px"><xsl:call-template name="right_arrow_green" /></span>
-          <b>
-      		<xsl:choose>
-        		<xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
-        		<xsl:otherwise>-</xsl:otherwise>
-      		</xsl:choose>
-      		</b>
-          (LRG:<xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if>)
-          <br/>
-    		</xsl:for-each>
-        </td>
+        <xsl:call-template name="diff_table"/>
       </tr>      
   	</xsl:for-each>
 	</table>
@@ -1670,16 +1649,16 @@
  
   <p>
     <ul><li>
-      <b>Region covered: <xsl:value-of select="$region_id"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></b>
-  
+      <span style="font-weight:bold">Region covered:</span><span style="margin-left:10px"><xsl:value-of select="$region_id"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></span>
+      <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
+      <span style="font-weight:bold;margin-right:5px">See in:</span>
 	  <xsl:choose>
 		  <xsl:when test="../source/name='Ensembl'">
         <a>
           <xsl:attribute name="target">_blank</xsl:attribute>
           <xsl:attribute name="href">
             <xsl:value-of select="$ensembl_url" />
-          </xsl:attribute>
-          [Ensembl]<xsl:call-template name="external_link_icon" />
+          </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
         </a>
 	  	</xsl:when>
       <xsl:otherwise>
@@ -1691,8 +1670,7 @@
             <xsl:if test="$coord_system='NCBI36'">
               <xsl:text>&amp;</xsl:text>build=previous
             </xsl:if>
-          </xsl:attribute>
-          [NCBI]<xsl:call-template name="external_link_icon" />
+          </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
         </a>
       </xsl:otherwise> 
     </xsl:choose>  
@@ -1705,7 +1683,7 @@
       </xsl:attribute>
     
       <table class="mapping_detail">
-        <tr class="header gradient_color2">
+        <tr class="gradient_color2">
           <th>Strand</th>
           <th>LRG start</th>
           <th>LRG end</th>
@@ -1720,25 +1698,7 @@
           <td><xsl:value-of select="@lrg_end"/></td>
           <td><xsl:value-of select="@other_start"/></td>
           <td><xsl:value-of select="@other_end"/></td>
-          <td>
-      <xsl:for-each select="diff">
-            <span class="line_header"><xsl:value-of select="@type"/>:</span>
-            (Ref:<xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if>)
-        <xsl:choose>
-          <xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
-          <xsl:otherwise>-</xsl:otherwise>
-        </xsl:choose>
-        
-        <span style="padding-left:5px"><xsl:call-template name="right_arrow_green" /></span>
-
-        <xsl:choose>
-          <xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
-          <xsl:otherwise>-</xsl:otherwise>
-        </xsl:choose>
-            (LRG:<xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if>)
-            <br/>
-      </xsl:for-each>
-          </td>
+          <xsl:call-template name="diff_table"/>
         </tr>      
     </xsl:for-each>
       </table>
@@ -1836,10 +1796,10 @@
     </ul>
   </p>
     <table>
-      <tr class="header gradient_color2">
+      <tr class="gradient_color2">
         <th colspan="2">LRG-specific amino acid numbering</th>
         <th class="other_separator"> </th>
-        <th colspan="2" class="other_label">
+        <th colspan="2" class="gradient_color3">
           <!--Alternative amino acid numbering based on LSDB sources-->
           <xsl:choose>
             <xsl:when test="url">
@@ -1923,7 +1883,7 @@
       <xsl:if test="position()!=1"><br /></xsl:if>
       <table>
     
-        <tr class="header gradient_color2">
+        <tr class="gradient_color2">
           <th colspan="3">LRG genomic</th>
           <th colspan="2">Transcript</th>
           <th colspan="2">CDS</th>
@@ -2118,7 +2078,7 @@
   <xsl:param name="show_other_exon_naming"/>
     <table>
     
-        <tr class="header gradient_color2">
+        <tr class="gradient_color2">
           <th colspan="2">LRG genomic</th>
           <th colspan="2">Transcript</th>
           <th>Intron</th>
@@ -2447,7 +2407,7 @@
 				
         <table style="width:100%;padding:0px;margin:0px">
    
-          <tr class="header gradient_color2">
+          <tr class="gradient_color2">
             <th style="width:14%">Transcript ID</th>
             <th style="width:7%">Source</th>
             <th style="width:8%">Start</th>
@@ -2468,7 +2428,7 @@
       
         <xsl:choose>
           <xsl:when test="transcript[protein_product]">
-          <tr class="header gradient_color2">
+          <tr class="gradient_color2">
             <th>Protein ID</th>
             <th>Source</th>
             <th>CDS start</th>
@@ -2719,24 +2679,83 @@
 </xsl:template>
 
 
+<!-- DIFF -->
+<xsl:template name="diff_table">
+  <xsl:choose>
+    <xsl:when test="count(diff) > 0">
+      <td style="padding:0px">
+        <table class="diff">
+          <tr class="gradient_color3" >
+            <th class="no_border_left">Type</th>
+            <th title="Reference coordinates">Ref. coord.</th>
+            <th title="Reference allele">Ref. al.</th>
+            <th></th>
+            <th title="LRG allele">LRG al.</th>
+            <th class="no_border_right" title="LRG coordinates">LRG coord.</th>
+           </tr>
+             
+             <xsl:for-each select="diff">
+             <tr>
+               <td class="no_border_bottom no_border_left" style="font-weight:bold">
+                 <xsl:variable name="diff_type" select="@type" />
+                 <xsl:choose>
+                   <xsl:when test="$diff_type='lrg_ins'">
+                     insertion
+                   </xsl:when>
+                   <xsl:when test="$diff_type='other_ins'">
+                     deletion
+                   </xsl:when>
+                   <xsl:otherwise><xsl:value-of select="$diff_type" /></xsl:otherwise>
+                 </xsl:choose>
+               </td>
+               <td class="no_border_bottom"><xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if></td>
+               <td class="no_border_bottom" style="font-weight:bold;text-align:right">
+      		       <xsl:choose>
+        		       <xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
+        		       <xsl:otherwise>-</xsl:otherwise>
+      		       </xsl:choose>
+               </td>
+          
+               <td class="no_border_bottom">
+                 <xsl:call-template name="right_arrow_green">
+                   <xsl:with-param name="no_margin">1</xsl:with-param>
+                 </xsl:call-template>
+               </td>
+               <td class="no_border_bottom" style="font-weight:bold">
+      		       <xsl:choose>
+        		       <xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
+        		       <xsl:otherwise>-</xsl:otherwise>
+      		       </xsl:choose>
+      		     </td>
+               <td class="no_border_bottom no_border_right"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
+             </tr>
+    		     </xsl:for-each>
+    		  </table>  
+    		  </td>
+          </xsl:when>
+          <xsl:otherwise><td>-</td></xsl:otherwise>
+        </xsl:choose>
+</xsl:template>
+
+
 <!-- FOOTER -->
 <xsl:template name="footer">
   <div class="footer">
-    <div style="float:left;width:30%;padding:5px;text-align:right">
+    <div style="float:left;width:30%;padding:5px 0px;text-align:right">
       <a href="http://www.ebi.ac.uk" target="_blank">
         <img alt="EMBL-EBI logo" style="width:100px;height:156px;border:0px">
           <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/embl-ebi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
-    <div style="float:left;width:37%;padding:5px;text-align:center">
+    <div style="float:left;width:40%;padding:5px 0px;text-align:center">
       <a href="http://www.ncbi.nlm.nih.gov/" target="_blank">
         <img alt="NCBI logo" style="width:100px;height:156px;border:0px">
           <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/ncbi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
-    <div style="float:right;width:30%;padding:5px;text-align:left">
+    <div style="float:right;width:30%;padding:5px 0px;text-align:left">
       <a href="http://www.gen2phen.org/" target="_blank">
         <img alt="GEN2PHEN logo" style="width:100px;height:156px;border:0px">
           <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/gen2phen_logo.jpg</xsl:attribute>
@@ -2769,8 +2788,12 @@
 </xsl:template>
 
 <xsl:template name="right_arrow_green">
+  <xsl:param name="no_margin"/>
   <img alt="right_arrow">
     <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/right_arrow_green.png</xsl:attribute>
+    <xsl:if test="$no_margin">
+      <xsl:attribute name="style">margin-right:0px</xsl:attribute>
+    </xsl:if>
   </img>
 </xsl:template>
 
