@@ -481,11 +481,10 @@ while ($sth->fetch()) {
     }
     
     # Add lrg_gene_name
-    $annotation_set->addNode('lrg_locus',{'source' => 'HGNC'})->content($lrg_gene_name) if (defined($lrg_gene_name));
-   
-    # /!\ HACK /!\ # Waiting for the NCBI to change it in their XML files
-    $xml =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/ if ($xml);
-    # /!\ HACK /!\ # End
+    if (defined($lrg_gene_name)) {
+      $lrg_gene_name = $hgnc_symbol if ($lrg_gene_name ne $hgnc_symbol);
+      $annotation_set->addNode('lrg_locus',{'source' => 'HGNC'})->content($lrg_gene_name);
+    }
     
     # Add the remaining XML
     my $lrg = LRG::LRG::newFromString($xml);
