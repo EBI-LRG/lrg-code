@@ -79,7 +79,7 @@ function end_of_script {
       comment="${comment} - HealthChecks skipped for this LRG"
     fi
     if [[ ${warning} == 'polyA' ]] ; then
-      comment="${comment} - WARNING: at least one NCBI transcript has a polyA sequence"
+      comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
     if [[ ${skip_hc} != 2 && ${skip_hc} != 3 ]] ; then
       is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
