@@ -485,8 +485,10 @@ sub exons {
     #ÊGet the transcripts
     my $transcripts = $self->get_transcripts($name) or return 0;
     
+    my %list_exon_label;
+    
     # Check the exons of each transcript
-    foreach my $transcript (@{$transcripts}) {
+    TR_LOOP:foreach my $transcript (@{$transcripts}) {
         
         # Get the name
         my $tr_name = $transcript->data()->{'name'};
@@ -513,8 +515,7 @@ sub exons {
         my $last_phase;
         my $last_expected_phase = 0;
         my $last_exon_label = 0;
-        my $last_label_suffix = '';
-        my %list_exon_label;
+        my $last_label_suffix = '';    
         
         foreach my $exon (@{$exons}) {
          
@@ -525,16 +526,17 @@ sub exons {
           my $label_suffix = ($2) ? $2 : '';
           
           # Check duplicated labels
-          if ($list_exon_label{$label}) {
-            if ($list_exon_label{$label} == 1) {
+          if ($list_exon_label{$label}{$tr_name}) {
+            if ($list_exon_label{$label}{$tr_name} == 1) {
               $passed = 0;
               $self->{'check'}{$name}{'message'} .= "Duplicated label '$label' for the exons of the transcript $tr_name//";
             }
-            $list_exon_label{$label} ++;
+            $list_exon_label{$label}{$tr_name} ++;
           }
           else {
-            $list_exon_label{$label} = 1;
-          } 
+            $list_exon_label{$label}{$tr_name} = 1;
+          }
+          
           # Check not ordered labels
           if ($label_prefix < $last_exon_label) {
             $passed = 0;
@@ -543,7 +545,12 @@ sub exons {
           $last_exon_label = $label_prefix;
           $last_label_suffix = $label_suffix; 
             
-            
+          # Check wrong label suffix
+          if ($label_suffix ne '' and scalar(@{$transcripts}) == 1) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "The exon label '$label' should not have the suffix '$label_suffix' because there is only one transcript for this LRG.//";
+          }
+           
           # Get LRG coordinates (these are required by the schema)
           my ($lrg_start,$lrg_end) = $self->get_coordinates($exon,'lrg');
           my $lrg_length = ($lrg_end - $lrg_start + 1);
@@ -622,6 +629,26 @@ sub exons {
           $last_phase = $self->get_exon_end_phase($exon);
         }
     }
+    
+    # Check if an exon label with a letter has a similar exon label with a different letter in the list of exons.
+    if (scalar(@{$transcripts}) > 1) {
+      foreach my $e_label (sort keys(%list_exon_label)) {
+        $e_label =~ /^(\d+)([a-z]*)$/g;
+        my $e_prefix = $1;
+        my $e_suffix = ($2) ? $2 : '';
+        next if $e_suffix eq '';
+      
+        if ($e_suffix eq 'a' and !$list_exon_label{"$e_prefix"."b"}) {
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "The HealthChecks found an exon label '$e_label' but didn't find the associate exon label '$e_prefix"."b'//";
+        }
+        elsif ($e_suffix ne 'a' and !$list_exon_label{"$e_prefix"."a"}) {
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "The HealthChecks found an exon label '$e_label' but didn't find the associate exon label '$e_prefix"."a'//";
+        }
+      }
+    }
+    
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed;
 }
