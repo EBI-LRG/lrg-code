@@ -486,9 +486,10 @@ sub exons {
     my $transcripts = $self->get_transcripts($name) or return 0;
     
     my %list_exon_label;
+    my %list_exon_numbers;
     
     # Check the exons of each transcript
-    TR_LOOP:foreach my $transcript (@{$transcripts}) {
+    foreach my $transcript (@{$transcripts}) {
         
         # Get the name
         my $tr_name = $transcript->data()->{'name'};
@@ -524,6 +525,8 @@ sub exons {
              $label =~ /^(\d+)([a-z]*)$/g;
           my $label_prefix = $1;
           my $label_suffix = ($2) ? $2 : '';
+          
+          $list_exon_numbers{$label_prefix} = 1;
           
           # Check duplicated labels
           if ($list_exon_label{$label}{$tr_name}) {
@@ -646,6 +649,18 @@ sub exons {
           $passed = 0;
           $self->{'check'}{$name}{'message'} .= "The HealthChecks found an exon label '$e_label' but didn't find the associate exon label '$e_prefix"."a'//";
         }
+      }
+    }
+    
+    # Check if there is a gap in the exon numbers list.
+    my @exon_numbers = sort { $a <=> $b } keys(%list_exon_numbers);
+    my $count_exons = scalar(@exon_numbers);
+    for (my $i = 1; $i <= $count_exons; $i++) {
+      my $prev_num = $i-1;
+      if ($i != $exon_numbers[$prev_num]) {
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "There is a gap in the exon numbers list between the exons $prev_num and ".$exon_numbers[$prev_num]." //";
+        last;
       }
     }
     
