@@ -91,6 +91,9 @@ if ($count_passed != $count_total) {
   print STDERR "$msg\n";
   print STDERR "Healthcheck FAILED\n";
 }
+elsif ($verbose) {
+  print STDOUT "$msg\n"; 
+}
 
 sub usage {
     
