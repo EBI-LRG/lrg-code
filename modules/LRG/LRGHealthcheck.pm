@@ -78,7 +78,7 @@ sub existing_entry {
     
     my $passed = 1;
 
-    my $exist = "An entry already exist on the LRG FTP site and ";
+    my $exist = "An entry already exist on the LRG FTP site and://";
 
     # Name of this check
     my $name = sub_name();
@@ -111,7 +111,7 @@ sub existing_entry {
       my $existing_content = $existing_lrg->findNode("fixed_annotation/".$tag)->content;
       if ($new_content ne $existing_content) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the content of the tag <$tag> is different in the fixed annotation!//";
+        $self->{'check'}{$name}{'message'} .= "- The content of the tag <$tag> is different in the fixed annotation!//";
       }
     }
 
@@ -121,7 +121,7 @@ sub existing_entry {
 
     if (scalar(@$new_sources) != scalar(@$existing_sources)) {
       $passed = 0;
-      $self->{'check'}{$name}{'message'} .= $exist."the number of requesters is different!//";
+      $self->{'check'}{$name}{'message'} .= "- The number of requesters is different!//";
     } else {
       my $has_different_sources = 0;
       foreach my $e_source (@$existing_sources) {
@@ -136,8 +136,8 @@ sub existing_entry {
       }
       if ($has_different_sources > 0) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the requesters' information (content of the tags '<source>') are differents!//";
-        $self->{'check'}{$name}{'message'} .= "This could be the name, the url, the number of contacts or the contacts information.//";
+        $self->{'check'}{$name}{'message'} .= "- The requesters' information (content of the tags '<source>') are differents!//";
+        $self->{'check'}{$name}{'message'} .= "  > This could be the name, the url, the number of contacts or the contacts information.//";
       }
     }
 
@@ -146,25 +146,23 @@ sub existing_entry {
     my $existing_genomic_seq = $existing_lrg->findNode("fixed_annotation/sequence")->content();
     if ($new_genomic_seq ne $existing_genomic_seq) {
       $passed = 0;
-      $self->{'check'}{$name}{'message'} .= $exist."the genomic sequences are different!//";
+      $self->{'check'}{$name}{'message'} .= "- The genomic sequences are different!//";
     }
       
     ## Compare transcript sequence(s)
     my $new_transcripts = $self->get_transcripts($name);
       
-    TRANS: foreach my $tr (@$new_transcripts) {
+    foreach my $tr (@$new_transcripts) {
       my $tr_name = $tr->data()->{'name'};
       my $tr_seq = $tr->findNode('cdna/sequence')->content();
       my $existing_transcript = $existing_lrg->findNode('fixed_annotation/transcript',{'name' => $tr_name});
       if (!defined($existing_transcript)) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the transcript '$tr_name' doesn't exist in the file $existing_file!//";
-        last TRANS;
+        $self->{'check'}{$name}{'message'} .= "- The transcript '$tr_name' doesn't exist in the file $existing_file!//";
       }
       if ($tr_seq ne $existing_transcript->findNode('cdna/sequence')->content()) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the transcript sequences of '$tr_name' are different!//";
-        last TRANS;
+        $self->{'check'}{$name}{'message'} .= "- The transcript sequences of '$tr_name' are different!//";
       }
         
       # Compare translation sequences 
@@ -176,28 +174,39 @@ sub existing_entry {
         my $existing_protein = $existing_transcript->findNode('coding_region/translation',{'name' => $pr_name});
         if (!defined($existing_protein)) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the protein '$pr_name' doesn't exist in the file $existing_file!//";
-          last TRANS;
+          $self->{'check'}{$name}{'message'} .= "- The protein '$pr_name' doesn't exist in the file $existing_file!//";
         }
         if ($pr_seq ne $existing_protein->findNode('sequence')->content()) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the protein sequences of '$pr_name' are different!//";
-          last TRANS;
+          $self->{'check'}{$name}{'message'} .= "- The protein sequences of '$pr_name' are different!//";
         }  
       }
 
       # Compare exon coordinates
-      my $new_exon_coord = $tr->findNodeArray('exon/coordinates');
-      foreach my $coord (@$new_exon_coord) {
-        my $c_sys   = $coord->data()->{'coord_system'};
-        my $c_start = $coord->data()->{'start'};
-        my $c_end   = $coord->data()->{'end'};
-         
-        my $existing_coord = $existing_transcript->findNodeArray('exon/coordinates',{'coord_system' => $c_sys, 'start' => $c_start, 'end' => $c_end});
-        if (!defined($existing_coord)) {
+      my $new_exon = $tr->findNodeArray('exon');
+      
+      foreach my $exon (@$new_exon) {
+        
+        my $exon_label = $exon->data()->{'label'};
+        my $existing_label = $existing_transcript->findNodeArray('exon',{'label' => $exon_label});
+        if (!defined($existing_label)) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the exon with the coordinates '$c_sys:$c_start-$c_end' (transcript $tr_name) doesn't exist in the file $existing_file!//";
-          last TRANS;
+          $self->{'check'}{$name}{'message'} .= "- The exon with the label '$exon_label' doesn't exist in the file $existing_file!//";
+        }
+        
+        # Compare exon coordinates
+        my $new_exon_coord = $exon->findNodeArray('coordinates');
+        
+        foreach my $coord (@$new_exon_coord) {
+          my $c_sys   = $coord->data()->{'coord_system'};
+          my $c_start = $coord->data()->{'start'};
+          my $c_end   = $coord->data()->{'end'};
+         
+          my $existing_coord = $existing_transcript->findNodeArray('exon/coordinates',{'coord_system' => $c_sys, 'start' => $c_start, 'end' => $c_end});
+          if (!defined($existing_coord)) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "- The exon with the coordinates '$c_sys:$c_start-$c_end' (transcript $tr_name) doesn't exist in the file $existing_file!//";
+          }
         }
       }
     }
@@ -205,13 +214,12 @@ sub existing_entry {
     ## Check if all the existing transcripts and translations are in the new file
     my $existing_transcripts = $existing_lrg->findNodeArray('fixed_annotation/transcript');
     # Check the transcripts
-    T_NAME: foreach my $e_tr (@$existing_transcripts) {
+    foreach my $e_tr (@$existing_transcripts) {
       my $e_tr_name = $e_tr->data()->{'name'};
       my $new_tr = $self->{'lrg'}->findNode('fixed_annotation/transcript',{'name' => $e_tr_name});
       if (!$new_tr) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the existing transcript '$e_tr_name' can't be found in the new file!//";
-        last T_NAME;
+        $self->{'check'}{$name}{'message'} .= "- The existing transcript '$e_tr_name' can't be found in the new file!//";
       }
       # Check the translations
       my $existing_prot = $e_tr->findNodeArray('coding_region/translation');
@@ -220,8 +228,7 @@ sub existing_entry {
         my $new_pr = $new_tr->findNode('coding_region/translation',{'name' => $e_pr_name});
         if (!$new_pr) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the existing translation '$e_pr_name' can't be found in the new file!//";
-          last T_NAME;
+          $self->{'check'}{$name}{'message'} .= "- The existing translation '$e_pr_name' can't be found in the new file!//";
         }
       }
       # Check the exon coordinates
@@ -234,15 +241,14 @@ sub existing_entry {
         my $new_exon_coord = $new_tr->findNodeArray('exon/coordinates',{'coord_system' => $c_sys, 'start' => $c_start, 'end' => $c_end});
         if (!$new_exon_coord) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the existing exon coordinates '$c_sys:$c_start-$c_end' (transcript $e_tr_name) can't be found in the new file!//";
-          last T_NAME;
+          $self->{'check'}{$name}{'message'} .= "- The existing exon coordinates '$c_sys:$c_start-$c_end' (transcript $e_tr_name) can't be found in the new file!//";
         }
       }
     }
 
     # Compare coordinates
     my $new_mapping_coord = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
-    COORD: foreach my $mapping (@$new_mapping_coord) {
+    foreach my $mapping (@$new_mapping_coord) {
       my $assembly = $mapping->data()->{'coord_system'};
       next if ($assembly !~ /^(GRCh\d+)/);
       $assembly = $1;   
@@ -253,15 +259,17 @@ sub existing_entry {
         $has_same_assembly = 1;
         if ($mapping->data()->{'other_start'} != $existing_mapping->data()->{'other_start'} || $mapping->data()->{'other_end'} != $existing_mapping->data()->{'other_end'}) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= $exist."the mappings to the assembly $assembly are different between $existing_file and the new XML file!//";
-          last COORD;
+          $self->{'check'}{$name}{'message'} .= "- The mappings to the assembly $assembly are different between $existing_file and the new XML file!//";
         }
       }
       if ($has_same_assembly == 0) {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= $exist."the mapping to the assembly $assembly can't be found in the existing LRG in $existing_file!//";
-        last COORD;
+        $self->{'check'}{$name}{'message'} .= "- The mapping to the assembly $assembly can't be found in the existing LRG in $existing_file!//";
       }
+    }
+    
+    if ( $self->{'check'}{$name}{'message'}) {
+      $self->{'check'}{$name}{'message'} = $exist.$self->{'check'}{$name}{'message'};
     }
 
     $self->{'check'}{$name}{'passed'} = $passed;
