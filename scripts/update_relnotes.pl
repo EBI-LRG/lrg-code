@@ -34,6 +34,7 @@ my $new_file_record = $tmp_dir."/new_$record";
 my $relnotes_fname = 'relnotes.txt';
 my $relnotes = $xml_dir.'/'.$relnotes_fname;
 my $new_relnotes = $tmp_dir."/new_".$relnotes_fname;
+my $tmp_lrg_list = "$tmp_dir/tmp_lrg_list.txt";
 
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
@@ -118,6 +119,7 @@ $version++;
 
 ## Update the relnotes.txt file
 open NEW, "> $new_relnotes" or die $!;
+open TMP, "> $tmp_lrg_list" or die $!;
 
 # Release number
 my $release_version = "$version ($day)";
@@ -138,6 +140,7 @@ foreach my $lrg (sort(keys(%changes))) {
   
   if ($changes{$lrg} eq 'new_status') {
 		print NEW "# Pending LRG record $lrg$hgnc is now public\n";
+		print TMP "$lrg\n";
 	} elsif ($changes{$lrg} eq 'new_file') {
 		print NEW "#$pending LRG record $lrg$hgnc added\n";
 	} elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
@@ -146,6 +149,7 @@ foreach my $lrg (sort(keys(%changes))) {
 
 }
 close(NEW);
+close(TMP);
 
 #### Update file status ####
 ftp_snapshot();
