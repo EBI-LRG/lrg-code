@@ -296,8 +296,8 @@ my $hgnc_id = $fixed->findNode('hgnc_id')->content;
 
 if (defined($gene_id)) { # Check HGNC symbol and ID
 
-  $stmt = qq{ SELECT symbol,hgnc_id FROM gene WHERE gene_id=$gene_id };
-  my ($db_symbol,$db_hgnc_id) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+  $stmt = qq{ SELECT symbol,hgnc_id,status FROM gene WHERE gene_id=$gene_id };
+  my ($db_symbol,$db_hgnc_id,$db_status) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
   
   # Update the HGNC symbol
   if (defined($hgnc_symbol)) {
@@ -307,6 +307,8 @@ if (defined($gene_id)) { # Check HGNC symbol and ID
 	if (defined($hgnc_id)) {
 	  $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
 	}
+	# Update the LRG status
+	$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
 }
 else { # Create new "gene" entry
   
