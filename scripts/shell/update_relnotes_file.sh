@@ -1,6 +1,7 @@
 #! /bin/bash
 . ~/.bashrc
 . ~/.lrgpaths
+. ~/.lrgpass
 
 ########
 ### Update the relnotes.txt file in the CVS repository and the public FTP server
@@ -10,6 +11,14 @@ cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
 perldir=${CVSROOTDIR}/code/scripts/
 cvsftp=${CVSROOTDIR}/ftp/public/
+
+# Database settings
+host=${LRGDBHOST}
+port=${LRGDBPORT}
+user=${LRGDBADMUSER}
+dbname=${LRGDBNAME}
+pass=${LRGDBPASS}
+
 
 tmpdir=''
 tmp=$1
@@ -36,13 +45,17 @@ new_relnotes_fname="new_${relnotes_fname}"
 record_fname='ftp_record.txt'
 new_record_fname="new_${record_fname}"
 
+tmp_lrg_list_fname='tmp_lrg_list.txt'
+
 if [[ ${tmp} && -d ${tmp} ]]; then
   new_relnotes="${tmp}/${new_relnotes_fname}"
   new_record="${tmp}/${new_record_fname}"
+  tmp_lrg_list="${tmp}/${tmp_lrg_list_fname}"
 else
   tmp=${cvsftp}
   new_relnotes="${cvsftp}/${new_relnotes_fname}"
   new_record="${cvsftp}/${new_record_fname}"
+  tmp_lrg_list="${cvsftp}/${tmp_lrg_list_fname}"
 fi
 
 
@@ -77,7 +90,61 @@ if [[ ${is_test} == 1 ]]; then
 	echo ""
 	echo ">>>>> END of TEST MODE <<<<<"
 	echo ""
+	
+	## Clean the tmp data ##
+	# Delete the new_relnotes file
+  if [[ -e ${new_relnotes} ]]; then
+    rm -f ${new_relnotes}
+  fi
+  # Delete the new_record file
+  if [[ -e ${new_record} ]]; then
+    rm -f ${new_record}
+  fi
+	# Delete the tmp_lrg_list.txt file
+  if [[ -e ${tmp_lrg_list} ]]; then
+    rm -f ${tmp_lrg_list}
+  fi
 	exit 0
+fi
+
+
+#### Security verification if there are new public LRG(s) before creating the LRG relnotes file.
+
+# List of the LRGs made public
+if [[ -s ${tmp_lrg_list} ]]; then
+  echo "The LRGs listed below are new in the public FTP directory:"
+  cat ${tmp_lrg_list}
+  
+  while true
+  do
+    echo -n "Are you sure you want to validate them as public in the relnotes.txt file and the LRG database ? (yes or no) : "
+    read CONFIRM
+    case $CONFIRM in
+      YES|yes|Yes) 
+        echo -e "Proceed to generate and commit the relnotes file.\nThe script will generate the LRG XML zip, LRG FASTA zip and LRG BED files as well."
+        
+        # Update the LRG status in the LRG database
+        while read line           
+        do           
+          mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='public' WHERE lrg_id='$line';" $dbname 
+        done < ${tmp_lrg_list} 
+        
+        break
+      ;;  
+      no|NO|No)
+        echo "Aborting the creation of the relnotes.txt, LRG XML zip, LRG FASTA zip and LRG BED files: You entered $CONFIRM"
+        exit
+      ;;
+      *) echo "Please enter only 'yes' or 'no'"
+    esac
+  done
+else
+  echo "No new public LRG found. The script continues the pipeline."
+fi
+
+# Delete the tmp_lrg_list.txt file
+if [[ -e ${tmp_lrg_list} ]]; then
+  rm -f ${tmp_lrg_list}
 fi
 
 
