@@ -39,12 +39,12 @@
       <xsl:when test="$pending=0">  
         <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
         <script type="text/javascript" src="lrg2html.js" />
-        <link rel="icon" type="image/ico" href=".img/favicon_public.ico" />
+        <link rel="icon" type="image/ico" href="img/favicon_public.ico" />
        </xsl:when>
       <xsl:otherwise>
         <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
         <script type="text/javascript" src="../lrg2html.js" />
-        <link rel="icon" type="image/ico" href="../.img/favicon_pending.ico" />
+        <link rel="icon" type="image/ico" href="../img/favicon_pending.ico" />
       </xsl:otherwise>
     </xsl:choose>  
   </head>
@@ -2744,21 +2744,21 @@
     <div style="float:left;width:30%;padding:5px 0px;text-align:right">
       <a href="http://www.ebi.ac.uk" target="_blank">
         <img alt="EMBL-EBI logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/embl-ebi_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/embl-ebi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
     <div style="float:left;width:40%;padding:5px 0px;text-align:center">
       <a href="http://www.ncbi.nlm.nih.gov/" target="_blank">
         <img alt="NCBI logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/ncbi_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/ncbi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
     <div style="float:right;width:30%;padding:5px 0px;text-align:left">
       <a href="http://www.gen2phen.org/" target="_blank">
         <img alt="GEN2PHEN logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/gen2phen_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/gen2phen_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
@@ -2771,26 +2771,26 @@
 <!-- ICONS DISPLAY -->  
 <xsl:template name="lrg_logo">
   <img alt="LRG logo">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/lrg_logo.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_logo.png</xsl:attribute>
   </img>
 </xsl:template>    
 
 <xsl:template name="external_link_icon">
   <img class="external_link" alt="External link" title="External link">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/external_link_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/external_link_green.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="download">
   <img style="vertical-align:top" alt="Download LRG data">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/download.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/download.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="right_arrow_green">
   <xsl:param name="no_margin"/>
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/right_arrow_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/right_arrow_green.png</xsl:attribute>
     <xsl:if test="$no_margin">
       <xsl:attribute name="style">margin-right:0px</xsl:attribute>
     </xsl:if>
@@ -2799,20 +2799,20 @@
 
 <xsl:template name="lrg_right_arrow_green">
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/lrg_right_arrow_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_green.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="lrg_right_arrow_green_large">
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/lrg_right_arrow_green_large.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_green_large.png</xsl:attribute>
   </img>
 </xsl:template>  
 
 <xsl:template name="lrg_right_arrow_blue">
   <xsl:param name="img_id" />
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>.img/lrg_right_arrow_blue.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_blue.png</xsl:attribute>
     <xsl:if test="$img_id">
       <xsl:attribute name="id"><xsl:value-of select="$img_id" /></xsl:attribute>
     </xsl:if>
@@ -2820,7 +2820,7 @@
 </xsl:template>    
 
 <xsl:template name="hide_button">
-  <xsl:variable name="img_src"><xsl:if test="$pending=1">../</xsl:if>.img/top_arrow_green.png</xsl:variable>
+  <xsl:variable name="img_src"><xsl:if test="$pending=1">../</xsl:if>img/top_arrow_green.png</xsl:variable>
   <img>
     <xsl:attribute name="src"><xsl:value-of select="$img_src"/></xsl:attribute>
     <xsl:attribute name="style">vertical-align:middle;margin-right:0px;padding-right:2px</xsl:attribute>
