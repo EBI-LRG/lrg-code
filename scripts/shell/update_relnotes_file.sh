@@ -32,8 +32,10 @@ fi
 if [ ${tmp} ]; then
 	if [[ ${tmp} == 'test' ]] ; then
 		is_test=1
-	else
-		tmpdir="-tmp_dir ${tmp}"
+	elif [[ -z ${tmp} ]] ; then
+	  tmpdir="-tmp_dir ${tmp}"
+	else 
+		tmpdir="-tmp_dir ${cvspath}"
 	fi
 fi
 
