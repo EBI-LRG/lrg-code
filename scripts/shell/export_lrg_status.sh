@@ -4,7 +4,7 @@
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
-dbname=${LRGDBNAME}
+dbname='lrg'
 dir=${PUBFTP}/.lrg_internal
 perldir=${CVSROOTDIR}/code/scripts/
 
