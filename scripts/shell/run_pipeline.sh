@@ -108,9 +108,9 @@ echo_stderr  $comment >&2
 
 # Preliminary test
 if [[ ${skip_hc} != 1 && ${skip_hc} != 3 ]] ; then
-  echo_stderr  "# Preliminary check: compare sequences with existing LRG entry ... " >&2
+  echo_stderr  "# Preliminary check: compare sequences and global mapping with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry,compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
