@@ -31,7 +31,7 @@ use LRG::LRGHealthcheck;
 usage() if (!scalar(@ARGV));
 
 my $xml_file;
-my @checks;
+my $check_list;
 my $java_executable;
 my $jing_jar;
 my $rnc_file;
@@ -42,7 +42,7 @@ my $help;
 # get options from command line
 GetOptions(
   'xml_file=s'	 => \$xml_file,
-  'check=s'		   => \@checks,
+  'check=s'		   => \$check_list,
   'java=s'		   => \$java_executable,
   'jing=s'		   => \$jing_jar,
   'rnc=s' 		   => \$rnc_file,
@@ -62,7 +62,7 @@ if ($list) {
     exit(0);
 }
 
-@checks = @LRG::LRGHealthcheck::CHECKS if (!defined(@checks));
+my @checks = (defined($check_list)) ? split(',',$check_list) : @LRG::LRGHealthcheck::CHECKS;
 $LRG::LRGHealthcheck::JAVA = $java_executable if (defined($java_executable));
 $LRG::LRGHealthcheck::JING_JAR = $jing_jar if (defined($jing_jar));
 $LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
