@@ -12,15 +12,19 @@ data_file=$1
 xml_dir=$2
 new_dir=$3
 tmp_dir=$4
-is_test=$5      # Test the Ensembl annotations
+is_test_hc=$5      # Test the Ensembl annotations
 
 
-if [[ -n ${is_test} && ${is_test} != 0 ]] ; then
-  is_test='-is_test'
+if [[ -n ${is_test_hc} && ${is_test_hc} != 0 ]] ; then
+  if [[ ${is_test_hc} == 'is_hc' ]]; then
+    is_test_hc='-is_hc'
+  else
+    is_test_hc='-is_test'
+  fi
 else
-  is_test=''
+  is_test_hc=''
 fi
 
 perldir=${CVSROOTDIR}/code/scripts
 
-perl ${perldir}/manage_pipeline.pl -data_file ${data_file} -xml_dir ${xml_dir} -new_dir ${new_dir} -tmp_dir ${tmp_dir} ${is_test}
+perl ${perldir}/manage_pipeline.pl -data_file ${data_file} -xml_dir ${xml_dir} -new_dir ${new_dir} -tmp_dir ${tmp_dir} ${is_test_hc}
