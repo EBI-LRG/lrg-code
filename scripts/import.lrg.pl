@@ -37,6 +37,7 @@ use List::Util qw (min max);
 use LRG::LRG;
 use LRG::LRGImport;
 use LRG::LRGMapping;
+use LRG::API::XMLA::XMLAdaptor;
 
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
@@ -46,26 +47,8 @@ my $SPECIES = q{human};
 my $LRG_COORD_SYSTEM_NAME = q{lrg};
 my $LRG_BIOTYPE = q{LRG_gene};
 my $LRG_ANALYSIS_LOGIC_NAME = q{lrg_import};
-my $LRG_ANALYSIS_DESCRIPTION = q{Data from LRG database};
-my $LRG_ANALYSIS_DISPLAY_LABEL = q{LRG Genes};
-my $LRG_ANALYSIS_WEB_DATA = qq{{'colour_key' => 'rna_[status]','caption' => 'LRG gene','label_key' => '[text_label] [display_label]','name' => 'LRG Genes','default' => {'MultiTop' => 'gene_label','contigviewbottom' => 'transcript_label','MultiBottom' => 'collapsed_label','contigviewtop' => 'gene_label','alignsliceviewbottom' => 'as_collapsed_label','cytoview' => 'gene_label'},'multi_caption' => 'LRG genes'}};
-my $HGNC_EXTERNAL_DB_NAME = q{HGNC};
 my $LRG_EXTERNAL_DB_NAME = q{LRG};
-my $LRG_EXTERNAL_STATUS = q{KNOWN};
-my $LRG_EXTERNAL_PRIORITY = 10;
-my $LRG_EXTERNAL_DB_DISPLAY_NAME = q{Locus Reference Genomic};
-my $LRG_EXTERNAL_DB_RELEASE = 1;
-my $LRG_EXTERNAL_DB_ACC_LINKABLE = 1;
-my $LRG_EXTERNAL_DB_LABEL_LINKABLE = 0;
-my $LRG_EXTERNAL_TYPE = q{MISC};
 my $LRG_ENSEMBL_DB_NAME = q{ENS_LRG};
-my $LRG_ENSEMBL_STATUS = q{KNOWN};
-my $LRG_ENSEMBL_PRIORITY = 10;
-my $LRG_ENSEMBL_DB_DISPLAY_NAME = q{LRG display in Ensembl};
-my $LRG_ENSEMBL_DB_RELEASE = 1;
-my $LRG_ENSEMBL_DB_ACC_LINKABLE = 1;
-my $LRG_ENSEMBL_DB_LABEL_LINKABLE = 0;
-my $LRG_ENSEMBL_TYPE = q{MISC};
 my $LRG_EXTERNAL_XML = q{ftp://ftp.ebi.ac.uk/pub/databases/lrgex/};
 
 my $host;
@@ -79,8 +62,6 @@ my $overlap;
 my @lrg_ids;
 my $input_file;
 my $import;
-my $max_values;
-my $revert;
 my $verify;
 my $coredb;
 my $otherfeaturesdb;
@@ -107,8 +88,6 @@ GetOptions(
   'lrg_id=s' 		=> \@lrg_ids,
   'input_file=s' 	=> \$input_file,
   'import!' 		=> \$import,
-  'max!' 		=> \$max_values,
-  'revert!' 		=> \$revert,
   'verify!'		=> \$verify,
   'do_all!'             => \$do_all,
   'otherfeatures=s'	=> \$otherfeaturesdb,
@@ -121,28 +100,34 @@ usage() if (defined($help));
 
 die("Database credentials (-host, -port, -core, -user) need to be specified!") unless (defined($host) && defined($port) && defined($coredb) && defined($user));
 
+if (scalar(@lrg_ids)) {
+  @lrg_ids = split(/,/, join(',', @lrg_ids));
+}
+
 # If an input XML file was specified, this will override any specified lrg_id. So get the identifier from within the file
-if ((defined($import) || defined($verify) || defined($overlap) || defined($clean)) && defined($input_file)) {
+if (defined($input_file)) {
 
   die("ERROR: Input file $input_file does not exist!") unless(-e $input_file);
   
   # create an LRG object from input file
   print STDOUT localtime() . "\tCreating LRG object from input XML file $input_file\n" if ($verbose);
-  my $lrg = LRG::LRG::newFromFile($input_file) or die("ERROR: Could not create LRG object from XML file!");
+  my $xmla = LRG::API::XMLA::XMLAdaptor->new();
+  $xmla->load_xml_file($input_file);
+  my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
+  my $lrg_object = $lrg_adaptor->fetch();
   
   # find the LRG ID
-  my $lrg_name = $lrg->findNode("fixed_annotation/id")->content();
+  my $lrg_name = $lrg_object->fixed_annotation->name();
   print STDOUT localtime() . "\tLRG ID is $lrg_name\n" if ($verbose);
   
   # Set the lrg_id array
   @lrg_ids = ($lrg_name);
+  # Check that the LRG id is on the correct format
+  die("Supplied LRG id is not in the correct format ('LRG_NNN')") if (grep($_ !~ m/^LRG\_[0-9]+$/,@lrg_ids));
 }
 
-# Check that the LRG id is on the correct format
-die("Supplied LRG id is not in the correct format ('LRG_NNN')") if (grep($_ !~ m/^LRG\_[0-9]+$/,@lrg_ids));
-
 # If doing something requiring the XML file but without specified input XML file or LRG ids, get a listing of published LRGs available at the ftp site
-if ((defined($import) || defined($clean) || defined($overlap) || defined($verify)) && !scalar(@lrg_ids)) {
+if (!scalar(@lrg_ids) && !$input_file) {
   
   print STDOUT localtime() . "\tNo input XML file and no LRG id specified, fetching a LRG listing from the LRG server\n" if ($verbose);
   my $result = LRG::LRGImport::fetch_remote_lrg_ids([$LRG_EXTERNAL_XML]);
@@ -196,6 +181,8 @@ print STDOUT localtime() . "\tConnected to $coredb on $host:$port\n" if ($verbos
 
 $LRG::LRGImport::dbCore = $dbCore;
 
+my @db_adaptors = ($dbCore);
+
 # If specified, connect to otherfeatures and cdna database
 my $dbOther;
 my $dbcDNA;
@@ -211,6 +198,7 @@ if (defined($otherfeaturesdb)) {
     -dbname => $otherfeaturesdb
   ) or die("Could not get a database adaptor to $otherfeaturesdb on $host:$port");
   print STDOUT localtime() . "\tConnected to $otherfeaturesdb on $host:$port\n" if ($verbose);
+  push(@db_adaptors, $dbOther);
 }
 if (defined($cdnadb)) {
   print STDOUT localtime() . "\tGetting db adaptor for $cdnadb\n" if ($verbose);
@@ -222,6 +210,7 @@ if (defined($cdnadb)) {
     -dbname => $cdnadb
   ) or die("Could not get a database adaptor to $cdnadb on $host:$port");
   print STDOUT localtime() . "\tConnected to $cdnadb on $host:$port\n" if ($verbose);
+  push(@db_adaptors, $dbcDNA);
 }
 if (defined($vegadb)) {
   print STDOUT localtime() . "\tGetting db adaptor for $vegadb\n" if ($verbose);
@@ -233,6 +222,7 @@ if (defined($vegadb)) {
     -dbname => $vegadb
   ) or die("Could not get a database adaptor to $vegadb on $host:$port");
   print STDOUT localtime() . "\tConnected to $vegadb on $host:$port\n" if ($verbose);
+  push(@db_adaptors, $dbVega);
 }
 if (defined($rnaseqdb)) {
   print STDOUT localtime() . "\tGetting db adaptor for $rnaseqdb\n" if ($verbose);
@@ -244,76 +234,35 @@ if (defined($rnaseqdb)) {
     -dbname => $rnaseqdb
   ) or die("Could not get a database adaptor to $rnaseqdb on $host:$port");
   print STDOUT localtime() . "\tConnected to $rnaseqdb on $host:$port\n" if ($verbose);
+  push(@db_adaptors, $dbRNAseq);
 }
-
-# Put the db adaptors into an array
-my @db_adaptors = ($dbCore,$dbOther,$dbcDNA,$dbVega,$dbRNAseq);
 
 # Get a slice adaptor
 print STDOUT localtime() . "\tGetting slice adaptor\n" if ($verbose);
 my $sa = $dbCore->get_SliceAdaptor();
 
-# Get the maximum key field values if required and print them
-if ($max_values) {
-  my $max_values = LRG::LRGImport::get_max_key();
-  while (my ($field,$value) = each(%{$max_values})) {
-    my ($table,$fld) = split(/\./,$field);
-    print $table . "\t" . $fld . "\t" . $value . "\n";
-  }
-}
-
-die("A tab-separated input file with table, field and max_value columns must be specified in order to revert the core db!") if (defined($revert) && !defined($input_file));
-# Revert the database tables by deleting all rows with the specified field value above the specified maximum
-if ($revert) {
-  open(MV,'<',$input_file);
-  while (<MV>) {
-    chomp;
-    my ($table,$field,$max_value) = split();
-    LRG::LRGImport::remove_row([qq{$field > $max_value}],$table);
-  }
-  close(MV);
-}
-
 # If doing an import, check that the tables affected for adding the mapping information are sync'd across the relevant databases
 if ($import) {
   my %max_increment = (
-  'seq_region'		=> 0
+  'seq_region'		=> 0,
+  'coord_system'        => 0,
+  'assembly'            => 0
   );
   foreach my $table (keys(%max_increment)) {
   
-    print STDOUT localtime() . "\tChecking Auto_increment value for $table\n" if ($verbose);
+    print STDOUT localtime() . "\tChecking number of rows for $table\n" if ($verbose);
     # Check each db adaptor
-    my $do_sync = 0;
     foreach my $dba (@db_adaptors) {
-      # Skip this db adaptor if it's not defined
-      next unless(defined($dba));
-      
+
       my $stmt = qq{
-        SHOW TABLE STATUS LIKE '$table'
+        SELECT COUNT(*) FROM $table
       };
-      my @current = keys(%{$dba->dbc->db_handle->selectall_hashref($stmt,'Auto_increment')}) or die("Could not get AUTO_INCREMENT value for " . $dba->dbc()->dbname() . ".$table");
-      if ($max_increment{$table} > 0 && $max_increment{$table} != $current[0]) {
-        $do_sync = 1;
+      my $count = $dba->dbc->db_handle->selectall_arrayref($stmt)->[0]->[0] or die("Could not get COUNT for " . $dba->dbc()->dbname() . ".$table");
+      print STDOUT localtime() . "\t\t " . $dba->dbc()->dbname() . ".$table has $count rows\n" if ($verbose);
+      if ($max_increment{$table} > 0 && $max_increment{$table} != $count) {
+        die($dba->dbc->dbname . " $table is not in sync with core");
       }
-      print STDOUT localtime() . "\t\tAuto_increment value for " . $dba->dbc()->dbname() . ".$table is " . $current[0] . ($do_sync ? " => Needs to be sync'd!" : "") . "\n" if ($verbose);
-      $max_increment{$table} = max($max_increment{$table},$current[0]);
-    }
-    # If the table needs to be sync'd, loop over the db adaptors and do this
-    next unless($do_sync);
-    
-    foreach my $dba (@db_adaptors) {
-      # Skip this db adaptor if it's not defined
-      next unless(defined($dba));
-      
-      print STDOUT localtime() . "\tSyncing " . $dba->dbc()->dbname() . ".$table\n" if ($verbose);
-      
-      my $val = $max_increment{$table};
-      my $stmt = qq{
-        ALTER TABLE
-          $table
-        AUTO_INCREMENT = $val
-      };
-      $dba->dbc()->do($stmt) or die("Could not set AUTO_INCREMENT value for " . $dba->dbc()->dbname() . ".$table");
+      $max_increment{$table} = max($max_increment{$table}, $count);
     }
   }
 }
@@ -327,14 +276,12 @@ while (my $lrg_id = shift(@lrg_ids)) {
   if ($clean) {
     # Loop over all db adaptors
     foreach my $dba (@db_adaptors) {
-      # Skip this db adaptor if it's not defined
-      next unless(defined($dba));
 	
       # Set the dbCore variable in LRGImport to the current db adaptor
       $LRG::LRGImport::dbCore = $dba;
       
       print STDOUT localtime() . "\tCleaning $lrg_id from " . $dba->dbc()->dbname() . "\n" if ($verbose);
-      LRG::LRGImport::purge_db($lrg_id,$LRG_COORD_SYSTEM_NAME,$purge);
+      LRG::LRGImport::purge_db($lrg_id, $LRG_COORD_SYSTEM_NAME, $LRG_ANALYSIS_LOGIC_NAME, $purge);
     }
     # Set the db adaptor in LRGImport back to the core adaptor
     $LRG::LRGImport::dbCore = $dbCore;
@@ -356,7 +303,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
     
       my $partial = ($gene->start() < 0 || $gene->end() > $lrg_slice->length());
       print STDOUT sprintf("\%s\tAdding \%s\%s overlap attribute for gene \%s (\%s)\n",localtime(),$lrg_id,($partial ? ' partial' : ''),$gene->stable_id(),$gene->description()) if ($verbose);
-      LRG::LRGImport::add_lrg_overlap($gene->stable_id,$lrg_id,$partial);
+      LRG::LRGImport::add_lrg_overlap($gene,$lrg_id,$partial);
       
     }
   }
@@ -384,9 +331,16 @@ while (my $lrg_id = shift(@lrg_ids)) {
     # create an LRG object from it
     print STDOUT localtime() . "\tCreating LRG object from input XML file $input_file\n" if ($verbose);
     my $lrg = LRG::LRG::newFromFile($input_file) or die("ERROR: Could not create LRG object from XML file!");
+    my $xmla = LRG::API::XMLA::XMLAdaptor->new();
+    $xmla->load_xml_file($input_file);
+    my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
+    my $lrg_object = $lrg_adaptor->fetch();
+    my $fixed_annotation = $lrg_object->fixed_annotation();
+    my $lrg_seq = $fixed_annotation->sequence->sequence();
+    my $transcripts = $fixed_annotation->transcript();
     
     # find the LRG ID
-    my $lrg_name = $lrg->findNode("fixed_annotation/id")->content();
+    my $lrg_name = $fixed_annotation->name();
     print STDOUT localtime() . "\tLRG ID is $lrg_name\n" if ($verbose);
     die("ERROR: Problem with LRG identifier '$lrg_name'") unless ($lrg_name =~ /^LRG\_[0-9]+$/);
     die("ERROR: LRG identifier in $input_file is '$lrg_name' but expected '$lrg_id'") if ($lrg_name ne $lrg_id);
@@ -400,44 +354,56 @@ while (my $lrg_id = shift(@lrg_ids)) {
       print STDOUT localtime() . "\tGetting assembly name from core db\n" if ($verbose);
       my $db_assembly = LRG::LRGImport::get_assembly();
       print STDOUT localtime() . "\tcore db assembly is $db_assembly\n" if ($verbose);
+
+      my @metas = @{ $fixed_annotation->meta() };
+      foreach my $meta (@metas) {
+        if ($meta->key() eq 'hgnc_id') {
+          my $hgnc_accession = $meta->value();
+          last;
+        }
+      }
+      print STDOUT localtime() . "\nFetched fixed annotation for $lrg_name\n" if ($verbose);
       
       # Find the mapping in the XML file corresponding to the core assembly
       print STDOUT localtime() . "\tGetting mapping from XML file\n" if ($verbose);
-      my $updatable_annotation = $lrg->findNode("updatable_annotation");
-      my $annotation_sets = $updatable_annotation->findNodeArray("annotation_set");
+      my $annotation_sets = $lrg_object->updatable_annotation->annotation_set();
       my $mapping_node;
       my $cs_node;
       my $cs;
+      my $hgnc_name;
+      my %annotation;
       foreach my $annotation_set (@{$annotation_sets}) {
-        $cs_node = $annotation_set->findNode("mapping");
-        $cs = $cs_node->data->{'coord_system'};
-        if ($cs =~ /$db_assembly/){
-          $mapping_node = $cs_node;
-          if ($cs_node->data->{'other_name'} =~ /HS/){
-            throw("LRG is being mapped against a patch/haplotype region");
-          }
-        }
-	last unless !$mapping_node;
+        $annotation{$annotation_set->source->name()} = $annotation_set;
       }
       
-      # Warn and skip if the correct mapping could not be fetched
-      if (!defined($mapping_node)) {
-	warn("Could not find the LRG->Genome mapping corresponding to the core assembly ($db_assembly) for $lrg_id Skipping!");
+      my $lrg_annotation;
+      if ($annotation{'LRG'}) {
+        $lrg_annotation = $annotation{'LRG'};
+        $cs_node = @{ $lrg_annotation->mapping() }[0];
+        $hgnc_name = $lrg_annotation->lrg_locus->value();
+        $cs = $cs_node->assembly();
+        if ($cs =~ /$db_assembly/){
+          $mapping_node = $cs_node;
+        }
+      }
+      
+      # Warn and skip if the correct mapping could not be fetched or no HGNC accession was found
+      if (!$mapping_node || !$hgnc_name) {
+	warn("Could not find the LRG->Genome mapping corresponding to the core assembly ($db_assembly) for $lrg_id Skipping!") if !$mapping_node;
+        warn("Could not find HGNC identifier in XML file! Skipping $lrg_name") if !$hgnc_name;
 	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
-	# Note, this will also skip xref and verify methods for this LRG
 	next;
       }
       
-      my $assembly = $mapping_node->data->{'coord_system'};
+      my $assembly = $mapping_node->assembly();
       print STDOUT localtime() . "\tMapped assembly is $assembly\n" if ($verbose);
       
-      # Extract the genomic LRG sequence
-      my $lrg_seq = $lrg->findNode('fixed_annotation/sequence')->content();
       # Get the reference genomic sequence from database
-      my $chr_name = $mapping_node->data->{'other_name'};
-      my $chr_start = $mapping_node->data->{'other_start'};
-      my $chr_end = $mapping_node->data->{'other_end'}; 
+      my $other_coordinates = $mapping_node->other_coordinates();
+      my $chr_name = $other_coordinates->coordinate_system();
+      my $chr_start = $other_coordinates->start();
+      my $chr_end = $other_coordinates->end(); 
       my $chr_seq = $sa->fetch_by_region('chromosome',$chr_name,$chr_start,$chr_end)->seq();
       
       # Create pairs array based on the data in the mapping node
@@ -447,23 +413,13 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	$lrg_seq,
 	$chr_seq
       );
-      my $pairs = $mapping->{'pairs'};
       
       # Insert entries for the analysis
       print STDOUT localtime() . "\tAdding analysis data for LRG to $coredb\n" if ($verbose);
       my $analysis_id = LRG::LRGImport::add_analysis($LRG_ANALYSIS_LOGIC_NAME);
 	
-      LRG::LRGImport::add_analysis_description(
-        $analysis_id,
-        $LRG_ANALYSIS_DESCRIPTION,
-        $LRG_ANALYSIS_DISPLAY_LABEL,
-        0
-      );
-      
       # Loop over the db adaptors where information will be mirrored and insert in the ones that are defined
       foreach my $dba (@db_adaptors) {
-	# Skip this db adaptor if it's not defined
-	next unless(defined($dba));
 	
 	# Set the dbCore variable in LRGImport to the current db adaptor
 	$LRG::LRGImport::dbCore = $dba;
@@ -486,22 +442,20 @@ while (my $lrg_id = shift(@lrg_ids)) {
       # Add the transcripts to the core db
       print STDOUT localtime() . "\tAdding transcripts for $lrg_name to core db\n" if ($verbose);
       LRG::LRGImport::add_annotation(
-	$lrg,
+	$lrg_object,
 	$lrg_name,
-	$LRG_COORD_SYSTEM_NAME,
+        $LRG_COORD_SYSTEM_NAME,
 	$LRG_BIOTYPE,
 	$LRG_ANALYSIS_LOGIC_NAME
       );
       
-      print STDOUT localtime() . "\tImport done!\n" if ($verbose);
-    }
-      
-      # This should no longer be done from this script but be included in the main core xref mapping. Will allow it for now.
-      # die("Adding xrefs is no longer done from this script. Exiting!");
-      
       # Get the Ensembl gene_id for the LRG gene
-      my $gene_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$lrg_name);
-      if (!$gene_id) {
+      my $gene_adaptor = $dbCore->get_GeneAdaptor();
+      my $transcript_adaptor = $dbCore->get_TranscriptAdaptor();
+      my $translation_adaptor = $dbCore->get_TranslationAdaptor();
+      my $core_lrg_gene = $gene_adaptor->fetch_by_stable_id($lrg_name);
+      my $core_lrg_gene_id = $core_lrg_gene->dbID();
+      if (!$core_lrg_gene) {
 	warn("Could not find gene with stable id $lrg_name in core database! Skipping $lrg_name");
 	# Undefine the input_file so that the next one will be fetched
 	undef($input_file);
@@ -509,36 +463,29 @@ while (my $lrg_id = shift(@lrg_ids)) {
         next;
       }
       
-      # Get the HGNC identifier from the XML 
-      my $lrg_gene_name_node = $lrg->findNode("updatable_annotation/annotation_set/lrg_locus",{'source' => 'HGNC'});
-      if (!$lrg_gene_name_node) {
-	warn("Could not find HGNC identifier in XML file! Skipping $lrg_name");
-	# Undefine the input_file so that the next one will be fetched
-	undef($input_file);
-	# Note, this will also skip xref and verify methods for this LRG
-        next;
-      }
-      my $hgnc_name = $lrg_gene_name_node->content();
-      my $hgnc_accession = $lrg->findNode("fixed_annotation/hgnc_id")->content();
-      
-      # A bit cumbersome but.. get the HGNC accession from the XML
-      my $annotation_sets = $lrg->findNodeArray('updatable_annotation/annotation_set');
-      my ($annotation_set_ensembl, $annotation_set_refseq);
-      while (my $annotation_set = shift(@{$annotation_sets})) {
-	if ($annotation_set->findNode('source/name')->content() eq 'Ensembl') {
-	  $annotation_set_ensembl = $annotation_set;
-	}
-        if ($annotation_set->findNode('source/name')->content() eq 'NCBI RefSeqGene') {
-          $annotation_set_refseq = $annotation_set;
+      my $hgnc_accession;
+      my %refseq_transcript;
+      my ($ensembl_annotation, $refseq_annotation);
+      my ($ensembl_lrg_gene, $ensembl_genes, $refseq_genes, $refseq_transcripts, $symbols);
+      if ($annotation{'Ensembl'}) {
+        $ensembl_annotation = $annotation{'Ensembl'};
+        $ensembl_genes = $ensembl_annotation->feature->gene();
+        foreach my $gene (@$ensembl_genes) {
+          $symbols = $gene->symbol();
+          foreach my $symbol (@$symbols) {
+            if ($symbol->source() eq 'HGNC' && $symbol->name() eq $hgnc_name) {
+              $ensembl_lrg_gene = $gene;
+            }
+          }
         }
       }
-      my $lrg_gene;
-      foreach my $gene (@{ $annotation_set_ensembl->findNodeArray('features/gene') }) {
-        my $hgnc_node = $gene->findNode('symbol', {'source' => 'HGNC'});
-        if ($hgnc_node) {
-          my $symbol = $hgnc_node->data->{'name'};
-          if ($symbol eq $hgnc_name) {
-            $lrg_gene = $gene;
+      if ($annotation{'NCBI RefSeqGene'}) {
+        $refseq_annotation = $annotation{'NCBI RefSeqGene'};
+        $refseq_genes = $refseq_annotation->feature->gene();
+        foreach my $gene (@$refseq_genes) {
+          $refseq_transcripts = $gene->transcript;
+          foreach my $transcript( @$refseq_transcripts) {
+            $refseq_transcript{$transcript->accession} = $transcript;
           }
         }
       }
@@ -547,86 +494,77 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $object_xref_id;
       
       if (defined($hgnc_accession)) {
-	# Add HGNC entry to xref table (or get xref_id if it already exists)
-	$xref_id = LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name);
-	# Add an object_xref for the HGNC xref
-	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
+	# Add HGNC entry to xref table
+	LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name, $core_lrg_gene, 'gene');
       }
       
       # Add external LRG link to xref table
-      my $ext_xref_id = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME,$lrg_name,$lrg_name,undef,'Locus Reference Genomic record for ' . $hgnc_name,'DIRECT');
-      
-      # Add an object_xref for the LRG xref
-      $object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$ext_xref_id);
+      my $ext_xref = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME, $lrg_name, $lrg_name, $core_lrg_gene, 'gene',
+                               'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
       
       # Update the gene table to set the display_xref_id to the LRG xref
-      LRG::LRGImport::update_rows([qq{display_xref_id = $ext_xref_id}],[qq{gene_id = $gene_id}],['gene']);
+      $core_lrg_gene->display_xref($ext_xref);
+      $core_lrg_gene->adaptor->update($core_lrg_gene);
       
       # Add xrefs to the Ensembl coordinate system for the LRG gene
       
       # Get the annotated Ensembl xrefs from the XML file for the LRG gene
-      my $lrg_gene_xrefs = $lrg_gene->findNodeArray('db_xref',{'source' => 'Ensembl'});
+      my $ensembl_lrg_gene_xrefs = $ensembl_lrg_gene->xref();
       
       # Add or get xref_ids for the Ensembl xrefs, the external_db name is Ens_Hs_gene
-      foreach my $lrg_gene_xref (@{$lrg_gene_xrefs}) {
-	my $stable_id = $lrg_gene_xref->data->{'accession'};
+      foreach my $ensembl_lrg_gene_xref (@{$ensembl_lrg_gene_xrefs}) {
+        if ($ensembl_lrg_gene_xref->source() ne 'Ensembl') { next; }
+	my $stable_id = $ensembl_lrg_gene_xref->accession();
 	
-	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_gene',$stable_id,$stable_id);
-	# Add an object_xref for the LRG xref
-	$object_xref_id = LRG::LRGImport::add_object_xref($gene_id,'Gene',$xref_id);
-	
+	LRG::LRGImport::add_xref('Ens_Hs_gene', $stable_id, $stable_id, $core_lrg_gene, 'gene');
 	my $core_stable_id = $lrg_name;
 	
 	# Do the same for the Ensembl gene to the Ensembl LRG display
-	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene',$core_stable_id,$lrg_name);
-	# Get the gene_id for the Ensembl gene
-	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('gene',$stable_id);
-	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$xref_id);
-	# Add xref to the external LRG database
-	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Gene',$ext_xref_id);
+        my $core_gene = $gene_adaptor->fetch_by_stable_id($stable_id);
+	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene', $core_stable_id, $lrg_name, $core_gene, 'gene');
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
-      my $lrg_transcripts = $lrg_gene->findNodeArray('transcript', {'source' => 'Ensembl'});
-      foreach my $lrg_transcript (@{$lrg_transcripts}) {
-        my $refseq = $lrg_transcript->findNode('db_xref', {'source' => 'RefSeq'});
-        if (!defined $refseq) { next; }
-	my $refseq_accession = $refseq->{'data'}{'accession'};
-        my $refseq_annotation = $annotation_set_refseq->findNode('features/transcript', {'accession' => $refseq_accession});
-        if (!defined $refseq_annotation) { next; }
-        my $fixed_id = $refseq_annotation->{'data'}{'fixed_id'};
-	my $core_accession = $lrg_transcript->{'data'}{'accession'};
-	next unless(defined($fixed_id) && defined($core_accession));
-	
-	# Get the core db LRG transcript_id for this transcript
-	my $core_stable_id = $lrg_name . '_' . $fixed_id;
-	my $core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_stable_id);
-	next unless(defined($core_id));
-	
-	$xref_id = LRG::LRGImport::add_xref('Ens_Hs_transcript',$core_accession,$core_accession);
-	# Add an object_xref for the LRG xref
-	$object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
-	
-	# Do the same for the Ensembl transcript to the Ensembl LRG display
-	$xref_id = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript',$core_stable_id,$core_stable_id);
-	# Get the gene_id for the Ensembl gene
-	$core_id = LRG::LRGImport::get_object_id_by_stable_id('transcript',$core_accession);
-        if ($core_id) {
-          $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Transcript',$xref_id);
-	
-       	  # Do the same for the translation
-	  my $lrg_protein = $lrg_transcript->findNode('protein_product',{'source' => 'Ensembl'});
-	  next unless(defined($lrg_protein));
-	  $core_accession = $lrg_protein->{'data'}{'accession'};
-	  next unless(defined($core_accession));
-	  $core_id = LRG::LRGImport::get_translation_id($core_id);
-	
-	  $xref_id = LRG::LRGImport::add_xref('Ens_Hs_translation',$core_accession,$core_accession);
-	  # Add an object_xref for the LRG xref
-	  $object_xref_id = LRG::LRGImport::add_object_xref($core_id,'Translation',$xref_id);
+      my $ensembl_lrg_transcripts = $ensembl_lrg_gene->transcript();
+      my ($fixed_id, $transcript_core_accession, $translation_core_accession);
+      foreach my $ensembl_lrg_transcript (@{$ensembl_lrg_transcripts}) {
+        if ($ensembl_lrg_transcript->source() ne 'Ensembl') { next; }
+        my $xrefs = $ensembl_lrg_transcript->xref();
+        foreach my $xref (@$xrefs) {
+          if ($xref->source ne 'RefSeq') { next; }
+	  my $refseq_accession = $xref->accession;
+          my $refseq_annotation = $refseq_transcript{$refseq_accession};
+          if (!defined $refseq_annotation) { next; }
+          $fixed_id = $refseq_annotation->fixed_id();
+	  $transcript_core_accession = $ensembl_lrg_transcript->accession();
+	  next unless(defined($fixed_id) && defined($transcript_core_accession));
         }
 	
+	# Get the core db LRG transcript_id for this transcript
+	my $core_stable_id = $lrg_name . $fixed_id;
+        my $core_lrg_transcript = $transcript_adaptor->fetch_by_stable_id($core_stable_id);
+        my $core_transcript = $transcript_adaptor->fetch_by_stable_id($transcript_core_accession);
+	next unless(defined($core_lrg_transcript));
+	
+	LRG::LRGImport::add_xref('Ens_Hs_transcript', $transcript_core_accession, $transcript_core_accession, $core_lrg_transcript, 'transcript');
+	
+	# Do the same for the Ensembl transcript to the Ensembl LRG display
+	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript', $core_stable_id, $core_stable_id, $core_transcript, 'transcript');
+        if ($core_lrg_transcript) {
+	
+       	  # Do the same for the translation
+	  my $ensembl_lrg_proteins = $ensembl_lrg_transcript->translation();
+          foreach my $ensembl_lrg_protein (@$ensembl_lrg_proteins) {
+	    $translation_core_accession = $ensembl_lrg_protein->accession();
+	    next unless(defined($translation_core_accession));
+            my $core_lrg_translation = $translation_adaptor->fetch_by_Transcript($core_lrg_transcript);
+	    LRG::LRGImport::add_xref('Ens_Hs_translation', $translation_core_accession, $translation_core_accession, $core_lrg_translation, 'translation');
+          }
+        }
       }
+
+      print STDOUT localtime() . "\tImport done!\n" if ($verbose);
+    }
     
     # Check that the mapping stored in the database give the same sequences as those stored in the XML file
     if ($verify) {
@@ -640,7 +578,6 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $passed = 1;
       
       # Get the genomic sequence from the XML file
-      my $genomic_seq_xml = $lrg->findNode("fixed_annotation/sequence")->content();
       # Get a slice from the database corresponding to the LRG
       my $lrg_slice = $sa->fetch_by_region($LRG_COORD_SYSTEM_NAME,$lrg_id);
       if (!defined($lrg_slice)) {
@@ -654,20 +591,19 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	my $genomic_seq_db = $lrg_slice->seq();
 	
 	# Compare the sequences
-	if ($genomic_seq_xml ne $genomic_seq_db) {
+	if ($lrg_seq ne $genomic_seq_db) {
 	  $msg = "Genomic sequence from core db is different from genomic sequence in XML file for $lrg_id";
 	  warn($msg);
 	  print STDOUT "$msg\n" if ($verbose);
-	  print ">genomic_seq_in_xml\n$genomic_seq_xml\n>genomic_seq_in_db\n$genomic_seq_db\n" if ($verbose);
+	  print ">genomic_seq_in_xml\n$lrg_seq\n>genomic_seq_in_db\n$genomic_seq_db\n" if ($verbose);
 	  $passed = 0;  
 	}
 	
 	# Compare each transcript
-	my $transcripts_xml = $lrg->findNodeArray('fixed_annotation/transcript');
 	my $transcripts_db = $lrg_slice->get_all_Transcripts(undef,$LRG_ANALYSIS_LOGIC_NAME);
-	foreach my $transcript_xml (@{$transcripts_xml}) {
+	foreach my $transcript (@{$transcripts}) {
 	  # Get the fixed id
-	  my $fixed_id = $transcript_xml->{'data'}{'name'};
+	  my $fixed_id = $transcript->name();
 	  # The expected transcript_stable_id based on the XML fixed id
 	  my $stable_id = $lrg_id . $fixed_id;
 	  # Get the ensembl transcript with the corresponding stable_id
@@ -684,36 +620,42 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	  my $transcript_db = $db_tr[0];
 	  
 	  # Get the cDNA sequence from the XML file
-	  my $cDNA_xml = $transcript_xml->findNode('cdna/sequence')->content();
+	  my $cDNA = $transcript->cdna->sequence();
 	  # Get the cDNA sequence from the db
 	  my $cDNA_db = $transcript_db->spliced_seq();
 	  # Compare the sequences
-	  if ($cDNA_xml ne $cDNA_db) {
+	  if ($cDNA ne $cDNA_db) {
 	    $msg = "cDNA sequence from core db is different from cDNA sequence in XML file for $lrg_id transcript $fixed_id";
 	    warn($msg);
 	    print STDOUT "$msg\n" if ($verbose);
-	    print ">cDNA_seq_in_xml\n$cDNA_xml\n>cDNA_seq_in_db\n$cDNA_db\n" if ($verbose);
+	    print ">cDNA_seq_in_xml\n$cDNA\n>cDNA_seq_in_db\n$cDNA_db\n" if ($verbose);
 	    $passed = 0;
 	    next;
 	  }
 	  
 	  # Get the translation from the XML file
-          if ($transcript_xml->findNode('coding_region')) {
-  	    my $translation_xml = $transcript_xml->findNode('coding_region/translation/sequence')->content();
- 	    # Get the translation from the db
-	    my $translation_db = $transcript_db->translation()->seq();
-	    # Remove any terminal stop codons
-	    $translation_xml =~ s/\*$//;
-	    $translation_db =~ s/\*$//;
+          if ($transcript->coding_region()) {
+  	    my $coding_regions = $transcript->coding_region();
+            foreach my $coding_region (@$coding_regions) {
+              my $translations = $coding_region->translation();
+              foreach my $translation (@$translations) {
+                my $translation_seq = $translation->sequence->sequence();
+     	        # Get the translation from the db
+	        my $translation_db = $transcript_db->translation()->seq();
+	        #  Remove any terminal stop codons
+	        $translation_seq =~ s/\*$//;
+	        $translation_db =~ s/\*$//;
 	  
-	    # Compare the sequences
-	    if ($translation_xml ne $translation_db) {
-	      $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
-	      warn($msg);
-	      print STDOUT "$msg\n" if ($verbose);
-	      print ">peptide_seq_in_xml\n$translation_xml\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
-	      $passed = 0;
-	      next;
+	        # Compare the sequences
+	        if ($translation_seq ne $translation_db) {
+	          $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
+	          warn($msg);
+	          print STDOUT "$msg\n" if ($verbose);
+	          print ">peptide_seq_in_xml\n$translation_seq\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
+	          $passed = 0;
+	          next;
+                }
+              }
             }
 	  }	
 	}
@@ -758,13 +700,10 @@ sub usage {
       -vega		vega database name
       -rnaseq	rnaseq database name
       
-    An input file can be specified. This is required when reverting the Core database. If an input file is
-    specified when importing, verifying, cleaning, adding xrefs or annotating overlaps, all specified LRG
-    identifiers are overridden and only the LRG in the input XML file is processed.
+    If an input file is specified when importing, verifying, cleaning, adding xrefs or annotating overlaps, 
+    all specified LRG identifiers are overridden and only the LRG in the input XML file is processed.
     
       -input_file	LRG XML file when importing or adding xrefs
-			Tab-separated file with table, field and max-values when reverting database
-			to a previous state.
 			
     Any number of LRG identifiers can be specified. Each LRG will then be processed in turn. If an identifier is
     specified when importing, verifying or adding xrefs, the script will attempt to download the corresponding XML
@@ -795,15 +734,6 @@ sub usage {
 			
       -purge		If specified, will remove EVERYTHING LRG related from the database(s) (e.g. coord_system, analysis)
 			once all LRG seq_regions have been removed. Will not remove anything if seq_regions still exist.
-			
-      -max		Dump a tab-separated list of table, field and max-values for tables
-			affected by a LRG import to stdout. If run before an import, this data can
-			be used to revert the database after an import
-			
-      -revert		Don't use this unless you are really sure of what it does! Will delete all rows having
-			field values greater than the max-value supplied via the tab-separated input file. These
-			should have been generated using the -max mode. Beware that this will delete all entries
-			added after the -max command was run, not necessarily just your own!
 			
       -verbose		Progress information is printed
 

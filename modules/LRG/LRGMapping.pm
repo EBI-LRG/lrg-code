@@ -1372,20 +1372,23 @@ sub mapping_2_pairs {
   
   # Loop over the mapping spans and create the pairs array
   my @pairs;
-  my $mapping_spans = $mapping_node->findNodeArray('mapping_span');
+  my $mapping_spans = $mapping_node->mapping_span();
   my $last_strand = 1;
-  my $chr_name = $mapping_node->data->{'other_name'};
-  my $chr_offset_start = $mapping_node->data->{'other_start'};
-  my $chr_offset_end = $mapping_node->data->{'other_end'};
+  my $other_coordinates = $mapping_node->other_coordinates();
+  my $chr_name = $other_coordinates->coordinate_system();
+  my $chr_offset_start = $other_coordinates->start();
+  my $chr_offset_end = $other_coordinates->end();
   my $lrg_offset_start = 1e11;
   my $lrg_offset_end = -1;
   
   foreach my $span (@{$mapping_spans}) {
-    my $lrg_start = $span->data->{'lrg_start'};
-    my $lrg_end = $span->data->{'lrg_end'};
-    my $chr_start = $span->data->{'other_start'};
-    my $chr_end = $span->data->{'other_end'};
-    my $strand = $span->data->{'strand'};
+    my $lrg_coordinates = $span->lrg_coordinates();
+    $other_coordinates = $span->other_coordinates();
+    my $lrg_start = $lrg_coordinates->start();
+    my $lrg_end = $lrg_coordinates->end();
+    my $chr_start = $other_coordinates->start();
+    my $chr_end = $other_coordinates->end();
+    my $strand = $span->strand();
     
     my $dna_pair = [
       'DNA',
@@ -1407,16 +1410,18 @@ sub mapping_2_pairs {
     }
     
     # At each indel in the alignment, a new DNA pair is added to the array and a G(ap) pair as well
-    my $diffs = $span->findNodeArray('diff');
+    my $diffs = $span->mapping_diff;
     foreach my $diff (@{$diffs}) {
       my $pair;
-      my $diff_lrg_start = $diff->data()->{'lrg_start'};
-      my $diff_lrg_end = $diff->data()->{'lrg_end'};
-      my $diff_chr_start = $diff->data()->{'other_start'};
-      my $diff_chr_end = $diff->data()->{'other_end'};
-      my $diff_lrg_seq = $diff->data()->{'lrg_sequence'};
-      my $diff_chr_seq = $diff->data()->{'other_sequence'};
-      if ($diff->data()->{'type'} eq 'mismatch') {
+      $lrg_coordinates = $diff->lrg_coordinates();
+      $other_coordinates = $diff->other_coordinates();
+      my $diff_lrg_start = $lrg_coordinates->start();
+      my $diff_lrg_end = $lrg_coordinates->end();
+      my $diff_chr_start = $other_coordinates->start();
+      my $diff_chr_end = $other_coordinates->end();
+      my $diff_lrg_seq = $diff->lrg_sequence();
+      my $diff_chr_seq = $diff->other_sequence();
+      if ($diff->type eq 'mismatch') {
 	$pair = [
 	  'M',
 	  $diff_lrg_end,
@@ -1429,7 +1434,7 @@ sub mapping_2_pairs {
 	];
 	push(@pairs,$pair);
       }
-      elsif ($diff->data()->{'type'} =~ m/lrg_ins/) {
+      elsif ($diff->type() =~ m/lrg_ins/) {
 	$pair = [
 	  'G',
 	  $diff_lrg_start,
@@ -1456,7 +1461,7 @@ sub mapping_2_pairs {
 	  $strand
 	];
       }
-      elsif ($diff->data()->{'type'} =~ m/other_ins/) {
+      elsif ($diff->type() =~ m/other_ins/) {
         $pair = [
           'G',
           $diff_lrg_end,
