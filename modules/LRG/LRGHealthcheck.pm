@@ -18,6 +18,12 @@ our $JING_JAR = POSIX::getcwd() . '/jing.jar';
 our $RNC_FILE = POSIX::getcwd() . '/LRG.rnc'; 
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
+our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR.'/SCHEMA_1_7_ARCHIVE';
+
+our $check_assembly = 'GRCh37';
+our @attr_list      = qw(coord_system other_name other_id other_start other_end);
+our @span_attr_list = qw(lrg_start lrg_end strand);
+our @diff_attr_list = qw(type lrg_start lrg_end other_start other_end lrg_sequence other_sequence);
 
 # The available checks
 our @CHECKS = (
@@ -36,7 +42,8 @@ our @CHECKS = (
     'coordinates'
 );
 our @PRELIMINARY_CHECKS = (
-    'existing_entry'
+    'existing_entry',
+    'compare_main_mapping'
 );
 
 # Constructor
@@ -272,6 +279,75 @@ sub existing_entry {
       $self->{'check'}{$name}{'message'} = $exist.$self->{'check'}{$name}{'message'};
     }
 
+    $self->{'check'}{$name}{'passed'} = $passed;
+    return $passed; 
+}
+
+
+# Check is there is an existing LRG and if there are differences in the sequence and/or coordinates
+sub compare_main_mapping {
+    my $self = shift;
+    
+    my $passed = 1;
+    
+    # Name of this check
+    my $name = sub_name();
+    
+    # LRG ID
+    my $lrg_id = $self->{'lrg_id'};
+
+    # Check an existing entry on the LRG FTP site
+    my $existing_archive_file;
+    if (-e "$EBI_FTP_ARCHIVE_DIR/$lrg_id.xml") {
+      $existing_archive_file = "$EBI_FTP_ARCHIVE_DIR/$lrg_id.xml";
+    } elsif (-e "$EBI_FTP_ARCHIVE_DIR/pending/$lrg_id.xml") {
+      $existing_archive_file = "$EBI_FTP_ARCHIVE_DIR/pending/$lrg_id.xml";
+    }
+    
+    if (!defined($existing_archive_file)) {
+      $self->{'check'}{$name}{'passed'} = $passed;
+      return $passed;
+    }
+  
+    # Get mapping data
+    my $new_data = get_mapping_coordinates($self->{'lrg'});
+  
+    my $lrg_arch = LRG::LRG::newFromFile($existing_archive_file) or die("Could not create LRG object from XML file $existing_archive_file");
+    my $arch_data = get_mapping_coordinates($lrg_arch);
+  
+    my $is_diff = 0;
+    foreach my $attr (@attr_list) {
+      $is_diff = 1 if ($new_data->{$attr} ne $arch_data->{$attr});
+    }
+    foreach my $span_attr (@span_attr_list) {
+      $is_diff = 1 if ($new_data->{$span_attr} ne $arch_data->{$span_attr});
+    }
+    
+    if ($is_diff == 1) {  
+      $passed = 0;
+      $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates//";
+    }
+  
+    if (scalar keys(%{$new_data->{'diffs'}}) !=  scalar keys(%{$arch_data->{'diffs'}})) {
+      $passed = 0;
+      $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions//";
+    }
+
+    foreach my $diff (keys (%{$new_data->{'diffs'}})) {
+      if (!$arch_data->{'diffs'}{$diff}) {
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates ( Type '".$new_data->{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{'diffs'}{$diff}{'lrg_start'}."')//";
+      }
+      else {
+        foreach my $diff_attr (@diff_attr_list) {
+          if ($new_data->{'diffs'}{$diff}{$diff_attr} ne $arch_data->{'diffs'}{$diff}{$diff_attr}) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff '$diff_attr' data (New '".$new_data->{'diffs'}{$diff}{$diff_attr}."' | Archive '".$arch_data->{'diffs'}{$diff}{$diff_attr}."')//";
+          }
+        }
+      }
+    }
+    
     $self->{'check'}{$name}{'passed'} = $passed;
     return $passed; 
 }
@@ -1542,5 +1618,39 @@ sub get_coordinates {
   return $start,$end;
 }
 
+sub get_mapping_coordinates {
+  my $lrg_node = shift;
+  my $asets = $lrg_node->findNodeArraySingle('updatable_annotation/annotation_set');
+  
+  foreach my $aset (@$asets) {
+    #next unless($aset->findNodeSingle('source/name')->content eq 'LRG');
+    my $mappings = $aset->findNodeArraySingle('mapping');
+    
+    foreach my $mapping (@$mappings) {
+      next if ($mapping->data->{'coord_system'} !~ /^$check_assembly/i);
+      my %data;
+    
+      foreach my $attr (@attr_list) {
+        $data{$attr} = ($attr eq 'coord_system') ? (split(/\./,$mapping->data->{$attr}))[0] : $mapping->data->{$attr};
+      }
+    
+      my $mapping_span = $mapping->findNodeSingle('mapping_span');
+      foreach my $span_attr (@span_attr_list) {
+        $data{$span_attr} = $mapping_span->data->{$span_attr};
+      }
+    
+      my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
+      foreach my $diff (@$mapping_diff) {
+        my %diff_data;
+        foreach my $diff_attr (@diff_attr_list) {
+          $diff_data{$diff_attr} = $diff->data->{$diff_attr};
+        }
+        my $label = $diff_data{'type'}."_".$diff_data{'other_start'};
+        $data{'diffs'}{$label} = \%diff_data;
+      }
+      return \%data;
+    } 
+  }
+}
 1;
 
