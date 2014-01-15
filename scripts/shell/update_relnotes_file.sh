@@ -37,6 +37,8 @@ if [ ${tmp} ]; then
 	else 
 		tmpdir="-tmp_dir ${cvspath}"
 	fi
+else
+  tmpdir="-tmp_dir ${cvspath}"
 fi
 
 
