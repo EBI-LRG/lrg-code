@@ -535,7 +535,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	  my $refseq_accession = $xref->accession;
           my $refseq_annotation = $refseq_transcript{$refseq_accession};
           if (!defined $refseq_annotation) { next; }
-          $fixed_id = $refseq_annotation->fixed_id();
+          $fixed_id = $refseq_annotation->fixed_id() if defined($refseq_annotation->fixed_id());
 	  $transcript_core_accession = $ensembl_lrg_transcript->accession();
 	  next unless(defined($fixed_id) && defined($transcript_core_accession));
         }
