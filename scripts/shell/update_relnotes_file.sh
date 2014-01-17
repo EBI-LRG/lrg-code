@@ -192,7 +192,15 @@ if [[ -e ${new_relnotes} ]] ; then
       cvs tag ${tag_release} ${filename}
     done    
 
+  else
+    echo "ERROR: the relnotes file '${new_relnotes}' is empty! It can't be copied and committed!"
+    echo "The script failed!"
+    exit
   fi
+else
+  echo "ERROR: the script can't find the new relnotes file! It is supposed to be at the location: ${new_relnotes}!"
+  echo "The script failed!"
+  exit
 fi
 
 
