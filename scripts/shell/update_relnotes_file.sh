@@ -32,13 +32,14 @@ fi
 if [ ${tmp} ]; then
 	if [[ ${tmp} == 'test' ]] ; then
 		is_test=1
-	elif [[ -z ${tmp} ]] ; then
+	elif [[ -d ${tmp} ]] ; then
 	  tmpdir="-tmp_dir ${tmp}"
 	else 
 		tmpdir="-tmp_dir ${cvspath}"
 	fi
 else
-  tmpdir="-tmp_dir ${cvspath}"
+  tmp=${cvsftp}
+  tmpdir="-tmp_dir ${tmp}"
 fi
 
 
@@ -51,17 +52,10 @@ new_record_fname="new_${record_fname}"
 
 tmp_lrg_list_fname='tmp_lrg_list.txt'
 
-if [[ ${tmp} && -d ${tmp} ]]; then
-  new_relnotes="${tmp}/${new_relnotes_fname}"
-  new_record="${tmp}/${new_record_fname}"
-  tmp_lrg_list="${tmp}/${tmp_lrg_list_fname}"
-else
-  tmp=${cvsftp}
-  new_relnotes="${cvsftp}/${new_relnotes_fname}"
-  new_record="${cvsftp}/${new_record_fname}"
-  tmp_lrg_list="${cvsftp}/${tmp_lrg_list_fname}"
-fi
 
+new_relnotes="${tmp}/${new_relnotes_fname}"
+new_record="${tmp}/${new_record_fname}"
+tmp_lrg_list="${tmp}/${tmp_lrg_list_fname}"
 
 # Update the ftp_record.txt file
 current_path=`pwd`
@@ -174,7 +168,7 @@ if [[ -e ${new_relnotes} ]] ; then
     # 3 - Copy the new ftp_record.txt to the CVS ftp/public/ and commit it.
 		echo "Update ftp_record.txt on CVS"
     cvs update ${record_fname}
-
+    
     echo "Copy, commit & tag the new ftp_record.txt on CVS"
     cp ${new_record}  "./${record_fname}"
     cvs ci -m "FTP record of the release ${tag_release}" ${record_fname}
