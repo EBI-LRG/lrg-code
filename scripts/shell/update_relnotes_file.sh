@@ -25,17 +25,18 @@ tmp=$1
 
 is_test=$2
 
-if [[ ${is_test} ]]; then
+if [[ -z "${is_test}" ]]; then
 	is_test=1
 fi
 
-if [ ${tmp} ]; then
+if [[ -z "${tmp}" ]]; then
 	if [[ ${tmp} == 'test' ]] ; then
 		is_test=1
 	elif [[ -d ${tmp} ]] ; then
 	  tmpdir="-tmp_dir ${tmp}"
 	else 
-		tmpdir="-tmp_dir ${cvspath}"
+	  tmp= ${cvspath}
+		tmpdir="-tmp_dir ${tmp}"
 	fi
 else
   tmp=${cvsftp}
