@@ -145,8 +145,7 @@ foreach my $file (@files) {
     my $exons = $transcript->findNodeArray('exon');
     foreach my $exon (@$exons) {
       foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
-        next if ($e_coords->data->{coord_system} ne $lrg_id);        
-
+        next if ($e_coords->data->{coord_system} ne $lrg_id);  
         my $e_start  = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
         my $e_end    = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
         if ($strand == -1) {
@@ -208,28 +207,28 @@ sub lrg2genomic {
   my ($tmp_coord, $new_g_start);
   if ($strand == -1) {
     $tmp_coord = $g_end-$coord+$l_start;
-    my $new_g_end = $g_end; 
-    
+    my $diff_coord = 0;    
+
     foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
       if ($diff_start >= $tmp_coord) {
         my $size = $diff->{$diff_start}{size};
         my $type = $diff->{$diff_start}{type};
  
         if ($type eq 'lrg_ins') { 
-          $new_g_end -= $size;
+          $diff_coord += $size;
         } else {
-          $new_g_end += $size;
+          $diff_coord -= $size;
         }
       }
       else {
         last;
       }
     }
-    return $new_g_end-$coord+$l_start;;
+    return $g_end-$coord+$l_start+$diff_coord;
   }
   else {
-    $tmp_coord = $coord+$g_start-$l_start;
-    $new_g_start = $g_start; 
+    $tmp_coord = ($coord-$l_start)+$g_start;
+    my $diff_coord = 0;
 
     foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
       if ($diff_start <= $tmp_coord) {
@@ -237,15 +236,15 @@ sub lrg2genomic {
         my $type = $diff->{$diff_start}{type};
  
         if ($type eq 'lrg_ins') { 
-          $new_g_start -= $size;
+          $diff_coord -= $size;
         } else {
-          $new_g_start += $size;
+          $diff_coord += $size;
         }
       }
       else {
         last;
       }
     }
-    return $coord+$new_g_start-$l_start;
+    return $coord-$l_start+$g_start+$diff_coord;
   }  
 }
