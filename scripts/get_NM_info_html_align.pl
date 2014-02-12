@@ -175,7 +175,7 @@ foreach my $o_gene (@$o_genes) {
 ## DISPLAY ##
 #############
 my $coord_span = scalar(keys(%exons_list));
-my $gene_coord = "chr$chr:".$ens_gene->start.'<span class="reverse_strand" title="reverse strand">-</span>'.$ens_gene->end;
+my $gene_coord = "chr$chr:".$ens_gene->start.'<span class="reverse_strand" title="reverse strand"><</span>'.$ens_gene->end;
 $gene_coord .= ($ens_gene->slice->strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 print qq{
 <html>
@@ -335,7 +335,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a><br /><small>($e_count exons)</small>};
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
-  my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">+</span>' : '<span class="reverse_strand" title="reverse strand">-</span>';
+  my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $tr_object->biotype;
   print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
   
@@ -422,7 +422,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
-  my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">+</span>' : '<span class="reverse_strand" title="reverse strand">-</span>';
+  my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $refseq_object->biotype;
   print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
   
@@ -490,7 +490,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
-  my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">+</span>' : '<span class="reverse_strand" title="reverse strand">-</span>';
+  my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $cdna_object->biotype;
   print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
   
@@ -565,7 +565,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $column_class = 'gene';
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
   
-  my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">+</span>' : '<span class="reverse_strand" title="reverse strand">-</span>';
+  my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $gene_object->biotype;
   print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
   
