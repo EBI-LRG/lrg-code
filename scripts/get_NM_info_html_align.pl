@@ -7,11 +7,17 @@ die("You need to give a gene name as argument of the script (HGNC or ENS)") if (
 my $gene_name = $ARGV[0];
 
 my $registry = 'Bio::EnsEMBL::Registry';
-my $species = 'human';
+my $species  = 'human';
+
+#$registry->load_registry_from_db(
+#    -host => 'ensembldb.ensembl.org',
+#    -user => 'anonymous'
+#);
 
 $registry->load_registry_from_db(
-    -host => 'ensembldb.ensembl.org',
-    -user => 'anonymous'
+    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
+    -user => 'anonymous',
+    -port => 4240
 );
 
 my $cdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,'core');
@@ -101,7 +107,6 @@ foreach my $refseq_tr (@$refseq) {
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
 
   my $refseq_name = $refseq_tr->stable_id;
-  
   next unless ($refseq_name =~ /^(N|X)(M|P)_/);
   
   my $refseq_exons = $refseq_tr->get_all_Exons;
@@ -327,8 +332,6 @@ my %ens_rows_list;
 foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
- 
-  
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->analysis->logic_name eq 'ensembl_havana_transcript') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   # For e!75: my $tr_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold_column' : 'first_column';
@@ -417,6 +420,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
 #----------------------------#
 my %refseq_rows_list;
 foreach my $nm (keys(%refseq_tr_exons_list)) {
+
   my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'nm';
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
@@ -485,6 +489,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
 #--------------------------#
 my %cdna_rows_list;
 foreach my $nm (keys(%cdna_tr_exons_list)) {
+
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'cdna';
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
@@ -557,7 +562,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
 my %gene_rows_list;
 foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $gene_object = $overlapping_genes_list{$o_ens_gene}{'object'};
-  
+
   # HGNC symbol
   my @hgnc_list = grep {$_->dbname eq 'HGNC'} $gene_object->display_xref;
   my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<br /><small>('.$hgnc_list[0]->display_id.')</small>' : '';
@@ -583,11 +588,15 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $previous_exon;
   my $is_first_exon_partial = 0;
   my $is_last_exon_partial  = 0;
+  my ($first_coord,$last_coord);
+  # Define start and end, using exon coordinates
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    $first_coord = $coord if (!$first_coord);
+    $last_coord  = $coord;
     $previous_exon = $coord if (!$previous_exon);
     if ($gene_start < $coord && !defined($first_exon)) {
       $first_exon = $previous_exon;
-      $is_first_exon_partial = 1;
+      $is_first_exon_partial = 1 if($first_coord != $coord);
     }
     elsif ($gene_start == $coord && !defined($first_exon)) {
       $first_exon = $coord;
@@ -602,6 +611,8 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     }
     $previous_exon = $coord;
   }
+  $last_exon = $last_coord  if (!defined($last_exon));
+  
   #print STDERR "Gene \n$gene_start/$gene_end\n$first_exon/$last_exon\n";
   my $exon_start;
   my $colspan = 1;
@@ -625,7 +636,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       $colspan ++;
       next;
     }
-     # Exon end found
+    # Exon end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
       $ended = 1;
       if ($is_last_exon_partial == 1) {
@@ -635,11 +646,13 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
         print qq{</td><td>};
         print qq{<div class="partial_gene_coord_match">$gene_strand</div>};
         $colspan = 1;
-        next;
       }
       else {
         $colspan ++;
+        print qq{</td><td colspan="$colspan">};
+        print qq{<div class="gene_coord_match">$gene_strand</div>};
       }
+      next;
     }
     
     my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
@@ -726,26 +739,27 @@ foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
   print qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
   $cdna_count ++;
 }  
-  
-print qq{</div></div><div style="clear:both"></div></div>
-         <div style="margin:10px 0px">
-           <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Gene rows:</div>
-           <div style="float:left">
-             <div style="margin-bottom:10px">
-        };
+print qq{</div></div><div style="clear:both"></div></div>\n};
   
 # Ensembl genes
-my $ens_g_count = 0; 
-foreach my $gene_row_id (sort {$a <=> $b} keys(%gene_rows_list)) {
-  if ($ens_g_count == $max_per_line) {
-    print qq{</div><div style="margin-bottom:10px">};
-    $ens_count = 0;
+if (scalar(keys(%gene_rows_list))) {
+  print qq{ <div style="margin:10px 0px">
+             <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Gene rows:</div>
+             <div style="float:left">
+               <div style="margin-bottom:10px">
+          };
+  my $ens_g_count = 0; 
+  foreach my $gene_row_id (sort {$a <=> $b} keys(%gene_rows_list)) {
+    if ($ens_g_count == $max_per_line) {
+      print qq{</div><div style="margin-bottom:10px">};
+      $ens_count = 0;
+    }
+    my $label = $gene_rows_list{$gene_row_id}{'label'};
+    my $class = $gene_rows_list{$gene_row_id}{'class'};
+    print qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
+    print qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
+    $ens_count ++;
   }
-  my $label = $gene_rows_list{$gene_row_id}{'label'};
-  my $class = $gene_rows_list{$gene_row_id}{'class'};
-  print qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
-  print qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
-  $ens_count ++;
 }
 
   
