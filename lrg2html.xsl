@@ -67,12 +67,12 @@
     </xsl:otherwise>
   </xsl:choose>
 
-   <!-- Use the HGNC symbol as header if available -->
-   <div class="banner">
-     <div class="banner_left">
-      <h1><xsl:value-of select="$lrg_id"/> </h1>
-      <h1 class="separator">-</h1>
-      <h1> 
+    <!-- Use the HGNC symbol as header if available -->
+    <div class="banner">
+      <div class="banner_left">
+        <h1><xsl:value-of select="$lrg_id"/> </h1>
+        <h1 class="separator">-</h1>
+        <h1> 
 	   <xsl:choose>
       <xsl:when test="$lrg_gene_name">
 		    <xsl:value-of select="$lrg_gene_name"/>
@@ -2396,6 +2396,19 @@
         <xsl:if test="position()!=last()"><br/></xsl:if>
       </xsl:for-each>
     </xsl:if>
+    
+    <xsl:if test="$source=$ensembl_source_name">
+      <div style="margin-top:6px">
+        <xsl:call-template name="right_arrow_green" />
+        <a target="_blank" style="vertical-align:middle">
+          <xsl:attribute name="class">external_link</xsl:attribute>
+          <xsl:attribute name="href">http://www.ensembl.org/Homo_sapiens/Gene/Phenotype?<xsl:value-of select="$accession" /></xsl:attribute>
+          Link to the Gene Phenotype page in Ensembl
+          <xsl:call-template name="external_link_icon" />
+        </a>
+      </div>
+    </xsl:if>
+    
         </p>
          
 <!--Transcripts-->
