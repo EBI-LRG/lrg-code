@@ -14,11 +14,11 @@ sub fetch_by_coding_region {
   my $self = shift;
   my $coding_region = shift;
   
-  my $element = $coding_region->findNodeArraySingle('translation');
+  my $element = $coding_region->findNodeSingle('translation');
 
   my $objs = $self->objs_from_xml($element);
   
-  return $objs; 
+  return $objs->[0]; 
 }
 
 

@@ -32,10 +32,8 @@ sub translation {
   my $translation = shift;
   # If a peptide sequence is specified, verify that it doesn't contain any illegal aa's
   if (defined($translation)) {
-		foreach my $trans (@{$translation}) {
-    	$self->assert_ref($trans,'LRG::API::Translation');
-    	die ("Illegal character in translation peptide sequence") unless ($trans->sequence->verify_protein());
-		}
+    $self->assert_ref($translation,'LRG::API::Translation');
+    die ("Illegal character in translation peptide sequence") unless ($translation->sequence->verify_protein());
   }
   return $self->_get_set('_translation',$translation);
 }
