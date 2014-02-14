@@ -15,6 +15,9 @@
 <xsl:variable name="ensembl_source_name">Ensembl</xsl:variable>
 <xsl:variable name="community_source_name">Community</xsl:variable>
 
+<!-- URLs -->
+<xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/nuccore/</xsl:variable>
+
 <!-- Other general variables -->
 <xsl:variable name="lrg_coord_system" select="$lrg_id" />
 <xsl:variable name="symbol_source">HGNC</xsl:variable>
@@ -267,7 +270,7 @@
       <xsl:attribute name="href">
         <xsl:choose>
           <xsl:when test="contains(@accession,'NP')">http://www.ncbi.nlm.nih.gov/protein/<xsl:value-of select="@accession"/></xsl:when>
-          <xsl:otherwise>http://www.ncbi.nlm.nih.gov/nuccore/<xsl:value-of select="@accession"/></xsl:otherwise>
+          <xsl:otherwise><xsl:value-of select="ncbi_url"/><xsl:value-of select="@accession"/></xsl:otherwise>
         </xsl:choose>
       </xsl:attribute>
     </xsl:when>
@@ -1501,6 +1504,8 @@
     <xsl:choose>
 	    <xsl:when test="source/name='LRG'">
 		   <xsl:for-each select="mapping">
+		     <xsl:sort select="@coord_system" data-type="text"/>
+		     <xsl:sort select="@other_name" data-type="text"/>
 			   <xsl:call-template name="g_mapping">
 		       <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
 		     </xsl:call-template>
@@ -1544,17 +1549,21 @@
   	<xsl:text>.ensembl.org/Homo_sapiens/Location/View?</xsl:text>
   </xsl:variable>
   <xsl:variable name="ensembl_region"><xsl:text>r=</xsl:text><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
-  <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
+  <xsl:variable name="ncbi_url_map">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>BEG=<xsl:value-of select="$region_start"/><xsl:text>&amp;</xsl:text>END=<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ucsc_url">http://genome.ucsc.edu/cgi-bin/hgTracks?</xsl:variable>
   <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/><xsl:text>&amp;</xsl:text>hgt.customText=<xsl:value-of select="$lrg_bed_file_location" /></xsl:variable>
   
+  <xsl:variable name="vAlpha" select="'XYxy'"/>
+  <xsl:variable name="vDigits" select="'0123456789'"/>
+
+  
 	<xsl:choose>
-		<xsl:when test="$coord_system='NCBI37'">
-  		<h3 class="subsection">Mapping (assembly GRCh37)</h3>
+		<xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
+  		<h3 class="subsection">Mapping (assembly <xsl:value-of select="$coord_system"/>)</h3>
 		</xsl:when>
 		<xsl:otherwise>
-			<h3 class="subsection">Mapping (assembly <xsl:value-of select="$coord_system"/>)</h3>
+			<h3 class="subsection">Mapping (assembly <xsl:value-of select="$coord_system"/>) - <span style="color:#E00">Patched region</span></h3>
 		</xsl:otherwise>
   </xsl:choose>
 
@@ -1562,42 +1571,55 @@
     <span class="line_header">Region covered:</span><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/>
     <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
     <span style="margin-right:10px;font-weight:bold">See in:</span>
+    <xsl:choose>
+		  <xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
     <a>
-      <xsl:attribute name="target">_blank</xsl:attribute>
-      <xsl:attribute name="href">
-        <xsl:value-of select="$ensembl_url" />
-        <xsl:value-of select="$ensembl_region" />
-        <xsl:if test="$coord_system!='NCBI36'">
-			    <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
-          <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
-        </xsl:if>
-      </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ensembl_url" />
+          <xsl:value-of select="$ensembl_region" />
+          <xsl:if test="$coord_system!='NCBI36'">
+			      <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
+            <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
+          </xsl:if>
+        </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
     </a>
     
     <span style="margin-left:5px;margin-right:10px">/</span>
     <a>
-      <xsl:attribute name="target">_blank</xsl:attribute>
-      <xsl:attribute name="href">
-        <xsl:value-of select="$ncbi_url" />
-        <xsl:value-of select="$ncbi_region" />
-        <xsl:if test="$coord_system='NCBI36'">
-          <xsl:text>&amp;</xsl:text>build=previous
-        </xsl:if>
-      </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ncbi_url_map" />
+          <xsl:value-of select="$ncbi_region" />
+          <xsl:if test="$coord_system='NCBI36'">
+            <xsl:text>&amp;</xsl:text>build=previous
+          </xsl:if>
+        </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
     </a>
     <span style="margin-left:5px;margin-right:10px">/</span>
     <a>
-      <xsl:attribute name="target">_blank</xsl:attribute>
-      <xsl:attribute name="href">
-        <xsl:value-of select="$ucsc_url" />
-        <xsl:value-of select="$ucsc_region" />
-        <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
-        <xsl:choose>
-          <xsl:when test="($main_assembly='GRCh37') or ($main_assembly='NCBI37')"><xsl:text>19</xsl:text></xsl:when>
-          <xsl:when test="$main_assembly='NCBI36'"><xsl:text>18</xsl:text></xsl:when>
-        </xsl:choose>
-      </xsl:attribute>UCSC<xsl:call-template name="external_link_icon" />
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ucsc_url" />
+          <xsl:value-of select="$ucsc_region" />
+          <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
+          <xsl:choose>
+            <xsl:when test="($main_assembly='GRCh37') or ($main_assembly='NCBI37')"><xsl:text>19</xsl:text></xsl:when>
+            <xsl:when test="$main_assembly='NCBI36'"><xsl:text>18</xsl:text></xsl:when>
+          </xsl:choose>
+        </xsl:attribute>UCSC<xsl:call-template name="external_link_icon" />
     </a>
+      </xsl:when>
+      <xsl:otherwise>
+     <a>
+        <xsl:attribute name="target">_blank</xsl:attribute>
+        <xsl:attribute name="href">
+          <xsl:value-of select="$ncbi_url" />
+          <xsl:value-of select="$region_id" />
+        </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
+    </a>   
+      </xsl:otherwise> 
+    </xsl:choose>  
   </p>
     
 	<table class="mapping_detail">
@@ -2402,7 +2424,7 @@
         <xsl:call-template name="right_arrow_green" />
         <a target="_blank" style="vertical-align:middle">
           <xsl:attribute name="class">external_link</xsl:attribute>
-          <xsl:attribute name="href">http://www.ensembl.org/Homo_sapiens/Gene/Phenotype?<xsl:value-of select="$accession" /></xsl:attribute>
+          <xsl:attribute name="href">http://www.ensembl.org/Homo_sapiens/Gene/Phenotype?g=<xsl:value-of select="$accession" /></xsl:attribute>
           Link to the Gene Phenotype page in Ensembl
           <xsl:call-template name="external_link_icon" />
         </a>
@@ -2486,8 +2508,7 @@
   <xsl:param name="gene_idx" />
   <xsl:param name="transcript_idx" />
 
-  
-  <xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/nuccore/</xsl:variable>
+
   <xsl:variable name="ensembl_url">http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=</xsl:variable>
 
 	<xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
