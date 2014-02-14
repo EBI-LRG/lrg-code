@@ -17,9 +17,7 @@ if [ -z ${tmp_dir} ] ; then
 	tmp_dir='.'
 fi
 
-if [[ ! ${skip_hc} ]] ; then
-  skip_hc=0
-fi
+skip_hc_options="fixed mapping polya main" # all: all of these options
 
 report_file=${tmp_dir}/pipeline_reports.txt
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
@@ -72,16 +70,22 @@ function end_of_script {
   comment=''
   if [ -n "${report_file}" ] ; then
     
-    if [[ ${skip_hc} == 1 || ${skip_hc} == 3 ]] ; then
+    if [[ ${skip_hc} =~ 'fixed' ]] ; then
       comment="${comment} - Fixed section checks skipped for this LRG"
     fi
-    if [[ ${skip_hc} == 2 || ${skip_hc} == 3 ]] ; then
-      comment="${comment} - HealthChecks skipped for this LRG"
+    if [[ ${skip_hc} =~ 'mapping' ]] ; then
+      comment="${comment} - Global mapping checks skipped for this LRG"
+    fi
+    if [[ ${skip_hc} =~ 'polya' ]] ; then
+      comment="${comment} - PolyA comparison skipped for this LRG"
+    fi
+    if [[ ${skip_hc} =~ 'main' ]] ; then
+      comment="${comment} - Main HealthChecks skipped for this LRG"
     fi
     if [[ ${warning} == 'polyA' ]] ; then
       comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
-    if [[ ${skip_hc} != 2 && ${skip_hc} != 3 ]] ; then
+    if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
       is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment} - Partial gene/transcript/protein found"
@@ -106,11 +110,49 @@ echo_stderr  $comment >&2
 echo_stderr  "#|  ${lrg_id}  |#" >&2
 echo_stderr  $comment >&2
 
-# Preliminary test
-if [[ ${skip_hc} != 1 && ${skip_hc} != 3 ]] ; then
-  echo_stderr  "# Preliminary check: compare sequences and global mapping with existing LRG entry ... " >&2
+
+# Check the correct terms for HealthChecks skip options
+if [[ ${skip_hc} ]] ; then
+  skip_hc=`echo $skip_hc | tr -d [[:space:]]`
+  
+  if [[ -n ${skip_hc} ]] ; then
+    if [[ ${skip_hc} = 'all' ]] ; then
+      skip_hc=$skip_hc_options
+    fi
+    
+    listOfSkipHc=`echo $skip_hc | sed -e 's/,/ /g'`
+    
+    for i in $listOfSkipHc
+    do
+      found=`echo $skip_hc_options | grep $i`
+      if [[ -z ${found} ]] ; then
+        echo_stderr "ERROR: the HealthCheck skip option '$i' is not recognized!"
+        echo_stderr "The script is ended for this LRG."
+		    if [ -n "${report_file}" ] ; then
+			    echo "failed (wrong HealthChecks skip option used)" >> ${report_file}
+		    fi
+		    exit 1
+      fi
+    done
+  fi
+fi
+
+
+# Preliminary test: compare fixed section with existing LRG entry
+if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
+  echo_stderr  "# Preliminary check: compare fixed section with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry,compare_main_mapping" 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
+  check_script_result
+  echo_stderr  "> checking comparison done" 
+  echo_stderr  ""
+fi
+
+# Test the mapping: compare global mapping with existing LRG entry
+if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
+  echo_stderr  "# Mapping check: compare global mapping with existing LRG entry ... " >&2
+  rm -f ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -118,7 +160,7 @@ fi
 
 
 # Test PolyA sequence
-if [[ ${skip_hc} != 2 && ${skip_hc} != 3 ]] ; then 
+if [[ ! ${skip_hc} =~ 'polya' ]] ; then
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
   rm -f ${warning_log}
@@ -131,7 +173,7 @@ fi
 
 
 # STEP1: HealthCheck 1 - check raw data
-if [[ ${skip_hc} < 2 ]] ; then
+if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${error_log}
@@ -148,7 +190,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 
 
 # STEP3: HealthCheck 2 - check annotation data
-if [[ ${skip_hc} < 2 ]] ; then
+if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new 2> ${error_log}
@@ -181,7 +223,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
 # STEP6: HealthCheck 3 - check the exported data
-if [[ ${skip_hc} < 2 ]] ; then
+if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
   bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp 2> ${error_log}
