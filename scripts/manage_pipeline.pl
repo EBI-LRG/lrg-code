@@ -37,9 +37,8 @@ while (<F>) {
     next;
   }  
   
-  # Flag to skip all the HealthChecks (value equal to 1)
-  $skip_hc = (defined($skip_hc)) ? $skip_hc : 0;
-  $skip_hc = 0 if ($skip_hc !~ /^\d$/);
+  # Flag to skip the HealthChecks
+  $skip_hc = (defined($skip_hc)) ? $skip_hc : '';
   
   # HealthChecks pipeline
   if ($is_hc) {
