@@ -161,20 +161,26 @@ foreach my $file (@files) {
 
     # Protein
     my $codings = $transcript->findNodeArray('coding_region');
-    foreach my $coding (@$codings) {
-      my $cds_coords = $coding->findNode('coordinates');
-      my $cds_start  = lrg2genomic($cds_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
-      my $cds_end    = lrg2genomic($cds_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
-      my $p_name     = $lrg_id.$coding->findNode('translation')->data->{name};
+    if ($codings) {
+      foreach my $coding (@$codings) {
+        my $cds_coords = $coding->findNode('coordinates');
+        my $cds_start  = lrg2genomic($cds_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+        my $cds_end    = lrg2genomic($cds_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+        my $p_name     = $lrg_id.$coding->findNode('translation')->data->{name};
       
-      if ($strand == -1) {
-        my $cds_tmp = $cds_start;
-        $cds_start = $cds_end;
-        $cds_end = $cds_tmp;
-      }
+        if ($strand == -1) {
+          my $cds_tmp = $cds_start;
+          $cds_start = $cds_end;
+          $cds_end = $cds_tmp;
+        }
         
-      #LRG_TRANSCRIPT\tHGNC_SYMBOL\tCHROMOSOME\tSTRAND\tTRANSCRIPT_START\tTRANSCRIPT_STOP\tEXONS_COORDS\tLRG_PROTEIN\tCDS_START\tCDS_STOP
-      print LIST "$t_name\t$hgnc\t$chr\t$strand\t$t_start\t$t_end\t".join(',',@exons_list)."\t$p_name\t$cds_start\t$cds_end\n";
+        #LRG_TRANSCRIPT\tHGNC_SYMBOL\tCHROMOSOME\tSTRAND\tTRANSCRIPT_START\tTRANSCRIPT_STOP\tEXONS_COORDS\tLRG_PROTEIN\tCDS_START\tCDS_STOP
+        print LIST "$t_name\t$hgnc\t$chr\t$strand\t$t_start\t$t_end\t".join(',',@exons_list)."\t$p_name\t$cds_start\t$cds_end\n";
+      }     
+    }
+    else {
+      #LRG_TRANSCRIPT\tHGNC_SYMBOL\tCHROMOSOME\tSTRAND\tTRANSCRIPT_START\tTRANSCRIPT_STOP\tEXONS_COORDS
+      print LIST "$t_name\t$hgnc\t$chr\t$strand\t$t_start\t$t_end\t".join(',',@exons_list)."\t\t\t\n";
     }
   }  
 }
