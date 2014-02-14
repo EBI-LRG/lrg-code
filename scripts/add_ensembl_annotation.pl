@@ -116,7 +116,7 @@ else {
 }
 
 # Update the meta information for the annotation_set
-$ensembl_aset->comment(sprintf("Annotation is based on Ensembl release \%d",$ens_db_version));
+$ensembl_aset->comment(sprintf("Annotation is based on Ensembl release \%d (\%s  primary assembly)",$ens_db_version,$option{assembly}));
 $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
@@ -127,7 +127,7 @@ foreach my $aset (@{$asets}) {
   # Loop over the mappings to get the correct one
   foreach my $m (@{$aset->mapping() || []}) {
     # Skip if the assembly of the mapping does not correspond to the assembly we're interested in
-    next unless ($m->assembly() =~ /^$assembly/i);
+    next unless ($m->assembly() =~ /^$assembly/i && $m->other_coordinates->coordinate_system =~ /^([0-9]+|[XY])$/i);
     $mapping = $m;
     last; 
   }
