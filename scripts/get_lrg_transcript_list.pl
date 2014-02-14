@@ -91,7 +91,7 @@ foreach my $file (@files) {
     $hgnc = $set->findNode('lrg_locus')->content();
     # Mapping
     foreach my $mapping (@{$set->findNodeArray('mapping')}) {
-      next if ($mapping->data->{coord_system} !~ /^$assembly/i);
+      next if ($mapping->data->{coord_system} !~ /^$assembly/i && $mapping->data->{other_name} !~ /^([0-9]+|[XY])$/i);
       $chr     = $mapping->data->{other_name};
       $g_start = $mapping->data->{other_start};
       $g_end   = $mapping->data->{other_end};
