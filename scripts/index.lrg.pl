@@ -119,14 +119,17 @@ foreach my $xml (@xmlfiles) {
       $last_modified = $set->findNode('modification_date')->content;
 
       # Coordinates (addditional_fields)
-      my $coord  = $set->findNode('mapping');
-			$assembly  = $coord->data->{coord_system};
-			$chr_name  = $coord->data->{other_name};
-			$chr_start = $coord->data->{other_start};
-			$chr_end   = $coord->data->{other_end};
+      my $coords  = $set->findNodeArray('mapping');
+      foreach my $coord (@{$coords}) {
+        next if ($coord->data->{coord_system} !~ /GRCh37/i && $coord->data->{other_name} !~ /^([0-9]+|[XY])$/i);
+			  $assembly  = $coord->data->{coord_system};
+			  $chr_name  = $coord->data->{other_name}; 
+			  $chr_start = $coord->data->{other_start};
+			  $chr_end   = $coord->data->{other_end};
 
-      my $mapping_span = $coord->findNode('mapping_span');
-      $chr_strand = $mapping_span->data->{strand};
+        my $mapping_span = $coord->findNode('mapping_span');
+        $chr_strand = $mapping_span->data->{strand};
+      }
     }
 	}
   
