@@ -12,7 +12,7 @@ my @option_defs = (
   'xmlfile=s',
   'locus=s',
   'locus_source=s',
-  'assembly=s@',
+  'assembly=s',
   'lrg_set_name=s',
   'replace!',
   'help!'
@@ -23,8 +23,9 @@ GetOptions(\%option,@option_defs);
 
 # If not specified, assume the locus source is HGNC
 $option{locus_source} ||= 'HGNC';
-$option{assembly} ||= [];
 $option{lrg_set_name} ||= 'LRG';
+$option{assembly} ||= '';
+my $main_assembly = $option{assembly};
 
 # Get the current date
 my (undef,undef,undef,$mday,$mon,$year,undef,undef,undef) = localtime;
@@ -79,7 +80,11 @@ while (my ($name,$obj) = each(%sets)) {
   $obj->remove_lrg_locus;
 } 
 
+
 # Next, attempt to find the desired mapping in the existing annotation sets and move it to the LRG annotation set (possibly merging with any pre-existing)
+
+$main_assembly =~ /^([a-z]+)/i;
+my $assembly_prefix = $1;
 my @moved;
 while (my ($name,$obj) = each(%sets)) {
   next if ($name eq $option{lrg_set_name});
@@ -88,10 +93,8 @@ while (my ($name,$obj) = each(%sets)) {
   foreach my $mapping (@{$obj->mapping() || []}) {
     # check that this mapping is in the list of assemblies we're interested in
     my $asse = $mapping->assembly();
-    # Remove the patch version (e.g. GRCh37.p5 => GRCh37)
-    $asse =~ /^(\w+)\./;
-    my $assembly_main = $1;
-    unless (grep {$_ =~ m/^$assembly_main/i} @{$option{assembly}}) {
+
+    if ($asse !~ m/^$assembly_prefix/i) {
       push(@to_keep,$mapping);
       next;
     }
@@ -106,7 +109,6 @@ while (my ($name,$obj) = each(%sets)) {
       # Warn if anything on the same assembly is not matching and needs to be updated
       if ($lrg_mapping->assembly() eq $asse) {      
         warn (sprintf("There is already a pre-existing mapping to the '\%s' assembly in the LRG annotation set but it doesn't fully match the one in '\%s', so it will be replaced",$asse,$name)) unless ($lrg_mapping->equals($mapping));
-        next;
       }
       push(@lrg_to_keep,$lrg_mapping);
     }
@@ -121,11 +123,7 @@ while (my ($name,$obj) = each(%sets)) {
 # Print the XML
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
 
-# Warn about any mappings that we sought but didn't find
-foreach my $asse (@{$option{assembly}}) {
-  next if (grep {m/^$asse/i} @moved);
-  warn (sprintf("Could not find any mapping to '\%s'",$asse));
-}
+warn (sprintf("Could not find any mapping to '\%s'",$main_assembly)) if (!grep {m/^$main_assembly/i} @moved);
 
 warn("Done!\n");
 
