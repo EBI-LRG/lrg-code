@@ -668,16 +668,16 @@ while (my $transcript = shift(@{$transcripts})) {
     add_sequence($cdna_id,'cdna',$db_adaptor,$seq);
     
     # Get the cds
-    my $cds_nodes = $transcript->findNodeArray('coding_region') or warn("Could not get coding region for transcript $name");
+    my $cds_nodes = $transcript->findNodeArraySingle('coding_region') or warn("Could not get coding region for transcript $name");
 		
 		foreach my $cds (@{$cds_nodes}) {
     	my $codon_start = $cds->data()->{'codon_start'};
     	(undef,$lrg_start,$lrg_end) = parse_coordinates($cds->findNode('coordinates'));
     
-			my $pep_node = $cds->findNode('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
+			my $pep_node = $cds->findNodeSingle('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
 			next unless ($pep_node);
 			my $pep_name = $pep_node->data()->{'name'};
-    	$node = $pep_node->findNode('sequence');
+    	$node = $pep_node->findNodeSingle('sequence');
     
     	$seq = $node->content();
     
