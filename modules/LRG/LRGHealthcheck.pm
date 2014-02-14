@@ -845,7 +845,8 @@ sub mappings {
         $assembly =~ s/NCBI37/GRCh37/ if ($assembly eq 'NCBI37');
 
         #ÊStore the mapping set under the assembly key and source name
-        $mapping_hash{$assembly}->{$source} = $mapping_set;
+        my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $assembly;
+        $mapping_hash{$assembly}{$source}{$region_name} = $mapping_set;
 
         # Do some sanity checking on this mapping set
         
@@ -909,14 +910,15 @@ sub mappings {
     %mapping_hash = ();
     foreach my $mapping_set (@{$mapping_sets}) {
       my $source = $mapping_set->parent()->findNode('source/name')->content();
-      my $coord_sys = $mapping_set->data()->{'coord_system'};
+      my $coord_sys   = $mapping_set->data()->{'coord_system'};
+      my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $coord_sys;
 
-      if (!$mapping_hash{$coord_sys}->{$source}) {
-        $mapping_hash{$coord_sys}->{$source} = 1;
+      if (!$mapping_hash{$coord_sys}{$source}{$region_name}) {
+        $mapping_hash{$coord_sys}{$source}{$region_name} = 1;
       }
       else {
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "The mapping of $coord_sys in the annotation set $source is duplicated.";
+        $self->{'check'}{$name}{'message'} .= "The mapping of $coord_sys (region $region_name) in the annotation set $source is duplicated.";
       }
     }
 
