@@ -136,7 +136,9 @@ foreach my $status (keys(%lrg_meta)) {
 	    $chr_name = $chr_names{$chr};
 	    
 	    my $start   = $g_start-1; # BED: The first base in a chromosome is numbered 0
-	    my $end     = $g_end-1;     # BED: The first base in a chromosome is numbered 0
+	    my $end     = $g_end;     # BED: The ending position of the feature in the chromosome or scaffold. 
+	                              #      The chromEnd base is not included in the display of the feature. 
+	                              #      For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99. 
 	    
 	    my $mapping_span = $mapping->findNodeSingle('mapping_span');
 	    $strand = $mapping_span->data()->{'strand'};
