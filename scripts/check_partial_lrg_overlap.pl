@@ -125,7 +125,7 @@ foreach my $xmlfile (@files) {
   my @ens_tr_accessions;
 
   foreach my $ens_gene (@{$ens_feature[0]->gene}) {
-    next if (($ens_gene->symbol)->[0]->name ne $lrg_locus);
+    next if ($ens_gene->symbol->name ne $lrg_locus);
     if (grep {$_->key eq 'partial'} @{$ens_gene->meta}) {
       $partial_type = "(".join(', ', map {$_->value} grep {$_->key eq 'partial'} @{$ens_gene->meta}).")";
       $ens_gene_accession = $ens_gene->accession;
