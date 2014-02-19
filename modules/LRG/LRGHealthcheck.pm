@@ -846,7 +846,8 @@ sub mappings {
 
         #ÊStore the mapping set under the assembly key and source name
         my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $assembly;
-        $mapping_hash{$assembly}{$source}{$region_name} = $mapping_set;
+        my $other_id    = $mapping_set->data()->{'other_id'};
+        $mapping_hash{$assembly}{$source}{$region_name}{$other_id} = $mapping_set;
 
         # Do some sanity checking on this mapping set
         
@@ -885,24 +886,36 @@ sub mappings {
         
         # Do a pairwise comparison of all mapping sources
         for (my $i=0; $i<scalar(@sources); $i++) {
-            my $mapping_i = $mappings->{$sources[$i]};
-            my $spans_i = $mapping_i->findNodeArray('mapping_span');
-            my $diffs_i = $mapping_i->findNodeArray('mapping_span/diff');
+           my @regions_i = keys(%{$mappings->{$sources[$i]}}); 
+           for (my $k=0; $k<scalar(@regions_i); $k++) {
+             my @ids_i = keys(%{$mappings->{$sources[$i]}{$regions_i[$k]}});
+             for (my $l=0; $l<scalar(@ids_i); $l++) {
+               my $mapping_i = $mappings->{$sources[$i]}{$regions_i[$k]}{$ids_i[$l]};
+               my $spans_i = $mapping_i->findNodeArray('mapping_span');
+               my $diffs_i = $mapping_i->findNodeArray('mapping_span/diff');
 
-            for (my $j=($i+1); $j<scalar(@sources); $j++) {
-                my $mapping_j = $mappings->{$sources[$j]};
-                my $spans_j = $mapping_j->findNodeArray('mapping_span');
-                my $diffs_j = $mapping_j->findNodeArray('mapping_span/diff');
+               for (my $j=($i+1); $j<scalar(@sources); $j++) {
+                 my @regions_j = keys(%{$mappings->{$sources[$j]}}); 
+                 for (my $m=0; $m<scalar(@regions_j); $m++) {
+                   my @ids_j = keys(%{$mappings->{$sources[$j]}{$regions_j[$m]}});
+                   for (my $n=0; $n<scalar(@ids_j); $n++) {
+                     my $mapping_j = $mappings->{$sources[$j]}{$regions_j[$m]}{$ids_j[$n]};
+                     my $spans_j = $mapping_j->findNodeArray('mapping_span');
+                     my $diffs_j = $mapping_j->findNodeArray('mapping_span/diff');
                 
-                # Compare the mapping tags
-                $passed = ($self->compare_tags($name,[$mapping_i],[$mapping_j],$mapping_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
+                     # Compare the mapping tags
+                     $passed = ($self->compare_tags($name,[$mapping_i],[$mapping_j],$mapping_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
                 
-                # Compare the mapping spans (assume that they are fetched in the same order)
-                $passed = ($self->compare_tags($name,$spans_i,$spans_j,$span_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
+                     # Compare the mapping spans (assume that they are fetched in the same order)
+                     $passed = ($self->compare_tags($name,$spans_i,$spans_j,$span_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
                 
-                # Compare the diffs (assume that they are fetched in the same order)
-                $passed = ($self->compare_tags($name,$diffs_i,$diffs_j,$diff_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
-            }
+                     # Compare the diffs (assume that they are fetched in the same order)
+                     $passed = ($self->compare_tags($name,$diffs_i,$diffs_j,$diff_fields,$assembly,[$sources[$i],$sources[$j]]) && $passed);
+                   }
+                 }
+               }  
+             }
+           }
         }
     }
 
@@ -912,9 +925,10 @@ sub mappings {
       my $source = $mapping_set->parent()->findNode('source/name')->content();
       my $coord_sys   = $mapping_set->data()->{'coord_system'};
       my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $coord_sys;
+      my $other_id    = $mapping_set->data()->{'other_id'};
 
-      if (!$mapping_hash{$coord_sys}{$source}{$region_name}) {
-        $mapping_hash{$coord_sys}{$source}{$region_name} = 1;
+      if (!$mapping_hash{$coord_sys}{$source}{$region_name}{$other_id}) {
+        $mapping_hash{$coord_sys}{$source}{$region_name}{$other_id} = 1;
       }
       else {
         $passed = 0;
