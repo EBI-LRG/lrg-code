@@ -152,7 +152,7 @@ fi
 if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
   echo_stderr  "# Mapping check: compare global mapping with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-compare_main_mapping" 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
