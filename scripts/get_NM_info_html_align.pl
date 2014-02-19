@@ -180,7 +180,7 @@ foreach my $o_gene (@$o_genes) {
 ## DISPLAY ##
 #############
 my $coord_span = scalar(keys(%exons_list));
-my $gene_coord = "chr$chr:".$ens_gene->start.'<span class="reverse_strand" title="reverse strand"><</span>'.$ens_gene->end;
+my $gene_coord = "chr$chr:".$ens_gene->start.'-'.$ens_gene->end;
 $gene_coord .= ($ens_gene->slice->strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 print qq{
 <html>
@@ -324,6 +324,7 @@ my $row_id = 1;
 my $row_id_prefix = 'tr_';
 my $bg = 'bg1';
 my $min_exon_evidence = 1;
+my $end_of_row = qq{</td><td colspan="2"></td></tr>\n};
 
 #----------------------------#
 # Display ENSEMBL transcript #
@@ -361,7 +362,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
     
   }
   
-  my $exon_number = 1;
+  my $exon_number = ($tr_object->strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $exon_end;
   my $colspan = 1;
@@ -395,7 +396,12 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
       $has_exon = 'few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence);
       #print qq{<div class="$has_exon\_coord_match">$exon_number$evidence</div>};
       print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
-      $exon_number++;
+      if ($tr_object->strand == 1) {
+        $exon_number++;
+      }
+      else {
+        $exon_number--;
+      }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -445,7 +451,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
     }
   }
   
-  my $exon_number = 1;
+  my $exon_number = ($refseq_object->strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
@@ -472,7 +478,12 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
     print qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
-      $exon_number++;
+      if ($refseq_object->strand == 1) {
+        $exon_number++;
+      }
+      else {
+        $exon_number--;
+      }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -480,7 +491,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
       print qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
-  print qq{</td></tr>\n};
+  print $end_of_row;
 }
 
 
@@ -514,7 +525,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
     }
   }
   
-  my $exon_number = 1;
+  my $exon_number = ($cdna_object->strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
@@ -544,7 +555,12 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
       print qq{<div class="$has_exon\_coord_match$identity">$exon_number$identity_score</div>};
-      $exon_number++;
+      if ($cdna_object->strand == 1) {
+        $exon_number++;
+      }
+      else {
+        $exon_number--;
+      }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -552,7 +568,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       print qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
-  print qq{</td></tr>\n};
+  print $end_of_row;
 }
 
 
@@ -636,6 +652,12 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       $colspan ++;
       next;
     }
+    elsif ($ended == 2) {
+      print qq{</td><td>};
+      print qq{<div class="partial_gene_coord_match">$gene_strand</div>};
+      $ended = 1;
+      next;
+    }
     # Exon end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
       $ended = 1;
@@ -643,8 +665,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
         my $tmp_colspan = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
         print qq{</td><td$tmp_colspan>};
         print qq{<div class="gene_coord_match">$gene_strand</div>};
-        print qq{</td><td>};
-        print qq{<div class="partial_gene_coord_match">$gene_strand</div>};
+        $ended = 2;
         $colspan = 1;
       }
       else {
@@ -669,7 +690,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       print qq{<div class="$has_gene\_coord_match"> </div>};
     }
   }  
-  print qq{</td></tr>\n};
+  print $end_of_row;
 }
 
 
