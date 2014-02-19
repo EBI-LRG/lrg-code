@@ -324,7 +324,7 @@ my $row_id = 1;
 my $row_id_prefix = 'tr_';
 my $bg = 'bg1';
 my $min_exon_evidence = 1;
-my $end_of_row = qq{</td><td colspan="2"></td></tr>\n};
+my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column"></td></tr>\n};
 
 #----------------------------#
 # Display ENSEMBL transcript #
@@ -409,14 +409,10 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
       print qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
-  print qq{</td><td class="extra_column">};
-  if (scalar @ccds) {
-    print join(", ",@ccds);
-  }
-  print qq{</td><td class="extra_column">};
-  if (scalar @refseq) {
-    print join(", ",@refseq);
-  }
+  my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
+  my $refseq_display = (scalar @refseq) ? join(", ",@refseq) : '-';
+  print qq{</td><td class="extra_column">$ccds_display};
+  print qq{</td><td class="extra_column">$refseq_display};
   print qq{</td></tr>\n};
 }  
 
