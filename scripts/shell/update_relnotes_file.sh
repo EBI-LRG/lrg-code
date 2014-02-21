@@ -25,11 +25,11 @@ tmp=$1
 
 is_test=$2
 
-if [[ -z "${is_test}" ]]; then
+if [[ -n "${is_test}" ]]; then
 	is_test=1
 fi
 
-if [[ -z "${tmp}" ]]; then
+if [[ -n "${tmp}" ]]; then
 	if [[ ${tmp} == 'test' ]] ; then
 		is_test=1
 	elif [[ -d ${tmp} ]] ; then
