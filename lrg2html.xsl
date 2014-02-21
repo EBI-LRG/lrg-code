@@ -1412,7 +1412,7 @@
     <xsl:with-param name="setnum"><xsl:value-of select="$setnum"/></xsl:with-param>
   </xsl:call-template>
   
-  <div>
+  <div style="padding-bottom:10px">
   <xsl:if test="source/name!='LRG'">
     <xsl:attribute name="class">hidden</xsl:attribute>
     <xsl:attribute name="id">source_<xsl:value-of select="$setnum"/></xsl:attribute>
@@ -1503,13 +1503,54 @@
     <!-- Insert the genomic mapping tables -->
     <xsl:choose>
 	    <xsl:when test="source/name='LRG'">
-		   <xsl:for-each select="mapping">
-		     <xsl:sort select="@coord_system" data-type="text"/>
-		     <xsl:sort select="@other_name" data-type="text"/>
-			   <xsl:call-template name="g_mapping">
-		       <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-		     </xsl:call-template>
+	       <!-- Assembly(ies) -->		
+		    <xsl:for-each select="mapping[@other_name='X' or @other_name='Y' or number(@other_name)]">
+		      <xsl:sort select="@coord_system" data-type="text"/>
+		      <xsl:sort select="@other_name" data-type="text"/>
+			    <xsl:call-template name="g_mapping">
+		        <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+		      </xsl:call-template>
 		    </xsl:for-each>
+        
+        <!-- Haplotype(s) -->		 
+        <xsl:variable name="haplotypes" select="mapping[@other_name='unlocalized']" />
+        <xsl:if test="count($haplotypes)>0">
+          <div class="main_subsection">
+            <h3 class="main_subsection">Mapping(s) to <xsl:value-of select="count($haplotypes)"/> haplotype(s)</h3>s
+             <a class="show_hide"><xsl:attribute name="href">javascript:showhide('haplo_mappings');</xsl:attribute>show/hide</a>
+          </div>
+          <div style="margin:0px 10px">  
+            <div id="haplo_mappings" class="hidden"> 
+		        <xsl:for-each select="mapping[@other_name='unlocalized']">
+		          <xsl:sort select="@coord_system" data-type="text"/>
+		          <xsl:sort select="@other_name" data-type="text"/>
+			        <xsl:call-template name="g_mapping">
+		            <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+		          </xsl:call-template>
+		        </xsl:for-each>
+		        </div>
+		      </div>
+		    </xsl:if>
+		    
+        <!-- Patch(es) -->
+        <xsl:variable name="patches" select="mapping[@other_name!='unlocalized' and @other_name!='X' and @other_name!='Y' and not(number(@other_name))]" />
+        <xsl:if test="count($patches)>0">
+          <div class="main_subsection">
+            <h3 class="main_subsection">Mapping(s) to <xsl:value-of select="count($patches)"/> patch(es)</h3>
+            <a class="show_hide"><xsl:attribute name="href">javascript:showhide('patch_mappings');</xsl:attribute>show/hide</a>
+          </div>
+          <div style="margin:0px 10px">  
+            <div id="patch_mappings" class="hidden"> 
+		        <xsl:for-each select="mapping[@other_name!='unlocalized' and @other_name!='X' and @other_name!='Y' and not(number(@other_name))]">
+		          <xsl:sort select="@coord_system" data-type="text"/>
+		          <xsl:sort select="@other_name" data-type="text"/>
+			        <xsl:call-template name="g_mapping">
+		            <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+		          </xsl:call-template>
+		        </xsl:for-each>
+		        </div>
+		      </div>
+		    </xsl:if>
 	    </xsl:when>
       <xsl:otherwise>
         <div style="height:20px;background-color:#FFF">
@@ -1553,10 +1594,6 @@
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>BEG=<xsl:value-of select="$region_start"/><xsl:text>&amp;</xsl:text>END=<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ucsc_url">http://genome.ucsc.edu/cgi-bin/hgTracks?</xsl:variable>
   <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/><xsl:text>&amp;</xsl:text>hgt.customText=<xsl:value-of select="$lrg_bed_file_location" /></xsl:variable>
-  
-  <xsl:variable name="vAlpha" select="'XYxy'"/>
-  <xsl:variable name="vDigits" select="'0123456789'"/>
-
   
 	<xsl:choose>
 		<xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
@@ -1622,7 +1659,13 @@
     </xsl:choose>  
   </p>
     
-	<table class="mapping_detail">
+  <xsl:call-template name="g_mapping_table"/>  
+	
+</xsl:template>
+
+
+<xsl:template name="g_mapping_table">
+  <table class="mapping_detail">
 		<tr class="gradient_color2">
 			<th>Strand</th>
 			<th>LRG start</th>
