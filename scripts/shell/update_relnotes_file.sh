@@ -35,7 +35,7 @@ if [[ -z "${tmp}" ]]; then
 	elif [[ -d ${tmp} ]] ; then
 	  tmpdir="-tmp_dir ${tmp}"
 	else 
-	  tmp= ${cvspath}
+	  tmp=${cvspath}
 		tmpdir="-tmp_dir ${tmp}"
 	fi
 else
