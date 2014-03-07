@@ -72,13 +72,14 @@ sub gene {
   my @objs;
 
   # Get Ensembl genes
-  my $e_genes = $slice->get_all_Genes_by_source('ensembl',1);
-  my $h_genes = $slice->get_all_Genes_by_source('havana',1);
-  my $genes = [@$e_genes,@$h_genes];
+  my $e_genes  = $slice->get_all_Genes_by_source('ensembl',1);
+  my $h_genes  = $slice->get_all_Genes_by_source('havana',1);
+  my $eh_genes = $slice->get_all_Genes_by_source('ensembl_havana',1);
+  my $genes = [@$e_genes,@$h_genes,@$eh_genes];
 
   # Loop over the genes and create objects and attach transcripts, exons and translations as we go along
   foreach my $gene (@{$genes}) {
-
+  
     # Transfer the gene to the chromosomal slice instead so that all genomic coordinates routines actually behaves like expected
     $gene = $gene->transfer($slice->seq_region_Slice());
     
