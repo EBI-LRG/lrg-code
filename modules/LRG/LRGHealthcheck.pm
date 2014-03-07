@@ -317,7 +317,13 @@ sub compare_main_mapping {
   
     my $is_diff = 0;
     foreach my $attr (@attr_list) {
-      $is_diff = 1 if ($new_data->{$attr} ne $arch_data->{$attr});
+      if ($new_data->{$attr} && $arch_data->{$attr}) {
+        $is_diff = 1 if ($new_data->{$attr} ne $arch_data->{$attr});
+      }
+      # For 'other_name' and 'other_id' (optional attributes)
+      elsif (($new_data->{$attr} && !$arch_data->{$attr}) || (!$new_data->{$attr} && $arch_data->{$attr})) {
+        $is_diff = 1;
+      }
     }
     foreach my $span_attr (@span_attr_list) {
       $is_diff = 1 if ($new_data->{$span_attr} ne $arch_data->{$span_attr});
@@ -865,7 +871,7 @@ sub mappings {
         
         if ($map_start != 1 || $map_end != $lrg_length) {
             $passed = 0;
-            $self->{'check'}{$name}{'message'} .= "In annotation set '$source', the LRG is only mapped to $assembly assembly between coordinates $map_start and $map_end (expected 1 - $lrg_length)//";
+            $self->{'check'}{$name}{'message'} .= "In annotation set '$source', the LRG is only mapped to $assembly assembly ($other_id) between coordinates $map_start and $map_end (expected 1 - $lrg_length)//";
         }
     }
     
