@@ -85,14 +85,14 @@ rm -f ${error_log}
 # Compare fixed section with existing LRG
 echo_stderr  '1) FIXED SECTION: Compare fixed section with existing LRG entry ... ' '-n'
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${tmp_error_log}
+bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${tmp_error_log}
 check_script_result 'The new fixed section is different'
 
 
 # Preliminary test
 echo_stderr  "2) MAPPING: Compare global mapping with archived LRG entry ... " '-n'
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check compare_main_mapping" 2> ${tmp_error_log}
+bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${tmp_error_log}
 check_script_result 'The new global mapping is different'
 
 
@@ -108,7 +108,7 @@ check_script_warning
 # HealthChecks
 echo_stderr  '4) HEALTHCHECKS: Run full HealthChecks ... ' '-n' 
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${tmp_error_log}
+bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${tmp_error_log}
 check_script_result 'The main healthchecks returned at least one error'
 
 

@@ -36,6 +36,7 @@ my $java_executable;
 my $jing_jar;
 my $rnc_file;
 my $list;
+my $assembly;
 my $verbose;
 my $help;
 
@@ -47,6 +48,7 @@ GetOptions(
   'jing=s'		   => \$jing_jar,
   'rnc=s' 		   => \$rnc_file,
   'list_checks!' => \$list,
+  'assembly=s'   => \$assembly,
   'verbose|v!' 	 => \$verbose,
   'help!'        => \$help
 );
@@ -62,10 +64,13 @@ if ($list) {
     exit(0);
 }
 
+$assembly ||= 'GRCh37';
+
 my @checks = (defined($check_list)) ? split(',',$check_list) : @LRG::LRGHealthcheck::CHECKS;
 $LRG::LRGHealthcheck::JAVA = $java_executable if (defined($java_executable));
 $LRG::LRGHealthcheck::JING_JAR = $jing_jar if (defined($jing_jar));
 $LRG::LRGHealthcheck::RNC_FILE = $rnc_file if (defined($rnc_file));
+$LRG::LRGHealthcheck::CHECK_ASSEMBLY = $assembly;
 
 my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {

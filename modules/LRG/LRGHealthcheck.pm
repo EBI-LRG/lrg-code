@@ -16,11 +16,12 @@ our $JAVA = 'java';
 our $JING_JAR = POSIX::getcwd() . '/jing.jar'; 
 #ÊPath to the RelaxNG Compact XML schema definition file
 our $RNC_FILE = POSIX::getcwd() . '/LRG.rnc'; 
+# Assembly to check
+our $CHECK_ASSEMBLY = 'GRCh37';
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
 our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR.'/SCHEMA_1_7_ARCHIVE';
 
-our $check_assembly = 'GRCh37';
 our @attr_list      = qw(coord_system other_name other_id other_start other_end);
 our @span_attr_list = qw(lrg_start lrg_end strand);
 our @diff_attr_list = qw(type lrg_start lrg_end other_start other_end lrg_sequence other_sequence);
@@ -315,8 +316,22 @@ sub compare_main_mapping {
     my $lrg_arch = LRG::LRG::newFromFile($existing_archive_file) or die("Could not create LRG object from XML file $existing_archive_file");
     my $arch_data = get_mapping_coordinates($lrg_arch);
   
+    # Failed to find a mapping to the requested assembly
+    if (!$new_data || !$arch_data) {
+      if (!$new_data) { 
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "Could not find a mapping to $CHECK_ASSEMBLY in the new LRG XML file//";
+      }
+      if (!$arch_data) { 
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "Could not find a mapping to $CHECK_ASSEMBLY in the archived LRG XML file $existing_archive_file//";
+      }
+      $self->{'check'}{$name}{'passed'} = $passed;
+      return $passed; 
+    }
+
     my $is_diff = 0;
-    foreach my $attr (@attr_list) {
+    foreach my $attr (@attr_list) { 
       if ($new_data->{$attr} && $arch_data->{$attr}) {
         $is_diff = 1 if ($new_data->{$attr} ne $arch_data->{$attr});
       }
@@ -1649,7 +1664,7 @@ sub get_mapping_coordinates {
     my $mappings = $aset->findNodeArraySingle('mapping');
     
     foreach my $mapping (@$mappings) {
-      next if ($mapping->data->{'coord_system'} !~ /^$check_assembly/i);
+      next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ASSEMBLY/i);
       my %data;
     
       foreach my $attr (@attr_list) {
@@ -1673,6 +1688,7 @@ sub get_mapping_coordinates {
       return \%data;
     } 
   }
+  return undef;
 }
 1;
 

@@ -142,7 +142,7 @@ fi
 if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
   echo_stderr  "# Preliminary check: compare fixed section with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check existing_entry" 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -152,7 +152,7 @@ fi
 if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
   echo_stderr  "# Mapping check: compare global mapping with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml "-check compare_main_mapping" 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -176,7 +176,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #1 done" 
   echo_stderr  ""
