@@ -179,7 +179,6 @@ sub objs_from_xml {
     my $start_ext = $element->data->{start_ext};
     my $end_ext = $element->data->{end_ext};
     my $mapped_from = $element->data->{mapped_from};
-       $mapped_from ||= '';
        
     next unless (defined($start) && defined($end));
     
