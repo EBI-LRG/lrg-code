@@ -193,7 +193,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #2 done"
   echo_stderr  ""
@@ -226,7 +226,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp 2> ${error_log}
+  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #3 done"
   echo_stderr  ""
