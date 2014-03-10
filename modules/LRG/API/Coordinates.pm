@@ -61,7 +61,14 @@ sub equals {
   
   my $equals = 1;
   $equals &&= ($self->coordinate_system() eq $other->coordinate_system());
-  $equals &&= ($self->source_coordinate_system() eq $other->source_coordinate_system());
+  
+  if (defined($self->source_coordinate_system()) && defined($other->source_coordinate_system())) {
+    $equals &&= ($self->source_coordinate_system() eq $other->source_coordinate_system());
+  } 
+  elsif (defined($self->source_coordinate_system()) || defined($other->source_coordinate_system())) {
+    $equals &&= 0;
+  }
+  
   $equals &&= ($self->name() eq $other->name());
   $equals &&= ($self->prefix() eq $other->prefix());
   $equals &&= ($self->start_ext() eq $other->start_ext());
