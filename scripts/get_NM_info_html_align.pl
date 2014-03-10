@@ -97,36 +97,6 @@ foreach my $tr (@$ens_tr) {
   }
 }
 
-#-------------#
-# RefSeq data #
-#-------------#
-my $refseq = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
-
-foreach my $refseq_tr (@$refseq) {
-
-  next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
-
-  my $refseq_name = $refseq_tr->stable_id;
-  next unless ($refseq_name =~ /^(N|X)(M|P)_/);
-  
-  my $refseq_exons = $refseq_tr->get_all_Exons;
-  my $refseq_exon_count = scalar(@$refseq_exons);
-  
-  $refseq_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
-  $refseq_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
-  
-  # RefSeq exons
-  foreach my $refseq_exon (@{$refseq_exons}) {
-    my $start = $refseq_exon->seq_region_start;
-    my $end   = $refseq_exon->seq_region_end;
-    
-    $exons_list{$start} ++;
-    $exons_list{$end} ++;
-    
-    $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
-  }
-}
-
 
 #------#
 # cDNA #
@@ -155,6 +125,37 @@ foreach my $cdna_tr (@$cdna_dna) {
     }
   }
   $cdna_tr_exons_list{$cdna_name}{'object'} = $cdna_tr if ($cdna_name ne '');
+}
+
+
+#-------------#
+# RefSeq data #
+#-------------#
+my $refseq = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
+
+foreach my $refseq_tr (@$refseq) {
+
+  next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
+
+  my $refseq_name = $refseq_tr->stable_id;
+  next unless ($refseq_name =~ /^(N|X)(M|P)_/);
+  
+  my $refseq_exons = $refseq_tr->get_all_Exons;
+  my $refseq_exon_count = scalar(@$refseq_exons);
+  
+  $refseq_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
+  $refseq_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
+  
+  # RefSeq exons
+  foreach my $refseq_exon (@{$refseq_exons}) {
+    my $start = $refseq_exon->seq_region_start;
+    my $end   = $refseq_exon->seq_region_end;
+    
+    $exons_list{$start} ++;
+    $exons_list{$end} ++;
+    
+    $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
+  }
 }
 
 
@@ -417,80 +418,6 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
 }  
 
 
-#----------------------------#
-# Display REFSEQ transcripts #
-#----------------------------#
-my %refseq_rows_list;
-foreach my $nm (keys(%refseq_tr_exons_list)) {
-
-  my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
-  my $column_class = 'nm';
-  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
-  
-  my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
-  my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
-  my $biotype = $refseq_object->biotype;
-  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
-  
-  $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-  $refseq_rows_list{$row_id}{'label'} = $nm;
-  $refseq_rows_list{$row_id}{'class'} = $column_class;
-  $row_id++;
-  
-  my %exon_set_match;
-  my $first_exon;
-  my $last_exon;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    if ($refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
-      $first_exon = $coord if (!defined($first_exon));
-      $last_exon  = $coord;
-    }
-  }
-  
-  my $exon_number = ($refseq_object->strand == 1) ? 1 : $e_count;
-  my $exon_start;
-  my $colspan = 1;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    
-    if ($exon_start and !$refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-      next;
-    }
-    # Exon start found
-    elsif (!$exon_start && $refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
-      $exon_start = $coord;
-      next;
-    }
-     # Exon end found
-    elsif ($exon_start and $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-    }
-    
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
-    
-    my $has_exon = ($exon_start) ? 'exon' : $no_match;
-    
-    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    print qq{</td><td$colspan_html>}; 
-    if ($exon_start) {
-      print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
-      if ($refseq_object->strand == 1) {
-        $exon_number++;
-      }
-      else {
-        $exon_number--;
-      }
-      $exon_start = undef;
-      $colspan = 1;
-    }
-    else {
-      print qq{<div class="$has_exon\_coord_match"> </div>};
-    }
-  }
-  print $end_of_row;
-}
-
-
 #--------------------------#
 # Display cDNA transcripts #
 #--------------------------#
@@ -552,6 +479,80 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
       print qq{<div class="$has_exon\_coord_match$identity">$exon_number$identity_score</div>};
       if ($cdna_object->strand == 1) {
+        $exon_number++;
+      }
+      else {
+        $exon_number--;
+      }
+      $exon_start = undef;
+      $colspan = 1;
+    }
+    else {
+      print qq{<div class="$has_exon\_coord_match"> </div>};
+    }
+  }
+  print $end_of_row;
+}
+
+
+#----------------------------#
+# Display REFSEQ transcripts #
+#----------------------------#
+my %refseq_rows_list;
+foreach my $nm (keys(%refseq_tr_exons_list)) {
+
+  my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
+  my $column_class = 'nm';
+  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  
+  my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
+  my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
+  my $biotype = $refseq_object->biotype;
+  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
+  
+  $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
+  $refseq_rows_list{$row_id}{'label'} = $nm;
+  $refseq_rows_list{$row_id}{'class'} = $column_class;
+  $row_id++;
+  
+  my %exon_set_match;
+  my $first_exon;
+  my $last_exon;
+  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    if ($refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
+      $first_exon = $coord if (!defined($first_exon));
+      $last_exon  = $coord;
+    }
+  }
+  
+  my $exon_number = ($refseq_object->strand == 1) ? 1 : $e_count;
+  my $exon_start;
+  my $colspan = 1;
+  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    
+    if ($exon_start and !$refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
+      $colspan ++;
+      next;
+    }
+    # Exon start found
+    elsif (!$exon_start && $refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
+      $exon_start = $coord;
+      next;
+    }
+     # Exon end found
+    elsif ($exon_start and $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
+      $colspan ++;
+    }
+    
+    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
+    
+    my $has_exon = ($exon_start) ? 'exon' : $no_match;
+    
+    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
+    print qq{</td><td$colspan_html>}; 
+    if ($exon_start) {
+      print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
+      if ($refseq_object->strand == 1) {
         $exon_number++;
       }
       else {
@@ -717,7 +718,28 @@ foreach my $ens_row_id (sort {$a <=> $b} keys(%ens_rows_list)) {
 
 print qq{</div></div><div style="clear:both"></div></div>
          <div style="margin:10px 0px">
-           <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">RefSeq rows:</div>
+           <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">cDNA rows:</div>
+           <div style="float:left">
+             <div style="margin-bottom:10px">
+        };
+
+# cDNA
+my $cdna_count = 0;
+foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
+  if ($cdna_count == $max_per_line) {
+    print qq{</div><div style="margin-bottom:10px">};
+    $cdna_count = 0;
+  }
+  my $label = $cdna_rows_list{$cdna_row_id}{'label'};
+  my $class = $cdna_rows_list{$cdna_row_id}{'class'};
+  print qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
+  print qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
+  $cdna_count ++;
+}  
+
+print qq{</div></div><div style="clear:both"></div></div>
+         <div style="margin:10px 0px">
+         <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">RefSeq rows:</div>
            <div style="float:left">
              <div style="margin-bottom:10px">
         };
@@ -736,26 +758,7 @@ foreach my $refseq_row_id (sort {$a <=> $b} keys(%refseq_rows_list)) {
   $refseq_count ++;
 }
 
-print qq{</div></div><div style="clear:both"></div></div>
-         <div style="margin:10px 0px">
-         <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">cDNA rows:</div>
-           <div style="float:left">
-             <div style="margin-bottom:10px">
-        };
 
-# cDNA
-my $cdna_count = 0;
-foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
-  if ($cdna_count == $max_per_line) {
-    print qq{</div><div style="margin-bottom:10px">};
-    $cdna_count = 0;
-  }
-  my $label = $cdna_rows_list{$cdna_row_id}{'label'};
-  my $class = $cdna_rows_list{$cdna_row_id}{'class'};
-  print qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
-  print qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
-  $cdna_count ++;
-}  
 print qq{</div></div><div style="clear:both"></div></div>\n};
   
 # Ensembl genes
@@ -803,8 +806,8 @@ print qq{
       <tr class="bg2"><td style="width:50px"><div class="few_evidence_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
       <tr class="bg1"><td style="width:50px"><div class="gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
       <tr class="bg1"><td style="width:50px"><div class="partial_gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">The first exon of the transcript is further in the chromosome</td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start OR the end coordinates at this location</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
     </table>
     </div>
   </body>
