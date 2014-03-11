@@ -1516,7 +1516,7 @@
         <xsl:variable name="haplotypes" select="mapping[@other_name='unlocalized']" />
         <xsl:if test="count($haplotypes)>0">
           <div class="main_subsection">
-            <h3 class="main_subsection">Mapping(s) to <xsl:value-of select="count($haplotypes)"/> haplotype(s)</h3>s
+            <h3 class="main_subsection">Mapping(s) to <xsl:value-of select="count($haplotypes)"/> haplotype(s)</h3>
              <a class="show_hide"><xsl:attribute name="href">javascript:showhide('haplo_mappings');</xsl:attribute>show/hide</a>
           </div>
           <div style="margin:0px 10px">  
