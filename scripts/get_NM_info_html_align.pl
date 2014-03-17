@@ -111,7 +111,7 @@ foreach my $cdna_tr (@$cdna_dna) {
   foreach my $cdna_exon (@{$cdna_exons}) {
     foreach my $cdna_exon_evidence (@{$cdna_exon->get_all_supporting_features}) {
       next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
-      $cdna_name =  $cdna_exon_evidence->display_id if ($cdna_name eq '');
+      $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
       my $cdna_evidence_start = $cdna_exon_evidence->seq_region_start;
       my $cdna_evidence_end = $cdna_exon_evidence->seq_region_end;
       my $cdna_coord = "$cdna_evidence_start-$cdna_evidence_end";
@@ -334,9 +334,11 @@ my %ens_rows_list;
 foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
-  my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->analysis->logic_name eq 'ensembl_havana_transcript') ? 'gold' : 'ens';
+  # e!74
+  #my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->analysis->logic_name eq 'ensembl_havana_transcript') ? 'gold' : 'ens';
+  # e!75
+  my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
-  # For e!75: my $tr_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold_column' : 'first_column';
   print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a><br /><small>($e_count exons)</small>};
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
