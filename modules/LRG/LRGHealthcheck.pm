@@ -33,6 +33,7 @@ our @CHECKS = (
     'requester',
     'cDNA',
     'translation',
+    'transcript_translation_number',
     'exons',
     'phases',
     'other_exon_labels',
@@ -1386,6 +1387,51 @@ sub translation {
     
     return $passed;
 }
+
+
+# Check that the LRG transcripts and their translation numbers are the same.
+sub transcript_translation_number {
+    my $self = shift;    
+    my $passed;
+    
+    # Get the name of the check
+    my $name = sub_name();
+    
+    # Get the transcripts
+    my $transcripts = $self->get_transcripts($name);
+    return 0 if (!defined($transcripts));
+    
+    $passed = 1;
+    
+    # Check each transcript
+    foreach my $transcript (@{$transcripts}) {
+        # Get the name
+        my $tr_name = $transcript->data()->{'name'};
+           $tr_name =~ /(\d+)$/;
+        my $tr_number = $1;
+        
+        # Get coding region(s)
+        my $tr_cds = $transcript->findNodeArray('coding_region');
+
+        foreach my $cds (@{$tr_cds}) {
+
+          # Get the translation name
+          my $translation_name = $cds->findNode('translation')->data()->{'name'};
+             $translation_name =~ /(\d+)$/;
+          my $translation_number = $1;   
+        
+          # Compare the LRG transcript and translation numbers.
+          if ($tr_number ne $translation_number) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "Transcript $tr_name and its translation $translation_name don't have the same number//";
+          }
+       }
+    }
+    $self->{'check'}{$name}{'passed'} = $passed;
+    
+    return $passed;
+}
+
 
 # Get the annotation sets
 sub get_annotation_sets {
