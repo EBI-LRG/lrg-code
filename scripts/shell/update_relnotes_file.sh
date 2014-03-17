@@ -9,7 +9,7 @@
 # Relevant paths
 cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 cvsftp=${CVSROOTDIR}/ftp/public/
 
 # Database settings

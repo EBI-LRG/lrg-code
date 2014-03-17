@@ -6,7 +6,7 @@ host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 inputfile=$1
 pass=7Ntoz3HH

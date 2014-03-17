@@ -85,14 +85,14 @@ rm -f ${error_log}
 # Compare fixed section with existing LRG
 echo_stderr  '1) FIXED SECTION: Compare fixed section with existing LRG entry ... ' '-n'
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${tmp_error_log}
+bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${tmp_error_log}
 check_script_result 'The new fixed section is different'
 
 
 # Preliminary test
 echo_stderr  "2) MAPPING: Compare global mapping with archived LRG entry ... " '-n'
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${tmp_error_log}
+bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${tmp_error_log}
 check_script_result 'The new global mapping is different'
 
 
@@ -100,7 +100,7 @@ check_script_result 'The new global mapping is different'
 echo_stderr  '3) POLY A: Compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... ' '-n' 
 rm -f ${tmp_error_log}
 rm -f ${warning_log}
-bash code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${tmp_error_log} 1
+bash lrg-code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${tmp_error_log} 1
 #check_script_result 'ERROR while comparing the tail of the LRG sequence with the RefSeqGene tail sequence'
 check_script_warning
 
@@ -108,7 +108,7 @@ check_script_warning
 # HealthChecks
 echo_stderr  '4) HEALTHCHECKS: Run full HealthChecks ... ' '-n' 
 rm -f ${tmp_error_log}
-bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${tmp_error_log}
+bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${tmp_error_log}
 check_script_result 'The main healthchecks returned at least one error'
 
 

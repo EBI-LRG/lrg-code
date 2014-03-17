@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 xmlfile=$1
 locus=$2

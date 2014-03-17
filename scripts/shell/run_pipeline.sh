@@ -86,7 +86,7 @@ function end_of_script {
       comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
     if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
-      is_partial=`perl code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
+      is_partial=`perl lrg-code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment} - Partial gene/transcript/protein found"
         echo "failed${comment}" >> ${report_file}
@@ -142,7 +142,7 @@ fi
 if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
   echo_stderr  "# Preliminary check: compare fixed section with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${error_log}
+  bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -152,7 +152,7 @@ fi
 if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
   echo_stderr  "# Mapping check: compare global mapping with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${error_log}
+  bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -164,7 +164,7 @@ if [[ ! ${skip_hc} =~ 'polya' ]] ; then
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
   rm -f ${warning_log}
-  bash code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${error_log}
+  bash lrg-code/scripts/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${error_log}
   check_script_result
   check_script_warning
   echo_stderr  "> checking polyA done" 
@@ -176,7 +176,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${error_log}
+  bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #1 done" 
   echo_stderr  ""
@@ -185,7 +185,7 @@ fi
 
 # STEP2: Add Ensembl annotations
 echo_stderr  "# Add annotations ... "
-bash code/scripts/shell/update_xml_annotation.sh ${xml_dir}/${lrg_id}.xml ${hgnc} ${assembly}
+bash lrg-code/scripts/shell/update_xml_annotation.sh ${xml_dir}/${lrg_id}.xml ${hgnc} ${assembly}
 check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 
 
@@ -193,7 +193,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} 2> ${error_log}
+  bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #2 done"
   echo_stderr  ""
@@ -210,7 +210,7 @@ fi
 
 # STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${hgnc} ${error_log} ${warning}
+bash lrg-code/scripts/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${hgnc} ${error_log} ${warning}
 check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
@@ -218,7 +218,7 @@ echo_stderr  ""
 
 # STEP5: Export the LRG data from the database to an XML file (new requester/lsdb/contact data)
 echo_stderr  "# Extract ${lrg_id} from the database ... "
-bash code/scripts/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp
+bash lrg-code/scripts/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp
 check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 
@@ -226,7 +226,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} 2> ${error_log}
+  bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #3 done"
   echo_stderr  ""
@@ -243,12 +243,12 @@ echo_stderr  ""
 
 
 echo_stderr  "# Create Fasta file ... "
-perl code/scripts/lrg2fasta.pl -xml_dir ${new_dir} -fasta_dir ${new_dir}/fasta -xml_file ${lrg_id}.xml
+perl lrg-code/scripts/lrg2fasta.pl -xml_dir ${new_dir} -fasta_dir ${new_dir}/fasta -xml_file ${lrg_id}.xml
 check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created"
 
 
 echo_stderr  "# Create GFF file ... "
-perl code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
+perl lrg-code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
 check_empty_file ${new_dir}/gff/${lrg_id}.xml.gff "GFF file created"
 
 echo_stderr  "Script done"

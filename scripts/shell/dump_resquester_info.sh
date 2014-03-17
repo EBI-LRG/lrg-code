@@ -6,7 +6,7 @@ host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
 dbname='lrg' #dbname=${LRGDBNAME}
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 output_file=$1
 

@@ -8,7 +8,7 @@ port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 xmlfile=$1
 filename=`basename ${xmlfile}`

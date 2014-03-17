@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-# e.g. code/scripts/shell/run_test_full_pipelines.sh LRGs.txt xml_dir new_dir tmp_dir
+# e.g. lrg-code/scripts/shell/run_test_full_pipelines.sh LRGs.txt xml_dir new_dir tmp_dir
 # With LRGs.txt like:
 # LRG_1	COL1A1	GRCh37	0
 # LRG_5	LEPRE1	GRCh37	1
@@ -25,6 +25,6 @@ else
   is_test_hc=''
 fi
 
-perldir=${CVSROOTDIR}/code/scripts
+perldir=${CVSROOTDIR}/lrg-code/scripts
 
 perl ${perldir}/manage_pipeline.pl -data_file ${data_file} -xml_dir ${xml_dir} -new_dir ${new_dir} -tmp_dir ${tmp_dir} ${is_test_hc}

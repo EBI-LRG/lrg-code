@@ -6,7 +6,7 @@ port=${LRGDBPORT}
 user=${LRGDBROUSER}
 dbname='lrg'
 dir=${PUBFTP}/.lrg_internal
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 tmpdir=''
 tmp=$1

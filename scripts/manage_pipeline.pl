@@ -43,11 +43,11 @@ while (<F>) {
   # HealthChecks pipeline
   if ($is_hc) {
     print O "$lrg_id: $report_type ";
-    `./code/scripts/shell/run_healthchecks_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $tmp_dir`;
+    `./lrg-code/scripts/shell/run_healthchecks_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $tmp_dir`;
   }
   else {
     print O "$lrg_id: $report_type ";
-    `./code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $skip_hc $annotation_test`;
+    `./lrg-code/scripts/shell/run_pipeline.sh $lrg_id $hgnc_name $assembly $xml_dir $new_dir $tmp_dir $skip_hc $annotation_test`;
   }
 }
 print O "\nPipeline ends\n";

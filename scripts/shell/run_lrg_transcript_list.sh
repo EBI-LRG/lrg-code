@@ -12,4 +12,4 @@ if [[ $2 ]]; then
   tmpdir="-tmp_dir $2"
 fi
 
-perl ${CVSROOTDIR}/code/scripts/get_lrg_transcript_list.pl ${path} ${tmpdir}
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_transcript_list.pl ${path} ${tmpdir}

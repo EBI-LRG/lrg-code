@@ -8,7 +8,7 @@
 
 #ÊRelevant paths
 jing=${JINGPATH}
-perldir=${CVSROOTDIR}/code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/
 java=`which java`
 rnc=${perldir}/../LRG.rnc
 
