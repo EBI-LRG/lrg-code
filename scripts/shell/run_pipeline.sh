@@ -85,7 +85,7 @@ function end_of_script {
     if [[ ${warning} == 'polyA' ]] ; then
       comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
-    if [[ ! ${skip_hc} =~ 'fixed' || ${skip_hc} != 'all' ]] ; then
+    if [[ ! ${skip_hc} =~ 'main' ]] ; then
       is_partial=`perl lrg-code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment} - Partial gene/transcript/protein found"
@@ -251,8 +251,9 @@ echo_stderr  "# Create GFF file ... "
 perl lrg-code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
 check_empty_file ${new_dir}/gff/${lrg_id}.xml.gff "GFF file created"
 
+
+end_of_script ${new_dir}/${lrg_id}.xml
+
 echo_stderr  "Script done"
 echo_stderr  ""
 echo_stderr  ""
-
-end_of_script ${new_dir}/${lrg_id}.xml
