@@ -85,7 +85,7 @@ function end_of_script {
     if [[ ${warning} == 'polyA' ]] ; then
       comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
-    if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
+    if [[ ! ${skip_hc} =~ 'fixed' || ${skip_hc} != 'all' ]] ; then
       is_partial=`perl lrg-code/scripts/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment} - Partial gene/transcript/protein found"
