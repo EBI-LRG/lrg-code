@@ -32,6 +32,8 @@ sub add_annotation {
   my $biotype               = shift;
   my $analysis_logic_name   = shift;
 
+  my $lrg_source = 'LRG database';
+
   # Get the coord_system_id, seq_region_id and analysis_id
   my $slice_adaptor = $dbCore->get_SliceAdaptor();
   my $slice = $slice_adaptor->fetch_by_region($lrg_coord_system_name, $lrg_name);
@@ -75,11 +77,11 @@ sub add_annotation {
     }
 
     my $transcript_stable_id = $lrg_name . $transcript_name;
-    my $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype);
+    my $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source);
 
     if ( !defined($gene) ) {
       my $gene_stable_id = $lrg_name;
-      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, 'LRG database');
+      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, $lrg_source);
 
       print "Gene:\t" . $gene_stable_id . "\n";
     }
@@ -522,6 +524,7 @@ sub add_transcript {
   my $analysis  = shift;
   my $slice     = shift;
   my $biotype   = shift;
+  my $source    = shift;
 
   my $status = 'KNOWN';
 
@@ -530,6 +533,7 @@ sub add_transcript {
     -analysis  => $analysis,
     -slice     => $slice,
     -biotype   => $biotype,
+    -source    => $source,
     -status    => $status
   );
 
