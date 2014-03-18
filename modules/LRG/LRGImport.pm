@@ -61,7 +61,7 @@ sub add_annotation {
     my ($cds_start, $cds_end);
     my $cds_nodes  = $transcript_node->coding_region();
     my $translation_name;
-    my $translations;
+    my $translation;
     my $cds_node;
     foreach my $node (@$cds_nodes) {
       $cds_node = $node;
@@ -69,10 +69,8 @@ sub add_annotation {
       foreach my $cds_coord (@$cds_coords) {
         $cds_start = $cds_coord->start();
         $cds_end   = $cds_coord->end();
-        $translations = $cds_node->translation();
-        foreach my $translation (@$translations) {
-          $translation_name = $translation->name();
-        }
+        $translation = $cds_node->translation();
+        $translation_name = $translation->name();
       }
     }
 
@@ -576,7 +574,7 @@ sub add_xref {
   if ($info_type) { $xref->info_type($info_type); }
 
   my $xref_adaptor = $dbCore->get_DBEntryAdaptor();
-  $xref_adaptor->store($xref, $object->dbID, $object_type);
+  $xref_adaptor->store($xref, $object->dbID, $object_type, 1);
 
   return $xref;
 }
