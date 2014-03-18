@@ -32,6 +32,8 @@ sub add_annotation {
   my $biotype               = shift;
   my $analysis_logic_name   = shift;
 
+  my $lrg_source = 'LRG database';
+
   # Get the coord_system_id, seq_region_id and analysis_id
   my $slice_adaptor = $dbCore->get_SliceAdaptor();
   my $slice = $slice_adaptor->fetch_by_region($lrg_coord_system_name, $lrg_name);
@@ -61,7 +63,7 @@ sub add_annotation {
     my ($cds_start, $cds_end);
     my $cds_nodes  = $transcript_node->coding_region();
     my $translation_name;
-    my $translations;
+    my $translation;
     my $cds_node;
     foreach my $node (@$cds_nodes) {
       $cds_node = $node;
@@ -69,19 +71,17 @@ sub add_annotation {
       foreach my $cds_coord (@$cds_coords) {
         $cds_start = $cds_coord->start();
         $cds_end   = $cds_coord->end();
-        $translations = $cds_node->translation();
-        foreach my $translation (@$translations) {
-          $translation_name = $translation->name();
-        }
+        $translation = $cds_node->translation();
+        $translation_name = $translation->name();
       }
     }
 
     my $transcript_stable_id = $lrg_name . $transcript_name;
-    my $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype);
+    my $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source);
 
     if ( !defined($gene) ) {
       my $gene_stable_id = $lrg_name;
-      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, 'LRG database');
+      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, $lrg_source);
 
       print "Gene:\t" . $gene_stable_id . "\n";
     }
@@ -524,6 +524,7 @@ sub add_transcript {
   my $analysis  = shift;
   my $slice     = shift;
   my $biotype   = shift;
+  my $source    = shift;
 
   my $status = 'KNOWN';
 
@@ -532,6 +533,7 @@ sub add_transcript {
     -analysis  => $analysis,
     -slice     => $slice,
     -biotype   => $biotype,
+    -source    => $source,
     -status    => $status
   );
 
@@ -576,7 +578,7 @@ sub add_xref {
   if ($info_type) { $xref->info_type($info_type); }
 
   my $xref_adaptor = $dbCore->get_DBEntryAdaptor();
-  $xref_adaptor->store($xref, $object->dbID, $object_type);
+  $xref_adaptor->store($xref, $object->dbID, $object_type, 1);
 
   return $xref;
 }
