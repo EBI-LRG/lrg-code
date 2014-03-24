@@ -637,24 +637,22 @@ while (my $lrg_id = shift(@lrg_ids)) {
           if ($transcript->coding_region()) {
   	    my $coding_regions = $transcript->coding_region();
             foreach my $coding_region (@$coding_regions) {
-              my $translations = $coding_region->translation();
-              foreach my $translation (@$translations) {
-                my $translation_seq = $translation->sequence->sequence();
-     	        # Get the translation from the db
-	        my $translation_db = $transcript_db->translation()->seq();
-	        #  Remove any terminal stop codons
-	        $translation_seq =~ s/\*$//;
-	        $translation_db =~ s/\*$//;
-	  
-	        # Compare the sequences
-	        if ($translation_seq ne $translation_db) {
-	          $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
-	          warn($msg);
-	          print STDOUT "$msg\n" if ($verbose);
-	          print ">peptide_seq_in_xml\n$translation_seq\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
-	          $passed = 0;
-	          next;
-                }
+              my $translation = $coding_region->translation();
+              my $translation_seq = $translation->sequence->sequence();
+   	        # Get the translation from the db
+	      my $translation_db = $transcript_db->translation()->seq();
+	      #  Remove any terminal stop codons
+	      $translation_seq =~ s/\*$//;
+	      $translation_db =~ s/\*$//;
+	
+	      # Compare the sequences
+	      if ($translation_seq ne $translation_db) {
+	        $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
+	        warn($msg);
+	        print STDOUT "$msg\n" if ($verbose);
+	        print ">peptide_seq_in_xml\n$translation_seq\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
+	        $passed = 0;
+	        next;
               }
             }
 	  }	
