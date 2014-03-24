@@ -206,7 +206,10 @@ foreach my $xml (@xmlfiles) {
 	
   # Cross references + Xref (additional fields)
   foreach my $cr (sort(keys %{$cross_refs})) {
-		$cross_ref->addEmptyNode('ref',{'dbname' => $cross_refs->{$cr}, 'dbkey' => $cr});
+    my $dbname = $cross_refs->{$cr};
+    my $dbkey = ($dbname =~ /hgnc/i && $dbkey !~ /^hgnc/i) ? "HGCN:$cr" : $cr;
+    
+		$cross_ref->addEmptyNode('ref',{'dbname' => $dbname, 'dbkey' => $dbkey});
 	}
   
   # Taxonomy ID
