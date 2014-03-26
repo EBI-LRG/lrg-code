@@ -207,8 +207,8 @@ foreach my $xml (@xmlfiles) {
   # Cross references + Xref (additional fields)
   foreach my $cr (sort(keys %{$cross_refs})) {
     my $dbname = $cross_refs->{$cr};
-    my $dbkey = ($dbname =~ /hgnc/i && $dbkey !~ /^hgnc/i) ? "HGCN:$cr" : $cr;
-    
+    my $dbkey = ($dbname =~ /hgnc/i && $cr !~ /^hgnc/i) ? "HGCN:$cr" : $cr;
+
 		$cross_ref->addEmptyNode('ref',{'dbname' => $dbname, 'dbkey' => $dbkey});
 	}
   
