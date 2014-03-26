@@ -124,31 +124,31 @@ sub existing_entry {
       }
     }
 
-    ## Compare source(s)
-    my $new_sources = $self->get_sources($name);
-    my $existing_sources = $existing_lrg->findNodeArray("fixed_annotation/source");
+    ### Compare source(s)
+    #my $new_sources = $self->get_sources($name);
+    #my $existing_sources = $existing_lrg->findNodeArray("fixed_annotation/source");
 
-    if (scalar(@$new_sources) != scalar(@$existing_sources)) {
-      $passed = 0;
-      $self->{'check'}{$name}{'message'} .= "- The number of requesters is different!//";
-    } else {
-      my $has_different_sources = 0;
-      foreach my $e_source (@$existing_sources) {
-        my $identical_source = 0;
-        foreach my $n_source (@$new_sources) {
-          if ($n_source->identical($e_source)) {
-             $identical_source = 1;
-             last;
-          }
-        }
-        $has_different_sources++ if ($identical_source == 0);
-      }
-      if ($has_different_sources > 0) {
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "- The requesters' information (content of the tags '<source>') are differents!//";
-        $self->{'check'}{$name}{'message'} .= "  > This could be the name, the url, the number of contacts or the contacts information.//";
-      }
-    }
+    #if (scalar(@$new_sources) != scalar(@$existing_sources)) {
+    #  $passed = 0;
+    #  $self->{'check'}{$name}{'message'} .= "- The number of requesters is different!//";
+    #} else {
+    #  my $has_different_sources = 0;
+    #  foreach my $e_source (@$existing_sources) {
+    #    my $identical_source = 0;
+    #    foreach my $n_source (@$new_sources) {
+    #      if ($n_source->identical($e_source)) {
+    #         $identical_source = 1;
+    #         last;
+    #      }
+    #    }
+    #    $has_different_sources++ if ($identical_source == 0);
+    #  }
+    #  if ($has_different_sources > 0) {
+    #    $passed = 0;
+    #    $self->{'check'}{$name}{'message'} .= "- The requesters' information (content of the tags '<source>') are differents!//";
+    #    $self->{'check'}{$name}{'message'} .= "  > This could be the name, the url, the number of contacts or the contacts information.//";
+    #  }
+    #}
 
     ## Compare genomic sequence
     my $new_genomic_seq = $self->get_genomic_sequence($name);
