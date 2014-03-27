@@ -2462,7 +2462,7 @@
       </xsl:for-each>
     </xsl:if>
     
-    <xsl:if test="$source=$ensembl_source_name">
+    <xsl:if test="$source=$ensembl_source_name and $display_symbol=$lrg_gene_name and $gene_symbol_source=$symbol_source">
       <div style="margin-top:6px">
         <xsl:call-template name="right_arrow_green" />
         <a target="_blank" style="vertical-align:middle">
