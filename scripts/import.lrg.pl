@@ -240,6 +240,7 @@ if (defined($rnaseqdb)) {
 # Get a slice adaptor
 print STDOUT localtime() . "\tGetting slice adaptor\n" if ($verbose);
 my $sa = $dbCore->get_SliceAdaptor();
+my $transcript_adaptor = $dbCore->get_TranscriptAdaptor();
 
 # If doing an import, check that the tables affected for adding the mapping information are sync'd across the relevant databases
 if ($import) {
@@ -466,7 +467,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $hgnc_accession;
       my %refseq_transcript;
       my ($ensembl_annotation, $refseq_annotation);
-      my ($ensembl_lrg_gene, $ensembl_genes, $refseq_genes, $refseq_transcripts, $symbols);
+      my ($ensembl_core_gene, $ensembl_genes, $refseq_genes, $refseq_transcripts, $symbols);
       if ($annotation{'Ensembl'}) {
         $ensembl_annotation = $annotation{'Ensembl'};
         $ensembl_genes = $ensembl_annotation->feature->gene();
@@ -474,7 +475,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
           $symbols = $gene->symbol();
           foreach my $symbol (@$symbols) {
             if ($symbol->source() eq 'HGNC' && $symbol->name() eq $hgnc_name) {
-              $ensembl_lrg_gene = $gene;
+              $ensembl_core_gene = $gene;
             }
           }
         }
@@ -505,60 +506,76 @@ while (my $lrg_id = shift(@lrg_ids)) {
       # Update the gene table to set the display_xref_id to the LRG xref
       $core_lrg_gene->display_xref($ext_xref);
       $core_lrg_gene->adaptor->update($core_lrg_gene);
+
+      my ($transcript_stable_id, $display_xref);
+
+      # Add display_xref for all transcripts
+      foreach my $core_lrg_transcript (@{$core_lrg_gene->get_all_Transcripts}) {
+        $transcript_stable_id = $core_lrg_transcript->stable_id();
+        $transcript_stable_id = $1 if ($transcript_stable_id =~ /(LRG_[0-9]+t[0-9]+).*/);
+        $display_xref = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME, $transcript_stable_id, $transcript_stable_id, $core_lrg_transcript, 'transcript',
+                               'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
+        $core_lrg_transcript->display_xref($display_xref);
+        $core_lrg_transcript->adaptor->update($core_lrg_transcript);
+      }
+
       
       # Add xrefs to the Ensembl coordinate system for the LRG gene
       
       # Get the annotated Ensembl xrefs from the XML file for the LRG gene
-      my $ensembl_lrg_gene_xrefs = $ensembl_lrg_gene->xref();
+      my $ensembl_core_gene_xrefs = $ensembl_core_gene->xref();
       
       # Add or get xref_ids for the Ensembl xrefs, the external_db name is Ens_Hs_gene
-      foreach my $ensembl_lrg_gene_xref (@{$ensembl_lrg_gene_xrefs}) {
-        if ($ensembl_lrg_gene_xref->source() ne 'Ensembl') { next; }
-	my $stable_id = $ensembl_lrg_gene_xref->accession();
+      foreach my $ensembl_core_gene_xref (@{$ensembl_core_gene_xrefs}) {
+        if ($ensembl_core_gene_xref->source() ne 'Ensembl') { next; }
+	my $stable_id = $ensembl_core_gene_xref->accession();
 	
 	LRG::LRGImport::add_xref('Ens_Hs_gene', $stable_id, $stable_id, $core_lrg_gene, 'gene');
-	my $core_stable_id = $lrg_name;
+	my $lrg_stable_id = $lrg_name;
 	
 	# Do the same for the Ensembl gene to the Ensembl LRG display
         my $core_gene = $gene_adaptor->fetch_by_stable_id($stable_id);
-	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene', $core_stable_id, $lrg_name, $core_gene, 'gene');
+        next unless(defined $core_gene);
+	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene', $lrg_stable_id, $lrg_name, $core_gene, 'gene');
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
-      my $ensembl_lrg_transcripts = $ensembl_lrg_gene->transcript();
-      my ($fixed_id, $transcript_core_accession, $translation_core_accession);
-      foreach my $ensembl_lrg_transcript (@{$ensembl_lrg_transcripts}) {
-        if ($ensembl_lrg_transcript->source() ne 'Ensembl') { next; }
-        my $xrefs = $ensembl_lrg_transcript->xref();
+      my $ensembl_core_transcripts = $ensembl_core_gene->transcript();
+      my ($fixed_id, $transcript_core_accession, $translation_core_accession, $core_transcript);
+      my ($lrg_stable_id, $ensembl_lrg_transcripts, $ensembl_lrg_translation, $ensembl_core_proteins);
+      # Looping through all the ensembl annotations from the XML file
+      foreach my $ensembl_core_transcript (@{$ensembl_core_transcripts}) {
+        if ($ensembl_core_transcript->source() ne 'Ensembl') { next; }
+        my $xrefs = $ensembl_core_transcript->xref();
+        # Looping through all the xrefs associated with the ensembl transcript
         foreach my $xref (@$xrefs) {
           if ($xref->source ne 'RefSeq') { next; }
 	  my $refseq_accession = $xref->accession;
           my $refseq_annotation = $refseq_transcript{$refseq_accession};
           if (!defined $refseq_annotation) { next; }
+          # Looking for RefSeq xrefs
+          # Ensembl transcript has a RefSeq xref, RefSeq entry has an associated fixed_id corresponding to an LRG
           $fixed_id = $refseq_annotation->fixed_id() if defined($refseq_annotation->fixed_id());
-	  $transcript_core_accession = $ensembl_lrg_transcript->accession();
+	  $transcript_core_accession = $ensembl_core_transcript->accession();
 	  next unless(defined($fixed_id) && defined($transcript_core_accession));
-        }
-	
-	# Get the core db LRG transcript_id for this transcript
-	my $core_stable_id = $lrg_name . $fixed_id;
-        my $core_lrg_transcript = $transcript_adaptor->fetch_by_stable_id($core_stable_id);
-        my $core_transcript = $transcript_adaptor->fetch_by_stable_id($transcript_core_accession);
-	next unless(defined($core_lrg_transcript));
-	
-	LRG::LRGImport::add_xref('Ens_Hs_transcript', $transcript_core_accession, $transcript_core_accession, $core_lrg_transcript, 'transcript');
-	
-	# Do the same for the Ensembl transcript to the Ensembl LRG display
-	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript', $core_stable_id, $core_stable_id, $core_transcript, 'transcript');
-        if ($core_lrg_transcript) {
-	
-       	  # Do the same for the translation
-	  my $ensembl_lrg_proteins = $ensembl_lrg_transcript->translation();
-          foreach my $ensembl_lrg_protein (@$ensembl_lrg_proteins) {
-	    $translation_core_accession = $ensembl_lrg_protein->accession();
-	    next unless(defined($translation_core_accession));
-            my $core_lrg_translation = $translation_adaptor->fetch_by_Transcript($core_lrg_transcript);
-	    LRG::LRGImport::add_xref('Ens_Hs_translation', $translation_core_accession, $translation_core_accession, $core_lrg_translation, 'translation');
+          $lrg_stable_id = $lrg_name . $fixed_id;
+          $ensembl_lrg_transcripts = $transcript_adaptor->fetch_all_by_external_name($lrg_stable_id);
+          $core_transcript = $transcript_adaptor->fetch_by_stable_id($transcript_core_accession);
+          next unless(defined $core_transcript);
+          foreach my $ensembl_lrg_transcript (@$ensembl_lrg_transcripts) {
+            # For each LRG matching the fixed id, we add the ensembl transcript as an xref
+            # For the ensembl transcript, we add an xref for the LRG
+            LRG::LRGImport::add_xref('Ens_Hs_transcript', $transcript_core_accession, $transcript_core_accession, $ensembl_lrg_transcript, 'transcript');
+            LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript', $lrg_stable_id, $lrg_stable_id, $core_transcript, 'transcript');
+            if ($ensembl_lrg_transcript->translate) {
+              $ensembl_lrg_translation = $ensembl_lrg_transcript->translation;
+              $ensembl_core_proteins = $ensembl_core_transcript->translation();
+              # If there is a translation, we add the LRG protein as an xref
+              foreach my $ensembl_core_protein (@$ensembl_core_proteins) {
+                $translation_core_accession = $ensembl_core_protein->accession();
+                LRG::LRGImport::add_xref('Ens_Hs_translation', $translation_core_accession, $translation_core_accession, $ensembl_lrg_translation, 'translation');
+              }
+            }
           }
         }
       }
@@ -600,24 +617,25 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	}
 	
 	# Compare each transcript
-	my $transcripts_db = $lrg_slice->get_all_Transcripts(undef,$LRG_ANALYSIS_LOGIC_NAME);
+        my $transcript_db;
 	foreach my $transcript (@{$transcripts}) {
-	  # Get the fixed id
-	  my $fixed_id = $transcript->name();
-	  # The expected transcript_stable_id based on the XML fixed id
-	  my $stable_id = $lrg_id . $fixed_id;
-	  # Get the ensembl transcript with the corresponding stable_id
-	  my @db_tr = grep {$_->stable_id() eq $stable_id} @{$transcripts_db};
-	  # Check that we got one transcript back
-	  if (!@db_tr || scalar(@db_tr) != 1) {
-	    $msg = "Could not unambiguously get the correct Ensembl transcript corresponding to $lrg_id $fixed_id";
-	    warn($msg);
-	    print STDOUT "$msg\n" if ($verbose);
-	    $passed = 0;
-	    next;
-	  }
-	  
-	  my $transcript_db = $db_tr[0];
+          my $transcript_count = 0;
+          my $fixed_id = $transcript->name();
+          # The expected transcript_stable_id based on the XML fixed id
+          my $stable_id = $lrg_id . $fixed_id;
+
+          $transcript_db = $transcript_adaptor->fetch_by_stable_id($stable_id);
+          if (!defined $transcript_db) {
+            $transcript_count = 1;
+            $transcript_db = $transcript_adaptor->fetch_by_stable_id($stable_id . "-" . $transcript_count);
+          }
+          if (!defined $transcript_db) {
+            $msg = "Could not unambiguously get the correct Ensembl transcript corresponding to $lrg_id $fixed_id";
+            warn($msg);
+            print STDOUT "$msg\n" if ($verbose);
+            $passed = 0;
+            next;
+          }
 	  
 	  # Get the cDNA sequence from the XML file
 	  my $cDNA = $transcript->cdna->sequence();
@@ -634,27 +652,26 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	  }
 	  
 	  # Get the translation from the XML file
-          if ($transcript->coding_region()) {
-  	    my $coding_regions = $transcript->coding_region();
-            foreach my $coding_region (@$coding_regions) {
-              my $translation = $coding_region->translation();
-              my $translation_seq = $translation->sequence->sequence();
-   	        # Get the translation from the db
-	      my $translation_db = $transcript_db->translation()->seq();
-	      #  Remove any terminal stop codons
-	      $translation_seq =~ s/\*$//;
-	      $translation_db =~ s/\*$//;
+          foreach my $coding_region (@{ $transcript->coding_region()} ) {
+            my $translation = $coding_region->translation();
+            my $translation_seq = $translation->sequence->sequence();
+   	    # Get the translation from the db
+	    my $translation_db = $transcript_db->translation()->seq();
+	    #  Remove any terminal stop codons
+	    $translation_seq =~ s/\*$//;
+	    $translation_db =~ s/\*$//;
 	
-	      # Compare the sequences
-	      if ($translation_seq ne $translation_db) {
-	        $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
-	        warn($msg);
-	        print STDOUT "$msg\n" if ($verbose);
-	        print ">peptide_seq_in_xml\n$translation_seq\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
-	        $passed = 0;
-	        next;
-              }
+	    # Compare the sequences
+	    if ($translation_seq ne $translation_db) {
+	      $msg = "Peptide sequence from core db is different from peptide sequence in XML file for $lrg_id transcript $fixed_id";
+	      warn($msg);
+	      print STDOUT "$msg\n" if ($verbose);
+	      print ">peptide_seq_in_xml\n$translation_seq\n>peptide_seq_in_db\n$translation_db\n" if ($verbose);
+	      $passed = 0;
+	      next;
             }
+            $transcript_count++;
+            $transcript_db = $transcript_adaptor->fetch_by_stable_id($stable_id . "-" . $transcript_count);
 	  }	
 	}
       }

@@ -62,9 +62,10 @@ sub add_annotation {
     # Get the coding start and end coordinates
     my ($cds_start, $cds_end);
     my $cds_nodes  = $transcript_node->coding_region();
-    my $translation_name;
-    my $translation;
-    my $cds_node;
+    my ($translation_name, $translation_stable_id, $translation, $cds_node);
+    my @translations;
+    # There can be more than one coding regions for one single transcript
+    # Hence, need to calculate start and end for each one
     foreach my $node (@$cds_nodes) {
       $cds_node = $node;
       my $cds_coords = $cds_node->coordinates();
@@ -74,95 +75,9 @@ sub add_annotation {
         $translation = $cds_node->translation();
         $translation_name = $translation->name();
       }
-    }
+      $translation_stable_id = $lrg_name . $translation_name;
 
-    my $transcript_stable_id = $lrg_name . $transcript_name;
-    my $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source);
-
-    if ( !defined($gene) ) {
-      my $gene_stable_id = $lrg_name;
-      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, $lrg_source);
-
-      print "Gene:\t" . $gene_stable_id . "\n";
-    }
-
-    print "\tTranscript:\t"
-      . $transcript_stable_id . "\n";
-
-    $gene->add_Transcript($transcript);
-
-    my $start_exon;
-    my $end_exon;
-    my $exon;
-    my $exon_count = 0;
-
-    my $end_phase = -1;
-    my $phase;
-
-# Loop over the transcript nodes and pick out exon-intron pairs and insert the exons into the database
-    my $exons = $transcript_node->exons();
-
-    foreach my $exon (@$exons) {
-
-      # The phase of this exon will be the same as the end_phase of the last exon
-      $end_phase = $exon->end_phase();
-      $phase = $exon->start_phase();
-
-      my $exon_coords  = $exon->coordinates();
-      my $lrg_coords;
-      foreach my $coords (@$exon_coords) {
-        if ($coords->coordinate_system() eq $lrg_name) {
-          $lrg_coords = $coords;
-        }
-      }
-      my $exon_start  = $lrg_coords->start();
-      my $exon_end    = $lrg_coords->end();
-      my $exon_length = ( $exon_end - $exon_start + 1 );
-      my $exon_label = $exon->label();
-      my $exon_name = "e$exon_label";
-      my $exon_stable_id = $lrg_name . $transcript_name . $exon_name;
-      $exon = add_exon($exon_stable_id, $slice, $exon_start, $exon_end, 1);
-      $transcript->add_Exon($exon);
-
-      print "\t\tExon:\t" . $exon_stable_id;
-
-      # If the coding start is within this exon, save this exon id as start_exon_id and calculate the coding start offset within the exon
-      if ($cds_node) {
-        if ( !defined($start_exon)
-          && $exon_start <= $cds_start
-          && $exon_end >= $cds_start )
-        {
-          $start_exon = $exon;
-          $cds_start     = $cds_start - $exon_start + 1;
-          print "\t[First coding]";
-        }
-
-        # If the coding end is within this exon, save this exon id as end exon id and calculate end offset within the exon
-        if ( !defined($end_exon)
-          && $exon_start <= $cds_end
-          && $exon_end >= $cds_end )
-        {
-          $end_exon = $exon;
-          $cds_end     = $cds_end - $exon_start + 1;
-
-          # The end phase will be -1 since translation stops within this exon
-          $end_phase = -1;
-          print "\t[Last coding]";
-        }
-      }
-
-      $exon->phase($phase);
-      $exon->end_phase($end_phase);
-
-      print "\t" . $phase . "\t" . $end_phase . "\n";
-    }
-
-    # If translation available, add to transcript object
-    if ( $cds_node) {
-      my $translation_stable_id = $lrg_name . $translation_name;
-
-      my $translation =
-        add_translation($translation_stable_id, $cds_start, $start_exon, $cds_end, $end_exon );
+      my $translation = add_translation($translation_stable_id, $cds_start, undef, $cds_end, undef);
 
       my $tr_excep = $cds_node->translation_exception();
       foreach my $ex (@$tr_excep) {
@@ -175,15 +90,152 @@ sub add_annotation {
           add_object_attrib($translation, $code, $value, $name, 1);
         }
       }
+      push @translations, $translation;
+    }
 
+    my $transcript_stable_id = $lrg_name . $transcript_name;
+    my $transcript;
+
+    if ( !defined($gene) ) {
+      my $gene_stable_id = $lrg_name;
+      $gene = add_gene($gene_stable_id, $analysis, $slice, $biotype, $lrg_source);
+
+      print "Gene:\t" . $gene_stable_id . "\n";
+    }
+
+    print "\tTranscript:\t"
+      . $transcript_stable_id . "\n";
+
+    my $exon;
+    my $exon_count = 0;
+    my $exons;
+
+    my $end_phase = -1;
+    my $phase;
+
+# Loop over the transcript nodes and pick out exon-intron pairs and insert the exons into the database
+    my $lrg_exons = $transcript_node->exons();
+    my $transcript_count = 0;
+
+    # If transcript does not translate, only need to add exons
+    if (scalar(@translations) == 0) {
+      $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source, $transcript_start, $transcript_end);
+      $gene->add_Transcript($transcript);
+
+      foreach my $exon (@$lrg_exons) {
+  
+        # The phase of this exon will be the same as the end_phase of the last exon
+        $end_phase = $exon->end_phase();
+        $phase = $exon->start_phase();
+  
+        my $exon_coords  = $exon->coordinates();
+        my $lrg_coords;
+        foreach my $coords (@$exon_coords) {
+          if ($coords->coordinate_system() eq $lrg_name) {
+            $lrg_coords = $coords;
+          }
+        }
+        my $exon_start  = $lrg_coords->start();
+        my $exon_end    = $lrg_coords->end();
+        my $exon_length = ( $exon_end - $exon_start + 1 );
+        my $exon_label = $exon->label();
+        my $exon_name = "e$exon_label";
+        my $exon_stable_id = $lrg_name . $transcript_name . $exon_name;
+        ($exon, $exons) = add_exon($exon_stable_id, $slice, $exon_start, $exon_end, 1, $exons, $transcript);
+        $transcript->add_Exon($exon);
+  
+        print "\t\tExon:\t" . $exon_stable_id;
+        $exon->phase($phase);
+        $exon->end_phase($end_phase);
+  
+        print "\t" . $phase . "\t" . $end_phase . "\n";
+      }
+    }
+
+    # If there is more than one translation, transcript will need to be duplicated
+    # To do so, stable id is versioned
+    if (scalar(@translations) > 1) {
+      # Special multi translation flag
+      $transcript_count = 1;
+    }
+
+    foreach my $translation (@translations) {
+      my ($start_exon, $end_exon);
+      $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source, $transcript_start, $transcript_end, $transcript_count);
+      # If there is more than one translation, will increment the stable id version
+      $transcript_count++;
+      $gene->add_Transcript($transcript);
+      $cds_start = $translation->start();
+      $cds_end = $translation->end();
+      $translation_stable_id = $translation->stable_id();
+
+      foreach my $lrg_exon (@$lrg_exons) {
+
+      # The phase of this exon will be the same as the end_phase of the last exon
+        $end_phase = $lrg_exon->end_phase();
+        $phase = $lrg_exon->start_phase();
+  
+        my $exon_coords  = $lrg_exon->coordinates();
+        my $lrg_coords;
+        foreach my $coords (@$exon_coords) {
+          if ($coords->coordinate_system() eq $lrg_name) {
+            $lrg_coords = $coords;
+          }
+        }
+        my $exon_start  = $lrg_coords->start();
+        my $exon_end    = $lrg_coords->end();
+        my $exon_length = ( $exon_end - $exon_start + 1 );
+        my $exon_label = $lrg_exon->label();
+        my $exon_name = "e$exon_label";
+        my $exon_stable_id = $lrg_name . $transcript_name . $exon_name;
+        ($exon, $exons) = add_exon($exon_stable_id, $slice, $exon_start, $exon_end, 1, $exons, $transcript);
+        $transcript->add_Exon($exon);
+  
+        print "\t\tExon:\t" . $exon_stable_id;
+  
+        # If the coding start is within this exon, save this exon id as start_exon_id and calculate the coding start offset within the exon
+        if ( !defined($start_exon)
+          && $exon_start <= $cds_start
+          && $exon_end >= $cds_start )
+        {
+          $start_exon = $exon;
+          $cds_start     = $cds_start - $exon_start + 1;
+          print "\t[First coding]";
+        }
+  
+        # If the coding end is within this exon, save this exon id as end exon id and calculate end offset within the exon
+        if ( !defined($end_exon)
+          && $exon_start <= $cds_end
+          && $exon_end >= $cds_end )
+        {
+          $end_exon = $exon;
+          $cds_end     = $cds_end - $exon_start + 1;
+  
+          # The end phase will be -1 since translation stops within this exon
+          $end_phase = -1;
+          print "\t[Last coding]";
+        }
+  
+        $exon->phase($phase);
+        $exon->end_phase($end_phase);
+  
+        print "\t" . $phase . "\t" . $end_phase . "\n";
+      }
+
+      # Update translation with correct coding start and end
+      $translation->start($cds_start);
+      $translation->end($cds_end);
+      $translation->start_Exon($start_exon);
+      $translation->end_Exon($end_exon);
 
       print "\tTranslation:\t"
         . $translation_stable_id . "\n";
 
       $transcript->translation($translation);
-
     }
+
   }
+
   # If LRG already exists in database, update coordinates
   if ($gene_adaptor->fetch_by_stable_id($gene->stable_id)) {
     $gene_adaptor->update($gene);
@@ -234,6 +286,8 @@ sub add_exon {
   my $seq_region_start  = shift;
   my $seq_region_end    = shift;
   my $seq_region_strand = shift;
+  my $exons             = shift;
+  my $transcript        = shift;
 
   my $exon = Bio::EnsEMBL::Exon->new(
     -stable_id => $stable_id,
@@ -243,7 +297,15 @@ sub add_exon {
     -slice     => $slice
   );
 
-  return $exon;
+  # Transcripts can share exon, only store once
+  foreach my $existing_exon (@$exons) {
+    if ($existing_exon->start() == $seq_region_start && $existing_exon->end() == $seq_region_end && $existing_exon->strand() == $seq_region_strand) {
+      return $exon, $exons;
+    }
+  }
+
+  push @$exons, $exon;
+  return $exon, $exons;
 }
 
 # Add a gene
@@ -525,13 +587,22 @@ sub add_transcript {
   my $slice     = shift;
   my $biotype   = shift;
   my $source    = shift;
+  my $start     = shift;
+  my $end       = shift;
+  my $count     = shift;
 
   my $status = 'KNOWN';
+
+  # If count is not null, there is more than one translation for the transcript
+  # Version the stable id to store duplicates
+  if ($count) { $stable_id = $stable_id . "-" . $count; }
 
   my $transcript = Bio::EnsEMBL::Transcript->new(
     -stable_id => $stable_id,
     -analysis  => $analysis,
     -slice     => $slice,
+    -start     => $start,
+    -end       => $end,
     -biotype   => $biotype,
     -source    => $source,
     -status    => $status
