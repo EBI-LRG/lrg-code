@@ -1424,8 +1424,8 @@ sub mapping_2_pairs {
       if ($diff->type eq 'mismatch') {
 	$pair = [
 	  'M',
-	  $diff_lrg_end,
 	  $diff_lrg_start,
+	  $diff_lrg_end,
 	  $diff_chr_start,
 	  $diff_chr_end,
 	  $strand,
