@@ -5,18 +5,20 @@ use LRG::LRG;
 use Getopt::Long;
 
 
-my ($xml_dir,$bed_dir,$tmp_dir,$lrg_file,$help);
+my ($xml_dir,$bed_dir,$tmp_dir,$lrg_file,$assembly,$help);
 GetOptions(
   'xml_dir=s'		=> \$xml_dir,
   'bed_dir=s'   => \$bed_dir,
   'tmp_dir=s'   => \$tmp_dir,
   'xml_file=s'	=> \$lrg_file,
+  'assembly=s'  => \$assembly,
 	'help'        => \$help
 );
 
 die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)); 
 die("Bed directory (-bed_dir) needs to be specified!") unless (defined($bed_dir)); 
 die("Temporary directory (-tmp_dir) needs to be specified!") unless (defined($tmp_dir)); 
+die("Assembly (-assembly) needs to be specified!") unless (defined($assembly)); 
 usage() if (defined($help));
 
 # Give write permission for the group
@@ -106,7 +108,8 @@ my %chr_names = (
                 '20' => 20,
                 '21' => 21,
                 '22' => 22,
-                'X' => 23
+                'X'  => 23,
+                'Y'  => 24,
                 );
 
 open BED, "> $tmp_dir/$bed_file" or die $!;
@@ -127,161 +130,170 @@ foreach my $status (keys(%lrg_meta)) {
 	  foreach my $aset (@$asets) {
 	    next if ($aset->findNodeSingle('source/name')->content ne "LRG");
 	    my $gene_name = $aset->findNodeSingle('lrg_locus')->content;
-	    my $mapping = $aset->findNodeSingle('mapping');
+	    my $mappings = $aset->findNodeArraySingle('mapping');
 	    
-	    $g_start = $mapping->data()->{'other_start'};
-	    $g_end   = $mapping->data()->{'other_end'};
-	   
-	    $chr      = $mapping->data()->{'other_name'};
-	    $chr_name = $chr_names{$chr};
+	    foreach my $mapping (@$mappings) {
 	    
-	    my $start   = $g_start-1; # BED: The first base in a chromosome is numbered 0
-	    my $end     = $g_end;     # BED: The ending position of the feature in the chromosome or scaffold. 
+	      $chr = $mapping->data()->{'other_name'};
+	      next if ($mapping->data()->{'coord_system'} !~ /^$assembly/i || $chr !~ /^([0-9]+|[XY])$/i);
+	      $chr_name = $chr_names{$chr};
+print STDERR "## $lrg_id: $chr\n";	    
+
+	      $g_start = $mapping->data()->{'other_start'};
+	      $g_end   = $mapping->data()->{'other_end'};
+	    
+	      my $start = $g_start-1; # BED: The first base in a chromosome is numbered 0
+	      my $end   = $g_end;     # BED: The ending position of the feature in the chromosome or scaffold. 
 	                              #      The chromEnd base is not included in the display of the feature. 
 	                              #      For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99. 
 	    
-	    my $mapping_span = $mapping->findNodeSingle('mapping_span');
-	    $strand = $mapping_span->data()->{'strand'};
-	    $strand_operator = ($strand == 1) ? '+' : '-';
+	      my $mapping_span = $mapping->findNodeSingle('mapping_span');
+	      $strand = $mapping_span->data()->{'strand'};
+	      $strand_operator = ($strand == 1) ? '+' : '-';
 	    
-	    #my $line_content = "chr$chr\t$start\t$end\t$lrg_id ($gene_name)\t0\t$strand_operator";
-	    my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator";
+	      #my $line_content = "chr$chr\t$start\t$end\t$lrg_id ($gene_name)\t0\t$strand_operator";
+	      my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator";
 	  
-		  if ($lrg_gene{$status}{$chr_name}{$start}) {
-	      push(@{$lrg_gene{$status}{$chr_name}{$start}}, $line_content);
-		  }
-	    elsif ($lrg_gene{$status}{$chr_name}) {
-		    $lrg_gene{$status}{$chr_name}{$start} = [$line_content];
-		  }
-		  else {
-		    $lrg_gene{$status}{$chr_name} = {$start => [$line_content]};
-		  }
+		    if ($lrg_gene{$status}{$chr_name}{$start}) {
+	        push(@{$lrg_gene{$status}{$chr_name}{$start}}, $line_content);
+		    }
+	      elsif ($lrg_gene{$status}{$chr_name}) {
+		      $lrg_gene{$status}{$chr_name}{$start} = [$line_content];
+		    }
+		    else {
+		      $lrg_gene{$status}{$chr_name} = {$start => [$line_content]};
+		    }
 	    
-	    $l_start = $mapping_span->data()->{'lrg_start'};
-	    $l_end   = $mapping_span->data()->{'lrg_end'};
+	      $l_start = $mapping_span->data()->{'lrg_start'};
+	      $l_end   = $mapping_span->data()->{'lrg_end'};
 	  
-	    # Mapping_diff
-      foreach my $mapping_diff (@{$mapping_span->findNodeArray('diff') || []}) {
-        my $type = $mapping_diff->data->{type};
-        next if ($type eq 'mismatch');
-        my $other_start = $mapping_diff->data->{other_start};
-        my $other_end   = $mapping_diff->data->{other_end};
-        my $lrg_start   = $mapping_diff->data->{lrg_start};
-        my $lrg_end     = $mapping_diff->data->{lrg_end};
-        my $size        = ($type eq 'lrg_ins') ? $lrg_end-$lrg_start+1 :  $other_end-$other_start+1;
+	      # Mapping_diff
+        foreach my $mapping_diff (@{$mapping_span->findNodeArray('diff') || []}) {
+          my $type = $mapping_diff->data->{type};
+          next if ($type eq 'mismatch');
+          my $other_start = $mapping_diff->data->{other_start};
+          my $other_end   = $mapping_diff->data->{other_end};
+          my $lrg_start   = $mapping_diff->data->{lrg_start};
+          my $lrg_end     = $mapping_diff->data->{lrg_end};
+          my $size        = ($type eq 'lrg_ins') ? $lrg_end-$lrg_start+1 :  $other_end-$other_start+1;
 
-        $diff{$other_start} = {'other_start' => $other_start,
-                               'other_end'   => $other_end,
-                               'lrg_start'   => $lrg_start,
-                               'lrg_end'     => $lrg_end,
-                               'type'        => $type,
-                               'size'        => $size };
-      }
-	  }
+          $diff{$other_start} = {'other_start' => $other_start,
+                                 'other_end'   => $other_end,
+                                 'lrg_start'   => $lrg_start,
+                                 'lrg_end'     => $lrg_end,
+                                 'type'        => $type,
+                                 'size'        => $size };
+        }
+#      }
+#	  }
 	  
-	  # Transcript coordinates
-	  #my %protein_list;
-    my $transcripts = $lrg->findNodeArraySingle('fixed_annotation/transcript');
-    foreach my $transcript (@$transcripts) {
-      my $t_short_name = $transcript->data->{name};
-      my $t_name   = $lrg_id.$t_short_name;
-      my $t_number = substr($t_short_name,1);
-      my $t_coords = $transcript->findNodeSingle('coordinates');
-      my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
-      my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+#	  next if (!$g_start || !$g_end);
+	  
+	      # Transcript coordinates
+	      #my %protein_list;
+        my $transcripts = $lrg->findNodeArraySingle('fixed_annotation/transcript');
+        foreach my $transcript (@$transcripts) {
+          my $t_short_name = $transcript->data->{name};
+          my $t_name   = $lrg_id.$t_short_name;
+          my $t_number = substr($t_short_name,1);
+          my $t_coords = $transcript->findNodeSingle('coordinates');
+          my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+          my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
 
-      if ($strand == -1) {
-        my $t_tmp = $t_start;
-        $t_start = $t_end;
-        $t_end = $t_tmp;
-      }
+          if ($strand == -1) {
+            my $t_tmp = $t_start;
+            $t_start = $t_end;
+            $t_end = $t_tmp;
+          }
 
-      # Exons
-      my @exons_sizes; 
-      my @exons_starts;
-      my $exons = $transcript->findNodeArray('exon');
-      my $exons_count = scalar(@$exons);
+          # Exons
+          my @exons_sizes; 
+          my @exons_starts;
+          my $exons = $transcript->findNodeArray('exon');
+          my $exons_count = scalar(@$exons);
 
-      foreach my $exon (@$exons) {
-        my ($e_start, $e_end, $e_size, $e_relative_start);
-        foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
-          next if ($e_coords->data->{coord_system} ne $lrg_id);        
+          foreach my $exon (@$exons) {
+            my ($e_start, $e_end, $e_size, $e_relative_start);
+            foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
+              next if ($e_coords->data->{coord_system} ne $lrg_id);        
 
-          $e_start = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
-          $e_end   = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
-        }
-        die "Can't get genomic coordinates for an exon of the transcript $t_name" if (!defined($e_start) || !defined($e_end));
+              $e_start = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+              $e_end   = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+            }
+            die "Can't get genomic coordinates for an exon of the transcript $t_name" if (!defined($e_start) || !defined($e_end));
         
-        if ($strand == -1) {
-          my $e_tmp = $e_start;
-          $e_start = $e_end;
-          $e_end = $e_tmp;
-        }
-        $e_size  = $e_end-$e_start; # No "+1" because we only want the relative coordinate of the end (e.g. chr1:1-10 has a sequence length of 10 but the block size is 9 : 1+9=10)
-        push(@exons_sizes,$e_size);
+            if ($strand == -1) {
+              my $e_tmp = $e_start;
+              $e_start = $e_end;
+              $e_end = $e_tmp;
+            }
+            $e_size  = $e_end-$e_start; # No "+1" because we only want the relative coordinate of the end (e.g. chr1:1-10 has a sequence length of 10 but the block size is 9 : 1+9=10)
+            push(@exons_sizes,$e_size);
         
-        $e_relative_start = $e_start-$t_start;
-        push(@exons_starts,$e_relative_start);
-      }
+            $e_relative_start = $e_start-$t_start;
+            push(@exons_starts,$e_relative_start);
+          }
 
-      if ($strand == -1) {
-        @exons_sizes  = reverse(@exons_sizes);
-        @exons_starts = reverse(@exons_starts);
-      }
-      my $exons_sizes_list = join(',',@exons_sizes);
-      my $exons_starts_list = join(',',@exons_starts);
+          if ($strand == -1) {
+            @exons_sizes  = reverse(@exons_sizes);
+            @exons_starts = reverse(@exons_starts);
+          }
+          my $exons_sizes_list = join(',',@exons_sizes);
+          my $exons_starts_list = join(',',@exons_starts);
       
-      my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$t_start\t$t_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
+          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$t_start\t$t_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
-      if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
-	      push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
-	    }
-      elsif ($lrg_trans{$status}{$chr_name}{$t_start}) {
-	      $lrg_trans{$status}{$chr_name}{$t_start}{$t_number} = [$t_line_content];
-		  }
-		  elsif ($lrg_trans{$status}{$chr_name}) {
-		    $lrg_trans{$status}{$chr_name}{$t_start} = {$t_number => [$t_line_content]};
-		  }
-		  else {
-        $lrg_trans{$status}{$chr_name} = {$t_start => { $t_number => [$t_line_content]}};
-		  }
-
-      ## Protein coordinates
-      #my $codings = $transcript->findNodeArraySingle('coding_region');
-      #foreach my $coding (@$codings) {
-      #  my $p_short_name = $coding->findNodeSingle('translation')->data->{name};
-      #  
-      #  next if ($protein_list{$p_short_name});
-      #  $protein_list{$p_short_name} = 1;
-      #  
-      #  my $p_name   = $lrg_id.$p_short_name;
-      #  my $p_number = substr($p_short_name,1);
-      #  my $p_coords = $coding->findNode('coordinates');
-      #  my $p_start  = lrg2genomic($p_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
-      #  my $p_end    = lrg2genomic($p_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
-      #  
-      #  if ($strand == -1) {
-      #    my $p_tmp = $p_start;
-      #    $p_start = $p_end;
-      #    $p_end = $p_tmp;
-      #  }
-      #  
-      #  #my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name ($lrg_id protein $p_number)\t0\t$strand_operator";
-      #  my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name(protein$p_number)\t0\t$strand_operator";
-      #
-      #  if ($lrg_prot{$status}{$chr_name}{$p_start}{$p_number}) {
-	    #    push(@{$lrg_prot{$status}{$chr_name}{$p_start}{$p_number}}, $p_line_content);
-	    #  }
-      #  elsif ($lrg_prot{$status}{$chr_name}{$p_start}) {
-	    #    $lrg_prot{$status}{$chr_name}{$p_start}{$p_number} = [$p_line_content];
-		  #  }
-		  #  elsif ($lrg_prot{$status}{$chr_name}) {
-		  #    $lrg_prot{$status}{$chr_name}{$p_start} = {$p_number => [$p_line_content]};
-		  #  }
-		  #  else {
-      #    $lrg_prot{$status}{$chr_name} = {$p_start => { $p_number => [$p_line_content]}};
-		  #  }
-      #}  
+          if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
+	          push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
+	        }
+          elsif ($lrg_trans{$status}{$chr_name}{$t_start}) {
+	          $lrg_trans{$status}{$chr_name}{$t_start}{$t_number} = [$t_line_content];
+	    	  }
+	    	  elsif ($lrg_trans{$status}{$chr_name}) {
+		        $lrg_trans{$status}{$chr_name}{$t_start} = {$t_number => [$t_line_content]};
+	    	  }
+	    	  else {
+            $lrg_trans{$status}{$chr_name} = {$t_start => { $t_number => [$t_line_content]}};
+	    	  }
+        }
+      
+        ## Protein coordinates
+        #my $codings = $transcript->findNodeArraySingle('coding_region');
+        #foreach my $coding (@$codings) {
+        #  my $p_short_name = $coding->findNodeSingle('translation')->data->{name};
+        #  
+        #  next if ($protein_list{$p_short_name});
+        #  $protein_list{$p_short_name} = 1;
+        #  
+        #  my $p_name   = $lrg_id.$p_short_name;
+        #  my $p_number = substr($p_short_name,1);
+        #  my $p_coords = $coding->findNode('coordinates');
+        #  my $p_start  = lrg2genomic($p_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+        #  my $p_end    = lrg2genomic($p_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+        #  
+        #  if ($strand == -1) {
+        #    my $p_tmp = $p_start;
+        #    $p_start = $p_end;
+        #    $p_end = $p_tmp;
+        #  }
+        #  
+        #  #my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name ($lrg_id protein $p_number)\t0\t$strand_operator";
+        #  my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name(protein$p_number)\t0\t$strand_operator";
+        #
+        #  if ($lrg_prot{$status}{$chr_name}{$p_start}{$p_number}) {
+	      #    push(@{$lrg_prot{$status}{$chr_name}{$p_start}{$p_number}}, $p_line_content);
+	      #  }
+        #  elsif ($lrg_prot{$status}{$chr_name}{$p_start}) {
+	      #    $lrg_prot{$status}{$chr_name}{$p_start}{$p_number} = [$p_line_content];
+	  	  #  }
+		    #  elsif ($lrg_prot{$status}{$chr_name}) {
+		    #    $lrg_prot{$status}{$chr_name}{$p_start} = {$p_number => [$p_line_content]};
+		    #  }
+		    #  else {
+        #    $lrg_prot{$status}{$chr_name} = {$p_start => { $p_number => [$p_line_content]}};
+		    #  }
+        #} 
+      } 
 	  }
 	}
 	print STDOUT "LRG DATA: $status LRG data fetched\n";
@@ -416,10 +428,12 @@ sub usage {
     
         -xml_dir       Path to LRG XML directory to be read (required)
 				-bed_dir       Path to LRG bed directory where the file(s) will be stored (required)
-        -xml_file      Name of the LRG XML file(s) where you want to extract the fasta sequence.
+        -xml_file      Name of the LRG XML file(s) where you want to extract the mapping.
                        If ommited, the script will extract all the LRG mapping from the XML directory.
                        You can specify several LRG XML files by separating them with a coma:
                        e.g. LRG_1.xml,LRG_2.xml,LRG_3.xml
+        -assembly      Assembly number of the data (required)
+                       e.g. GRCh37               
         -help          Print this message
         
   };
