@@ -137,7 +137,6 @@ foreach my $status (keys(%lrg_meta)) {
 	      $chr = $mapping->data()->{'other_name'};
 	      next if ($mapping->data()->{'coord_system'} !~ /^$assembly/i || $chr !~ /^([0-9]+|[XY])$/i);
 	      $chr_name = $chr_names{$chr};
-print STDERR "## $lrg_id: $chr\n";	    
 
 	      $g_start = $mapping->data()->{'other_start'};
 	      $g_end   = $mapping->data()->{'other_end'};
@@ -151,7 +150,6 @@ print STDERR "## $lrg_id: $chr\n";
 	      $strand = $mapping_span->data()->{'strand'};
 	      $strand_operator = ($strand == 1) ? '+' : '-';
 	    
-	      #my $line_content = "chr$chr\t$start\t$end\t$lrg_id ($gene_name)\t0\t$strand_operator";
 	      my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator";
 	  
 		    if ($lrg_gene{$status}{$chr_name}{$start}) {
@@ -184,10 +182,6 @@ print STDERR "## $lrg_id: $chr\n";
                                  'type'        => $type,
                                  'size'        => $size };
         }
-#      }
-#	  }
-	  
-#	  next if (!$g_start || !$g_end);
 	  
 	      # Transcript coordinates
 	      #my %protein_list;
