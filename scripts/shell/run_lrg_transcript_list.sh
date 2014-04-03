@@ -12,4 +12,8 @@ if [[ $2 ]]; then
   tmpdir="-tmp_dir $2"
 fi
 
-perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_transcript_list.pl ${path} ${tmpdir}
+# GRCh37
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_transcript_list.pl -assembly GRCh37 ${path} ${tmpdir}
+
+# GRCh38
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_transcript_list.pl -assembly GRCh38 ${path} ${tmpdir}

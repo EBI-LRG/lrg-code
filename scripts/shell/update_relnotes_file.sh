@@ -20,6 +20,7 @@ dbname=${LRGDBNAME}
 pass=${LRGDBPASS}
 
 tmpdir=''
+default_assembly='GRCh37'
 
 assembly=$1
 tmp=$2
@@ -28,7 +29,7 @@ is_test=$3
 # Test the assembly
 is_assembly=`echo ${assembly} | grep -P '^GRCh'`
 if [[ -z ${is_assembly} ]]; then
-  assembly='GRCh37'
+  assembly=${default_assembly}
   tmp=$2
   is_test=$3
 fi
@@ -218,7 +219,14 @@ fi
 echo "#==========#"
 echo "# BED FILE #"
 echo "#==========#"
-perl ${perldir}/lrg2bed.pl -bed_dir ${pubpath} -xml_dir ${pubpath} -assembly ${assembly} ${tmpdir}
+assembly_37='GRCh37'
+assembly_38='GRCh38'
+echo "BED file in ${assembly_37}"
+perl ${perldir}/lrg2bed.pl -bed_dir ${pubpath} -xml_dir ${pubpath} -assembly ${assembly_37} ${tmpdir}
+
+echo "BED file in ${assembly_38}"
+perl ${perldir}/lrg2bed.pl -bed_dir ${pubpath} -xml_dir ${pubpath} -assembly ${assembly_38} ${tmpdir}
+
 
 
 # FASTA ZIP

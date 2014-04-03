@@ -247,9 +247,18 @@ perl lrg-code/scripts/lrg2fasta.pl -xml_dir ${new_dir} -fasta_dir ${new_dir}/fas
 check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created"
 
 
-echo_stderr  "# Create GFF file ... "
-perl lrg-code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}.xml.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly}
-check_empty_file ${new_dir}/gff/${lrg_id}.xml.gff "GFF file created"
+
+echo_stderr  "# Create GFF files ... "
+assembly_37='GRCh37'
+assembly_38='GRCh38'
+echo_stderr  "> Create GFF file in ${assembly_37} ... "
+perl lrg-code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_37}.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly_37}
+check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_37}.gff "GFF file for ${assembly_37} created"
+
+echo_stderr  "> Create GFF file in ${assembly_38} ... "
+perl lrg-code/scripts/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_38}.gff -xml ${new_dir}/${lrg_id}.xml -assembly ${assembly_38}
+check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_38}.gff "GFF file for ${assembly_38} created"
+
 
 
 end_of_script ${new_dir}/${lrg_id}.xml

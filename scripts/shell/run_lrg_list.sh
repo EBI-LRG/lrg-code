@@ -7,4 +7,8 @@ if [[ $1 ]]; then
   path=$1
 fi
 
-perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl ${path}
+# GRCh37
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh37 -xml_dir ${path}
+
+# GRCh38
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh38 -xml_dir ${path}
