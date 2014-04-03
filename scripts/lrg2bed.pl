@@ -26,7 +26,7 @@ umask(0002);
 
 my $separator = "\n\n\n";
 my $pending_xml_dir = "$xml_dir/pending";
-my $bed_file   = 'LRG.bed';
+my $bed_file   = "LRG_$assembly.bed";
 my $track_name = 'LRG';
 my $track_desc = 'Locus Reference Genomic sequences (LRG)';
 

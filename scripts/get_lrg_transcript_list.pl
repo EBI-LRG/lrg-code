@@ -5,17 +5,17 @@ use File::stat;
 use LRG::LRG;
 use Getopt::Long;
 
-my ($xml_dir,$tmp_dir);
+my ($assembly,$xml_dir,$tmp_dir);
 GetOptions(
-  'xml_dir=s'	=> \$xml_dir,
-  'tmp_dir=s' => \$tmp_dir,
+  'assembly=s' => \$assembly,
+  'xml_dir=s'	 => \$xml_dir,
+  'tmp_dir=s'  => \$tmp_dir,
 );
 
 
-my $assembly = 'GRCh37';
-
-$xml_dir ||= '/ebi/ftp/pub/databases/lrgex';
-$tmp_dir ||= './';
+$assembly ||= 'GRCh37';
+$xml_dir  ||= '/ebi/ftp/pub/databases/lrgex';
+$tmp_dir  ||= './';
 
 my $pending_dir = "$xml_dir/pending";
 my %pendings;
@@ -60,7 +60,7 @@ $dh = undef;
 opendir($dh,$pending_dir);
 warn("Could not process directory $pending_dir") unless (defined($dh));
 my @pending_files = readdir($dh);
-@pending_files = grep {$_ =~ m/^LRG\_[0-9]+_index\.xml$/} @pending_files;
+@pending_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @pending_files;
 foreach my $p (@pending_files) {
   $pendings{$p} = 1;
 }
@@ -91,7 +91,7 @@ foreach my $file (@files) {
     $hgnc = $set->findNode('lrg_locus')->content();
     # Mapping
     foreach my $mapping (@{$set->findNodeArray('mapping')}) {
-      next if ($mapping->data->{coord_system} !~ /^$assembly/i && $mapping->data->{other_name} !~ /^([0-9]+|[XY])$/i);
+      next if ($mapping->data->{coord_system} !~ /^$assembly/i || $mapping->data->{other_name} !~ /^([0-9]+|[XY])$/i);
       $chr     = $mapping->data->{other_name};
       $g_start = $mapping->data->{other_start};
       $g_end   = $mapping->data->{other_end};
