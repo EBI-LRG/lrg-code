@@ -19,6 +19,7 @@ usage() if (defined($help));
 my $species = 'Homo sapiens';
 my $taxo_id = 9606;
 my $lrg_list = 'lrgs_in_ensembl.txt';
+my $default_assembly = 'GRCh37';
 
 # Give write permission for the group
 umask(0002);
@@ -99,7 +100,7 @@ foreach my $xml (@xmlfiles) {
 	my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set')	;
 
 	foreach my $set (@$asets) {
-    my $s_name = $set->findNode('source/name')->content;
+    my $s_name = $set->findNodeSingle('source/name')->content;
     
 		# Gene description
     if ($s_name =~ /NCBI/) {
@@ -116,12 +117,12 @@ foreach my $xml (@xmlfiles) {
     # LRG data
     elsif ($s_name =~ /LRG/) {
       # Last modification date (dates)
-      $last_modified = $set->findNode('modification_date')->content;
+      $last_modified = $set->findNodeSingle('modification_date')->content;
 
       # Coordinates (addditional_fields)
-      my $coords  = $set->findNodeArray('mapping');
+      my $coords  = $set->findNodeArraySingle('mapping');
       foreach my $coord (@{$coords}) {
-        next if ($coord->data->{coord_system} !~ /GRCh37/i && $coord->data->{other_name} !~ /^([0-9]+|[XY])$/i);
+        next if ($coord->data->{coord_system} !~ /^$default_assembly/i || $coord->data->{other_name} !~ /^([0-9]+|[XY])$/i);
 			  $assembly  = $coord->data->{coord_system};
 			  $chr_name  = $coord->data->{other_name}; 
 			  $chr_start = $coord->data->{other_start};
@@ -193,7 +194,7 @@ foreach my $xml (@xmlfiles) {
 	# Gene xref
 	my $x_genes = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene');
 	$cross_refs = get_cross_refs($x_genes,$cross_refs);
-	my $seq_source = $lrg->findNode('fixed_annotation/sequence_source')->content;
+	my $seq_source = $lrg->findNodeSingle('fixed_annotation/sequence_source')->content;
 	$cross_refs->{$seq_source} = 'RefSeq' if (defined($seq_source));
 
 	# Transcript xref
@@ -217,12 +218,12 @@ foreach my $xml (@xmlfiles) {
 
 	# Date
 	my $dates = $entry->addNode('dates');
-	my $creation_date = $lrg->findNode('fixed_annotation/creation_date')->content;
+	my $creation_date = $lrg->findNodeSingle('fixed_annotation/creation_date')->content;
 	$dates->addEmptyNode('date',{'type' => 'creation', 'value' =>  $creation_date});
 	
 	foreach my $set (@$asets) {
     if ($set->findNode('source/name')->content =~ /LRG/) {
-      my $last_modified = $set->findNode('modification_date')->content;
+      my $last_modified = $set->findNodeSingle('modification_date')->content;
       $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $last_modified});
       last;
     }
