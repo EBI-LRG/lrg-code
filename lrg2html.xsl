@@ -23,7 +23,7 @@
 <xsl:variable name="lrg_coord_system" select="$lrg_id" />
 <xsl:variable name="symbol_source">HGNC</xsl:variable>
 <xsl:variable name="hgnc_url">http://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
-<xsl:variable name="lrg_bed_file_location">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/LRG.bed</xsl:variable>
+<xsl:variable name="lrg_bed_file_location">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/</xsl:variable>
 <xsl:variable name="previous_assembly">GRCh37</xsl:variable>
 <xsl:variable name="current_assembly">GRCh38</xsl:variable>
 
@@ -1580,22 +1580,36 @@
   <xsl:variable name="region_id"     select="@other_id" />
   <xsl:variable name="region_start"  select="@other_start" />
   <xsl:variable name="region_end"    select="@other_end" />
-  <xsl:variable name="main_assembly" select="substring-before($coord_system,'.')" />
+  
+  <xsl:variable name="main_assembly">
+    <xsl:choose>
+      <xsl:when test="contains($coord_system,$previous_assembly)">
+        <xsl:value-of select="$previous_assembly"/>
+      </xsl:when>   
+      <xsl:when test="contains($coord_system,$current_assembly)">
+        <xsl:value-of select="$current_assembly"/> 
+      </xsl:when> 
+      <xsl:otherwise><xsl:value-of select="$coord_system"/></xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+    
+<!--   select="substring-before($coord_system,'.')" />-->
   <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
     <xsl:choose>  
-      <!--<xsl:when test="$main_assembly=$previous_assembly">
-				<xsl:text>grch37</xsl:text>
-			</xsl:when>-->
+      <xsl:when test="$main_assembly!=$previous_assembly">
+				<xsl:text>pre</xsl:text>
+			</xsl:when>
       <xsl:otherwise>
 				<xsl:text>www</xsl:text>
 			</xsl:otherwise>
     </xsl:choose>
   	<xsl:text>.ensembl.org/Homo_sapiens/Location/View?</xsl:text>
   </xsl:variable>
+  
   <xsl:variable name="ensembl_region"><xsl:text>r=</xsl:text><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>CHR=<xsl:value-of select="$region_name"/><xsl:text>&amp;</xsl:text>BEG=<xsl:value-of select="$region_start"/><xsl:text>&amp;</xsl:text>END=<xsl:value-of select="$region_end"/></xsl:variable>
   <xsl:variable name="ucsc_url">http://genome.ucsc.edu/cgi-bin/hgTracks?</xsl:variable>
-  <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/><xsl:text>&amp;</xsl:text>hgt.customText=<xsl:value-of select="$lrg_bed_file_location" /></xsl:variable>
+  <xsl:variable name="ucsc_region">clade=mammal<xsl:text>&amp;</xsl:text>org=Human<xsl:text>&amp;</xsl:text>position=chr<xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/><xsl:text>&amp;</xsl:text>hgt.customText=<xsl:value-of select="$lrg_bed_file_location" /><xsl:text>LRG_</xsl:text><xsl:value-of select="$main_assembly"/><xsl:text>.bed</xsl:text></xsl:variable>
   
 	<xsl:choose>
 		<xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
@@ -1613,23 +1627,22 @@
     <xsl:choose>
 		  <xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
 		  
-		    <!-- Ensembl link -->
-		    <xsl:if test="$main_assembly=$previous_assembly">
+		<!-- Ensembl link -->
+		
     <a>
           <xsl:attribute name="target">_blank</xsl:attribute>
           <xsl:attribute name="href">
             <xsl:value-of select="$ensembl_url" />
             <xsl:value-of select="$ensembl_region" />
-            <xsl:if test="$main_assembly!=$current_assembly">
-			        <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
-              <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>.xml.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
-            </xsl:if>
-          </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
+			      <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
+            <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>_</xsl:text><xsl:value-of select="$main_assembly"/><xsl:text>.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
+          </xsl:attribute>
+          <xsl:if test="$main_assembly=$current_assembly">pre.</xsl:if>Ensembl<xsl:call-template name="external_link_icon" />
     </a>
+    
     <span style="margin-left:5px;margin-right:10px">/</span>
-        </xsl:if>
         
-        <!-- NCBI link -->
+    <!-- NCBI link -->
     <a>
         <xsl:attribute name="target">_blank</xsl:attribute>
         <xsl:attribute name="href">
@@ -1641,9 +1654,7 @@
         </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
     </a>
     
-        <!-- UCSC link -->
-        <xsl:if test="$main_assembly=$previous_assembly">
-        
+    <!-- UCSC link -->  
     <span style="margin-left:5px;margin-right:10px">/</span>
     <a>
         <xsl:attribute name="target">_blank</xsl:attribute>
@@ -1652,12 +1663,11 @@
           <xsl:value-of select="$ucsc_region" />
           <xsl:text>&amp;</xsl:text><xsl:text>db=hg</xsl:text>
           <xsl:choose>
-            <xsl:when test="($main_assembly=$previous_assembly) or ($main_assembly='NCBI37')"><xsl:text>19</xsl:text></xsl:when>
-            <!--<xsl:when test="$main_assembly=$current_assembly"><xsl:text>38</xsl:text></xsl:when>-->
+            <xsl:when test="$main_assembly=$previous_assembly"><xsl:text>19</xsl:text></xsl:when>
+            <xsl:otherwise><xsl:text>38</xsl:text></xsl:otherwise>
           </xsl:choose>
         </xsl:attribute>UCSC<xsl:call-template name="external_link_icon" />
     </a>
-        </xsl:if>
       </xsl:when>
      
       <!-- Link to the NT NCBI page -->
