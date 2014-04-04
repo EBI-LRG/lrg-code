@@ -45,7 +45,7 @@ my %lrg_meta = (
                }
 );
 
-
+my %list_db_version = ( 'GRCh37' => 19, 'GRCh38' => 38 );
 
 
 my @xml_list;
@@ -297,6 +297,7 @@ foreach my $status (keys(%lrg_meta)) {
 # Print the data/tracks into the BED file #
 ###########################################
 my $priority = 1;
+my $db_version = $list_db_version{$assembly};
 foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   next if (scalar(keys(%{$lrg_gene{$status}})) == 0);
   
@@ -305,7 +306,7 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   
   # Genomic track
   #print BED "track name=\"$track_name$add_status_to_name\" type=bedDetail description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
-  print BED "track name=\"$track_name$add_status_to_name\" description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  print BED "track name=\"$track_name$add_status_to_name\" description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
   foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_gene{$status}})) {
     foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_gene{$status}{$lrg_chr}})) {
       foreach my $lrg_line (@{$lrg_gene{$status}{$lrg_chr}{$lrg_start}}) {
