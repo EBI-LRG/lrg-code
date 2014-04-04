@@ -2,13 +2,13 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-path=''
+xmldir=''
 if [[ $1 ]]; then
-  path=$1
+  xmldir="-xml_dir $1"
 fi
 
 # GRCh37
-perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh37 -xml_dir ${path}
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh37 ${xmldir}
 
 # GRCh38
-perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh38 -xml_dir ${path}
+perl ${CVSROOTDIR}/lrg-code/scripts/get_lrg_list.pl -assembly GRCh38 ${xmldir}
