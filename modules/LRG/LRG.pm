@@ -1052,7 +1052,7 @@ sub printAll {
     # required to open the XML doc
     $self->{'xml'}->xmlDecl('UTF-8');
 
-    $self->{'xml'}->pi('xml-stylesheet', 'type="text/xsl" href="lrg2html.xsl"') if (!defined($no_xsl));
+    $self->{'xml'}->pi('xml-stylesheet', 'type="application/xml" href="lrg2html.xsl"') if (!defined($no_xsl));
     
     # iterate through the nodes recursively
     foreach my $node(@{$self->{'nodes'}}) {
