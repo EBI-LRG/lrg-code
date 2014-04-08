@@ -1724,20 +1724,9 @@
   <xsl:variable name="region_id" select="@other_id" />
   <xsl:variable name="region_start" select="@other_start" />
   <xsl:variable name="region_end" select="@other_end" />
-  <xsl:variable name="main_assembly" select="substring-before($coord_system,'.')" />
   
-  <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
-    <xsl:choose>
-      <!--<xsl:when test="$main_assembly=$previous_assembly">
-				<xsl:text>grch37</xsl:text>
-			</xsl:when>-->
-      <xsl:otherwise><xsl:text>www</xsl:text></xsl:otherwise>
-	  </xsl:choose>
-    <xsl:text>.ensembl.org/Homo_sapiens/Transcript/Summary?t=</xsl:text><xsl:value-of select="$region_name"/>
-  </xsl:variable>
+  <xsl:variable name="ensembl_url"><xsl:text>http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=</xsl:text><xsl:value-of select="$region_name"/></xsl:variable>
   <xsl:variable name="ensembl_region"><xsl:text>r=</xsl:text><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></xsl:variable>
-  <!--<xsl:variable name="ncbi_url">http://www.ncbi.nlm.nih.gov/mapview/maps.cgi?</xsl:variable>
-  <xsl:variable name="ncbi_region">taxid=9606<xsl:text>&amp;</xsl:text>query=<xsl:value-of select="$region_id"/><xsl:text>&amp;</xsl:text>MAPS=rnaHs,rna-r</xsl:variable>-->
   <h3 class="mapping">Mapping of transcript <xsl:value-of select="$region_name"/> to <xsl:value-of select="$lrg_id"/></h3>
   <a class="show_hide"><xsl:attribute name="href">javascript:showhide('<xsl:value-of select="$region_name"/>');</xsl:attribute>show/hide</a><br />
  
@@ -1761,9 +1750,6 @@
           <xsl:attribute name="href">
             <xsl:value-of select="$ncbi_url" />
             <xsl:value-of select="$region_id" />
-            <!--<xsl:if test="$main_assembly=$previous_assembly">
-              <xsl:text>&amp;</xsl:text>build=105.0
-            </xsl:if>-->
           </xsl:attribute>NCBI<xsl:call-template name="external_link_icon" />
         </a>
       </xsl:otherwise> 
