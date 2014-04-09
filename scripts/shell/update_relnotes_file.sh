@@ -134,8 +134,12 @@ if [[ -s ${tmp_lrg_list} ]]; then
         
         # Update the LRG status in the LRG database
         while read line           
-        do           
-          mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='public' WHERE lrg_id='$line';" $dbname 
+        do
+          read -a lrg_info <<< $line
+          lrg_id=${lrg_info[0]}
+          lrg_status=${lrg_info[1]}
+          
+          mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
         done < ${tmp_lrg_list} 
         
         break

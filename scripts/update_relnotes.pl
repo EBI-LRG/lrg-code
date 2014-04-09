@@ -69,6 +69,7 @@ chomp($pend_count);
 my $dh;
 my @dirs = ($xml_dir,"$xml_dir/pending");
 my $schema_version;
+my %lrg_list;
 
 my %new_data;
 foreach my $dir (@dirs) {
@@ -92,11 +93,19 @@ foreach my $dir (@dirs) {
     } elsif ($old_data{$lrg}{'date'} ne $new_data{$lrg}{'date'}) {
       $changes{$lrg} = ($new_data{$lrg}{'status'} eq 'pending') ? 'new_pending_date' : 'new_public_date' ;
     }
-    
+        
     $schema_version = get_schema_version("$dir/$file") if (!$schema_version);
+    
+    $lrg_list{$lrg} = 1;
   }
   closedir($dh);
 }
+
+## Check if LRGs have been moved to the "on hold" directory
+foreach my $old_lrg (sort(keys(%old_data))) {
+  $changes{$old_lrg} = 'on hold' if (!$lrg_list{$old_lrg});
+}
+
 
 if (scalar(keys(%changes)) == 0) {
 	print "No difference found";
@@ -119,7 +128,7 @@ $version++;
 
 ## Update the relnotes.txt file
 open NEW, "> $new_relnotes" or die $!;
-open TMP, "> $tmp_lrg_list" or die $!;
+open TMP,  "> $tmp_lrg_list" or die $!;
 
 # Release number
 my $release_version = "$version ($day)";
@@ -130,6 +139,14 @@ print NEW "\n\nThere are $pub_count LRG entries\nThere are $pend_count pending L
 
 # Notes
 foreach my $lrg (sort(keys(%changes))) {
+
+  # Moved to the "on hold"
+  if ($changes{$lrg} eq 'on_hold') {
+    print NEW "# Pending LRG record $lrg has been deleted or moved to 'on hold'\n";
+    print TMP "$lrg\ton hold\n";
+    next;
+  }
+  
   my $pending = ($new_data{$lrg}{'status'} eq 'pending') ? ' Pending' : '';
   
   # Get HGNC name 
@@ -140,9 +157,10 @@ foreach my $lrg (sort(keys(%changes))) {
   
   if ($changes{$lrg} eq 'new_status') {
 		print NEW "# Pending LRG record $lrg$hgnc is now public\n";
-		print TMP "$lrg\n";
+		print TMP "$lrg\tpublic\n";
 	} elsif ($changes{$lrg} eq 'new_file') {
 		print NEW "#$pending LRG record $lrg$hgnc added\n";
+		print TMP "$lrg\tpending\n";
 	} elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
 		print NEW "#$pending LRG record $lrg$hgnc updated\n";
  	}
