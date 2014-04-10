@@ -377,24 +377,40 @@ div.banner_right{
   padding: 5px;
 }
 
-div.pending {
-  border: 2px solid #F00;
-  background-color: #FDFDFD;
+div.status_banner {
+  border: 2px solid;
+  border-radius: 10px;
+  box-shadow: 2px 5px 2px #888;
   padding:5px;
   margin-bottom:15px;
 }
 
-.pending_banner {
+div.status_title {
   text-align:center;
-	color:#FF0000;
 	font-size:40pt;
 	font-weight:bold;
 	padding:0px;
 }
 
-.pending_subtitle {
+.status_subtitle {
 	font-style:italic;
   padding:0px;
+}
+
+div.pending {
+  border-color: #F00;
+  background-color: #fffcfc;
+}
+.pending_title {
+	color:#FF0000;
+}
+
+div.on_hold {
+  border-color: #FFA500;
+  background-color: #fffefc;
+}
+.on_hold_title {
+	color:#FFA500;
 }
 
 

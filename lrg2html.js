@@ -308,8 +308,8 @@ function getElementsByIdStartsWith(selectorTag, prefix) {
 
 
 // function to replace a text by a link
-function create_external_link (pending) {
-  var external_icon = get_external_icon(pending);
+function create_external_link (lrg_status) {
+  var external_icon = get_external_icon(lrg_status);
 
   // Links with http
   h_elements = document.getElementsByClassName('http_link');
@@ -327,16 +327,16 @@ function create_external_link (pending) {
 }
 
 // function to build the HTML code to display the external icon
-function get_external_icon (pending) {
+function get_external_icon (lrg_status) {
   var src="img/external_link_green.png";
-  if (pending == 1) {
+  if (lrg_status != 0) {
     src = "../"+src
   }
   return '<img src="'+src+'" class="external_link" alt="External link" title="External link" />';
 }
 
 // function to retrieve the LRG name into a text file listing the LRG entries which are also stored in Ensembl
-function search_in_ensembl(lrg_id, pending) {
+function search_in_ensembl(lrg_id, lrg_status) {
 
   var filePath = 'lrgs_in_ensembl.txt';
   div = document.getElementById('ensembl_links');
@@ -347,9 +347,9 @@ function search_in_ensembl(lrg_id, pending) {
   var fileContent = xmlhttp.responseText;
   var fileArray = fileContent.split('\n');
   
-  var pending_path = '';
-  if (pending == 1) {
-    pending_path = '../';
+  var lrg_status_path = '';
+  if (lrg_status != 0) {
+    lrg_status_path = '../';
   }
 
   var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;

@@ -7,7 +7,7 @@
 <!-- LRG names -->
 <xsl:variable name="lrg_gene_name" select="/lrg/updatable_annotation/annotation_set/lrg_locus"/>
 <xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
-<xsl:variable name="pending" select="0"/>
+<xsl:variable name="lrg_status" select="0"/>
 
 <!-- Source names -->
 <xsl:variable name="lrg_source_name">LRG</xsl:variable>
@@ -27,6 +27,18 @@
 <xsl:variable name="previous_assembly">GRCh37</xsl:variable>
 <xsl:variable name="current_assembly">GRCh38</xsl:variable>
 
+<!-- PATH -->
+
+<xsl:variable name="relative_path">
+  <xsl:choose>
+    <xsl:when test="$lrg_status!=0">
+      <xsl:text>../</xsl:text>
+    </xsl:when>
+    <xsl:otherwise></xsl:otherwise>
+  </xsl:choose>
+</xsl:variable>
+
+
 <xsl:template match="/lrg">
 
 <html lang="en">
@@ -35,18 +47,21 @@
       <xsl:value-of select="$lrg_id"/> -
       <xsl:value-of select="$lrg_gene_name"/>
 
-      <xsl:if test="$pending=1">
+      <xsl:if test="$lrg_status=1">
         *** PENDING APPROVAL ***
+      </xsl:if>
+      <xsl:if test="$lrg_status=2">
+        *** ON HOLD ***
       </xsl:if>
     </title>
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
     <!-- Load the stylesheet and javascript functions -->	 
     <xsl:choose>
-      <xsl:when test="$pending=0">  
+      <xsl:when test="$lrg_status=0">  
         <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
         <script type="text/javascript" src="lrg2html.js" />
         <link rel="icon" type="image/ico" href="img/favicon_public.ico" />
-       </xsl:when>
+      </xsl:when>
       <xsl:otherwise>
         <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
         <script type="text/javascript" src="../lrg2html.js" />
@@ -57,17 +72,28 @@
 
   <body>
   <xsl:choose>
-    <xsl:when test="$pending=0">
-      <xsl:attribute name="onload">javascript:search_in_ensembl('<xsl:value-of select="$lrg_id"/>','<xsl:value-of select="$pending"/>');create_external_link('<xsl:value-of select="$pending" />');</xsl:attribute >
+    <xsl:when test="$lrg_status=0">
+      <xsl:attribute name="onload">javascript:search_in_ensembl('<xsl:value-of select="$lrg_id"/>','<xsl:value-of select="$lrg_status"/>');create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
+    </xsl:when>
+    <xsl:when test="$lrg_status=1">
+      <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
+	    
+      <!-- Add a banner indicating that the record is pending if the pending flag is set -->
+      <div class="status_banner pending">
+        <div class="status_title pending_title">*** PENDING APPROVAL! ***</div>
+        <p class="status_subtitle">
+            This LRG record is pending approval and subject to change. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
+        </p>
+      </div>
     </xsl:when>
     <xsl:otherwise>
-      <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$pending" />');</xsl:attribute >
-	 
+      <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
+	    
       <!-- Add a banner indicating that the record is pending if the pending flag is set -->
-      <div class="pending">
-        <div class="pending_banner">*** PENDING APPROVAL! ***</div>
-        <p class="pending_subtitle">
-            This LRG record is pending approval and subject to change. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
+      <div class="status_banner on_hold">
+        <div class="status_title on_hold_title">*** ON HOLD! ***</div>
+        <p class="status_subtitle">
+            This LRG record is not yet reviewed and thus is at an early stage in our curation. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
         </p>
       </div>
     </xsl:otherwise>
@@ -229,7 +255,7 @@
 	      <xsl:variable name="fasta_file_name"><xsl:value-of select="$lrg_id" />.fasta</xsl:variable>
 	      <a class="download_button" style="text-align:center" title="FASTA file containing the LRG genomic, transcript and protein sequences">
 	        <xsl:attribute name="download"><xsl:value-of select="$fasta_file_name"/></xsl:attribute>
-	        <xsl:attribute name="href"><xsl:if test="$pending=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>FASTA</a>
+	        <xsl:attribute name="href"><xsl:if test="$lrg_status=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>FASTA</a>
 	       <span style="margin-left:2px;margin-right:4px;color:#FFF;font-weight:bold">format</span>
 	      <div class="hidden" id="download_msg"><div style="color:#FFF;padding-top:5px"><small>Right click on the button and then click on "Save target as..." to download the file.</small></div></div>
     </div>
@@ -249,9 +275,14 @@
     <xsl:with-param name="lrg_gene_name"><xsl:value-of select="$lrg_gene_name" /></xsl:with-param>
   </xsl:apply-templates>
   
-  <xsl:if test="$pending=1">
-    <div class="pending">
-      <div class="pending_banner">*** PENDING APPROVAL! ***</div>
+  <xsl:if test="$lrg_status=1">
+    <div class="status_banner pending">
+      <div class="status_title pending_title">*** PENDING APPROVAL! ***</div>
+    </div>
+  </xsl:if>
+  <xsl:if test="$lrg_status=2">
+    <div class="status_banner on_hold">
+      <div class="status_title on_hold_title">*** ON HOLD! ***</div>
     </div>
   </xsl:if>
   
@@ -640,7 +671,7 @@
 
   <xsl:variable name="fasta_dir">
     <xsl:choose>
-		  <xsl:when test="$pending=1">../fasta/</xsl:when>
+		  <xsl:when test="$lrg_status=1">../fasta/</xsl:when>
 		  <xsl:otherwise>fasta/</xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
@@ -2836,21 +2867,21 @@
     <div style="float:left;width:30%;padding:5px 0px;text-align:right">
       <a href="http://www.ebi.ac.uk" target="_blank">
         <img alt="EMBL-EBI logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/embl-ebi_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/embl-ebi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
     <div style="float:left;width:40%;padding:5px 0px;text-align:center">
       <a href="http://www.ncbi.nlm.nih.gov/" target="_blank">
         <img alt="NCBI logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/ncbi_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/ncbi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
     <div style="float:right;width:30%;padding:5px 0px;text-align:left">
       <a href="http://www.gen2phen.org/" target="_blank">
         <img alt="GEN2PHEN logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/gen2phen_logo.jpg</xsl:attribute>
+          <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/gen2phen_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
@@ -2863,26 +2894,26 @@
 <!-- ICONS DISPLAY -->  
 <xsl:template name="lrg_logo">
   <img alt="LRG logo">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_logo.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/lrg_logo.png</xsl:attribute>
   </img>
 </xsl:template>    
 
 <xsl:template name="external_link_icon">
   <img class="external_link" alt="External link" title="External link">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/external_link_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/external_link_green.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="download">
   <img style="vertical-align:top" alt="Download LRG data">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/download.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/download.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="right_arrow_green">
   <xsl:param name="no_margin"/>
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/right_arrow_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/right_arrow_green.png</xsl:attribute>
     <xsl:if test="$no_margin">
       <xsl:attribute name="style">margin-right:0px</xsl:attribute>
     </xsl:if>
@@ -2891,20 +2922,20 @@
 
 <xsl:template name="lrg_right_arrow_green">
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_green.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/lrg_right_arrow_green.png</xsl:attribute>
   </img>
 </xsl:template>
 
 <xsl:template name="lrg_right_arrow_green_large">
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_green_large.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/lrg_right_arrow_green_large.png</xsl:attribute>
   </img>
 </xsl:template>  
 
 <xsl:template name="lrg_right_arrow_blue">
   <xsl:param name="img_id" />
   <img alt="right_arrow">
-    <xsl:attribute name="src"><xsl:if test="$pending=1">../</xsl:if>img/lrg_right_arrow_blue.png</xsl:attribute>
+    <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/lrg_right_arrow_blue.png</xsl:attribute>
     <xsl:if test="$img_id">
       <xsl:attribute name="id"><xsl:value-of select="$img_id" /></xsl:attribute>
     </xsl:if>
@@ -2912,7 +2943,7 @@
 </xsl:template>    
 
 <xsl:template name="hide_button">
-  <xsl:variable name="img_src"><xsl:if test="$pending=1">../</xsl:if>img/top_arrow_green.png</xsl:variable>
+  <xsl:variable name="img_src"><xsl:value-of select="$relative_path"/>img/top_arrow_green.png</xsl:variable>
   <img>
     <xsl:attribute name="src"><xsl:value-of select="$img_src"/></xsl:attribute>
     <xsl:attribute name="style">vertical-align:middle;margin-right:0px;padding-right:2px</xsl:attribute>
