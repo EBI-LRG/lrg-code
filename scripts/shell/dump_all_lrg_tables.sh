@@ -1,10 +1,11 @@
 #! /bin/bash
 . ~/.bashrc
 . ~/.lrgpaths
+. ~/.lrgpass
 
 # Relevant paths
 path=$1
-pass=7Ntoz3HH
+pass=${LRGDBPASS}
 
 if [[ ${path} ]] ; then
   mysqldump -h ${LRGDBHOST} -P ${LRGDBPORT} -u ${LRGDBADMUSER} -p${pass} lrg > "$1/lrg_dump_"`date +%d`.sql
