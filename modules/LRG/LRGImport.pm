@@ -808,6 +808,13 @@ sub purge_db {
     }
     $meta_container->delete_key('lrg');
 
+    # Remove meta_coord entries
+    my $meta_coord_container = $dbCore->get_MetaCoordContainer();
+    my @tables = ("gene", "transcript", "exon");
+    foreach my $table (@tables) {
+      $meta_coord_container->remove_feature_type($lrg_cs, $table);
+    }
+
     # Remove analysis entries
     my $analysis_adaptor = $dbCore->get_AnalysisAdaptor();
     my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
