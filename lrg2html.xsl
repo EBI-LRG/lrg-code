@@ -51,7 +51,7 @@
         *** PENDING APPROVAL ***
       </xsl:if>
       <xsl:if test="$lrg_status=2">
-        *** ON HOLD ***
+        *** STALLED ***
       </xsl:if>
     </title>
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
@@ -80,7 +80,7 @@
 	    
       <!-- Add a banner indicating that the record is pending if the pending flag is set -->
       <div class="status_banner pending">
-        <div class="status_title pending_title">*** PENDING APPROVAL! ***</div>
+        <div class="status_title pending_title">*** PENDING APPROVAL ***</div>
         <p class="status_subtitle">
             This LRG record is pending approval and subject to change. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
         </p>
@@ -90,10 +90,10 @@
       <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
 	    
       <!-- Add a banner indicating that the record is pending if the pending flag is set -->
-      <div class="status_banner on_hold">
-        <div class="status_title on_hold_title">*** ON HOLD! ***</div>
+      <div class="status_banner stalled">
+        <div class="status_title stalled_title">*** STALLED ***</div>
         <p class="status_subtitle">
-            This LRG record is not yet reviewed and thus is at an early stage in our curation. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
+            This LRG record cannot be finalised as it awaits additional information. <b>Please do not use until it has passed final approval</b>. If you have information on this gene, please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
         </p>
       </div>
     </xsl:otherwise>
@@ -277,12 +277,12 @@
   
   <xsl:if test="$lrg_status=1">
     <div class="status_banner pending">
-      <div class="status_title pending_title">*** PENDING APPROVAL! ***</div>
+      <div class="status_title pending_title">*** PENDING APPROVAL ***</div>
     </div>
   </xsl:if>
   <xsl:if test="$lrg_status=2">
-    <div class="status_banner on_hold">
-      <div class="status_title on_hold_title">*** ON HOLD! ***</div>
+    <div class="status_banner stalled">
+      <div class="status_title stalled_title">*** STALLED ***</div>
     </div>
   </xsl:if>
   

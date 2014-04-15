@@ -405,11 +405,11 @@ div.pending {
 	color:#FF0000;
 }
 
-div.on_hold {
+div.stalled {
   border-color: #FFA500;
   background-color: #fffefc;
 }
-.on_hold_title {
+.stalled_title {
 	color:#FFA500;
 }
 
