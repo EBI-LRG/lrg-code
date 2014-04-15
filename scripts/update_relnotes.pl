@@ -101,9 +101,9 @@ foreach my $dir (@dirs) {
   closedir($dh);
 }
 
-## Check if LRGs have been moved to the "on hold" directory
+## Check if LRGs have been moved to the "stalled" directory
 foreach my $old_lrg (sort(keys(%old_data))) {
-  $changes{$old_lrg} = 'on hold' if (!$lrg_list{$old_lrg});
+  $changes{$old_lrg} = 'stalled' if (!$lrg_list{$old_lrg});
 }
 
 
@@ -140,10 +140,10 @@ print NEW "\n\nThere are $pub_count LRG entries\nThere are $pend_count pending L
 # Notes
 foreach my $lrg (sort(keys(%changes))) {
 
-  # Moved to the "on hold"
+  # Moved to the "stalled"
   if ($changes{$lrg} eq 'on_hold') {
-    print NEW "# Pending LRG record $lrg has been deleted or moved to 'on hold'\n";
-    print TMP "$lrg\ton hold\n";
+    print NEW "# Pending LRG record $lrg has been deleted or moved to 'stalled'\n";
+    print TMP "$lrg\tstalled\n";
     next;
   }
   
