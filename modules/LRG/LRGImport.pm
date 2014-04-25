@@ -89,6 +89,12 @@ sub add_annotation {
           my $name = 'Selenocysteine';
           add_object_attrib($translation, $code, $value, $name, 1);
         }
+        if ($change eq 'M') {
+          my $value = "$codon $codon M";
+          my $code = 'amino_acid_sub';
+          my $name = 'Amino acid substitution';
+          add_object_attrib($translation, $code, $value, $name, 1);
+        }
       }
       push @translations, $translation;
     }
