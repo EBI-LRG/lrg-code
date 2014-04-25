@@ -363,13 +363,14 @@ while (my $lrg_id = shift(@lrg_ids)) {
           last;
         }
       }
-      print STDOUT localtime() . "\nFetched fixed annotation for $lrg_name\n" if ($verbose);
+      print STDOUT localtime() . "\tFetched fixed annotation for $lrg_name\n" if ($verbose);
       
       # Find the mapping in the XML file corresponding to the core assembly
       print STDOUT localtime() . "\tGetting mapping from XML file\n" if ($verbose);
       my $annotation_sets = $lrg_object->updatable_annotation->annotation_set();
       my $mapping_node;
       my $cs_node;
+      my @cs_nodes;
       my $cs;
       my $hgnc_name;
       my %annotation;
@@ -380,11 +381,16 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my $lrg_annotation;
       if ($annotation{'LRG'}) {
         $lrg_annotation = $annotation{'LRG'};
-        $cs_node = @{ $lrg_annotation->mapping() }[0];
+        @cs_nodes = @{ $lrg_annotation->mapping() };
         $hgnc_name = $lrg_annotation->lrg_locus->value();
-        $cs = $cs_node->assembly();
-        if ($cs =~ /$db_assembly/){
-          $mapping_node = $cs_node;
+        foreach my $cs_node (@cs_nodes) {
+          $cs = $cs_node->assembly();
+          if ($cs =~ /$db_assembly/){
+            if ($cs_node->name ne 'unlocalized') {
+              $mapping_node = $cs_node;
+              last;
+            }
+          }
         }
       }
       
