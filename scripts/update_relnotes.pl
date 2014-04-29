@@ -94,7 +94,7 @@ foreach my $dir (@dirs) {
       $changes{$lrg} = ($new_data{$lrg}{'status'} eq 'pending') ? 'new_pending_date' : 'new_public_date' ;
     }
         
-    $schema_version = get_schema_version("$dir/$file") if (!$schema_version);
+    $schema_version = get_schema_version("$dir/$file") if (!$schema_version && -e "$dir/$file");
     
     $lrg_list{$lrg} = 1;
   }
@@ -128,7 +128,7 @@ $version++;
 
 ## Update the relnotes.txt file
 open NEW, "> $new_relnotes" or die $!;
-open TMP,  "> $tmp_lrg_list" or die $!;
+open TMP, "> $tmp_lrg_list" or die $!;
 
 # Release number
 my $release_version = "$version ($day)";
@@ -151,9 +151,11 @@ foreach my $lrg (sort(keys(%changes))) {
   
   # Get HGNC name 
   my $subdir = ($new_data{$lrg}{'status'} eq 'pending') ? 'pending/' : '';
-  my $lrg_obj = LRG::LRG::newFromFile("$xml_dir/$subdir$lrg.xml") or die "ERROR: Could not load the LRG file $lrg.xml!";
-  my $hgnc = $lrg_obj->findNode('lrg_locus')->content;
-  $hgnc = (defined($hgnc)) ? " ($hgnc)" : '';
+  my $hgnc = '';
+  if (-e "$xml_dir/$subdir$lrg.xml") {
+    my $lrg_obj = LRG::LRG::newFromFile("$xml_dir/$subdir$lrg.xml") or die "ERROR: Could not load the LRG file $lrg.xml!";
+    $hgnc = '('.$lrg_obj->findNode('lrg_locus')->content.')';
+  }
   
   if ($changes{$lrg} eq 'new_status') {
 		print NEW "# Pending LRG record $lrg$hgnc is now public\n";
