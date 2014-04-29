@@ -141,7 +141,7 @@ print NEW "\n\nThere are $pub_count LRG entries\nThere are $pend_count pending L
 foreach my $lrg (sort(keys(%changes))) {
 
   # Moved to the "stalled"
-  if ($changes{$lrg} eq 'on_hold') {
+  if ($changes{$lrg} eq 'stalled') {
     print NEW "# Pending LRG record $lrg has been deleted or moved to 'stalled'\n";
     print TMP "$lrg\tstalled\n";
     next;
