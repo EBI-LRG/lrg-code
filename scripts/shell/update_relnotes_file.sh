@@ -121,12 +121,12 @@ fi
 
 # List of the LRGs made public
 if [[ -s ${tmp_lrg_list} ]]; then
-  echo "The LRGs listed below are new in the public FTP directory:"
+  echo "The LRGs listed below had their status changed (i.e. they moved to different location in the FTP directory):"
   cat ${tmp_lrg_list}
   
   while true
   do
-    echo -n "Are you sure you want to validate them as public in the relnotes.txt file and the LRG database ? (yes or no) : "
+    echo -n "Are you sure you want to validate these status changes in the relnotes.txt file and the LRG database ? (yes or no) : "
     read CONFIRM
     case $CONFIRM in
       YES|yes|Yes) 
@@ -152,7 +152,7 @@ if [[ -s ${tmp_lrg_list} ]]; then
     esac
   done
 else
-  echo "No new public LRG found. The script continues the pipeline."
+  echo "No LRG status changes found. The script continues the pipeline."
 fi
 
 # Delete the tmp_lrg_list.txt file
