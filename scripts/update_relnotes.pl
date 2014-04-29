@@ -21,6 +21,7 @@ if (!$cvs_dir) {
   die("You need to specify the CVS directory (-cvs_dir)") unless ($cvs_dir);
 }
 my $cvs_ftp = "$cvs_dir/ftp/public";
+my $stalled = 'stalled';
 
 $tmp_dir = $cvs_ftp if (!$tmp_dir || !-d $tmp_dir);
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
@@ -103,7 +104,7 @@ foreach my $dir (@dirs) {
 
 ## Check if LRGs have been moved to the "stalled" directory
 foreach my $old_lrg (sort(keys(%old_data))) {
-  $changes{$old_lrg} = 'stalled' if (!$lrg_list{$old_lrg});
+  $changes{$old_lrg} = $stalled if (!$lrg_list{$old_lrg});
 }
 
 
@@ -141,9 +142,10 @@ print NEW "\n\nThere are $pub_count LRG entries\nThere are $pend_count pending L
 foreach my $lrg (sort(keys(%changes))) {
 
   # Moved to the "stalled"
-  if ($changes{$lrg} eq 'stalled') {
-    print NEW "# Pending LRG record $lrg has been deleted or moved to 'stalled'\n";
-    print TMP "$lrg\tstalled\n";
+  if ($changes{$lrg} eq $stalled) {
+    my $change_msg = (-e "$xml_dir/$stalled/$lrg.xml") ? "moved to $stalled" : 'deleted';
+    print NEW "# Pending LRG record $lrg has been $change_msg\n";
+    print TMP "$lrg\t$stalled\n";
     next;
   }
   
