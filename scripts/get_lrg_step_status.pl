@@ -16,6 +16,7 @@ my $port;
 my $user;
 my $pass;
 my $dbname;
+my $is_private;
 
 GetOptions(
   'host=s'	 => \$host,
@@ -23,7 +24,8 @@ GetOptions(
   'dbname=s' => \$dbname,
   'user=s'	 => \$user,
   'pass=s'	 => \$pass,
-  'output=s' => \$outputfile
+  'output=s' => \$outputfile,
+  'private!' => \$is_private
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -44,6 +46,7 @@ my $lrg_step        = 'lrg_step';
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 
 my $ftp = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
+my $xml_dir = '/ebi/ftp/pub/databases/lrgex';
 
 my %updates = ( 0   => 'green_step',
                 30  => 'orange_step', # Number of days after the step update to be declared as "old"
@@ -92,9 +95,12 @@ my $sth_date = $db_adaptor->dbc->prepare($stmt_date);
 my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
 
 my %steps;
+my %discrepancy;
 my %lrg_steps;
 my $bar_width = 200;
 my $bar_width_px = $bar_width.'px'; 
+my $public_progression_class = 'lrg_step';
+
 
 # STEPS DOCUMENTATION
 $sth_step->execute();
@@ -144,6 +150,109 @@ my @today = ($year, $mon+1, $mday);
 #  DISPLAY  #
 #-----------#
 
+
+# Specific public/private CSS
+my $specific_css;
+
+if ($is_private) {
+  my ($green1, $green2)   = ('#0C0', '#5E5');
+  my ($orange1, $orange2) = ('#ffa500', '#ffc04d');
+  my ($red1, $red2)       = ('#E22', '#F66');
+  my ($black1, $black2)   = ('#000', '#555');
+  
+  $specific_css = qq{
+      .green_step { 
+        /* Old browsers */
+        background: $green1; 
+        /* IE10 */ 
+        background: -ms-linear-gradient($green1 10%, $green2 45%, $green1 85%);
+        /* Mozilla Firefox */ 
+        background: -moz-linear-gradient($green1 10%, $green2 45%, $green1 85%);
+        /* Opera */ 
+        background: -o-linear-gradient($green1 10%, $green2 45%, $green1 85%);
+        /* Webkit (Safari/Chrome 10) */ 
+        background: -webkit-gradient(linear, top, bottom, color-stop(0, $green1), color-stop(0.45, $green2),color-stop(0.85, $green1));
+        /* Webkit (Chrome 11+) */ 
+        background: -webkit-linear-gradient($green1 10%, $green2 45%, $green1 85%);
+        /* W3C Markup, IE10 Release Preview */ 
+        background: linear-gradient($green1 10%, $green2 45%, $green1 85%);
+      }
+      
+      .orange_step { 
+        /* Old browsers */
+        background: $orange1; 
+        /* IE10 */ 
+        background: -ms-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
+        /* Mozilla Firefox */ 
+        background: -moz-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
+        /* Opera */ 
+        background: -o-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
+        /* Webkit (Safari/Chrome 10) */ 
+        background: -webkit-gradient(linear, top, bottom, color-stop(0, $orange1), color-stop(0.45, $orange2),color-stop(0.85, $orange1));
+        /* Webkit (Chrome 11+) */ 
+        background: -webkit-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
+        /* W3C Markup, IE10 Release Preview */ 
+        background: linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
+      }
+      
+      .red_step { 
+        /* Old browsers */
+        background: $red1; 
+        /* IE10 */ 
+        background: -ms-linear-gradient($red1 10%, $red2 45%, $red1 85%);
+        /* Mozilla Firefox */ 
+        background: -moz-linear-gradient($red1 10%, $red2 45%, $red1 85%);
+        /* Opera */ 
+        background: -o-linear-gradient($red1 10%, $red2 45%, $red1 85%);
+        /* Webkit (Safari/Chrome 10) */ 
+        background: -webkit-gradient(linear, top, bottom, color-stop(0, $red1), color-stop(0.45, $red2),color-stop(0.85, $red1));
+        /* Webkit (Chrome 11+) */ 
+        background: -webkit-linear-gradient($red1 10%, $red2 45%, $red1 85%);
+        /* W3C Markup, IE10 Release Preview */ 
+        background: linear-gradient($red1 10%, $red2 45%, $red1 85%);
+      }
+  
+      .black_step { 
+        /* Old browsers */
+        background: $black1; 
+        /* IE10 */ 
+        background: -ms-linear-gradient($black1 10%, $black2 45%, $black1 85%);
+        /* Mozilla Firefox */ 
+        background: -moz-linear-gradient($black1 10%, $black2 45%, $black1 85%);
+        /* Opera */ 
+        background: -o-linear-gradient($black1 10%, $black2 45%, $black1 85%);
+        /* Webkit (Safari/Chrome 10) */ 
+        background: -webkit-gradient(linear, top, bottom, color-stop(0, $black1), color-stop(0.45, $black2),color-stop(0.85, $black1));
+        /* Webkit (Chrome 11+) */ 
+        background: -webkit-linear-gradient($black1 10%, $black2 45%, $black1 85%);
+        /* W3C Markup, IE10 Release Preview */ 
+        background: linear-gradient($black1 10%, $black2 45%, $black1 85%);
+      }
+  };
+}
+else { 
+  my ($lrg1, $lrg2) = ('#48A726', '#6BD545');
+  $specific_css = qq{
+      .$public_progression_class { 
+        /* Old browsers */
+        background: $lrg1; 
+        /* IE10 */ 
+        background: -ms-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
+        /* Mozilla Firefox */ 
+        background: -moz-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
+        /* Opera */ 
+        background: -o-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
+        /* Webkit (Safari/Chrome 10) */ 
+        background: -webkit-gradient(linear, top, bottom, color-stop(0, $lrg1), color-stop(0.45, $lrg2),color-stop(0.85, $lrg1));
+        /* Webkit (Chrome 11+) */ 
+        background: -webkit-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
+        /* W3C Markup, IE10 Release Preview */ 
+        background: linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
+      }
+  };
+}
+
+
 # HTML HEADER
 my $html_header = qq{
 <html>
@@ -165,6 +274,7 @@ my $html_header = qq{
         }
       }
     </script>
+    <script src="sorttable.js"></script>
     <style type="text/css">
       
       table {border-collapse:collapse; }
@@ -172,6 +282,27 @@ my $html_header = qq{
       table.history { font-size:0.8em; }
       /*td { padding:2px 4px;border:1px solid #000;text-align:center }*/
       
+      .to_sort { 
+                 background-image: url('img/sortable.png'); 
+                 background-repeat: no-repeat;
+                 background-position: right center;
+                 cursor: pointer;
+                 padding-right:25px;
+               }
+      .sorttable_sorted { 
+                          background-image: url('img/sort_desc.png'); 
+                          background-repeat: no-repeat;
+                          background-position: right center;
+                          cursor: pointer;
+                          padding-right:25px;
+                        }
+      .sorttable_sorted_reverse { 
+                                  background-image: url('img/sort_asc.png');
+                                  background-repeat: no-repeat;
+                                  background-position: right center;
+                                  cursor: pointer;
+                                  padding-right:25px;
+                                }
       
       
       a.history { font-size:0.8em;cursor:pointer;}
@@ -181,15 +312,10 @@ my $html_header = qq{
       .hidden {height:0px;display:none;margin-top:0px}
       .unhidden {height:auto;display:inline;margin-top:5px}
       
-      .progress_bar { background-color: #FFF; padding: 0px; border:1px solid #000; border-radius: 5px; width:200px /* (height of inner div) / 2 + padding */ }
-      /*.progress_bar > div.green_step  { background-color: #2E2; height: 16px; border-radius: 4px; }
-      .progress_bar > div.orange_step { background-color: #ffa500; height: 16px; border-radius: 4px; }
-      .progress_bar > div.red_step { background-color: #E22; height: 16px; border-radius: 4px; }
-      .progress_bar > div.black_step  { background-color: #000; height: 16px; border-radius: 4px; }*/
-      .green_step  { background-color: #2E2; height: 16px; border-radius: 4px; }
-      .orange_step { background-color: #ffa500; height: 16px; border-radius: 4px; }
-      .red_step { background-color: #E22; height: 16px; border-radius: 4px; }
-      .black_step  { background-color: #000; height: 16px; border-radius: 4px; }*/
+      .progress_bar { background-color: #FFF; padding: 0px; border:1px solid #333; border-radius: 5px; width:200px /* (height of inner div) / 2 + padding */ } 
+      .progress_step { height: 16px; border-radius: 4px; }    
+      
+      $specific_css
   
     </style>
   </header>
@@ -208,7 +334,6 @@ my $html_header = qq{
 
 # HTML FOOTER
 my $html_footer = qq{
-
     <p>
       If no LRG record exists for your gene of interest, you can request one to be created for you. Send your request to  <span class="green"><i>request\@lrg-sequence.org</i></span>.<br />
       For any other question/request, please send an email to <span class="green"><i>feedback\@lrg-sequence.org</i></span>.
@@ -253,44 +378,58 @@ foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
 $html_legend .= qq{
       </table>
     </div>
+};    
     
+    
+# Legend colour (for private use)
+if ($is_private) {
+  $html_legend .= qq{    
     <!-- Colour legend -->  
-    <div class="summary gradient_color1" style="margin-top:10px">
+    <div class="summary gradient_color1" style="margin-top:20px">
       <div class="summary_header">Colour Legend</div>
       <table class="legend" style="text-align:center">
         <tr><th>Colour</th><th>Colour description</th></tr>
-};
-my $colour_legend;
-my $previous_time;
-foreach my $time (sort {$b <=> $a} keys(%updates)) {
-  my $colour_class = $updates{$time};
-  if (!$previous_time) {
-    $colour_legend = qq{        <tr><td class="$colour_class"></td><td class="right_col">Updated more than $time days ago</td></tr>\n};
+  };
+  
+  my $colour_legend;
+  my $previous_time;
+  foreach my $time (sort {$b <=> $a} keys(%updates)) {
+    my $colour_class = $updates{$time};
+    if (!$previous_time) {
+      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col">Updated more than $time days ago</td></tr>\n};
+    }
+    else {
+      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col">Updated between $time and $previous_time days ago</td></tr>\n$colour_legend};
+    }
+    $previous_time = $time;
   }
-  else {
-    $colour_legend = qq{        <tr><td class="$colour_class"></td><td class="right_col">Updated between $time and $previous_time days ago</td></tr>\n$colour_legend};
-  }
-  $previous_time = $time;
-}
       
-$html_legend .= qq{$colour_legend      </table>\n</div>\n</div>\n};
+  $html_legend .= qq{$colour_legend      </table>\n</div>\n};
+}
 
+$html_legend .= qq{</div>\n};
 
 # LIST
 my $html = qq{
   <div style="float:left">
 };  
 
-my $html_pending = qq{  
-    <h2>Pending LRGs</h2>
-    <table>
-      <tr class="gradient_color2"><th>LRG ID</th><th>Gene name</th><th>Step</th><th>Step description</th><th>Date</th></tr>
+my $html_pending = qq{
+  <div class="section" style="background-color:#F9F9F9;margin-top:10px">
+    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+    <h2 class="section">Pending LRGs</h2>
+  </div>
+    <table class="sortable">
+      <tr class="gradient_color2"><th class="sorttable_sorted">LRG ID</th><th class="to_sort">Gene name</th><th class="to_sort">Step</th><th class="sorttable_nosort">Step description</th><th class="to_sort">Date</th></tr>
 };
 
 my $html_public = qq{
-    <h2 style="margin-top:50px">Public LRGs</h2>
-    <table>
-      <tr class="gradient_color2"><th>LRG ID</th><th>Gene name</th><th>Step</th><th>Step description</th><th>Date</th></tr>
+    <div class="section" style="background-color:#F9F9F9;margin-top:60px">
+      <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+      <h2 class="section">Public LRGs</h2>
+    </div>
+    <table class="sortable">
+      <tr class="gradient_color2"><th class="sorttable_sorted">LRG ID</th><th class="to_sort">Gene name</th><th class="sorttable_nosort">Step</th><th class="sorttable_nosort">Step description</th><th class="to_sort">Date</th></tr>
 };
 
 my $step_max = scalar(keys(%steps));
@@ -300,9 +439,22 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   $lrg_link .= '/'.$lrg_steps{$lrg}{'status'} if ($lrg_steps{$lrg}{'status'} ne 'public');
   $lrg_link .= "/$lrg.xml";
   
+  $lrg =~ /LRG_(\d+)/i;
+  my $lrg_id = $1;
+  
   my $current_step   = $lrg_steps{$lrg}{'current'};
   my $percent        = ($current_step/$step_max)*100;
   my $progress_width = ($current_step/$step_max)*$bar_width;
+  
+  # Check errors/discrepancies between the database and the FTP site
+  if ($current_step == $step_max && ! -e "$xml_dir/$lrg.xml") {
+    $discrepancy{$lrg_id}{'lrg'} = $lrg;
+    $discrepancy{$lrg_id}{'msg'} = qq{The LRG XML file should be in the public FTP site as it reaches the final step, but the script can't find it.};
+  }
+  elsif ($current_step != $step_max && -e "$xml_dir/$lrg.xml") {
+    $discrepancy{$lrg_id}{'lrg'} = $lrg;
+    $discrepancy{$lrg_id}{'msg'} = qq{The LRG XML file has been found in the public FTP site, however it seems that the LRG is at the step $current_step out of $step_max. Maybe the database is out of date};
+  }
   
   $progress_width .= 'px'; 
   $progress_width .= ';border-top-right-radius:0px;border-bottom-right-radius:0px' if ($percent != 100);
@@ -313,16 +465,26 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   # Progression bar
   my $progression_bar = '';
+  my $last_updates = 0;
+  
   if ($current_step != $step_max) {
-    my $progression_class;
-    foreach my $upd_days (sort {$b <=> $a} keys(%updates)) {
-      $progression_class = $updates{$upd_days};
-      last if ($days > $upd_days);
+    my $progression_class = '';
+    # Different colours if private use.
+    if ($is_private) {
+      foreach my $upd_days (sort {$b <=> $a} keys(%updates)) {
+        $progression_class = $updates{$upd_days};
+        $last_updates = $upd_days;
+        last if ($days > $upd_days);
+      }
     }
+    else {
+      $progression_class = $public_progression_class;
+    }
+     
     $progression_bar = qq{
       <div class="progress_bar">
         <!--<span class="bar_label">Step $current_step out of $step_max ($percent%)</span>-->
-        <div class="$progression_class" style="width:$progress_width"></div>
+        <div class="progress_step $progression_class" style="width:$progress_width"></div>
       </div>
     };
   }
@@ -345,7 +507,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   my $div_id = lc($lrg).'_detail';
   my $detailled_div = qq{
-    <a class="history" href="#" id="link_$div_id" onclick="showhide('$div_id')">Show history</a>
+    <a class="history" href="javascript:showhide('$div_id')" id="link_$div_id">Show history</a>
     <div class="hidden" id="$div_id">$history_list</div> 
   };
   
@@ -353,9 +515,21 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     $date = qq{<span class="blue">$date</span>};
   }
   
+  my $symbol = $lrg_steps{$lrg}{'symbol'};
+  my $step_desc = $steps{$current_step};
+  my $date_key = $lrg_steps{$lrg}{'step'}{$current_step};
   
-
-  my $html_row = "      <tr><td><a class=\"lrg_link\" href=\"$lrg_link\">$lrg</a></td><td>".$lrg_steps{$lrg}{'symbol'}."</td><td>$progression_bar<span class=\"step\">Step $current_step out of $step_max ($percent\%)</span>$detailled_div</td><td>".$steps{$current_step}."</td><td>$date</td></tr>";
+  my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
+  
+  my $html_row = qq{
+    <tr>
+      <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
+      <td>$symbol</td>
+      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step $current_step out of $step_max ($percent\%)</span>$detailled_div</td>
+      <td>$step_desc</td>
+      <td sorttable_customkey="$date_key">$date</td>
+    </tr>
+  };
   
   if ($current_step eq $step_max) {
     $html_public .= $html_row;
@@ -370,7 +544,17 @@ $html_public  .= qq{    </table>\n};
 
 $html .= qq{$html_pending$html_public  </div>\n$html_legend\n<div style="clear:both"></div>\n<br />\n};
 
-open OUT, "> $outputfile" or die $!;
+
+if (%discrepancy) {
+  print STDERR "The script found some discrepancies between the database and the FTP directory:\n";
+  foreach my $disc (sort {$a <=> $b} (keys(%discrepancy))) {
+    print STDERR $discrepancy{$disc}{'lrg'}.": ".$discrepancy{$disc}{'msg'}."\n";
+  }
+  print STDERR "Because of these discrepancies, the output file won't be generated.\nPlease fix the issues before rerunning the script.\nThe script has stopped.\n";
+  exit(1);
+}
+
+open  OUT, "> $outputfile" or die $!;
 print OUT $html_header;
 print OUT $html;
 print OUT $html_footer;
