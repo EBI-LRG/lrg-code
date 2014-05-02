@@ -41,6 +41,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 
 my $lrg_step_status = 'lrg_step_status';
+#my $lrg_step_status = 'lrg_status';
 my $lrg_step        = 'lrg_step';
 
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
@@ -51,41 +52,49 @@ my $xml_dir = '/ebi/ftp/pub/databases/lrgex';
 my %updates = ( 0   => 'green_step',
                 30  => 'orange_step', # Number of days after the step update to be declared as "old"
                 60  => 'red_step',    # Number of days after the step update to be declared as "quite old"
-                120 => 'black_step'   # Number of days after the step update to be declared as "stuck"
+                120 => 'black_step'   # Number of days after the step update to be declared as "stuck/stalled"
               );
 my $new_update = 14;           
               
 my $stmt = qq{
   SELECT 
-    lss.lrg_id,
+    ls.lrg_id,
     g.symbol,
     g.status,
-    lss.lrg_step_id
+    ls.lrg_step_id
   FROM 
-    $lrg_step_status lss,
+    $lrg_step_status ls,
     gene g
   WHERE
-    lss.lrg_id=g.lrg_id
+    ls.lrg_id=g.lrg_id
 };
 
 my $stmt_date = qq{
   SELECT 
-    min(lss.step_status_date)
+    min(ls.step_status_date)
   FROM 
-    $lrg_step_status lss
-  WHERE lss.lrg_id = ?
-    AND lss.lrg_step_id = ?
+    $lrg_step_status ls
+  WHERE ls.lrg_id = ?
+    AND ls.lrg_step_id = ?
 };
+#my $stmt_date = qq{
+#  SELECT 
+#    min(ls.to_date)
+#  FROM 
+#    $lrg_step_status ls
+#  WHERE ls.lrg_id = ?
+#    AND ls.lrg_step_id = ?
+#};
 
 my $stmt_step = qq{ SELECT lrg_step_id,description FROM lrg_step };
 
 my $stmt_current_step = qq{
   SELECT 
-    max(lss.lrg_step_id)
+    max(ls.lrg_step_id)
   FROM 
-    $lrg_step_status lss
+    $lrg_step_status ls
   WHERE
-    lss.lrg_id=?
+    ls.lrg_id=?
 };
 
 
@@ -278,7 +287,7 @@ my $html_header = qq{
     <style type="text/css">
       
       table {border-collapse:collapse; }
-      table.legend { font-size:0.8em; }
+      table.legend { font-size:0.8em;width:100% }
       table.history { font-size:0.8em; }
       /*td { padding:2px 4px;border:1px solid #000;text-align:center }*/
       
@@ -365,14 +374,14 @@ my $html_footer = qq{
 my $html_legend = qq{
   <div class="right_side">
     <!-- Step legend -->
-    <div class="summary gradient_color1">
+    <div class="summary gradient_color1" style="padding-bottom:1px">
       <div class="summary_header">Step Legend</div>
       <table class="legend" style="text-align:center">
-        <tr><th>Step number</th><th>Step description</th></tr>
+        <tr><th>Number</th><th>Description</th></tr>
 };
 foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
   my $desc = $steps{$step_id};
-  $html_legend .= qq{        <tr><td class="left_col">$step_id</td><td class="right_col">$desc</td></tr>\n};
+  $html_legend .= qq{        <tr><td class="left_col" style="text-align:center">$step_id</td><td class="right_col" style="text-align:left">$desc</td></tr>\n};
 }
 
 $html_legend .= qq{
@@ -385,10 +394,10 @@ $html_legend .= qq{
 if ($is_private) {
   $html_legend .= qq{    
     <!-- Colour legend -->  
-    <div class="summary gradient_color1" style="margin-top:20px">
+    <div class="summary gradient_color1" style="padding-bottom:1px;margin-top:20px">
       <div class="summary_header">Colour Legend</div>
-      <table class="legend" style="text-align:center">
-        <tr><th>Colour</th><th>Colour description</th></tr>
+      <table class="legend">
+        <tr><th>Colour</th><th>Description</th></tr>
   };
   
   my $colour_legend;
@@ -396,10 +405,10 @@ if ($is_private) {
   foreach my $time (sort {$b <=> $a} keys(%updates)) {
     my $colour_class = $updates{$time};
     if (!$previous_time) {
-      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col">Updated more than $time days ago</td></tr>\n};
+      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col" style="text-align:left">Updated more than $time days ago</td></tr>\n};
     }
     else {
-      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col">Updated between $time and $previous_time days ago</td></tr>\n$colour_legend};
+      $colour_legend = qq{        <tr><td class="progress_step $colour_class"></td><td class="right_col" style="text-align:left">Updated between $time and $previous_time days ago</td></tr>\n$colour_legend};
     }
     $previous_time = $time;
   }
@@ -415,7 +424,7 @@ my $html = qq{
 };  
 
 my $html_pending = qq{
-  <div class="section" style="background-color:#F9F9F9;margin-top:10px">
+  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Pending LRGs</h2>
   </div>
@@ -424,7 +433,7 @@ my $html_pending = qq{
 };
 
 my $html_public = qq{
-    <div class="section" style="background-color:#F9F9F9;margin-top:60px">
+    <div class="section" style="background-color:#F0F0F0;margin-top:60px">
       <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
       <h2 class="section">Public LRGs</h2>
     </div>
@@ -564,6 +573,9 @@ close(OUT);
 
 sub format_date {
   my $date = shift;
+  
+  return "NA" if (!$date || $date !~ /^\d{4}-\d{2}-\d{2}$/ || $date eq '0000-00-00');
+  
   my @parts = split('-',$date);
   
   my $year  = $parts[0];
