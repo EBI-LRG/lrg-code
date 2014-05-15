@@ -79,7 +79,7 @@ my $stmt_date = qq{
 };
 #my $stmt_date = qq{
 #  SELECT 
-#    min(ls.to_date)
+#    min(ls.status_date)
 #  FROM 
 #    $lrg_step_status ls
 #  WHERE ls.lrg_id = ?
@@ -441,6 +441,15 @@ my $html_public = qq{
       <tr class="gradient_color2"><th class="sorttable_sorted">LRG ID</th><th class="to_sort">Gene name</th><th class="sorttable_nosort">Step</th><th class="sorttable_nosort">Step description</th><th class="to_sort">Date</th></tr>
 };
 
+my $html_stalled = qq{
+  <div class="section" style="background-color:#F0F0F0;margin-top:60px">
+    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+    <h2 class="section">Stalled LRGs</h2>
+  </div>
+    <table class="sortable">
+      <tr class="gradient_color2"><th class="sorttable_sorted">LRG ID</th><th class="to_sort">Gene name</th><th class="to_sort">Step</th><th class="sorttable_nosort">Step description</th><th class="to_sort">Date</th></tr>
+};
+
 my $step_max = scalar(keys(%steps));
 foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
   
@@ -544,14 +553,23 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     $html_public .= $html_row;
   }
   else {
-    $html_pending .= $html_row;
+    # Stalled
+    if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
+      $html_stalled .= $html_row if ($is_private);
+    }
+    # Pending
+    else {  
+      $html_pending .= $html_row;
+    }
   }
 }
 
 $html_pending .= qq{    </table>\n};
 $html_public  .= qq{    </table>\n};
 
-$html .= qq{$html_pending$html_public  </div>\n$html_legend\n<div style="clear:both"></div>\n<br />\n};
+my $html_stalled_private = ($is_private) ? qq{$html_stalled    </table>\n} : '';
+
+$html .= qq{$html_pending$html_public$html_stalled_private </div>\n$html_legend\n<div style="clear:both"></div>\n<br />\n};
 
 
 if (%discrepancy) {
