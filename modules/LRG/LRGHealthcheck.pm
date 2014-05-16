@@ -169,10 +169,12 @@ sub existing_entry {
         $passed = 0;
         $self->{'check'}{$name}{'message'} .= "- The transcript '$tr_name' doesn't exist in the file $existing_file!//";
       }
-      if ($tr_seq ne $existing_transcript->findNode('cdna/sequence')->content()) {
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "- The transcript sequences of '$tr_name' are different!//";
-      }
+      if ($existing_transcript->findNode('cdna/sequence')) {
+        if ($tr_seq ne $existing_transcript->findNode('cdna/sequence')->content()) {
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "- The transcript sequences of '$tr_name' are different!//";
+        }
+      }  
         
       # Compare translation sequences 
       my $new_proteins = $tr->findNodeArray('coding_region/translation');
@@ -231,13 +233,15 @@ sub existing_entry {
         $self->{'check'}{$name}{'message'} .= "- The existing transcript '$e_tr_name' can't be found in the new file!//";
       }
       # Check the translations
-      my $existing_prot = $e_tr->findNodeArray('coding_region/translation');
-      foreach my $e_pr (@$existing_prot) {
-        my $e_pr_name = $e_pr->data()->{'name'};
-        my $new_pr = $new_tr->findNode('coding_region/translation',{'name' => $e_pr_name});
-        if (!$new_pr) {
-          $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "- The existing translation '$e_pr_name' can't be found in the new file!//";
+      else {
+        my $existing_prot = $e_tr->findNodeArray('coding_region/translation');
+        foreach my $e_pr (@$existing_prot) {
+          my $e_pr_name = $e_pr->data()->{'name'};
+          my $new_pr = $new_tr->findNode('coding_region/translation',{'name' => $e_pr_name});
+          if (!$new_pr) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "- The existing translation '$e_pr_name' can't be found in the new file!//";
+          }
         }
       }
       # Check the exon coordinates
