@@ -45,7 +45,7 @@ if [[ -n "${tmp}" ]]; then
 	elif [[ -d ${tmp} ]] ; then
 	  tmpdir="-tmp_dir ${tmp}"
 	else 
-	  tmp=${cvspath}
+	  tmp=${cvsftp}
 		tmpdir="-tmp_dir ${tmp}"
 	fi
 else
