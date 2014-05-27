@@ -104,7 +104,7 @@ if (defined($list_lsdbs)) {
             lsdb_gene lg JOIN
             lsdb l USING (lsdb_id) LEFT JOIN
             lsdb_contact lc USING (lsdb_id) LEFT JOIN
-            contact c USING (contact_id)
+            requester r USING (contact_id)
         WHERE
             lg.gene_id = $gene_id AND
             (
@@ -113,8 +113,8 @@ if (defined($list_lsdbs)) {
                 l.name NOT LIKE 'Ensembl'
             )
     };
-    my $condition = join("' AND c.name NOT LIKE '",@filter_list_name);
-    $stmt .= qq{ AND (c.name IS NULL OR (c.name NOT LIKE '$condition')) } if (length($condition) > 0);
+    my $condition = join("' AND r.name NOT LIKE '",@filter_list_name);
+    $stmt .= qq{ AND (r.name IS NULL OR (r.name NOT LIKE '$condition')) } if (length($condition) > 0);
     
     $condition = join("' AND l.name NOT LIKE '",@filter_list_lsdb);
     $stmt .= qq{ AND (l.name NOT LIKE '$condition') } if (length($condition) > 0);
@@ -771,17 +771,17 @@ sub get_source {
     # Get the source data for the requesters
     $stmt = qq{
         SELECT DISTINCT
-            c.name,
-            c.email,
-            c.url,
-            c.address
+            r.name,
+            r.email,
+            r.url,
+            r.address
         FROM
             lsdb_contact lc JOIN
-            contact c USING (contact_id)
+            requester r USING (contact_id)
         WHERE
             lc.lsdb_id = '$lsdb_id'
         ORDER BY
-            c.name ASC
+            r.name ASC
     };
     my $sth = $db_adaptor->dbc->prepare($stmt);
     

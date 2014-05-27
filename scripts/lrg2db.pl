@@ -1128,9 +1128,9 @@ sub parse_source {
             ?
         )
     };
-    my $contact_ins_stmt = qq{
+    my $requester_ins_stmt = qq{
         INSERT INTO
-            contact (
+            requester (
                 name,
                 email,
                 url,
@@ -1169,7 +1169,7 @@ sub parse_source {
     my $lr_ins_sth = $db_adaptor->dbc->prepare($lr_ins_stmt);
     my $lsdb_ins_sth_1 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_1);
 		my $lsdb_ins_sth_2 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_2);
-    my $contact_ins_sth = $db_adaptor->dbc->prepare($contact_ins_stmt);
+    my $requester_ins_sth = $db_adaptor->dbc->prepare($requester_ins_stmt);
     my $lc_ins_sth = $db_adaptor->dbc->prepare($lc_ins_stmt);
     my $lg_ins_sth = $db_adaptor->dbc->prepare($lg_ins_stmt);
 
@@ -1259,23 +1259,23 @@ sub parse_source {
         my $address = $contact->findNode('address'); 
         $address = $address->content() if (defined($address));
         
-        # Enter the contact information into the db
+        # Enter the requester information into the db
         $stmt = qq{
             SELECT
                 contact_id
             FROM
-                contact
+                requester
             WHERE
                 name = '$name'
             LIMIT 1
         };
         my $contact_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
         if (!defined($contact_id)) {
-            $contact_ins_sth->bind_param(1,$name,SQL_VARCHAR);
-            $contact_ins_sth->bind_param(2,$email,SQL_VARCHAR);
-            $contact_ins_sth->bind_param(3,$url,SQL_VARCHAR);
-            $contact_ins_sth->bind_param(4,$address,SQL_VARCHAR);
-            $contact_ins_sth->execute();
+            $requester_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+            $requester_ins_sth->bind_param(2,$email,SQL_VARCHAR);
+            $requester_ins_sth->bind_param(3,$url,SQL_VARCHAR);
+            $requester_ins_sth->bind_param(4,$address,SQL_VARCHAR);
+            $requester_ins_sth->execute();
             $contact_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
         }
         

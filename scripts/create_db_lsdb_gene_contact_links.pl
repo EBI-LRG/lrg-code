@@ -62,8 +62,8 @@ my @is_location  = ('New York', 'U.S.A', 'USA', 'Netherland', 'Spain', 'Czech Re
 my $stmt_g = qq{ SELECT gene_id FROM gene WHERE symbol=? LIMIT 1 };
 
 # contact
-my $stmt_c = qq{ SELECT contact_id FROM contact WHERE name=? LIMIT 1 };
-my $stmt_c2 = qq{ SELECT address FROM contact WHERE contact_id=? LIMIT 1 };
+my $stmt_c = qq{ SELECT contact_id FROM requester WHERE name=? LIMIT 1 };
+my $stmt_c2 = qq{ SELECT address FROM requester WHERE contact_id=? LIMIT 1 };
 
 # lsdb
 my $stmt_lsdb = qq{ SELECT lsdb_id FROM lsdb WHERE name=? AND url=? LIMIT 1 };
@@ -92,8 +92,8 @@ my $lsdb_c_sth = $db_adaptor->dbc->prepare($stmt_lsdb_c);
 my $ins_lsdb = qq{ INSERT INTO lsdb (name,url) VALUES (?,?) };
 
 # contact
-my $ins_contact = qq{ INSERT INTO contact (name,address) VALUES (?,?) };
-my $ins_contact_na = qq{ INSERT INTO contact (name) VALUES (?) };
+my $ins_requester = qq{ INSERT INTO requester (name,address) VALUES (?,?) };
+my $ins_requester_na = qq{ INSERT INTO requester (name) VALUES (?) };
 
 # lsdb_gene
 my $ins_lsdb_gene = qq{ INSERT INTO lsdb_gene (lsdb_id,gene_id) VALUES (?,?) };
@@ -102,8 +102,8 @@ my $ins_lsdb_gene = qq{ INSERT INTO lsdb_gene (lsdb_id,gene_id) VALUES (?,?) };
 my $ins_lsdb_c = qq{ INSERT INTO lsdb_contact (lsdb_id,contact_id) VALUES (?,?) };
 
 my $ins_lsdb_sth = $db_adaptor->dbc->prepare($ins_lsdb);
-my $ins_contact_sth = $db_adaptor->dbc->prepare($ins_contact);
-my $ins_contact_na_sth = $db_adaptor->dbc->prepare($ins_contact_na);
+my $ins_requester_sth = $db_adaptor->dbc->prepare($ins_requester);
+my $ins_requester_na_sth = $db_adaptor->dbc->prepare($ins_requester_na);
 my $ins_lsdb_gene_sth = $db_adaptor->dbc->prepare($ins_lsdb_gene);
 my $ins_lsdb_c_sth = $db_adaptor->dbc->prepare($ins_lsdb_c);
 
@@ -114,11 +114,11 @@ my $ins_lsdb_c_sth = $db_adaptor->dbc->prepare($ins_lsdb_c);
 
 my $upd_lsdb_name = qq{ UPDATE lsdb SET name=? WHERE url=? AND manually_modif=0 };
 my $upd_lsdb_url = qq{ UPDATE lsdb SET url=? WHERE name=? AND manually_modif=0 };
-my $upd_contact = qq{ UPDATE contact SET address=? WHERE contact_id=? };
+my $upd_requester = qq{ UPDATE requester SET address=? WHERE contact_id=? };
 
 my $upd_lsdb_name_sth = $db_adaptor->dbc->prepare($upd_lsdb_name);
 my $upd_lsdb_url_sth = $db_adaptor->dbc->prepare($upd_lsdb_url);
-my $upd_contact_sth = $db_adaptor->dbc->prepare($upd_contact);
+my $upd_requester_sth = $db_adaptor->dbc->prepare($upd_requester);
 
 
 ###### PARSE FILE ######
@@ -197,55 +197,55 @@ LINE: while(<IN>) {
 		}
 
 
-		# Contact
-		my $contact_name    = shift(@line);
-		my $contact_address = shift(@line);
+		# Requester
+		my $requester_name    = shift(@line);
+		my $requester_address = shift(@line);
 
-    next INFO if (!defined($contact_name));
+    next INFO if (!defined($requester_name));
 
-    if (defined($contact_address)) {
-    	$contact_address =~ s/\\n/ /g;
-			$contact_address =~ s/\\r//g;
-			$contact_address =~ s/\\//g;
-			$contact_address =~ s/^\s//;
-			$contact_address =~ s/\s$//;
-			$contact_address =~ s/home//;
-    	$contact_address = 'null' if ($contact_address eq '' || $contact_address eq '.' || $contact_address eq ' ');
+    if (defined($requester_address)) {
+    	$requester_address =~ s/\\n/ /g;
+			$requester_address =~ s/\\r//g;
+			$requester_address =~ s/\\//g;
+			$requester_address =~ s/^\s//;
+			$requester_address =~ s/\s$//;
+			$requester_address =~ s/home//;
+    	$requester_address = 'null' if ($requester_address eq '' || $requester_address eq '.' || $requester_address eq ' ');
 		} else {
-			$contact_address = 'null';
+			$requester_address = 'null';
 		}
 
-    $contact_name =~ s/, with Curator Vacancy//i;
-		$contact_name =~ s/, but with Curator vacancy//i;
+    $requester_name =~ s/, with Curator Vacancy//i;
+		$requester_name =~ s/, but with Curator vacancy//i;
 
 		# Different contact/address collapsed
-  	my @contacts1 = split(";", $contact_name);
-		if (scalar @contacts1 == 1 && $contact_name =~ /.+,.+/) {
-			@contacts1 = split(" & ", $contact_name);
+  	my @requesters1 = split(";", $requester_name);
+		if (scalar @requesters1 == 1 && $requester_name =~ /.+,.+/) {
+			@requesters1 = split(" & ", $requester_name);
 
 			my $count_ins = 0;
-    	foreach my $contact_n (@contacts1) {
-				$count_ins ++ if (is_institute($contact_n) == 1);
+    	foreach my $requester_n (@requesters1) {
+				$count_ins ++ if (is_institute($requester_n) == 1);
 			}
-			@contacts1 = ($contact_name) if ($count_ins == scalar(@contacts1));
+			@requesters1 = ($requester_name) if ($count_ins == scalar(@requesters1));
 		}
 
 		# Split again contact with "&" character
-  	foreach my $contact_n1 (@contacts1) {
+  	foreach my $requester_n1 (@requesters1) {
 
 			my %results = ( 'contacts' => [], 'institute' => [], 'location' => []);
 		
-    	my @contacts2 = (is_institute($contact_name) == 0) ? split(" & ", $contact_n1) : ($contact_n1);
+    	my @requesters2 = (is_institute($requester_name) == 0) ? split(" & ", $requester_n1) : ($requester_n1);
     
 			# Split contact with "," character
 			my @all_contacts;
-			foreach my $contact_n2 (@contacts2) {
-				my @contacts3 = split(",", $contact_n2);
+			foreach my $requester_n2 (@requesters2) {
+				my @requesters3 = split(",", $requester_n2);
 	
 				# Split again contact with ";" character
-				foreach my $contact_n3 (@contacts3) {
-					my @tmp_contact = split(' and ', $contact_n3);
-    			@tmp_contact = split(';', $contact_n3) if (scalar @tmp_contact == 1);
+				foreach my $requester_n3 (@requesters3) {
+					my @tmp_contact = split(' and ', $requester_n3);
+    			@tmp_contact = split(';', $requester_n3) if (scalar @tmp_contact == 1);
 
 					foreach my $tmp_c (@tmp_contact) {
 						$tmp_c =~ s/^\s//;
@@ -281,44 +281,44 @@ LINE: while(<IN>) {
 			}
 		
 			if ($i) {
-				if ($contact_address eq 'null') {
-					$contact_address = $i;
-				} elsif ($contact_address !~ /$i/ && $i) {
-					$contact_address = "$i, $contact_address";
+				if ($requester_address eq 'null') {
+					$requester_address = $i;
+				} elsif ($requester_address !~ /$i/ && $i) {
+					$requester_address = "$i, $requester_address";
 				}
 			}
 
     	foreach my $f_contact (@final_contacts) {
 				$c_sth->execute($f_contact); 
-				my $contact_id = ($c_sth->fetchrow_array)[0];
+				my $requester_id = ($c_sth->fetchrow_array)[0];
 			
-				if (!defined($contact_id)) {
+				if (!defined($requester_id)) {
 					next if ($f_contact eq '');
-        	if ($contact_address eq 'null') {
-						$ins_contact_na_sth->execute($f_contact);
+        	if ($requester_address eq 'null') {
+						$ins_requester_na_sth->execute($f_contact);
 					} else {
-  					$ins_contact_sth->execute($f_contact,$contact_address); 
+  					$ins_requester_sth->execute($f_contact,$requester_address); 
 					}	
-					$contact_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+					$requester_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 				}
 				
-				if (defined($contact_id)) {
+				if (defined($requester_id)) {
 					# Check address
-        	if ($contact_address ne 'null') {
-						$c_sth2->execute($contact_id);
+        	if ($requester_address ne 'null') {
+						$c_sth2->execute($requester_id);
 						my $db_address = ($c_sth2->fetchrow_array)[0];
-						if (!$db_address || $db_address ne $contact_address) {
-							$upd_contact_sth->execute($contact_address,$contact_id) or die $!;
+						if (!$db_address || $db_address ne $requester_address) {
+							$upd_requester_sth->execute($requester_address,$requester_id) or die $!;
 						}
 					}
 
 					# Check lsdb_contact
-      		$lsdb_c_sth->execute($lsdb_id,$contact_id);
+      		$lsdb_c_sth->execute($lsdb_id,$requester_id);
 					my $lsdb_c = ($lsdb_c_sth->fetchrow_array)[0];
 					if (!defined($lsdb_c)) {
-						$ins_lsdb_c_sth->execute($lsdb_id,$contact_id) or die $!;
+						$ins_lsdb_c_sth->execute($lsdb_id,$requester_id) or die $!;
 					}
-					print STDOUT "\t- Contact $nb_c: $f_contact (contact_id $contact_id) | LSDB ID: $lsdb_id\n" if ($verbose);
+					print STDOUT "\t- Contact $nb_c: $f_contact (contact_id $requester_id) | LSDB ID: $lsdb_id\n" if ($verbose);
 					$nb_c ++;
 				}			
 			}
@@ -331,7 +331,7 @@ LINE: while(<IN>) {
 ###### Checks ######
 
 my $stmt_contact = qq {
-	SELECT count(lc.lsdb_id) FROM lsdb_contact lc LEFT JOIN contact c ON lc.contact_id=c.contact_id WHERE c.contact_id is NULL
+	SELECT count(lc.lsdb_id) FROM lsdb_contact lc LEFT JOIN requester r ON lc.contact_id=r.contact_id WHERE r.contact_id is NULL
 };
 
 my $stmt_lc = qq {
