@@ -11,6 +11,7 @@ use Date::Calc qw(Delta_Days);
 
 
 my $outputfile;
+my $tmpdir;
 my $host;
 my $port;
 my $user;
@@ -25,11 +26,15 @@ GetOptions(
   'user=s'	 => \$user,
   'pass=s'	 => \$pass,
   'output=s' => \$outputfile,
+  'tmpdir=s' => \$tmpdir,
   'private!' => \$is_private
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
-die("An output HTML file must be specified") unless (defined($outputfile));
+die("An output HTML file (-output) must be specified") unless (defined($outputfile));
+die("An temporary directory (-tmpdir) must be specified") unless (defined($tmpdir));
+
+my $tmpfile = "$tmpdir/tmp_lrg_step_status.html";
 
 # Get a database connection
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -40,7 +45,6 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
   -dbname => $dbname
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 
-#my $lrg_status_table = 'lrg_step_status';
 my $lrg_status_table = 'lrg_status';
 my $lrg_step        = 'lrg_step';
 
@@ -90,13 +94,17 @@ my $stmt_current_step = qq{
     ls.lrg_id=?
 };
 
+my $stmt_curator = qq{ SELECT lrg_id, curator FROM lrg_curator };
+
 
 my $sth_step = $db_adaptor->dbc->prepare($stmt_step);
 my $sth_lrg  = $db_adaptor->dbc->prepare($stmt);
 my $sth_date = $db_adaptor->dbc->prepare($stmt_date);
 my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
+my $sth_curator = $db_adaptor->dbc->prepare($stmt_curator);
 
 my %steps;
+my %curators;
 my %discrepancy;
 my %lrg_steps;
 my $bar_width = 200;
@@ -132,12 +140,23 @@ while ($sth_lrg->fetch()) {
 $sth_date->finish();
 $sth_lrg->finish();
 
+# Current step
 foreach my $lrg (keys(%lrg_steps)) {
   $sth_current_step->execute($lrg);
   my $current_step = ($sth_current_step->fetchrow_array)[0];
   $lrg_steps{$lrg}{'current'} = $current_step;
 }
 $sth_current_step->finish();
+
+
+# Curator
+if ($is_private) {
+  $sth_curator->execute();
+  while (my @res = $sth_curator->fetchrow_array()) {
+    push(@{$curators{$res[0]}},$res[1]);
+  }
+  $sth_curator->finish();
+}
 
 
 # Date
@@ -152,10 +171,16 @@ my @today = ($year, $mon+1, $mday);
 #-----------#
 
 
-# Specific public/private CSS
+# Specific public/private display
 my $specific_css;
+my $extra_private_column_header = '';
 
 if ($is_private) {
+
+  # Extra curator column
+  $extra_private_column_header = qq{\n        <th class="to_sort">Curator</th>};
+
+  # Specific public/private CSS
   my ($green1, $green2)   = ('#0C0', '#5E5');
   my ($orange1, $orange2) = ('#ffa500', '#ffc04d');
   my ($red1, $red2)       = ('#E22', '#F66');
@@ -258,7 +283,7 @@ else {
 my $html_header = qq{
 <html>
   <header>
-    <title>TEST OF THE LRG CURATION PROGRESSION</title>
+    <title>LRG CURATION PROGRESS</title>
     <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
     <script type="text/javascript">
       function showhide(div_id) {
@@ -322,6 +347,9 @@ my $html_header = qq{
       
       $specific_css
   
+      .header_count {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
+      .status_anno  {margin-top:2px}
+      
     </style>
   </header>
   <body>
@@ -334,7 +362,7 @@ my $html_header = qq{
       </div>
       <div style="clear:both"></div>
     </div>
-    <div class="menu_title" style="height:30px">File generated the $day</div>
+    <div class="menu_title" style="height:30px">Page generated the $day</div>
 };
 
 # HTML FOOTER
@@ -367,7 +395,7 @@ my $html_footer = qq{
 
 # TOP link
 my $back2top = qq{
-     <div class="top_up_anno_link" style="margin-bottom:60px">
+     <div class="top_up_anno_link" style="margin-bottom:60px;background-color:#FFF">
        <a href="#top">[Back to top]</a>
      </div>
      <div style="clear:both"></div>
@@ -380,7 +408,7 @@ my $html_legend = qq{
     <div class="summary gradient_color1" style="padding-bottom:1px">
       <div class="summary_header">Step Legend</div>
       <table class="legend" style="text-align:center">
-        <tr><th>Number</th><th>Description</th></tr>
+        <tr><th title="Number">#</th><th title="Step description">Description</th></tr>
 };
 foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
   my $desc = $steps{$step_id};
@@ -400,7 +428,7 @@ if ($is_private) {
     <div class="summary gradient_color1" style="padding-bottom:1px;margin-top:20px">
       <div class="summary_header">Colour Legend</div>
       <table class="legend">
-        <tr><th>Colour</th><th>Description</th></tr>
+        <tr><th title="Progress bar colour">Colour</th><th>Description</th></tr>
   };
   
   my $colour_legend;
@@ -423,58 +451,15 @@ $html_legend .= qq{</div>\n};
 
 # LIST
 my $html = qq{
-  <div style="float:left;min-width:700px">
+  <div style="float:left;min-width:700px;max-width:80%">
 };  
 
-my $html_pending = qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Pending LRGs</h2><a class="show_hide_anno" href="javascript:showhide('pending_lrg');">show/hide table</a>
-  </div>
-  <div id="pending_lrg">
-    <table class="sortable" style="margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
-        <th class="to_sort" title="Sort by the number of steps done">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>
-      </tr>
-};
-
-my $html_public = qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Public LRGs</h2><a class="show_hide_anno" href="javascript:showhide('public_lrg');">show/hide table</a>
-  </div>
-  <div class="hidden" id="public_lrg">
-    <table class="sortable" style="width:100%;margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
-        <th class="sorttable_nosort">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>
-      </tr>
-};
-
-my $html_stalled = qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Stalled LRGs</h2><a class="show_hide_anno" href="javascript:showhide('stalled_lrg');">show/hide table</a>
-  </div>
-  <div id="stalled_lrg">
-    <table class="sortable" style="margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
-        <th class="to_sort" title="Sort by the number of steps done">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>
-      </tr>
-};
-
+my $html_pending_content;
+my $html_public_content;
+my $html_stalled_content;
 my $step_max = scalar(keys(%steps));
+my %count_lrgs;
+
 foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
   
   my $lrg_link = $ftp;
@@ -483,10 +468,12 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   $lrg =~ /LRG_(\d+)/i;
   my $lrg_id = $1;
-  
+
   my $current_step   = $lrg_steps{$lrg}{'current'};
   my $percent        = ($current_step/$step_max)*100;
   my $progress_width = ($current_step/$step_max)*$bar_width;
+  
+  my $percent_display = ($step_max == 10) ? '' : " ($percent\%)";
  
   # Check errors/discrepancies between the database and the FTP site
   if ($current_step == $step_max && ! -e "$xml_dir/$lrg.xml") {
@@ -525,7 +512,6 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
      
     $progression_bar = qq{
       <div class="progress_bar">
-        <!--<span class="bar_label">Step $current_step out of $step_max ($percent%)</span>-->
         <div class="progress_step $progression_class" style="width:$progress_width"></div>
       </div>
     };
@@ -563,35 +549,107 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
+  my $curator_cell = ($is_private) ? ($curators{$lrg} ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
+  
   my $html_row = qq{
     <tr>
       <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
       <td>$symbol</td>
-      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step $current_step out of $step_max ($percent\%)</span>$detailled_div</td>
+      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
       <td>$step_desc</td>
       <td sorttable_customkey="$date_key">$date</td>
+      $curator_cell
     </tr>
   };
   
   if ($current_step eq $step_max) {
-    $html_public .= $html_row;
+    $html_public_content .= $html_row;
+    $count_lrgs{'public'}++;
   }
   else {
     # Stalled
     if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
-      $html_stalled .= $html_row if ($is_private);
+      if ($is_private) {
+        $html_stalled_content .= $html_row;
+        $count_lrgs{'stalled'}++;
+      }  
     }
     # Pending
     else {  
-      $html_pending .= $html_row;
+      $html_pending_content .= $html_row;
+      $count_lrgs{'pending'}++;
     }
   }
 }
 
-$html_pending .= qq{    </table>\n    $back2top\n  </div>\n};
-$html_public  .= qq{    </table>\n    $back2top\n  </div>\n};
 
-my $html_stalled_private = ($is_private) ? qq{$html_stalled    </table>\n    $back2top\n  </div>\n} : '';
+my $html_pending_header = sprintf( qq{
+  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+    <h2 class="section">Pending LRGs</h2>
+    <span class="header_count">(%i LRGs)</span>
+    <a class="show_hide_anno status_anno" href="javascript:showhide('pending_lrg');">show/hide table</a>
+  </div>
+  <div id="pending_lrg">
+    <table class="sortable" style="margin-bottom:5px">
+      <tr class="gradient_color2">
+        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+        <th class="to_sort" title="Sort by HGNC symbol">Gene</th>
+        <th class="to_sort" title="Sort by the number of steps done">Step</th>
+        <th class="sorttable_nosort">Step description</th>
+        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+      </tr>\n},
+  $count_lrgs{'pending'},
+  $extra_private_column_header
+);
+
+my $html_public_header = sprintf( qq{
+  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+    <h2 class="section">Public LRGs</h2>
+    <span class="header_count">(%i LRGs)</span>
+    <a class="show_hide_anno status_anno" href="javascript:showhide('public_lrg');">show/hide table</a>
+  </div>
+  <div class="hidden" id="public_lrg">
+    <table class="sortable" style="width:100%%;margin-bottom:5px">
+      <tr class="gradient_color2">
+        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
+        <th class="sorttable_nosort">Step</th>
+        <th class="sorttable_nosort">Step description</th>
+        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+      </tr>\n},
+  $count_lrgs{'public'},
+  $extra_private_column_header
+);
+
+my $html_stalled_header = sprintf( qq{
+  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
+    <h2 class="section">Stalled LRGs</h2>
+    <span class="header_count">(%i LRGs)</span>
+    <a class="show_hide_anno status_anno" href="javascript:showhide('stalled_lrg');">show/hide table</a>
+  </div>
+  <div id="stalled_lrg">
+    <table class="sortable" style="margin-bottom:5px">
+      <tr class="gradient_color2">
+        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
+        <th class="to_sort" title="Sort by the number of steps done">Step</th>
+        <th class="sorttable_nosort">Step description</th>
+        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+      </tr>\n},
+  ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
+  $extra_private_column_header
+);
+
+my $html_pending .= qq{$html_pending_header$html_pending_content    </table>\n    $back2top\n  </div>\n};
+my $html_public  .= qq{$html_public_header$html_public_content    </table>\n    $back2top\n  </div>\n};
+
+my $html_stalled_private = '';
+if($is_private) {
+  $html_stalled_private = qq{$html_stalled_header$html_stalled_content    </table>\n    $back2top\n  </div>\n};
+}
 
 $html .= qq{$html_pending$html_public$html_stalled_private </div>\n$html_legend\n<div style="clear:both"></div>\n<br />\n};
 
@@ -605,13 +663,16 @@ if (%discrepancy) {
   exit(1);
 }
 
-open  OUT, "> $outputfile" or die $!;
+open  OUT, "> $tmpfile" or die $!;
 print OUT $html_header;
 print OUT $html;
 print OUT $html_footer;
 close(OUT);
 
-
+if (-e $tmpfile) {
+  `cp $tmpfile $outputfile`;
+  `rm -f $tmpfile`;
+}
 
 sub format_date {
   my $date = shift;
