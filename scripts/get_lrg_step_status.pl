@@ -254,6 +254,35 @@ if ($is_private) {
         /* W3C Markup, IE10 Release Preview */ 
         background: linear-gradient($black1 10%, $black2 45%, $black1 85%);
       }
+      
+      .step_list {margin-left:25px}
+      
+      a.show_hide_step {
+        vertical-align:middle;
+        border:1px solid #3f9221;
+        border-radius:4px;
+        padding:1px;
+        margin-right:4px;
+        text-decoration:none;
+        background-color: #48a726;
+        color:#FFF;
+      }
+      a.show_hide_step:hover {
+        border:1px solid #48a726;
+        text-decoration:none;
+        background-color: #FFF;
+        color: #48a726;
+      }
+      .missing_step {
+        vertical-align:middle;
+        border:1px solid #000;
+        border-radius:4px;
+        padding:1px;
+        margin-right:4px;
+        text-decoration:none;
+        background-color: #444;
+        color:#FFF;
+      }
   };
 }
 else { 
@@ -303,6 +332,19 @@ my $html_header = qq{
           }
         }
       }
+      
+      function showhiderow(class_name,step_id) {
+        var tr_objs = document.getElementsByClassName(class_name);
+        
+        for(var i=0; i<tr_objs.length; i++) {
+          if (step_id=='all' || tr_objs[i].className == class_name+' '+class_name+'_'+step_id) {
+            tr_objs[i].style.display='table-row';
+          }
+          else {
+            tr_objs[i].style.display='none';
+          }
+        } 
+      }
     </script>
     <script src="sorttable.js"></script>
     <style type="text/css">
@@ -338,6 +380,23 @@ my $html_header = qq{
       a.history { font-size:0.8em;cursor:pointer;}
       a.lrg_link { font-weight:bold;}
      
+      a.show_hide_table {
+        vertical-align:middle;
+        border:1px solid #3f9221;
+        border-radius:9px;
+        padding:2px;
+        margin-right:4px;
+        text-decoration:none;
+        background-color: #48a726;
+        color:#FFF;
+      }
+      a.show_hide_table:hover {
+        border:1px solid #48a726;
+        text-decoration:none;
+        background-color: #FFF;
+        color: #48a726;
+      }
+     
       .step { font-size:0.9em; }
       .hidden {height:0px;display:none;margin-top:0px}
       .unhidden {height:auto;display:inline;margin-top:5px}
@@ -348,7 +407,7 @@ my $html_header = qq{
       $specific_css
   
       .header_count {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
-      .status_anno  {margin-top:2px}
+      .step_bar     {position:absolute;left:380px;padding-top:4px}
       
     </style>
   </header>
@@ -451,7 +510,7 @@ $html_legend .= qq{</div>\n};
 
 # LIST
 my $html = qq{
-  <div style="float:left;min-width:700px;max-width:80%">
+  <div style="float:left;min-width:750px;max-width:80%">
 };  
 
 my $html_pending_content;
@@ -459,6 +518,7 @@ my $html_public_content;
 my $html_stalled_content;
 my $step_max = scalar(keys(%steps));
 my %count_lrgs;
+my %list_step_ids;
 
 foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
   
@@ -538,6 +598,9 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     <a class="history" href="javascript:showhide('$div_id')" id="link_$div_id">Show history</a>
     <div class="hidden" id="$div_id">$history_list</div> 
   };
+  #### TEMPORARY FIX ####
+  $detailled_div = '' unless($is_private);
+  ####################### 
   
   if ($days <= $new_update) {
     $date = qq{<span class="blue">$date</span>};
@@ -552,7 +615,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   my $curator_cell = ($is_private) ? ($curators{$lrg} ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
   
   my $html_row = qq{
-    <tr>
+    <!--<tr>-->
       <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
       <td>$symbol</td>
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
@@ -563,32 +626,65 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   };
   
   if ($current_step eq $step_max) {
-    $html_public_content .= $html_row;
+    $html_public_content .= "<tr>$html_row";
     $count_lrgs{'public'}++;
   }
   else {
     # Stalled
     if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
       if ($is_private) {
-        $html_stalled_content .= $html_row;
+        $html_stalled_content .= "<tr>$html_row";
+        $list_step_ids{'stalled'}{$current_step} = 1;
         $count_lrgs{'stalled'}++;
       }  
     }
     # Pending
     else {  
-      $html_pending_content .= $html_row;
+      $html_pending_content .= qq{<tr class="pending_row pending_row_$current_step">\n$html_row};
+      $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
     }
   }
 }
 
+## Steps list (private display) ##
+my $select_pending_steps = '';
+my $select_stalled_steps = '';
+if ($is_private) {
+  $select_pending_steps = qq{<span class="step_list">Steps: };
+  $select_stalled_steps = qq{<span class="step_list">Steps: };
+  foreach my $step (sort {$a <=> $b} keys(%steps)) {
+    next if ($step == $step_max);
+  
+    if ($list_step_ids{'pending'}{$step}) {
+      $select_pending_steps .= qq{<a class="show_hide_step" title="Select step $step" href="javascript:showhiderow('pending_row','$step');">$step</a>};
+    }
+    else {
+      $select_pending_steps .= qq{<span class="missing_step">$step</span>};
+    }  
+  
+    if ($list_step_ids{'stalled'}{$step}) {
+      $select_stalled_steps .= qq{<a class="show_hide_step" title="Select step $step" href="javascript:showhiderow('stalled_row','$step');">$step</a>};
+    }
+    else {
+      $select_stalled_steps .= qq{<span class="missing_step">$step</span>};
+    }
+  }
+  $select_pending_steps .= qq{<a class="show_hide_step" title="Select all steps" href="javascript:showhiderow('pending_row','all');">All</a></span>};
+  $select_stalled_steps .= qq{<a class="show_hide_step" title="Select all steps" href="javascript:showhiderow('stalled_row','all');">All</a></span>};
+}
 
+
+## HEADERS ##
 my $html_pending_header = sprintf( qq{
   <div class="section" style="background-color:#F0F0F0;margin-top:10px">
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Pending LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno status_anno" href="javascript:showhide('pending_lrg');">show/hide table</a>
+    <span class="step_bar">
+      <a class="show_hide_table" href="javascript:showhide('pending_lrg');">show/hide table</a>
+      %s
+    </span>
   </div>
   <div id="pending_lrg">
     <table class="sortable" style="margin-bottom:5px">
@@ -600,6 +696,7 @@ my $html_pending_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   $count_lrgs{'pending'},
+  $select_pending_steps,
   $extra_private_column_header
 );
 
@@ -608,7 +705,9 @@ my $html_public_header = sprintf( qq{
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Public LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno status_anno" href="javascript:showhide('public_lrg');">show/hide table</a>
+    <span class="step_bar">
+      <a class="show_hide_table" href="javascript:showhide('public_lrg');">show/hide table</a>
+    </span>
   </div>
   <div class="hidden" id="public_lrg">
     <table class="sortable" style="width:100%%;margin-bottom:5px">
@@ -628,7 +727,10 @@ my $html_stalled_header = sprintf( qq{
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Stalled LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno status_anno" href="javascript:showhide('stalled_lrg');">show/hide table</a>
+    <span class="step_bar">
+      <a class="show_hide_table" href="javascript:showhide('stalled_lrg');">show/hide table</a>
+      %s
+    </span>
   </div>
   <div id="stalled_lrg">
     <table class="sortable" style="margin-bottom:5px">
@@ -640,6 +742,7 @@ my $html_stalled_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
+  $select_stalled_steps,
   $extra_private_column_header
 );
 
