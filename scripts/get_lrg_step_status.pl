@@ -46,7 +46,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 ) or die("Could not get a database adaptor for $dbname on $host:$port");
 
 my $lrg_status_table = 'lrg_status';
-my $lrg_step        = 'lrg_step';
+my $lrg_step         = 'lrg_step';
 
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 
@@ -58,7 +58,12 @@ my %updates = ( 0   => 'green_step',
                 60  => 'red_step',    # Number of days after the step update to be declared as "quite old"
                 120 => 'black_step'   # Number of days after the step update to be declared as "stuck/stalled"
               );
-my $new_update = 14;           
+my $new_update = 14; 
+
+my %lrg_status_desc = ( 'public'  => 'LRGs curated and made public.',
+                        'pending' => 'LRGs which are currently going through the curation process before being published.',
+                        'stalled' => 'The curation process of these LRGs have been paused.'
+                      );          
               
 my $stmt = qq{
   SELECT 
@@ -615,7 +620,6 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   my $curator_cell = ($is_private) ? ($curators{$lrg} ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
   
   my $html_row = qq{
-    <!--<tr>-->
       <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
       <td>$symbol</td>
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
@@ -626,21 +630,21 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   };
   
   if ($current_step eq $step_max) {
-    $html_public_content .= "<tr>$html_row";
+    $html_public_content .= qq{<tr id="$lrg">\n$html_row};
     $count_lrgs{'public'}++;
   }
   else {
     # Stalled
     if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
       if ($is_private) {
-        $html_stalled_content .= "<tr>$html_row";
+        $html_stalled_content .= qq{<tr id="$lrg" class="stalled_row stalled_row_$current_step">\n$html_row};
         $list_step_ids{'stalled'}{$current_step} = 1;
         $count_lrgs{'stalled'}++;
       }  
     }
     # Pending
     else {  
-      $html_pending_content .= qq{<tr class="pending_row pending_row_$current_step">\n$html_row};
+      $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">\n$html_row};
       $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
     }
@@ -687,6 +691,7 @@ my $html_pending_header = sprintf( qq{
     </span>
   </div>
   <div id="pending_lrg">
+    <div style="margin-bottom:4px">%s</div>
     <table class="sortable" style="margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
@@ -697,6 +702,7 @@ my $html_pending_header = sprintf( qq{
       </tr>\n},
   $count_lrgs{'pending'},
   $select_pending_steps,
+  $lrg_status_desc{'pending'},
   $extra_private_column_header
 );
 
@@ -710,6 +716,7 @@ my $html_public_header = sprintf( qq{
     </span>
   </div>
   <div class="hidden" id="public_lrg">
+    <div style="margin-bottom:4px">%s</div>
     <table class="sortable" style="width:100%%;margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
@@ -719,6 +726,7 @@ my $html_public_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   $count_lrgs{'public'},
+  $lrg_status_desc{'public'},
   $extra_private_column_header
 );
 
@@ -733,6 +741,7 @@ my $html_stalled_header = sprintf( qq{
     </span>
   </div>
   <div id="stalled_lrg">
+    <div style="margin-bottom:4px">%s</div>
     <table class="sortable" style="margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
@@ -743,6 +752,7 @@ my $html_stalled_header = sprintf( qq{
       </tr>\n},
   ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
   $select_stalled_steps,
+  $lrg_status_desc{'stalled'},
   $extra_private_column_header
 );
 
