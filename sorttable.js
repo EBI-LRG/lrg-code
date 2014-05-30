@@ -3,7 +3,8 @@
   version 2
   7th April 2007
   Stuart Langridge, http://www.kryogenix.org/code/browser/sorttable/
-  >>>> Updated and simplified version for LRG in 2014.
+  
+  >>>> Script slightly modified for LRG in may 2014.
 
   Instructions:
   Download this file
