@@ -246,7 +246,7 @@ div.download_box {
   box-shadow: 2px 4px 2px #888;
 }
 
-a.download_button {
+a.green_button {
 	color: #FFF;
 	background-color: #48a726;
 	font-weight:bold;
@@ -254,15 +254,40 @@ a.download_button {
 	border-radius:5px;
 	border: 1px solid #EEE;
 	margin-right:5px;
+	text-align:center;
 	cursor:pointer;
 }
-a.download_button:hover{
+a.green_button:hover{
 	color: #48a726;
 	background-color: #FFF;
 	text-decoration: none;
 	border: 1px solid #48a726;
 }
-a.download_button:active{
+a.green_button:active{
+	box-shadow: 2px 2px 2px #CCC inset;
+}
+
+
+a.green_button2 {
+	color: #FFF;
+	background-color: #48a726;
+	text-decoration: none;
+	border: 1px solid #FFF;
+	font-weight:bold;
+	padding:1px 3px;
+	border-radius:8px;
+	margin-right:5px;
+	text-align:center;
+	cursor:pointer;
+	box-shadow: 2px 2px 2px #888;
+}
+a.green_button2:hover{
+	color: #48a726;
+	background-color: #FFF;
+	text-decoration: none;
+	border: 1px solid #48a726;
+}
+a.green_button2:active{
 	box-shadow: 2px 2px 2px #CCC inset;
 }
 
@@ -402,7 +427,7 @@ div.pending {
   background-color: #fffcfc;
 }
 .pending_title {
-	color:#FF0000;
+	color:#F00;
 }
 
 div.stalled {

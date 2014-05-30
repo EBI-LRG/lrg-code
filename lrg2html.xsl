@@ -80,6 +80,12 @@
 	    
       <!-- Add a banner indicating that the record is pending if the pending flag is set -->
       <div class="status_banner pending">
+        <div style="position:absolute;right:20px;top:25px;z-index:10;">
+          <a class="green_button2" title="See the progress status of the curation of this LRG" target="_blank">
+            <xsl:attribute name="href">../lrgs_progress_status.html#<xsl:value-of select="$lrg_id" /></xsl:attribute >
+            > See progress status
+          </a>
+        </div>
         <div class="status_title pending_title">*** PENDING APPROVAL ***</div>
         <p class="status_subtitle">
             This LRG record is pending approval and subject to change. <b>Please do not use until it has passed final approval</b>. If you are interested in this gene we would like to know what reference sequences you currently use for reporting sequence variants to ensure that this record fulfils the needs of the community. Please e-mail us at <a href="mailto:feedback@lrg-sequence.org">feedback@lrg-sequence.org</a>.
@@ -246,14 +252,14 @@
       <span class="icon icon-functional" data-icon="="></span>
 	    <span style="padding-left:2px;margin-right:5px;color:#FFF;font-weight:bold">Download <xsl:value-of select="$lrg_id" /> data in </span>
 	      <xsl:variable name="xml_file_name"><xsl:value-of select="$lrg_id" />.xml</xsl:variable>
-        <a class="download_button" style="text-align:center" title="File containing all the LRG data in a XML file">
+        <a class="green_button" title="File containing all the LRG data in a XML file">
 	        <xsl:attribute name="download"><xsl:value-of select="$xml_file_name"/></xsl:attribute>
 	        <xsl:attribute name="href"><xsl:value-of select="$xml_file_name"/></xsl:attribute>XML</a>
 	        
         <span style="margin-left:2px;margin-right:8px;color:#FFF;font-weight:bold">or</span>
         
 	      <xsl:variable name="fasta_file_name"><xsl:value-of select="$lrg_id" />.fasta</xsl:variable>
-	      <a class="download_button" style="text-align:center" title="FASTA file containing the LRG genomic, transcript and protein sequences">
+	      <a class="green_button" title="FASTA file containing the LRG genomic, transcript and protein sequences">
 	        <xsl:attribute name="download"><xsl:value-of select="$fasta_file_name"/></xsl:attribute>
 	        <xsl:attribute name="href"><xsl:if test="$lrg_status=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>FASTA</a>
 	       <span style="margin-left:2px;margin-right:4px;color:#FFF;font-weight:bold">format</span>
