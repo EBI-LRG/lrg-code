@@ -322,7 +322,7 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   my $tr_desc = $track_desc;
   $tr_desc =~ s/sequence/transcript/i;
   
-  print BED "track name=\"$track_name transcripts$add_status_to_name\" description=\"$tr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  print BED "track name=\"$track_name transcripts$add_status_to_name\" description=\"$tr_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
   foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_trans{$status}})) {
     foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_trans{$status}{$lrg_chr}})) {
       foreach my $t_number (sort {$a <=> $b} keys(%{$lrg_trans{$status}{$lrg_chr}{$lrg_start}})) {
@@ -340,8 +340,8 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
 #  
 #  my $pr_desc = $track_desc;
 #  $pr_desc =~ s/sequence/protein/i;
-#  #print BED "track name=\"$track_name proteins$add_status_to_name\" type=bedDetail description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
-#  print BED "track name=\"$track_name proteins$add_status_to_name\" description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+#  #print BED "track name=\"$track_name proteins$add_status_to_name\" type=bedDetail description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+#  print BED "track name=\"$track_name proteins$add_status_to_name\" description=\"$pr_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
 #  foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_prot{$status}})) {
 #    foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}})) {
 #      foreach my $p_number (sort {$a <=> $b} keys(%{$lrg_prot{$status}{$lrg_chr}{$lrg_start}})) {
