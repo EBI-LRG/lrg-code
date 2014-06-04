@@ -472,7 +472,7 @@ my $html_legend = qq{
     <div class="summary gradient_color1" style="padding-bottom:1px">
       <div class="summary_header">Step Legend</div>
       <table class="legend" style="text-align:center">
-        <tr><th title="Number">#</th><th title="Step description">Description</th></tr>
+        <tr><th title="Step number">#</th><th title="Step description">Description</th></tr>
 };
 foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
   my $desc = $steps{$step_id};
@@ -586,7 +586,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   # History
   my $history_list = qq{
     <table class="history">
-       <tr class="gradient_color2"><th>Number</th><th>Description</th><th>Date</th></tr>
+       <tr class="gradient_color2"><th title="Step number">#</th><th title="Step description">Description</th><th title="Date when the step was done">Date</th></tr>
   };
   foreach my $step (sort {$a <=> $b} keys(%{$lrg_steps{$lrg}{'step'}})) {
     my $history_date = format_date($lrg_steps{$lrg}{'step'}{$step});
