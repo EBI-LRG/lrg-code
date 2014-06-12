@@ -130,6 +130,8 @@ $sth_lrg->execute();
 $sth_lrg->bind_columns(\$lrg_id,\$symbol,\$status,\$step_id);
     
 while ($sth_lrg->fetch()) {
+  next if ($step_id !~ /^\d+$/); # Skip if the step_id is not numeric
+  
   # Date
   $sth_date->execute($lrg_id,$step_id);
   my $date = ($sth_date->fetchrow_array)[0];
