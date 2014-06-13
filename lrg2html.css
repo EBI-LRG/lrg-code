@@ -64,7 +64,8 @@ h3.gene_name{
 }
 
 img.external_link {
- margin-left:4px;
+ margin-left: 3px;
+ margin-right:2px;
  vertical-align:top;
 }
 
@@ -295,13 +296,13 @@ a.green_button2:active{
 
 div.left_annotation {
 	float:left;
-	width:33%;
+	width:30%;
 	padding-left:3px;
 }
 
 div.right_annotation {
 	float:right;
-	width:66%;
+	width:69%;
 	padding-left:0px;
 }
 

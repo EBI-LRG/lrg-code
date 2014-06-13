@@ -334,7 +334,7 @@
       <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/sites/entrez?db=gene&amp;cmd=Retrieve&amp;dopt=Graphics&amp;list_uids=<xsl:value-of select="@accession"/></xsl:attribute>
     </xsl:when>
     <xsl:when test="@source='HGNC'">
-      <xsl:attribute name="href"><xsl:value-of select="hgnc_url" /><xsl:value-of select="@accession"/></xsl:attribute>
+      <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="@accession"/></xsl:attribute>
     </xsl:when>
     <xsl:when test="@source='MIM'">
       <xsl:attribute name="href">http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=<xsl:value-of select="@accession"/></xsl:attribute>
@@ -358,7 +358,7 @@
       </xsl:for-each>
     </xsl:attribute>
   </xsl:if>    
-  <xsl:value-of select="@accession"/>
+  <xsl:value-of select="@accession"/><xsl:call-template name="external_link_icon" />
   </a>
   
 </xsl:template>
@@ -2033,7 +2033,7 @@
               <th class="sub_other_label">
                 <xsl:choose>
                   <xsl:when test="url">
-                    <a class="other_label">
+                    <a class="other_label" target="_blank">
                       <xsl:attribute name="href"><xsl:value-of select="url" /></xsl:attribute>
                       <xsl:attribute name="title">see further explanations</xsl:attribute>
                       <xsl:value-of select="$desc"/><xsl:call-template name="external_link_icon" />
@@ -2519,9 +2519,7 @@
         <xsl:call-template name="right_arrow_green" />
         <a target="_blank" style="vertical-align:middle">
           <xsl:attribute name="class">external_link</xsl:attribute>
-          <xsl:attribute name="href">http://www.ensembl.org/Homo_sapiens/Gene/Phenotype?g=<xsl:value-of select="$accession" /></xsl:attribute>
-          Link to the Gene Phenotype page in Ensembl
-          <xsl:call-template name="external_link_icon" />
+          <xsl:attribute name="href">http://www.ensembl.org/Homo_sapiens/Gene/Phenotype?g=<xsl:value-of select="$accession" /></xsl:attribute>Link to the Gene Phenotype page in Ensembl<xsl:call-template name="external_link_icon" />
         </a>
       </div>
     </xsl:if>
@@ -2622,7 +2620,7 @@
   <xsl:choose>
     <xsl:when test="@source='RefSeq' or @source='Ensembl'">
       <a>
-      <xsl:attribute name="target">_blank</xsl:attribute>      
+      <xsl:attribute name="target">_blank</xsl:attribute>
       <xsl:attribute name="href">
         <xsl:choose>
           <xsl:when test="@source='RefSeq'">
@@ -2634,7 +2632,7 @@
         </xsl:choose>
         <xsl:value-of select="@accession"/>
       </xsl:attribute>
-      <xsl:value-of select="@accession"/>
+      <xsl:value-of select="@accession"/><xsl:call-template name="external_link_icon" />
       </a>
     </xsl:when>
     <xsl:otherwise>
@@ -2723,7 +2721,7 @@
         </xsl:choose>
         <xsl:value-of select="@accession"/>
       </xsl:attribute>
-      <xsl:value-of select="@accession"/>
+      <xsl:value-of select="@accession"/><xsl:call-template name="external_link_icon" />
       </a>
     </xsl:when>
     <xsl:otherwise>
