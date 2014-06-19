@@ -50,8 +50,10 @@ my $lrg_step         = 'lrg_step';
 
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 
-my $ftp = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
-my $xml_dir = '/ebi/ftp/pub/databases/lrgex';
+my $ftp      = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
+my $xml_dir  = '/ebi/ftp/pub/databases/lrgex';
+my $hgnc_url = 'http://www.genenames.org/data/hgnc_data.php?hgnc_id=';
+
 
 my %updates = ( 0   => 'green_step',
                 30  => 'orange_step', # Number of days after the step update to be declared as "old"
@@ -69,6 +71,7 @@ my $stmt = qq{
   SELECT 
     ls.lrg_id,
     g.symbol,
+    g.hgnc_id,
     g.status,
     ls.lrg_step_id
   FROM 
@@ -125,9 +128,9 @@ while (my @res = $sth_step->fetchrow_array()) {
 $sth_step->finish();
 
 # LRG
-my ($lrg_id,$symbol,$status,$step_id);
+my ($lrg_id,$symbol,$symbol_id,$status,$step_id);
 $sth_lrg->execute();
-$sth_lrg->bind_columns(\$lrg_id,\$symbol,\$status,\$step_id);
+$sth_lrg->bind_columns(\$lrg_id,\$symbol,\$symbol_id,\$status,\$step_id);
     
 while ($sth_lrg->fetch()) {
   next if ($step_id !~ /^\d+$/); # Skip if the step_id is not numeric
@@ -142,6 +145,7 @@ while ($sth_lrg->fetch()) {
   $lrg_steps{$lrg_id}{'step'}{$step_id} = $date;
   $lrg_steps{$lrg_id}{'id'} = $id;
   $lrg_steps{$lrg_id}{'symbol'} = $symbol;
+  $lrg_steps{$lrg_id}{'symbol_id'} = $symbol_id;
   $lrg_steps{$lrg_id}{'status'} = $status;
 }
 $sth_date->finish();
@@ -384,8 +388,10 @@ my $html_header = qq{
                                 }
       
       
-      a.history { font-size:0.8em;cursor:pointer;}
-      a.lrg_link { font-weight:bold;}
+      a.history { font-size:0.8em;cursor:pointer; }
+      a.lrg_link { font-weight:bold; }
+     
+      a.gene_link { color:#000; }
      
       a.show_hide_table {
         vertical-align:middle;
@@ -613,9 +619,10 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     $date = qq{<span class="blue">$date</span>};
   }
   
-  my $symbol = $lrg_steps{$lrg}{'symbol'};
+  my $symbol    = $lrg_steps{$lrg}{'symbol'};
+  my $symbol_id = $lrg_steps{$lrg}{'symbol_id'};
   my $step_desc = $steps{$current_step};
-  my $date_key = $lrg_steps{$lrg}{'step'}{$current_step};
+  my $date_key  = $lrg_steps{$lrg}{'step'}{$current_step};
   
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
@@ -623,7 +630,9 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   my $html_row = qq{
       <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
-      <td>$symbol</td>
+      <td sorttable_customkey="$symbol">
+        <a class="gene_link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
+      </td>
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
       <td>$step_desc</td>
       <td sorttable_customkey="$date_key">$date</td>
@@ -697,7 +706,9 @@ my $html_pending_header = sprintf( qq{
     <table class="sortable" style="margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene</th>
+        <th class="to_sort" title="Sort by HGNC symbol (external link)">
+          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
+        </th>
         <th class="to_sort" title="Sort by the number of steps done">Step</th>
         <th class="sorttable_nosort">Step description</th>
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
@@ -722,7 +733,9 @@ my $html_public_header = sprintf( qq{
     <table class="sortable" style="width:100%%;margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
+        <th class="to_sort" title="Sort by HGNC symbol (external link)">
+          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
+        </th>
         <th class="sorttable_nosort">Step</th>
         <th class="sorttable_nosort">Step description</th>
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
@@ -747,7 +760,9 @@ my $html_stalled_header = sprintf( qq{
     <table class="sortable" style="margin-bottom:5px">
       <tr class="gradient_color2">
         <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol">Gene name</th>
+        <th class="to_sort" title="Sort by HGNC symbol (external link)">
+          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
+        </th>
         <th class="to_sort" title="Sort by the number of steps done">Step</th>
         <th class="sorttable_nosort">Step description</th>
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
