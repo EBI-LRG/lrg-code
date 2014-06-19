@@ -644,8 +644,8 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
         $count_lrgs{'stalled'}++;
       }  
     }
-    # Pending
-    else {  
+    # Pending + LRGs not yet moved to the FTP site (the latter is only for the private display)
+    elsif ($lrg_steps{$lrg}{'status'} eq 'pending' || (!$lrg_steps{$lrg}{'status'} && $is_private)) {
       $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">\n$html_row};
       $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
