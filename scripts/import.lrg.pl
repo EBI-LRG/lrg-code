@@ -542,7 +542,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
 	# Do the same for the Ensembl gene to the Ensembl LRG display
         my $core_gene = $gene_adaptor->fetch_by_stable_id($stable_id);
         next unless(defined $core_gene);
-	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene', $lrg_stable_id, $lrg_name, $core_gene, 'gene');
+	LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_gene', $lrg_stable_id, $lrg_name, $core_gene, 'gene', 'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
       }
       
       # Get Ensembl accessions for transcripts corresponding to transcripts in the fixed section
@@ -572,7 +572,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
             # For each LRG matching the fixed id, we add the ensembl transcript as an xref
             # For the ensembl transcript, we add an xref for the LRG
             LRG::LRGImport::add_xref('Ens_Hs_transcript', $transcript_core_accession, $transcript_core_accession, $ensembl_lrg_transcript, 'transcript');
-            LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript', $lrg_stable_id, $lrg_stable_id, $core_transcript, 'transcript');
+            LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME . '_transcript', $lrg_stable_id, $lrg_stable_id, $core_transcript, 'transcript', 'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
             if ($ensembl_lrg_transcript->translate) {
               $ensembl_lrg_translation = $ensembl_lrg_transcript->translation;
               $ensembl_core_proteins = $ensembl_core_transcript->translation();
