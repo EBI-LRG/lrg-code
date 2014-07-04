@@ -11,6 +11,7 @@ cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
 perldir=${CVSROOTDIR}/lrg-code/scripts/
 cvsftp=${CVSROOTDIR}/ftp/public/
+lrgindex=${PUBFTP}/.lrg_index/
 
 # Database settings
 host=${LRGDBHOST}
@@ -132,14 +133,20 @@ if [[ -s ${tmp_lrg_list} ]]; then
       YES|yes|Yes) 
         echo -e "Proceed to generate and commit the relnotes file.\nThe script will generate the LRG XML zip, LRG FASTA zip and LRG BED files as well."
         
-        # Update the LRG status in the LRG database
+        # Write the LRG status changes in the database
         while read line           
         do
           read -a lrg_info <<< $line
           lrg_id=${lrg_info[0]}
           lrg_status=${lrg_info[1]}
           
+          # Update the LRG status in the LRG database
           mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
+          
+          # Remove entry from lrg_index if the LRG has been moved to the "Stalled" status
+          if [[ ${lrg_status} == 'stalled' ]]; then
+            rm -f "${lrgindex}${lrg_id}_index.xml"
+          fi
         done < ${tmp_lrg_list} 
         
         break
