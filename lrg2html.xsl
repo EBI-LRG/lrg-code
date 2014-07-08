@@ -27,6 +27,8 @@
 <xsl:variable name="previous_assembly">GRCh37</xsl:variable>
 <xsl:variable name="current_assembly">GRCh38</xsl:variable>
 
+<xsl:decimal-format name="thousands" grouping-separator=","/>
+
 <!-- PATH -->
 
 <xsl:variable name="relative_path">
@@ -202,7 +204,7 @@
        <!-- Molecule type and sequence length -->
         <tr><td class="left_col line_separator">Molecule type</td><td class="right_col line_separator">
           <xsl:value-of select="translate(fixed_annotation/mol_type,'abcdefghijklmnopqrstuvwxyz','ABCDEFGHIJKLMNOPQRSTUVWXYZ')" />
-          <span style="padding-left:8px">(<xsl:value-of select="string-length(fixed_annotation/sequence)"/>nt)</span>
+          <span style="padding-left:8px">(<xsl:value-of select="format-number(string-length(fixed_annotation/sequence),'###,###','thousands')"/> nt)</span>
         </td></tr>
       <!-- RefSeqGene ID -->
       <xsl:if test="fixed_annotation/sequence_source">
