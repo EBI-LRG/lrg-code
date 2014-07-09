@@ -102,13 +102,23 @@ my $stmt_current_step = qq{
     ls.lrg_id=?
 };
 
-my $stmt_curator = qq{ SELECT lrg_id, curator FROM lrg_curator };
-
-
 my $sth_step = $db_adaptor->dbc->prepare($stmt_step);
 my $sth_lrg  = $db_adaptor->dbc->prepare($stmt);
 my $sth_date = $db_adaptor->dbc->prepare($stmt_date);
 my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
+
+
+# Only for Private display
+my $stmt_requester = qq{ SELECT g.lrg_id,r.name 
+                         FROM requester r, lsdb_contact lc, lrg_request lr, gene g 
+                         WHERE r.contact_id=lc.contact_id
+                           AND lc.lsdb_id=lr.lsdb_id
+                           AND g.gene_id=lr.gene_id
+                           ORDER BY g.lrg_id,r.contact_id
+                       };
+my $stmt_curator = qq{ SELECT lrg_id, curator FROM lrg_curator };
+
+my $sth_requester = $db_adaptor->dbc->prepare($stmt_requester); 
 my $sth_curator = $db_adaptor->dbc->prepare($stmt_curator);
 
 
@@ -121,6 +131,7 @@ $sth_cleanup->finish();
 
 my %steps;
 my %curators;
+my %requesters;
 my %discrepancy;
 my %lrg_steps;
 my $bar_width = 200;
@@ -168,13 +179,21 @@ foreach my $lrg (keys(%lrg_steps)) {
 $sth_current_step->finish();
 
 
-# Curator
+# Extra data for Private display
 if ($is_private) {
+  # Curator
   $sth_curator->execute();
   while (my @res = $sth_curator->fetchrow_array()) {
     push(@{$curators{$res[0]}},$res[1]);
   }
   $sth_curator->finish();
+  
+  # Requester
+  $sth_requester->execute();
+  while (my @res = $sth_requester->fetchrow_array()) {
+    push(@{$requesters{$res[0]}},$res[1]);
+  }
+  $sth_requester->finish();
 }
 
 
@@ -196,8 +215,9 @@ my $extra_private_column_header = '';
 
 if ($is_private) {
 
-  # Extra curator column
-  $extra_private_column_header = qq{\n        <th class="to_sort">Curator</th>};
+  # Extra requester and curator columns
+  $extra_private_column_header  = qq{\n        <th class="to_sort">Requester</th>};
+  $extra_private_column_header .= qq{\n        <th class="to_sort">Curator</th>};
 
   # Specific public/private CSS
   my ($green1, $green2)   = ('#0C0', '#5E5');
@@ -371,7 +391,6 @@ my $html_header = qq{
       table {border-collapse:collapse; }
       table.legend { font-size:0.8em;width:100% }
       table.history { font-size:0.8em; }
-      /*td { padding:2px 4px;border:1px solid #000;text-align:center }*/
       
       .to_sort { 
                  background-image: url('img/sortable.png'); 
@@ -531,7 +550,7 @@ $html_legend .= qq{</div>\n};
 
 # LIST
 my $html = qq{
-  <div style="float:left;min-width:750px;max-width:80%">
+  <div style="float:left;min-width:70%;max-width:75%">
 };  
 
 my $html_pending_content;
@@ -634,7 +653,8 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
-  my $curator_cell = ($is_private) ? ($curators{$lrg} ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
+  my $requester_cell = ($is_private) ? ($requesters{$lrg} ? '<td>'.join('<br />',@{$requesters{$lrg}}).'</td>' : '<td>-</td>') : '';
+  my $curator_cell   = ($is_private) ? ($curators{$lrg}   ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
   
   my $html_row = qq{
       <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
@@ -644,6 +664,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
       <td>$step_desc</td>
       <td sorttable_customkey="$date_key">$date</td>
+      $requester_cell
       $curator_cell
     </tr>
   };
