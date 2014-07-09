@@ -65,7 +65,7 @@ my $new_update = 14;
 my %lrg_status_desc = ( 'public'  => 'LRGs curated and made public.',
                         'pending' => 'LRGs which are currently going through the curation process before being published.',
                         'stalled' => 'The curation process of these LRGs have been paused.'
-                      );          
+                      );                       
               
 my $stmt = qq{
   SELECT 
@@ -110,6 +110,14 @@ my $sth_lrg  = $db_adaptor->dbc->prepare($stmt);
 my $sth_date = $db_adaptor->dbc->prepare($stmt_date);
 my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
 my $sth_curator = $db_adaptor->dbc->prepare($stmt_curator);
+
+
+## Cleanup the database (remove useless lines)
+my $stmt_cleanup = qq{DELETE FROM $lrg_status_table WHERE lrg_id NOT LIKE "LRG_%"}; 
+my $sth_cleanup = $db_adaptor->dbc->prepare($stmt_cleanup);
+$sth_cleanup->execute();
+$sth_cleanup->finish();
+
 
 my %steps;
 my %curators;
@@ -807,7 +815,7 @@ if (-e $tmpfile) {
 sub format_date {
   my $date = shift;
   
-  return "NA" if (!$date || $date !~ /^\d{4}-\d{2}-\d{2}$/ || $date eq '0000-00-00');
+  return "NA" if (!defined($date) || $date !~ /^\d{4}-\d{2}-\d{2}$/ || $date eq '0000-00-00');
   
   my @parts = split('-',$date);
   
