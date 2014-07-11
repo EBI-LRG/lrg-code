@@ -588,8 +588,9 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   $progress_width .= 'px'; 
   $progress_width .= ';border-top-right-radius:0px;border-bottom-right-radius:0px' if ($percent != 100);
   
-  my $date = format_date($lrg_steps{$lrg}{'step'}{$current_step});
-  my $days = count_days(\@today,$lrg_steps{$lrg}{'step'}{$current_step});
+  my $raw_date = $lrg_steps{$lrg}{'step'}{$current_step};
+  my $date = format_date($raw_date);
+  my $days = count_days(\@today,$raw_date);
   
   
   # Progression bar
@@ -851,8 +852,12 @@ sub format_date {
 
 sub count_days {
   my $today = shift;
-  my @date  = split('-',shift); 
-
+  my $raw_date = shift;
+  
+  return $new_update+1 if (!$raw_date);
+  
+  my @date  = split('-',$raw_date);
+  
   my $days = Delta_Days(@date, @{$today});
   return $days;
 }
