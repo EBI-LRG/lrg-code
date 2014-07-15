@@ -104,7 +104,7 @@ if (defined($list_lsdbs)) {
             lsdb_gene lg JOIN
             lsdb l USING (lsdb_id) LEFT JOIN
             lsdb_contact lc USING (lsdb_id) LEFT JOIN
-            requester r USING (contact_id)
+            contact c USING (contact_id)
         WHERE
             lg.gene_id = $gene_id AND
             (
@@ -113,8 +113,8 @@ if (defined($list_lsdbs)) {
                 l.name NOT LIKE 'Ensembl'
             )
     };
-    my $condition = join("' AND r.name NOT LIKE '",@filter_list_name);
-    $stmt .= qq{ AND (r.name IS NULL OR (r.name NOT LIKE '$condition')) } if (length($condition) > 0);
+    my $condition = join("' AND c.name NOT LIKE '",@filter_list_name);
+    $stmt .= qq{ AND (c.name IS NULL OR (c.name NOT LIKE '$condition')) } if (length($condition) > 0);
     
     $condition = join("' AND l.name NOT LIKE '",@filter_list_lsdb);
     $stmt .= qq{ AND (l.name NOT LIKE '$condition') } if (length($condition) > 0);
@@ -163,7 +163,7 @@ $stmt = qq{
         ld.taxon_id,
         ld.moltype,
         ld.creation_date,
-				ld.sequence_source,
+				g.refseq,
         lc.comment
     FROM
         lrg_data ld,
@@ -771,17 +771,17 @@ sub get_source {
     # Get the source data for the requesters
     $stmt = qq{
         SELECT DISTINCT
-            r.name,
-            r.email,
-            r.url,
-            r.address
+            c.name,
+            c.email,
+            c.url,
+            c.address
         FROM
             lsdb_contact lc JOIN
-            requester r USING (contact_id)
+            contact c USING (contact_id)
         WHERE
             lc.lsdb_id = '$lsdb_id'
         ORDER BY
-            r.name ASC
+            c.name ASC
     };
     my $sth = $db_adaptor->dbc->prepare($stmt);
     

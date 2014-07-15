@@ -87,8 +87,8 @@ my $query = qq{
     g.symbol,
     g.refseq,
     GROUP_CONCAT(l.url SEPARATOR "|") AS url,
-    GROUP_CONCAT(r.name SEPARATOR "|") AS name,
-    GROUP_CONCAT(r.address SEPARATOR "|") AS affiliation
+    GROUP_CONCAT(c.name SEPARATOR "|") AS name,
+    GROUP_CONCAT(c.address SEPARATOR "|") AS affiliation
   FROM
     gene g JOIN
     lrg_request lr ON (
@@ -100,8 +100,8 @@ my $query = qq{
     lsdb_contact lc ON (
       lc.lsdb_id = lr.lsdb_id
     ) JOIN
-    requester r ON (
-      r.contact_id = lc.contact_id
+    contact c ON (
+      c.contact_id = lc.contact_id AND c.is_requester=1
     )
   WHERE
     l.name NOT LIKE 'NCBI RefSeqGene' AND (

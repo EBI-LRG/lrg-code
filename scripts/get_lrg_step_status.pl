@@ -109,12 +109,13 @@ my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
 
 
 # Only for Private display
-my $stmt_requester = qq{ SELECT g.lrg_id,r.name 
-                         FROM requester r, lsdb_contact lc, lrg_request lr, gene g 
-                         WHERE r.contact_id=lc.contact_id
+my $stmt_requester = qq{ SELECT g.lrg_id,c.name 
+                         FROM contact c, lsdb_contact lc, lrg_request lr, gene g 
+                         WHERE c.contact_id=lc.contact_id
                            AND lc.lsdb_id=lr.lsdb_id
                            AND g.gene_id=lr.gene_id
-                           ORDER BY g.lrg_id,r.contact_id
+                           AND c.is_requester=1
+                           ORDER BY g.lrg_id,c.contact_id
                        };
 my $stmt_curator = qq{ SELECT lrg_id, curator FROM lrg_curator };
 

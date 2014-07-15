@@ -195,7 +195,7 @@ if ($purge) {
 			# Delete the fixed annotation data
     	$stmt = qq{
         DELETE FROM
-            ld,
+            ln,
             lt,
             lc,
             lp,
@@ -293,11 +293,15 @@ if (!defined($gene_id)) {
 # HGNC ID
 my $hgnc_id = $fixed->findNode('hgnc_id')->content;
 
+# RefSeqGene ID
+my $refseq = $fixed->findNode('sequence_source')->content;
 
-if (defined($gene_id)) { # Check HGNC symbol and ID
 
-  $stmt = qq{ SELECT symbol,hgnc_id,status FROM gene WHERE gene_id=$gene_id };
-  my ($db_symbol,$db_hgnc_id,$db_status) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+## Check HGNC symbol and ID
+if (defined($gene_id)) { 
+
+  $stmt = qq{ SELECT symbol,hgnc_id,status,refseq FROM gene WHERE gene_id=$gene_id };
+  my ($db_symbol,$db_hgnc_id,$db_status,$db_refseq) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
   
   # Update the HGNC symbol
   if (defined($hgnc_symbol)) {
@@ -307,6 +311,10 @@ if (defined($gene_id)) { # Check HGNC symbol and ID
 	if (defined($hgnc_id)) {
 	  $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
 	}
+	# Update the RefSeqGene ID (NG_XXX)
+  if (defined($refseq)) {
+	  $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if ($refseq ne $db_refseq);
+	}
 	# Update the LRG status
 	$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
 }
@@ -314,9 +322,6 @@ else { # Create new "gene" entry
   
   # HGNC ID
   $hgnc_id = 'NULL' if (!defined($hgnc_id));
-  
-  # RefSeq ID
-	my $refseq = $fixed->findNode('sequence_source')->content;
 
 	# Get gene_id
 	foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
@@ -366,16 +371,6 @@ my $moltype = $node->content();
 $node = $fixed->findNode('creation_date') or error_msg("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
 
-
-my $other_val;
-my $other_col;
-# Get the RefSeqGene ID
-$node = $fixed->findNode('sequence_source');
-if (defined($node)) {
-	$other_val .= ",'".$node->content()."'";
-	$other_col .= ",sequence_source";
-}
-
 # Get the comment (optional)
 $node = $fixed->findNodeSingle('comment');
 if (defined($node)) {
@@ -416,16 +411,18 @@ if (scalar(@update_annotation_set)) {
 # Set the LRG id for the gene
 lrg_id($gene_id,$db_adaptor,$lrg_id);
 
-# Insert the data into the db
-$stmt = qq{
-    INSERT INTO
+# Insert the metadata into the db
+$stmt = qq{ SELECT gene_id FROM lrg_data WHERE gene_id = $gene_id };
+if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
+  # Insert the data into the db
+  $stmt = qq{
+    INSERT IGNORE INTO
         lrg_data (
             gene_id,
             organism,
             taxon_id,
             moltype,
             creation_date
-						$other_col
         )
     VALUES (
         '$gene_id',
@@ -433,12 +430,12 @@ $stmt = qq{
         $taxon_id,
         '$moltype',
         '$creation_date'
-				$other_val
     )
-};
-print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
-$db_adaptor->dbc->do($stmt);
-
+  };
+  print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
+  $db_adaptor->dbc->do($stmt);
+}
+f
 # Insert the sequence
 add_sequence($gene_id,'genomic',$db_adaptor,$lrg_seq);
 
@@ -1130,17 +1127,19 @@ sub parse_source {
     };
     my $requester_ins_stmt = qq{
         INSERT INTO
-            requester (
+            contact (
                 name,
                 email,
                 url,
-                address
+                address,
+                is_requester
             )
         VALUES (
             ?,
             ?,
             ?,
-            ?
+            ?,
+            1
         )
     };
     my $lc_ins_stmt = qq{
@@ -1264,7 +1263,7 @@ sub parse_source {
             SELECT
                 contact_id
             FROM
-                requester
+                contact
             WHERE
                 name = '$name'
             LIMIT 1

@@ -39,12 +39,12 @@ umask(0002);
 open OUT, "> $output" or die $!;
 print OUT "# LRG_ID\tHGNC\tDatabase\tDB_website\tName\tAffiliation\tEmail\n";
 
-my $stmt = qq( SELECT g.lrg_id, g.symbol, l.name, l.url, r.name, r.address, r.email 
-               FROM gene g, lsdb l, requester r, lrg_request lr, lsdb_contact lc 
+my $stmt = qq( SELECT g.lrg_id, g.symbol, l.name, l.url, c.name, c.address, c.email 
+               FROM gene g, lsdb l, contact c, lrg_request lr, lsdb_contact lc 
                WHERE l.lsdb_id=lr.lsdb_id 
                  AND l.lsdb_id=lc.lsdb_id 
                  AND g.gene_id=lr.gene_id 
-                 AND r.contact_id=lc.contact_id 
+                 AND c.contact_id=lc.contact_id 
                ORDER BY g.lrg_id
              );
 

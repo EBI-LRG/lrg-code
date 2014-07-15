@@ -62,8 +62,8 @@ my @is_location  = ('New York', 'U.S.A', 'USA', 'Netherland', 'Spain', 'Czech Re
 my $stmt_g = qq{ SELECT gene_id FROM gene WHERE symbol=? LIMIT 1 };
 
 # contact
-my $stmt_c = qq{ SELECT contact_id FROM requester WHERE name=? LIMIT 1 };
-my $stmt_c2 = qq{ SELECT address FROM requester WHERE contact_id=? LIMIT 1 };
+my $stmt_c = qq{ SELECT contact_id FROM contact WHERE name=? LIMIT 1 };
+my $stmt_c2 = qq{ SELECT address FROM contact WHERE contact_id=? LIMIT 1 };
 
 # lsdb
 my $stmt_lsdb = qq{ SELECT lsdb_id FROM lsdb WHERE name=? AND url=? LIMIT 1 };
@@ -92,8 +92,8 @@ my $lsdb_c_sth = $db_adaptor->dbc->prepare($stmt_lsdb_c);
 my $ins_lsdb = qq{ INSERT INTO lsdb (name,url) VALUES (?,?) };
 
 # contact
-my $ins_requester = qq{ INSERT INTO requester (name,address) VALUES (?,?) };
-my $ins_requester_na = qq{ INSERT INTO requester (name) VALUES (?) };
+my $ins_requester = qq{ INSERT INTO contact (name,address) VALUES (?,?) };
+my $ins_requester_na = qq{ INSERT INTO contact (name) VALUES (?) };
 
 # lsdb_gene
 my $ins_lsdb_gene = qq{ INSERT INTO lsdb_gene (lsdb_id,gene_id) VALUES (?,?) };
@@ -114,7 +114,7 @@ my $ins_lsdb_c_sth = $db_adaptor->dbc->prepare($ins_lsdb_c);
 
 my $upd_lsdb_name = qq{ UPDATE lsdb SET name=? WHERE url=? AND manually_modif=0 };
 my $upd_lsdb_url = qq{ UPDATE lsdb SET url=? WHERE name=? AND manually_modif=0 };
-my $upd_requester = qq{ UPDATE requester SET address=? WHERE contact_id=? };
+my $upd_requester = qq{ UPDATE contact SET address=? WHERE contact_id=? };
 
 my $upd_lsdb_name_sth = $db_adaptor->dbc->prepare($upd_lsdb_name);
 my $upd_lsdb_url_sth = $db_adaptor->dbc->prepare($upd_lsdb_url);
@@ -331,7 +331,7 @@ LINE: while(<IN>) {
 ###### Checks ######
 
 my $stmt_contact = qq {
-	SELECT count(lc.lsdb_id) FROM lsdb_contact lc LEFT JOIN requester r ON lc.contact_id=r.contact_id WHERE r.contact_id is NULL
+	SELECT count(lc.lsdb_id) FROM lsdb_contact lc LEFT JOIN contact c ON lc.contact_id=c.contact_id WHERE c.contact_id is NULL
 };
 
 my $stmt_lc = qq {
