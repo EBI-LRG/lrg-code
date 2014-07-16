@@ -66,9 +66,35 @@ my %lrg_status_desc = ( 'public'  => 'LRGs curated and made public.',
                         'pending' => 'LRGs which are currently going through the curation process before being published.',
                         'stalled' => 'The curation process of these LRGs have been paused.'
                       );                       
-              
+
+
+#### Cleanup the database (remove useless lines) ####
+# Remove lines where the lrg_id is wrong
+my $stmt_cleanup = qq{DELETE FROM $lrg_status_table WHERE lrg_id NOT LIKE "LRG_%"}; 
+my $sth_cleanup = $db_adaptor->dbc->prepare($stmt_cleanup);
+$sth_cleanup->execute();
+$sth_cleanup->finish();
+
+# Remove space characters
+my $stmt_cleanup2 = qq{ UPDATE $lrg_status_table SET 
+                        lrg_id = TRIM(Replace(Replace(Replace(lrg_id,'\t',''),'\n',''),'\r','')),
+                        lrg_step_id = TRIM(Replace(Replace(Replace(lrg_step_id,'\t',''),'\n',''),'\r',''))
+                      };
+my $sth_cleanup2 = $db_adaptor->dbc->prepare($stmt_cleanup2);
+$sth_cleanup2->execute();
+$sth_cleanup2->finish();
+
+# Clean lrg_step_id column
+my $stmt_cleanup3 = qq{ UPDATE $lrg_status_table SET lrg_step_id = NULL where lrg_step_id = '' };
+my $sth_cleanup3 = $db_adaptor->dbc->prepare($stmt_cleanup3);
+$sth_cleanup3->execute();
+$sth_cleanup3->finish();
+#####################################################
+
+
+           
 my $stmt = qq{
-  SELECT 
+  SELECT DISTINCT
     ls.lrg_id,
     g.symbol,
     g.hgnc_id,
@@ -84,7 +110,7 @@ my $stmt = qq{
 
 my $stmt_date = qq{
   SELECT 
-    min(ls.status_date)
+    max(ls.status_date)
   FROM 
     $lrg_status_table ls
   WHERE ls.lrg_id = ?
@@ -123,13 +149,6 @@ my $sth_requester = $db_adaptor->dbc->prepare($stmt_requester);
 my $sth_curator = $db_adaptor->dbc->prepare($stmt_curator);
 
 
-## Cleanup the database (remove useless lines)
-my $stmt_cleanup = qq{DELETE FROM $lrg_status_table WHERE lrg_id NOT LIKE "LRG_%"}; 
-my $sth_cleanup = $db_adaptor->dbc->prepare($stmt_cleanup);
-$sth_cleanup->execute();
-$sth_cleanup->finish();
-
-
 my %steps;
 my %curators;
 my %requesters;
@@ -158,7 +177,7 @@ while ($sth_lrg->fetch()) {
   # Date
   $sth_date->execute($lrg_id,$step_id);
   my $date = ($sth_date->fetchrow_array)[0];
-  
+   
   $lrg_id =~ /LRG_(\d+)/i;
   my $id = $1;
   
@@ -651,7 +670,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   my $symbol    = $lrg_steps{$lrg}{'symbol'};
   my $symbol_id = $lrg_steps{$lrg}{'symbol_id'};
   my $step_desc = $steps{$current_step};
-  my $date_key  = $lrg_steps{$lrg}{'step'}{$current_step};
+  my $date_key  = ($lrg_steps{$lrg}{'step'}{$current_step}) ? $lrg_steps{$lrg}{'step'}{$current_step} : 'NA';
   
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
