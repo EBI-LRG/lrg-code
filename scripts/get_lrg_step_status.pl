@@ -8,6 +8,7 @@ use LRG::LRG;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
 use Date::Calc qw(Delta_Days);
+use File::Basename;
 
 
 my $outputfile;
@@ -154,9 +155,11 @@ my %curators;
 my %requesters;
 my %discrepancy;
 my %lrg_steps;
+my %private_exports;
 my $bar_width = 200;
 my $bar_width_px = $bar_width.'px'; 
 my $public_progression_class = 'lrg_step';
+my $export_suffix = "_export.txt";
 
 
 # STEPS DOCUMENTATION
@@ -466,8 +469,9 @@ my $html_header = qq{
       
       $specific_css
   
-      .header_count {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
-      .step_bar     {position:absolute;left:380px;padding-top:4px}
+      .header_count  {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
+      .step_bar      {position:absolute;left:380px;padding-top:4px}
+      .export_button {position:absolute;left:850px;padding-top:6px}
       
     </style>
   </header>
@@ -690,9 +694,18 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     </tr>
   };
   
+  # Export row
+  my $export_row;
+  if ($is_private) {
+    my $requester_list = $requesters{$lrg} ? join(',',@{$requesters{$lrg}}) : '-';
+    my $curator_list   = $curators{$lrg} ? join(',',@{$curators{$lrg}}) : '-';
+    $export_row = qq{$lrg_id\t$symbol\t$current_step\t$step_desc\t$date\t$requester_list\t$curator_list\n};
+  }
+  
   if ($current_step eq $step_max) {
     $html_public_content .= qq{<tr id="$lrg">\n$html_row};
     $count_lrgs{'public'}++;
+    $private_exports{'public'} .= $export_row if ($is_private);
   }
   else {
     # Stalled
@@ -701,6 +714,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
         $html_stalled_content .= qq{<tr id="$lrg" class="stalled_row stalled_row_$current_step">\n$html_row};
         $list_step_ids{'stalled'}{$current_step} = 1;
         $count_lrgs{'stalled'}++;
+        $private_exports{'stalled'} .= $export_row;
       }  
     }
     # Pending + LRGs not yet moved to the FTP site (the latter is only for the private display)
@@ -708,6 +722,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
       $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">\n$html_row};
       $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
+      $private_exports{'pending'} .= $export_row if ($is_private);
     }
   }
 }
@@ -750,6 +765,7 @@ my $html_pending_header = sprintf( qq{
       <a class="show_hide_table" href="javascript:showhide('pending_lrg');">show/hide table</a>
       %s
     </span>
+    %s
   </div>
   <div id="pending_lrg">
     <div style="margin-bottom:4px">%s</div>
@@ -765,6 +781,7 @@ my $html_pending_header = sprintf( qq{
       </tr>\n},
   $count_lrgs{'pending'},
   $select_pending_steps,
+  export_link('pending'),
   $lrg_status_desc{'pending'},
   $extra_private_column_header
 );
@@ -777,6 +794,7 @@ my $html_public_header = sprintf( qq{
     <span class="step_bar">
       <a class="show_hide_table" href="javascript:showhide('public_lrg');">show/hide table</a>
     </span>
+    %s
   </div>
   <div class="hidden" id="public_lrg">
     <div style="margin-bottom:4px">%s</div>
@@ -791,6 +809,7 @@ my $html_public_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   $count_lrgs{'public'},
+  export_link('public'),
   $lrg_status_desc{'public'},
   $extra_private_column_header
 );
@@ -804,6 +823,7 @@ my $html_stalled_header = sprintf( qq{
       <a class="show_hide_table" href="javascript:showhide('stalled_lrg');">show/hide table</a>
       %s
     </span>
+    %s
   </div>
   <div id="stalled_lrg">
     <div style="margin-bottom:4px">%s</div>
@@ -819,6 +839,7 @@ my $html_stalled_header = sprintf( qq{
       </tr>\n},
   ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
   $select_stalled_steps,
+  export_link('stalled'),
   $lrg_status_desc{'stalled'},
   $extra_private_column_header
 );
@@ -848,6 +869,24 @@ print OUT $html_header;
 print OUT $html;
 print OUT $html_footer;
 close(OUT);
+
+# Export files (private)
+if ($is_private) {
+  my $outputdir = (fileparse($outputfile))[1];
+  
+  foreach my $type (keys(%private_exports)) {
+    my $export_file = "$type$export_suffix";
+    open  EXPORT, "> $export_file" or die $!;
+    print EXPORT qq{#LRG_ID\tHGNC_SYMBOL\tSTEP\tDESCRIPTION\tDATE\tREQUESTER\tCURATOR\n};
+    print EXPORT $private_exports{$type};
+    close(EXPORT);
+  
+    if (-e $export_file) {
+     `cp $export_file $outputdir/$export_file`;
+     `rm -f $export_file`;
+    }
+  }
+}
 
 if (-e $tmpfile) {
   `cp $tmpfile $outputfile`;
@@ -882,3 +921,14 @@ sub count_days {
   return $days;
 }
 
+sub export_link {
+  my $type = shift;
+  return '' if (!$is_private);
+  
+  my $html = qq{
+    <span class="export_button">
+      <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="green_button">Export table</a>
+    </span>
+  };
+  return $html; 
+}
