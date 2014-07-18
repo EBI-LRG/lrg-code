@@ -435,7 +435,7 @@ if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
   print STDOUT localtime() . "\tAdding LRG data for $lrg_id to database\n" if ($verbose);
   $db_adaptor->dbc->do($stmt);
 }
-f
+
 # Insert the sequence
 add_sequence($gene_id,'genomic',$db_adaptor,$lrg_seq);
 
