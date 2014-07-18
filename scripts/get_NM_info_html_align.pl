@@ -1,13 +1,25 @@
 use strict;
 use warnings;
 use Bio::EnsEMBL::Registry;
+use Getopt::Long;
 
+my ($gene_name, $output_file, $tsl, $help);
+GetOptions(
+  'gene=s'	       => \$gene_name,
+  'outputfile|o=s' => \$output_file,
+  'tsl=s'		       => \$tsl,
+  'help!'          => \$help
+);
 
-die("You need to give a gene name as argument of the script (HGNC or ENS)") if (!$ARGV[0]);
-my $gene_name = $ARGV[0];
+usage() if ($help);
+
+usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.") if (!$gene_name);
+usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
+warn("No TranscriptSupportLevel filename has been given.If you want to add it, please use the option '-tsl'. For more information, please use the option '-help'.") if (!$tsl);
 
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
+my $html;
 
 #$registry->load_registry_from_db(
 #    -host => 'ensembldb.ensembl.org',
@@ -180,10 +192,20 @@ foreach my $o_gene (@$o_genes) {
 #############
 ## DISPLAY ##
 #############
+
+my %tsl_colour = ( '1'   => '#090',
+                   '2'   => '#002366',
+                   '3'   => '#002366',#'#d700ff',
+                   '4'   => '#002366',#'#FFA500',
+                   '5'   => '#002366',#'#900',
+                   'INA' => '#002366',#'#000'
+                 );
+
 my $coord_span = scalar(keys(%exons_list));
 my $gene_coord = "chr$chr:".$ens_gene->start.'-'.$ens_gene->end;
 $gene_coord .= ($ens_gene->slice->strand == 1) ? ' [forward strand]' : ' [reverse strand]';
-print qq{
+
+$html .= qq{
 <html>
   <head>
     <title>Gene $gene_name</title>
@@ -251,7 +273,8 @@ print qq{
       table.legend {margin:2px;font-size:0.9em}
       table.legend td {padding:2px 1px}
       
-      //th.coord {height:50px;width:20px;position:relative;bottom:0px;transform:rotate(90deg);-o-transform:rotate(90deg);-moz-transform:rotate(90deg);-webkit-transform:rotate(90deg);}-->
+      .tsl {margin-left:15px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border-radius:10px;border:1px solid #FFF;padding:1px;background-color:#000;color:#FFF;cursor:default}
+      
       th.coord {font-size:0.6em;width:10px;text-align:center;cursor:pointer}
       .first_column {text-align:center;border:1px solid #FFF;padding:1px 2px}
       .extra_column {background-color:#DDD;color:#000;text-align:center;border:1px solid #FFF;padding:1px 2px;font-size:0.8em}
@@ -319,7 +342,7 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
 
 $exon_tab_list .= "</th></tr>\n";
 
-print "\n$exon_tab_list";
+$html .= "\n$exon_tab_list";
 
 my $row_id = 1;
 my $row_id_prefix = 'tr_';
@@ -334,17 +357,25 @@ my %ens_rows_list;
 foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
-  # e!74
-  #my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->analysis->logic_name eq 'ensembl_havana_transcript') ? 'gold' : 'ens';
   # e!75
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
-  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a><br /><small>($e_count exons)</small>};
+  my $tsl_html     = get_tsl_html($ens_tr);
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column">
+    <table style="width:100%;text-align:center">
+      <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
+      <tr>
+        <td class="$column_class" style="width:20%"></td>
+        <td class="$column_class" style="width:80%"><small>($e_count exons)</small></td>
+        <td class="$column_class" style="width:20%">$tsl_html</td>
+      </tr>
+    </table>
+  };
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
   my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $tr_object->biotype;
-  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
+  $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $ens_rows_list{$row_id}{'label'} = $ens_tr;
@@ -393,12 +424,12 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
     }
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    print qq{</td><td$colspan_html>}; 
+    $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       #my $evidence = ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} > $min_exon_evidence) ? '*' : '';
       $has_exon = 'few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence);
-      #print qq{<div class="$has_exon\_coord_match">$exon_number$evidence</div>};
-      print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
+      #$html .= qq{<div class="$has_exon\_coord_match">$exon_number$evidence</div>};
+      $html .= qq{<div class="$has_exon\_coord_match">$exon_number</div>};
       if ($tr_object->strand == 1) {
         $exon_number++;
       }
@@ -409,14 +440,14 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
       $colspan = 1;
     }
     else {
-      print qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
   my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
   my $refseq_display = (scalar @refseq) ? join(", ",@refseq) : '-';
-  print qq{</td><td class="extra_column">$ccds_display};
-  print qq{</td><td class="extra_column">$refseq_display};
-  print qq{</td></tr>\n};
+  $html .= qq{</td><td class="extra_column">$ccds_display};
+  $html .= qq{</td><td class="extra_column">$refseq_display};
+  $html .= qq{</td></tr>\n};
 }  
 
 
@@ -428,12 +459,12 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'cdna';
-  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
   my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $cdna_object->biotype;
-  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
+  $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $cdna_rows_list{$row_id}{'label'} = $nm;
@@ -474,12 +505,12 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    print qq{</td><td$colspan_html>}; 
+    $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      print qq{<div class="$has_exon\_coord_match$identity">$exon_number$identity_score</div>};
+      $html .= qq{<div class="$has_exon\_coord_match$identity">$exon_number$identity_score</div>};
       if ($cdna_object->strand == 1) {
         $exon_number++;
       }
@@ -490,10 +521,10 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       $colspan = 1;
     }
     else {
-      print qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
-  print $end_of_row;
+  $html .= $end_of_row;
 }
 
 
@@ -505,12 +536,12 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'nm';
-  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
   my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $refseq_object->biotype;
-  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
+  $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $refseq_rows_list{$row_id}{'label'} = $nm;
@@ -551,9 +582,9 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    print qq{</td><td$colspan_html>}; 
+    $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
-      print qq{<div class="$has_exon\_coord_match">$exon_number</div>};
+      $html .= qq{<div class="$has_exon\_coord_match">$exon_number</div>};
       if ($refseq_object->strand == 1) {
         $exon_number++;
       }
@@ -564,10 +595,10 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
       $colspan = 1;
     }
     else {
-      print qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
     }
   }
-  print $end_of_row;
+  $html .= $end_of_row;
 }
 
 
@@ -583,11 +614,11 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<br /><small>('.$hgnc_list[0]->display_id.')</small>' : '';
 
   my $column_class = 'gene';
-  print qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
   
   my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = $gene_object->biotype;
-  print qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
+  $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $gene_rows_list{$row_id}{'label'} = $o_ens_gene;
@@ -628,7 +659,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   }
   $last_exon = $last_coord  if (!defined($last_exon));
   
-  #print STDERR "Gene \n$gene_start/$gene_end\n$first_exon/$last_exon\n";
+  #$html .= STDERR "Gene \n$gene_start/$gene_end\n$first_exon/$last_exon\n";
   my $exon_start;
   my $colspan = 1;
   my $ended = 0;
@@ -638,8 +669,8 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     if (!$exon_start && $coord == $first_exon) {
       $exon_start = $coord;
       if ($is_first_exon_partial == 1) {
-        print qq{</td><td>};
-        print qq{<div class="partial_gene_coord_match">$gene_strand</div>};
+        $html .= qq{</td><td>};
+        $html .= qq{<div class="partial_gene_coord_match">$gene_strand</div>};
         $colspan = 1;
       }
       if ($coord == $last_exon) {
@@ -652,8 +683,8 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       next;
     }
     elsif ($ended == 2) {
-      print qq{</td><td>};
-      print qq{<div class="partial_gene_coord_match">$gene_strand</div>};
+      $html .= qq{</td><td>};
+      $html .= qq{<div class="partial_gene_coord_match">$gene_strand</div>};
       $ended = 1;
       next;
     }
@@ -662,15 +693,15 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       $ended = 1;
       if ($is_last_exon_partial == 1) {
         my $tmp_colspan = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-        print qq{</td><td$tmp_colspan>};
-        print qq{<div class="gene_coord_match">$gene_strand</div>};
+        $html .= qq{</td><td$tmp_colspan>};
+        $html .= qq{<div class="gene_coord_match">$gene_strand</div>};
         $ended = 2;
         $colspan = 1;
       }
       else {
         $colspan ++;
-        print qq{</td><td colspan="$colspan">};
-        print qq{<div class="gene_coord_match">$gene_strand</div>};
+        $html .= qq{</td><td colspan="$colspan">};
+        $html .= qq{<div class="gene_coord_match">$gene_strand</div>};
       }
       next;
     }
@@ -680,21 +711,21 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     my $has_gene = ($exon_start && $ended == 0) ? 'gene' : $no_match;
       
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    print qq{</td><td$colspan_html>}; 
+    $html .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene') {
-      print qq{<div class="$has_gene\_coord_match">$gene_strand</div>};
+      $html .= qq{<div class="$has_gene\_coord_match">$gene_strand</div>};
       $colspan = 1;
     }
     else {
-      print qq{<div class="$has_gene\_coord_match"> </div>};
+      $html .= qq{<div class="$has_gene\_coord_match"> </div>};
     }
   }  
-  print $end_of_row;
+  $html .= $end_of_row;
 }
 
 
 # Selection
-print qq{
+$html .= qq{
       </table>
     </div>  
     <div style="margin:10px 0px">
@@ -708,17 +739,17 @@ my $max_per_line = 5;
 my $ens_count = 0; 
 foreach my $ens_row_id (sort {$a <=> $b} keys(%ens_rows_list)) {
   if ($ens_count == $max_per_line) {
-    print qq{</div><div style="margin-bottom:10px">};
+    $html .= qq{</div><div style="margin-bottom:10px">};
     $ens_count = 0;
   }
   my $label = $ens_rows_list{$ens_row_id}{'label'};
   my $class = $ens_rows_list{$ens_row_id}{'class'};
-  print qq{<input type="hidden" id="button_color_$ens_row_id" value="$class"/>};
-  print qq{<span id="button_$ens_row_id" class="button $class" onclick="showhide($ens_row_id)">$label</span>};
+  $html .= qq{<input type="hidden" id="button_color_$ens_row_id" value="$class"/>};
+  $html .= qq{<span id="button_$ens_row_id" class="button $class" onclick="showhide($ens_row_id)">$label</span>};
   $ens_count ++;
 }
 
-print qq{</div></div><div style="clear:both"></div></div>
+$html .= qq{</div></div><div style="clear:both"></div></div>
          <div style="margin:10px 0px">
            <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">cDNA rows:</div>
            <div style="float:left">
@@ -729,17 +760,17 @@ print qq{</div></div><div style="clear:both"></div></div>
 my $cdna_count = 0;
 foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
   if ($cdna_count == $max_per_line) {
-    print qq{</div><div style="margin-bottom:10px">};
+    $html .= qq{</div><div style="margin-bottom:10px">};
     $cdna_count = 0;
   }
   my $label = $cdna_rows_list{$cdna_row_id}{'label'};
   my $class = $cdna_rows_list{$cdna_row_id}{'class'};
-  print qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
-  print qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
+  $html .= qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
+  $html .= qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
   $cdna_count ++;
 }  
 
-print qq{</div></div><div style="clear:both"></div></div>
+$html .= qq{</div></div><div style="clear:both"></div></div>
          <div style="margin:10px 0px">
          <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">RefSeq rows:</div>
            <div style="float:left">
@@ -750,22 +781,22 @@ print qq{</div></div><div style="clear:both"></div></div>
 my $refseq_count = 0;
 foreach my $refseq_row_id (sort {$a <=> $b} keys(%refseq_rows_list)) {
   if ($refseq_count == $max_per_line) {
-    print qq{</div><div style="margin-bottom:10px">};
+    $html .= qq{</div><div style="margin-bottom:10px">};
     $refseq_count = 0;
   }
   my $label = $refseq_rows_list{$refseq_row_id}{'label'};
   my $class = $refseq_rows_list{$refseq_row_id}{'class'};
-  print qq{<input type="hidden" id="button_color_$refseq_row_id" value="$class"/>};
-  print qq{<span id="button_$refseq_row_id" class="button $class" onclick="showhide($refseq_row_id)">$label</span>};
+  $html .= qq{<input type="hidden" id="button_color_$refseq_row_id" value="$class"/>};
+  $html .= qq{<span id="button_$refseq_row_id" class="button $class" onclick="showhide($refseq_row_id)">$label</span>};
   $refseq_count ++;
 }
 
 
-print qq{</div></div><div style="clear:both"></div></div>\n};
+$html .= qq{</div></div><div style="clear:both"></div></div>\n};
   
 # Ensembl genes
 if (scalar(keys(%gene_rows_list))) {
-  print qq{ <div style="margin:10px 0px">
+  $html .= qq{ <div style="margin:10px 0px">
              <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Gene rows:</div>
              <div style="float:left">
                <div style="margin-bottom:10px">
@@ -773,13 +804,13 @@ if (scalar(keys(%gene_rows_list))) {
   my $ens_g_count = 0; 
   foreach my $gene_row_id (sort {$a <=> $b} keys(%gene_rows_list)) {
     if ($ens_g_count == $max_per_line) {
-      print qq{</div><div style="margin-bottom:10px">};
+      $html .= qq{</div><div style="margin-bottom:10px">};
       $ens_count = 0;
     }
     my $label = $gene_rows_list{$gene_row_id}{'label'};
     my $class = $gene_rows_list{$gene_row_id}{'class'};
-    print qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
-    print qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
+    $html .= qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
+    $html .= qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
     $ens_count ++;
   }
 }
@@ -789,30 +820,94 @@ if (scalar(keys(%gene_rows_list))) {
   
 # Legend  
 my $nb_exon_evidence = $min_exon_evidence+1;
-print qq{ 
+my $tsl1 = $tsl_colour{1};
+my $tsl2 = $tsl_colour{2};
+$html .= qq{ 
     </div></div><div style="clear:both"></div></div>  
     <div style="margin:5px 0px"><input type="button" value="Show all the lines" style="border-radius:5px" onclick="showall($row_id)"/></div>
     <div style="margin-top:50px;width:650px;border:1px solid #336;border-radius:5px">
     <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
+    
+    <!-- Transcript -->
     <table class="legend">
+      <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
       <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
       <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
       <tr class="bg1"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
       <tr class="bg2"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
       <tr class="bg1"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
-      <tr style="background-color:#336"><td colspan="2" style="padding:1px 0px 0px"></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon_coord_match_np" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="non_coding_coord_match">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="non_coding_coord_match_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="few_evidence_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+      <tr class="bg2">
+        <td>
+          <span class="tsl" style="text-align:center;background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1"><small>1</small></span>
+          <span class="tsl" style="text-align:center;background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2"><small>2</small></span>
+        </td>
+        <td style="padding-left:5px">Label for the <a https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank">Transcript Support Level</a> (from UCSC)</td></tr>
+    </table>
+    
+      <!-- Exons -->
+    <table class="legend" style="margin-top:10px">
+      <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon_coord_match_np" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="non_coding_coord_match">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="non_coding_coord_match_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="few_evidence_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
       <tr class="bg1"><td style="width:50px"><div class="partial_gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
+      
+      
+      
     </table>
     </div>
   </body>
 </html>  
 };
 
+# Print into file
+open OUT, "> $output_file" or die $!;
+print OUT $html;
+close(OUT);
+
+
+sub get_tsl_html {
+  my $tr_id = shift;
+  
+  my $level = 0;
+  if (-e $tsl) {
+    my $line = `grep "$tr_id." $tsl`;
+    if ($line =~ /$tr_id\.\d+\t(-?\d+)$/) {
+      $level = $1;
+      $level = 'INA' if ($level eq "-1");
+    }
+  }
+  
+  # HTML
+  if ($level eq '0') {
+    return '';
+  }
+  else {
+    my $bg_colour = $tsl_colour{$level};
+    return qq{<span class="tsl" style="background-color:$bg_colour" title="Transcript Support Level = $level"><small>$level</small></span>};
+  }
+}
+
+sub usage {
+  my $msg = shift;
+  $msg ||= '';
+  
+  print STDERR qq{
+$msg
+
+OPTIONS:
+  -gene        : gene name (HGNC symbol or ENS) (required)
+  -outputfile  : file path to the output HTML file (required)
+  -o           : alias of the option "-outputfile"
+  -tsl         : path to the Transcript Support Level text file (optional)
+                 The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
+                 http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
+                 First, you will need to uncompress it by using the command "gunzip <file>".\n
+  };
+  exit(0);
+}
