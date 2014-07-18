@@ -313,7 +313,7 @@ if (defined($gene_id)) {
 	}
 	# Update the RefSeqGene ID (NG_XXX)
   if (defined($refseq)) {
-	  $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if ($refseq ne $db_refseq);
+	  $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if (!defined($db_refseq) || $refseq ne $db_refseq);
 	}
 	# Update the LRG status
 	$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
