@@ -270,7 +270,10 @@ $html .= qq{
       a {text-decoration:none;font-weight:bold;color:#000}
       a:hover {color:#00F}
       
-      table.legend {margin:2px;font-size:0.9em}
+      a.external {text-decoration:none;font-weight:nornal;color:#48a726;}
+      a.external:hover {text-decoration:underline;}
+ 
+      table.legend {margin:2px;font-size:0.8em}
       table.legend td {padding:2px 1px}
       
       .tsl {margin-left:15px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border-radius:10px;border:1px solid #FFF;padding:1px;background-color:#000;color:#FFF;cursor:default}
@@ -305,13 +308,30 @@ $html .= qq{
       .identity{font-size:0.7em;padding-left:5px}
       .forward_strand {font-weight:bold;font-size:1.1em;color:#00B}
       .reverse_strand {font-weight:bold;font-size:1.1em;color:#B00}
+      
+      /* Button */
+      .green_button {
+	      background-color: #48a726;color: #FFF;
+	      font-weight:bold; font-size: 0.8em;
+	      border-radius:5px;border: 1px solid #EEE;
+	      box-shadow: 2px 2px 2px #CCC;
+	      margin-right:5px; margin-bottom:5px; padding:1px 3px;
+	      text-align:center;cursor:default;
+      }
+      .green_button:hover {
+	      background-color: #FFF;color: #48a726;
+	      text-decoration: none;
+	      border: 1px solid #48a726;
+      }
+      .green_button:active { box-shadow: 2px 2px 2px #CCC inset; }
+      
     </style>
   </head>
   <body>
-  <h1>Exons list for the gene <a href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span style="font-size:0.7em;padding-left:10px">($gene_coord)</span></h1>
+  <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span style="font-size:0.7em;padding-left:10px">($gene_coord)</span></h1>
   <h2>> Using the Ensembl & RefSeq & cDNA RefSeq exons</h2>
-  <input type="button" value="Compact/expand the coordinate columns" style="border-radius:5px" onclick="compact_expand($coord_span)"/>
-  <div style="border:1px solid #000;width:100%;margin:5px 0px 20px">
+  <a class="green_button" href="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</a>
+  <div style="border:1px solid #000;width:100%;margin:15px 0px 20px">
     <table>
 };
 
@@ -323,7 +343,7 @@ my $exon_tab_list = qq{
      <th rowspan="2">Transcript</th>
      <th rowspan="2">Biotype</th>
      <th rowspan="2" title="Strand">Str.</th>
-     <th colspan="$coord_span">Coordinates <a compact_expand</th>
+     <th colspan="$coord_span">Coordinates</th>
      <th rowspan="2">CCDS
      <th rowspan="2">RefSeq transcript</th>
    </tr>
@@ -374,7 +394,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
   my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
-  my $biotype = $tr_object->biotype;
+  my $biotype = get_biotype($tr_object);
   $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -382,8 +402,8 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   $ens_rows_list{$row_id}{'class'} = $column_class;
   $row_id++;
   
-  my @ccds   = map { qq{<a href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
-  my @refseq = map { qq{<a href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
+  my @ccds   = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
+  my @refseq = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
   
   my %exon_set_match;
   my $first_exon;
@@ -463,7 +483,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
   my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
-  my $biotype = $cdna_object->biotype;
+  my $biotype = get_biotype($cdna_object);
   $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -540,7 +560,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
   my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
-  my $biotype = $refseq_object->biotype;
+  my $biotype = get_biotype($refseq_object);
   $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -617,7 +637,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
   
   my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
-  my $biotype = $gene_object->biotype;
+  my $biotype = get_biotype($gene_object);
   $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -814,19 +834,34 @@ if (scalar(keys(%gene_rows_list))) {
     $ens_count ++;
   }
 }
+$html .= qq{ 
+    </div></div><div style="clear:both"></div></div>
+    <div style="margin:10px 0px 50px">
+      <div style="float:left;font-weight:bold;width:130px">All rows:</div>
+      <div style="float:left;padding-left:5px"><a class="green_button" href="javascript:showall($row_id);">Show all the lines</a></div>
+     <div style="clear:both"></div>
+    </div>
+};
+
 
   
-  
+# Links
+if ($gene_name !~ /^ENS(G|T)\d{11}/) {
+  my $lsdb_link = "http://$gene_name.lovd.nl";
+  $html .= qq{<h2>>External links to $gene_name</h2>\n};
+  $html .= qq{<table>\n};
+  $html .= qq{  <tr class="bg2"><td style="padding:2px 5px 2px 2px">LSDB:</td><td style="padding:2px"><a class="external" href="$lsdb_link" target="_blank">$lsdb_link</a></td></tr>\n};
+  $html .= qq{</table>\n};
+}
+
   
 # Legend  
 my $nb_exon_evidence = $min_exon_evidence+1;
 my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
 $html .= qq{ 
-    </div></div><div style="clear:both"></div></div>  
-    <div style="margin:5px 0px"><input type="button" value="Show all the lines" style="border-radius:5px" onclick="showall($row_id)"/></div>
     <div style="margin-top:50px;width:650px;border:1px solid #336;border-radius:5px">
-    <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
+      <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
     
     <!-- Transcript -->
     <table class="legend">
@@ -841,7 +876,7 @@ $html .= qq{
           <span class="tsl" style="text-align:center;background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1"><small>1</small></span>
           <span class="tsl" style="text-align:center;background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2"><small>2</small></span>
         </td>
-        <td style="padding-left:5px">Label for the <a href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank" style="text-decoration:underline">Transcript Support Level</a> (from UCSC)</td></tr>
+        <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td></tr>
     </table>
     
       <!-- Exons -->
@@ -856,9 +891,6 @@ $html .= qq{
       <tr class="bg1"><td style="width:50px"><div class="partial_gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
       <tr class="bg2"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
       <tr class="bg1"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
-      
-      
-      
     </table>
     </div>
   </body>
@@ -892,6 +924,18 @@ sub get_tsl_html {
     return qq{<span class="tsl" style="background-color:$bg_colour" title="Transcript Support Level = $level"><small>$level</small></span>};
   }
 }
+
+
+sub get_biotype {
+  my $object = shift;
+  my $biotype = $object->biotype;
+  
+  if ($biotype eq 'nonsense_mediated_decay') {
+    $biotype = qq{<span style="border-bottom:1px dotted #555;cursor:default" title="nonsense_mediated_decay">NMD</span>};
+  }
+  return $biotype;
+}
+
 
 sub usage {
   my $msg = shift;
