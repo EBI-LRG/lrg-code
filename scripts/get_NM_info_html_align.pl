@@ -841,7 +841,7 @@ $html .= qq{
           <span class="tsl" style="text-align:center;background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1"><small>1</small></span>
           <span class="tsl" style="text-align:center;background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2"><small>2</small></span>
         </td>
-        <td style="padding-left:5px">Label for the <a https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank">Transcript Support Level</a> (from UCSC)</td></tr>
+        <td style="padding-left:5px">Label for the <a href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank" style="text-decoration:underline">Transcript Support Level</a> (from UCSC)</td></tr>
     </table>
     
       <!-- Exons -->
