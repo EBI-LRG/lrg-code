@@ -762,9 +762,9 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
 $html .= qq{
       </table>
     </div>
-    <h3>Show/hide rows</h3>
+    <h3>>Show/hide rows</h3>
     <div style="margin:10px 0px">
-      <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Ensembl rows:</div>
+      <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">Ensembl rows:</div>
       <div style="float:left">
         <div style="margin-bottom:10px">  
 }; 
@@ -786,7 +786,7 @@ foreach my $ens_row_id (sort {$a <=> $b} keys(%ens_rows_list)) {
 
 $html .= qq{</div></div><div style="clear:both"></div></div>
          <div style="margin:10px 0px">
-           <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">cDNA rows:</div>
+           <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">cDNA rows:</div>
            <div style="float:left">
              <div style="margin-bottom:10px">
         };
@@ -807,7 +807,7 @@ foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
 
 $html .= qq{</div></div><div style="clear:both"></div></div>
          <div style="margin:10px 0px">
-         <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">RefSeq rows:</div>
+         <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">RefSeq rows:</div>
            <div style="float:left">
              <div style="margin-bottom:10px">
         };
@@ -832,7 +832,7 @@ $html .= qq{</div></div><div style="clear:both"></div></div>\n};
 # Ensembl genes
 if (scalar(keys(%gene_rows_list))) {
   $html .= qq{ <div style="margin:10px 0px">
-             <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Gene rows:</div>
+             <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">Gene rows:</div>
              <div style="float:left">
                <div style="margin-bottom:10px">
           };
@@ -852,7 +852,7 @@ if (scalar(keys(%gene_rows_list))) {
 $html .= qq{ 
     </div></div><div style="clear:both"></div></div>
     <div style="margin:10px 0px 60px">
-      <div style="float:left;font-weight:bold;width:130px">All rows:</div>
+      <div style="float:left;font-weight:bold;width:140px">All rows:</div>
       <div style="float:left;padding-left:5px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
      <div style="clear:both"></div>
     </div>
