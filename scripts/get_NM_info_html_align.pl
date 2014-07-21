@@ -61,6 +61,11 @@ my %exons_count;
 my %unique_exon;
 my %nm_data;
 
+my $lovd_url = "http://####.lovd.nl";
+my $ucsc_url = "https://genome-euro.ucsc.edu/cgi-bin/hgTracks?clade=mammal&org=Human&db=hg38&position=####&hgt.positionInput=####&hgt.suggestTrack=knownGene&Submit=submit";
+my %external_links = ('LOVD' => $lovd_url, 'UCSC' => $ucsc_url);
+
+
 my $ens_gene;
 if ($gene_name =~ /^ENSG\d+$/) {
   $ens_gene = $gene_a->fetch_by_stable_id($gene_name);
@@ -299,7 +304,9 @@ $html .= qq{
       .bg1 {background-color:#FFF}
       .bg2 {background-color:#EEE}
       .button {margin-left:5px;border-radius:5px;border:2px solid #CCC;cursor:pointer;padding:1px 4px;font-size:0.8em}
-      .button:hover {border:2px solid #050}
+      .button:hover {border:2px solid #48a726}
+      .hide_button {border-radius:5px;border:2px solid #CCC;cursor:pointer;padding:1px 4px;font-size:0.7em;background-color:#336;color:#EEE}
+      .hide_button:hover {border:2px solid #48a726}
       .on {background-color:#090;color:#FFF}
       .off {background-color:#DDD;color:#000}
       .white {color:#FFF}
@@ -340,6 +347,7 @@ my %exon_list_number;
 # Header
 my $exon_tab_list = qq{
    <tr>
+     <th rowspan="2" title="Hide rows">-</th>
      <th rowspan="2">Transcript</th>
      <th rowspan="2">Biotype</th>
      <th rowspan="2" title="Strand">Str.</th>
@@ -381,7 +389,12 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   my $tsl_html     = get_tsl_html($ens_tr);
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column">
+  
+  my $hide_col = hide_button($row_id,$column_class);
+  
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id">
+  <td>$hide_col</td>
+  <td class="$column_class first_column">
     <table style="width:100%;text-align:center">
       <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
       <tr>
@@ -446,16 +459,10 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
-      #my $evidence = ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} > $min_exon_evidence) ? '*' : '';
       $has_exon = 'few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence);
-      #$html .= qq{<div class="$has_exon\_coord_match">$exon_number$evidence</div>};
       $html .= qq{<div class="$has_exon\_coord_match">$exon_number</div>};
-      if ($tr_object->strand == 1) {
-        $exon_number++;
-      }
-      else {
-        $exon_number--;
-      }
+      if ($tr_object->strand == 1) { $exon_number++; }
+      else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -479,7 +486,12 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'cdna';
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  
+  my $hide_col = hide_button($row_id,$column_class);
+     
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id">
+  <td>$hide_col</td>
+  <td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
   my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
@@ -531,12 +543,8 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
       $html .= qq{<div class="$has_exon\_coord_match$identity">$exon_number$identity_score</div>};
-      if ($cdna_object->strand == 1) {
-        $exon_number++;
-      }
-      else {
-        $exon_number--;
-      }
+      if ($cdna_object->strand == 1) { $exon_number++; }
+      else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -556,7 +564,12 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'nm';
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  
+  my $hide_col = hide_button($row_id,$column_class);
+  
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id">
+  <td>$hide_col</td>
+  <td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
   my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
@@ -605,12 +618,8 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
     $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       $html .= qq{<div class="$has_exon\_coord_match">$exon_number</div>};
-      if ($refseq_object->strand == 1) {
-        $exon_number++;
-      }
-      else {
-        $exon_number--;
-      }
+      if ($refseq_object->strand == 1) { $exon_number++; }
+      else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
@@ -634,7 +643,12 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<br /><small>('.$hgnc_list[0]->display_id.')</small>' : '';
 
   my $column_class = 'gene';
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id"><td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
+  
+  my $hide_col = hide_button($row_id,$column_class);
+  
+  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id">
+  <td>$hide_col</td>
+  <td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
   
   my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($gene_object);
@@ -747,7 +761,8 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
 # Selection
 $html .= qq{
       </table>
-    </div>  
+    </div>
+    <h3>Show/hide rows</h3>
     <div style="margin:10px 0px">
       <div style="float:left;font-weight:bold;width:130px;margin-bottom:10px">Ensembl rows:</div>
       <div style="float:left">
@@ -836,26 +851,35 @@ if (scalar(keys(%gene_rows_list))) {
 }
 $html .= qq{ 
     </div></div><div style="clear:both"></div></div>
-    <div style="margin:10px 0px 50px">
+    <div style="margin:10px 0px 60px">
       <div style="float:left;font-weight:bold;width:130px">All rows:</div>
-      <div style="float:left;padding-left:5px"><a class="green_button" href="javascript:showall($row_id);">Show all the lines</a></div>
+      <div style="float:left;padding-left:5px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
      <div style="clear:both"></div>
     </div>
 };
 
 
-  
-# Links
+#----------------#
+# External links #
+#----------------#
 if ($gene_name !~ /^ENS(G|T)\d{11}/) {
-  my $lsdb_link = "http://$gene_name.lovd.nl";
+  my $lsdb_link = $lovd_url;
+     $lsdb_link =~ s/####/$gene_name/g;
   $html .= qq{<h2>>External links to $gene_name</h2>\n};
   $html .= qq{<table>\n};
-  $html .= qq{  <tr class="bg2"><td style="padding:2px 5px 2px 2px">LSDB:</td><td style="padding:2px"><a class="external" href="$lsdb_link" target="_blank">$lsdb_link</a></td></tr>\n};
+  foreach my $external_db (sort keys(%external_links)) {
+    my $url = $external_links{$external_db};
+       $url =~ s/####/$gene_name/g;
+    my $url_label = (length($url) > 50) ? substr($url,0,50)."..." : $url;
+    $html .= qq{  <tr class="bg2" style="border-bottom:2px solid #FFF"><td style="padding:4px 5px 4px 2px;font-weight:bold">$external_db:</td><td style="padding:4px"><a class="external" href="$url" target="_blank">$url_label</a></td></tr>\n};
+  }
   $html .= qq{</table>\n};
 }
 
-  
-# Legend  
+
+#--------#  
+# Legend #
+#--------#  
 my $nb_exon_evidence = $min_exon_evidence+1;
 my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
@@ -901,6 +925,15 @@ $html .= qq{
 open OUT, "> $output_file" or die $!;
 print OUT $html;
 close(OUT);
+
+
+sub hide_button {
+  my $id    = shift;
+  my $class = shift;
+  
+  #my $html  = qq{<input type="hidden" id="button_color_$row_id" value="$column_class"/>};
+  return qq{<span id="button_$id\_x" class="hide_button" onclick="showhide($id)" title="Hide this row">X</span>};
+}
 
 
 sub get_tsl_html {
