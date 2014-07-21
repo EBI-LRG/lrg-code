@@ -32,13 +32,13 @@ my $stmt;
 my $lsdb_code_id = 1;
 
 GetOptions(
-  'host=s'		=> \$host,
-  'port=i'		=> \$port,
+  'host=s'    => \$host,
+  'port=i'    => \$port,
   'dbname=s'  => \$dbname,
-  'user=s'		=> \$user,
-  'pass=s'		=> \$pass,
-  'xmlfile=s'	=> \$xmlfile,
-  'verbose!'	=> \$verbose,
+  'user=s'    => \$user,
+  'pass=s'    => \$pass,
+  'xmlfile=s' => \$xmlfile,
+  'verbose!'  => \$verbose,
   'hgnc_symbol=s'       => \$hgnc_symbol,
   'lrg_id=s'            => \$lrg_id,
   'purge!'              => \$purge,
@@ -98,11 +98,11 @@ if ($purge) {
     }
     $stmt .= qq{ LIMIT 1};
 
-		my $gene_data = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt);
-		if (!scalar(@$gene_data)) {
-			print "No gene entry could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id") . " (database purge step)\n";
-			exit(0);
-		}
+    my $gene_data = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt);
+    if (!scalar(@$gene_data)) {
+      print "No gene entry could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id") . " (database purge step)\n";
+      exit(0);
+    }
     ($gene_id,$hgnc_symbol,$lrg_id) = @{$gene_data->[0]};# or error_msg("No gene could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "LRG id $lrg_id"));
 
     # Delete the lrg_annotation_set_mapping data
@@ -117,8 +117,8 @@ if ($purge) {
             las.gene_id = $gene_id
     };
 
-		# Delete the mapping data (separarted from the lrg_annotation_set_mapping because of issues when the script failed at some point).
-		my $stmt2 = qq{
+    # Delete the mapping data (separarted from the lrg_annotation_set_mapping because of issues when the script failed at some point).
+    my $stmt2 = qq{
         DELETE FROM
             lm,
             lms,
@@ -134,7 +134,7 @@ if ($purge) {
     if (!$keep_mapping) {
         print STDOUT localtime() . "\tRemoving mapping from updatable annotation for $lrg_id\n" if ($verbose);
         $db_adaptor->dbc->do($stmt1);
-				$db_adaptor->dbc->do($stmt2);
+        $db_adaptor->dbc->do($stmt2);
     }
     else {
         print STDOUT localtime() . "\tKeeping mapping in updatable annotation for $lrg_id\n" if ($verbose);
@@ -191,9 +191,9 @@ if ($purge) {
     }
     
 
-		if (!$keep_fixed) {
-			# Delete the fixed annotation data
-    	$stmt = qq{
+    if (!$keep_fixed) {
+      # Delete the fixed annotation data
+      $stmt = qq{
         DELETE FROM
             ln,
             lt,
@@ -202,13 +202,13 @@ if ($purge) {
             lgs,
             lcs,
             lpp,
-						lps,
+            lps,
             ls,
             le,
             li,
-						lce,
-						lcf,
-						lep
+            lce,
+            lcf,
+            lep
         USING
             lrg_data ld LEFT JOIN
             lrg_transcript lt USING (gene_id) LEFT JOIN
@@ -216,18 +216,18 @@ if ($purge) {
             lrg_cds lp USING (transcript_id) LEFT JOIN
             lrg_genomic_sequence lgs ON lgs.gene_id=ld.gene_id LEFT JOIN
             lrg_cdna_sequence lcs ON lcs.cdna_id=lc.cdna_id LEFT JOIN
-						lrg_peptide lpp ON lpp.cds_id=lp.cds_id LEFT JOIN
+            lrg_peptide lpp ON lpp.cds_id=lp.cds_id LEFT JOIN
             lrg_peptide_sequence lps USING (peptide_id) LEFT JOIN
             lrg_exon le ON le.transcript_id=lt.transcript_id LEFT JOIN
-						lrg_exon_peptide lep ON le.exon_id=lep.exon_id LEFT JOIN
+            lrg_exon_peptide lep ON le.exon_id=lep.exon_id LEFT JOIN
             lrg_intron li ON li.exon_5 = le.exon_id LEFT JOIN
             lrg_cds_exception lce ON lce.cds_id=lp.cds_id LEFT JOIN
-						lrg_cds_frameshift lcf ON lcf.cds_id=lp.cds_id LEFT JOIN
-						lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id OR lce.sequence_id = ls.sequence_id)
+            lrg_cds_frameshift lcf ON lcf.cds_id=lp.cds_id LEFT JOIN
+            lrg_sequence ls ON (lps.sequence_id = ls.sequence_id OR lgs.sequence_id = ls.sequence_id OR lcs.sequence_id = ls.sequence_id OR lce.sequence_id = ls.sequence_id)
         WHERE
             ld.gene_id = $gene_id
-    	};
-			print STDOUT localtime() . "\tRemoving entries from fixed annotation for $lrg_id\n" if ($verbose);
+      };
+      print STDOUT localtime() . "\tRemoving entries from fixed annotation for $lrg_id\n" if ($verbose);
       $db_adaptor->dbc->do($stmt);
     }
     else {
@@ -271,24 +271,24 @@ $gene_id = ($hgnc_symbol_sth->fetchrow_array)[0];
 
 # Insert LRG entry into the gene table
 if (!defined($gene_id)) {
-	print STDOUT "No gene entry could be found with HGNC symbol $hgnc_symbol and LRG id $lrg_id. The script will insert an entry for this LRG (data insertion step).\n";
-	if (!defined($hgnc_symbol)) {
-		my @asets = $lrg->findNodeArray('updatable_annotation/annotation_set');
-		foreach my $aset (@asets) {
-			$hgnc_symbol = $aset->findNode('lrg_locus')->content if ($aset->findNode('source/name')->content eq 'LRG');
-			last;
-		}
-	}
-	if (defined($hgnc_symbol)) {
-		$hgnc_symbol_sth->bind_param(1,$hgnc_symbol,SQL_VARCHAR);
+  print STDOUT "No gene entry could be found with HGNC symbol $hgnc_symbol and LRG id $lrg_id. The script will insert an entry for this LRG (data insertion step).\n";
+  if (!defined($hgnc_symbol)) {
+    my @asets = $lrg->findNodeArray('updatable_annotation/annotation_set');
+    foreach my $aset (@asets) {
+      $hgnc_symbol = $aset->findNode('lrg_locus')->content if ($aset->findNode('source/name')->content eq 'LRG');
+      last;
+    }
+  }
+  if (defined($hgnc_symbol)) {
+    $hgnc_symbol_sth->bind_param(1,$hgnc_symbol,SQL_VARCHAR);
     $hgnc_symbol_sth->execute();
     $gene_id = ($hgnc_symbol_sth->fetchrow_array)[0];
-		if (!defined($gene_id)) {
-		  $stmt = qq{ SELECT gene_id FROM gene WHERE lrg_id = '$lrg_id' };
-		  $gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-		}
-	}
-}	
+    if (!defined($gene_id)) {
+      $stmt = qq{ SELECT gene_id FROM gene WHERE lrg_id = '$lrg_id' };
+      $gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+    }
+  }
+}  
 
 # HGNC ID
 my $hgnc_id = $fixed->findNode('hgnc_id')->content;
@@ -297,7 +297,7 @@ my $hgnc_id = $fixed->findNode('hgnc_id')->content;
 my $refseq = $fixed->findNode('sequence_source')->content;
 
 
-## Check HGNC symbol and ID
+## Check HGNC symbol and ID ##
 if (defined($gene_id)) { 
 
   $stmt = qq{ SELECT symbol,hgnc_id,status,refseq FROM gene WHERE gene_id=$gene_id };
@@ -305,57 +305,66 @@ if (defined($gene_id)) {
   
   # Update the HGNC symbol
   if (defined($hgnc_symbol)) {
-	  $db_adaptor->dbc->do("UPDATE gene SET symbol='$hgnc_symbol' WHERE gene_id=$gene_id;")if ((!defined($db_symbol)) || (defined($db_symbol) && $db_symbol ne $hgnc_symbol));
-	}
-	# Update the HGNC ID
-	if (defined($hgnc_id)) {
-	  $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
-	}
-	# Update the RefSeqGene ID (NG_XXX)
+    $db_adaptor->dbc->do("UPDATE gene SET symbol='$hgnc_symbol' WHERE gene_id=$gene_id;")if ((!defined($db_symbol)) || (defined($db_symbol) && $db_symbol ne $hgnc_symbol));
+  }
+  # Update the HGNC ID
+  if (defined($hgnc_id)) {
+    $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
+  }
+  # Update the RefSeqGene ID (NG_XXX)
   if (defined($refseq)) {
-	  $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if (!defined($db_refseq) || $refseq ne $db_refseq);
-	}
-	# Update the LRG status
-	$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
+    $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if (!defined($db_refseq) || $refseq ne $db_refseq);
+  }
+  # Update the LRG status
+  $db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
 }
-else { # Create new "gene" entry
+
+## Create new "gene" entry ##
+else { 
   
   # HGNC ID
   $hgnc_id = 'NULL' if (!defined($hgnc_id));
 
-	# Get gene_id
-	foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
-		my $symbol = $gene->findNodeSingle('symbol');
-		$gene_id = $gene->data->{accession} if ($symbol->data->{name} eq $hgnc_symbol && $symbol->data->{source} eq 'HGNC' && $gene->data->{source} =~ /NCBI/i); # get the GeneID 
-	}
-
-	if (defined($lrg_id) && defined($gene_id) && defined($refseq) && defined($hgnc_symbol)) {
-		print STDOUT localtime() . "\tInserting LRG gene entry $lrg_id ($hgnc_symbol,$refseq) to database\n";
-		$stmt = qq{
-    	INSERT INTO
-		     gene (
-		          gene_id,
-		          hgnc_id,
-							ncbi_gene_id,
-		    			symbol,
-							refseq,
-		    			lrg_id
-		      )
-		  VALUES (
-		       $gene_id,
-		       $hgnc_id,
-		       $gene_id,
-		      '$hgnc_symbol',
-		      '$refseq',
-					'$lrg_id'
-		  )
-		};
-		$db_adaptor->dbc->do($stmt);
-	}
-	else {
-		print "Error: No enough information could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id"). " to create a new entry in the gene table\n";
-		exit(1);
-	}
+  # Get gene_id
+  if (defined($lrg_id) {
+    $lrg_id =~ /^LRG_(\d+)$/i;
+    $gene_id = $1;
+  }
+  
+  # Get ncbi_gene_id
+  my $ncbi_gene_id;
+  foreach my $gene (@{$lrg->findNodeArray('features/gene')}) {
+    my $symbol = $gene->findNodeSingle('symbol');
+    $ncbi_gene_id = $gene->data->{accession} if ($symbol->data->{name} eq $hgnc_symbol && $symbol->data->{source} eq 'HGNC' && $gene->data->{source} =~ /NCBI/i); # get the GeneID 
+  }
+  
+  if (defined($lrg_id) && defined($refseq) && defined($hgnc_symbol)) {
+    print STDOUT localtime() . "\tInserting LRG gene entry $lrg_id ($hgnc_symbol,$refseq) to database\n";
+    $stmt = qq{
+      INSERT INTO
+         gene (
+              gene_id,
+              hgnc_id,
+              ncbi_gene_id,
+              symbol,
+              refseq,
+              lrg_id
+          )
+      VALUES (
+           $gene_id,
+           $hgnc_id,
+           $ncbi_gene_id,
+          '$hgnc_symbol',
+          '$refseq',
+          '$lrg_id'
+      )
+    };
+    $db_adaptor->dbc->do($stmt);
+  }
+  else {
+    print "Error: No enough information could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id"). " to create a new entry in the gene table\n";
+    exit(1);
+  }
 }
 
 # Get the organism and taxon_id
@@ -504,7 +513,7 @@ my $pep_ins_stmt = qq{
     INSERT INTO
         lrg_peptide (
             cds_id,
-						peptide_name
+            peptide_name
         )
     VALUES ( ?, ? )
 };
@@ -540,13 +549,13 @@ my $exon_pep_ins_stmt = qq{
     INSERT INTO
         lrg_exon_peptide (
             exon_id,
-						peptide_name,
+            peptide_name,
             peptide_start,
             peptide_end
         )
     VALUES (
         ?,
-				?,
+        ?,
         ?,
         ?
     )
@@ -578,19 +587,19 @@ my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 # Get the requester data
 $node = $fixed->findNodeArray('source') or warn ("Could not find requester data");
 if (defined($node)) {
-	
-	my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
+  
+  my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
 
-	# Check if some requester information are already in the database for this LRG. 
-	my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
-	if (defined($lsdb_id)) {
-		print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
-	}
-	else {
-		while (my $source = shift(@{$node})) {
+  # Check if some requester information are already in the database for this LRG. 
+  my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
+  if (defined($lsdb_id)) {
+    print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
+  }
+  else {
+    while (my $source = shift(@{$node})) {
         parse_source($source,$gene_id,$db_adaptor);
     }
-	}
+  }
 }
 
 # Get the transcript nodes
@@ -605,7 +614,7 @@ while (my $transcript = shift(@{$transcripts})) {
     # Check PolyA
     if ($warning eq 'polyA') {
       if (-e $warning_log && !-z $warning_log) {
-			  my $info = `grep -w $name $warning_log`;
+        my $info = `grep -w $name $warning_log`;
         
         if (defined($info)) {
           foreach my $inf (split("\n",$info)) {
@@ -634,15 +643,15 @@ while (my $transcript = shift(@{$transcripts})) {
         # Check if the comment is already in the database
         my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
         next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
-		    
-		    my $comment_id = check_existing_comment($name,$tr_comment);
-		    if (defined($comment_id)) {
-		      $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
+        
+        my $comment_id = check_existing_comment($name,$tr_comment);
+        if (defined($comment_id)) {
+          $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
           $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
           $tr_com_up_sth->execute();
-		    }
-		    else {
-		      $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+        }
+        else {
+          $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
           $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
           $tr_com_ins_sth->execute();
         }
@@ -666,70 +675,70 @@ while (my $transcript = shift(@{$transcripts})) {
     
     # Get the cds
     my $cds_nodes = $transcript->findNodeArraySingle('coding_region') or warn("Could not get coding region for transcript $name");
-		
-		foreach my $cds (@{$cds_nodes}) {
-    	my $codon_start = $cds->data()->{'codon_start'};
-    	(undef,$lrg_start,$lrg_end) = parse_coordinates($cds->findNode('coordinates'));
     
-			my $pep_node = $cds->findNodeSingle('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
-			next unless ($pep_node);
-			my $pep_name = $pep_node->data()->{'name'};
-    	$node = $pep_node->findNodeSingle('sequence');
+    foreach my $cds (@{$cds_nodes}) {
+      my $codon_start = $cds->data()->{'codon_start'};
+      (undef,$lrg_start,$lrg_end) = parse_coordinates($cds->findNode('coordinates'));
     
-    	$seq = $node->content();
+      my $pep_node = $cds->findNodeSingle('translation') or warn("Could not get translated sequence for transcript $name\, skipping this transcript");
+      next unless ($pep_node);
+      my $pep_name = $pep_node->data()->{'name'};
+      $node = $pep_node->findNodeSingle('sequence');
     
-    	# Insert the cds into db
-    	$cds_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
-    	$cds_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
-    	$cds_ins_sth->bind_param(3,$lrg_end,SQL_INTEGER);
-    	$cds_ins_sth->bind_param(4,$codon_start,SQL_INTEGER);
-    	$cds_ins_sth->execute();
-    	my $cds_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+      $seq = $node->content();
     
-			# Insert the peptide into db
-			$pep_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    	$pep_ins_sth->bind_param(2,$pep_name,SQL_VARCHAR);
-    	$pep_ins_sth->execute();
-    	my $pep_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+      # Insert the cds into db
+      $cds_ins_sth->bind_param(1,$transcript_id,SQL_INTEGER);
+      $cds_ins_sth->bind_param(2,$lrg_start,SQL_INTEGER);
+      $cds_ins_sth->bind_param(3,$lrg_end,SQL_INTEGER);
+      $cds_ins_sth->bind_param(4,$codon_start,SQL_INTEGER);
+      $cds_ins_sth->execute();
+      my $cds_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
+    
+      # Insert the peptide into db
+      $pep_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+      $pep_ins_sth->bind_param(2,$pep_name,SQL_VARCHAR);
+      $pep_ins_sth->execute();
+      my $pep_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 
-    	# Insert the peptide sequence
-    	add_sequence($pep_id,'peptide',$db_adaptor,$seq);
+      # Insert the peptide sequence
+      add_sequence($pep_id,'peptide',$db_adaptor,$seq);
 
-			# Get any translation exception
-    	$node = $cds->findNodeArray('translation_exception');
-    	$node ||= [];
-    	while (my $c = shift(@{$node})) {
-				my $codon = $c->data()->{'codon'};
+      # Get any translation exception
+      $node = $cds->findNodeArray('translation_exception');
+      $node ||= [];
+      while (my $c = shift(@{$node})) {
+        my $codon = $c->data()->{'codon'};
 
         my $seq_node = $c->findNode('sequence');
-				next unless ($seq_node);
-   			my $seq = $seq_node->content();
-				my $seq_ids = add_sequence($cds_id,'',$db_adaptor,$seq);
+        next unless ($seq_node);
+         my $seq = $seq_node->content();
+        my $seq_ids = add_sequence($cds_id,'',$db_adaptor,$seq);
 
-				foreach my $seq_id (@{$seq_ids}) {
-        	$ce_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
-        	$ce_ins_sth->bind_param(2,$seq_id,SQL_INTEGER);
-        	$ce_ins_sth->bind_param(3,$codon,SQL_INTEGER);
-        	$ce_ins_sth->execute();
-    		}
-    	}
-			# Get any translation frameshift
-    	$node = $cds->findNodeArray('translation_frameshift');
-    	$node ||= [];
-    	while (my $c = shift(@{$node})) {
-				my $cdna_pos = $c->data()->{'cdna_position'};
-				my $frameshift = $c->data()->{'shift'};
+        foreach my $seq_id (@{$seq_ids}) {
+          $ce_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+          $ce_ins_sth->bind_param(2,$seq_id,SQL_INTEGER);
+          $ce_ins_sth->bind_param(3,$codon,SQL_INTEGER);
+          $ce_ins_sth->execute();
+        }
+      }
+      # Get any translation frameshift
+      $node = $cds->findNodeArray('translation_frameshift');
+      $node ||= [];
+      while (my $c = shift(@{$node})) {
+        my $cdna_pos = $c->data()->{'cdna_position'};
+        my $frameshift = $c->data()->{'shift'};
 
-				# stmt here because of a bug with DBI bind_param when the integer is negative
-				my $cfs_ins_stmt = qq{
-    			INSERT INTO lrg_cds_frameshift ( cds_id, cdna_pos, frameshift )
-					VALUES ( ?, ?, $frameshift )
-				};
-				my $cfs_ins_sth = $db_adaptor->dbc->prepare($cfs_ins_stmt);
-				$cfs_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
+        # stmt here because of a bug with DBI bind_param when the integer is negative
+        my $cfs_ins_stmt = qq{
+          INSERT INTO lrg_cds_frameshift ( cds_id, cdna_pos, frameshift )
+          VALUES ( ?, ?, $frameshift )
+        };
+        my $cfs_ins_sth = $db_adaptor->dbc->prepare($cfs_ins_stmt);
+        $cfs_ins_sth->bind_param(1,$cds_id,SQL_INTEGER);
         $cfs_ins_sth->bind_param(2,$cdna_pos,SQL_INTEGER);
         $cfs_ins_sth->execute();
-    	}
+      }
     }
 
     # Get the children nodes of the transcript and iterate over the exons and introns
@@ -751,7 +760,7 @@ while (my $transcript = shift(@{$transcripts})) {
             my $cdna_start;
             my $cdna_end;
             
-						my @peptides;
+            my @peptides;
             
             # Get the coordinates
             foreach my $node (@{$child->findNodeArray('coordinates') || []}) {
@@ -765,7 +774,7 @@ while (my $transcript = shift(@{$transcripts})) {
                 $cdna_end = $end;
               }
               elsif ($cs =~ m/^LRG_\d+_?(p\d+)$/) {
-								my $pep_name = $1;
+                my $pep_name = $1;
                 push(@peptides, { 'name' => $pep_name, 'start' => $start, 'end' => $end });
               }
             }
@@ -782,14 +791,14 @@ while (my $transcript = shift(@{$transcripts})) {
             $exon_ins_sth->execute();
             my $exon_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
             
-						# An exon can have several peptides coordinates
-						foreach my $pep (@peptides) {
-							$exon_pep_ins_sth->bind_param(1,$exon_id,SQL_INTEGER);
-							$exon_pep_ins_sth->bind_param(2,$pep->{name},SQL_VARCHAR);
-            	$exon_pep_ins_sth->bind_param(3,$pep->{start},SQL_INTEGER);
-            	$exon_pep_ins_sth->bind_param(4,$pep->{end},SQL_INTEGER);
-            	$exon_pep_ins_sth->execute();
-						}
+            # An exon can have several peptides coordinates
+            foreach my $pep (@peptides) {
+              $exon_pep_ins_sth->bind_param(1,$exon_id,SQL_INTEGER);
+              $exon_pep_ins_sth->bind_param(2,$pep->{name},SQL_VARCHAR);
+              $exon_pep_ins_sth->bind_param(3,$pep->{start},SQL_INTEGER);
+              $exon_pep_ins_sth->bind_param(4,$pep->{end},SQL_INTEGER);
+              $exon_pep_ins_sth->execute();
+            }
 
             # If an intron was preceeding this exon, we should insert that one as well
             if (defined($phase)) {
@@ -868,7 +877,7 @@ sub parse_annotation_set {
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-   	return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
+     return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
 
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
@@ -907,15 +916,15 @@ sub parse_annotation_set {
     
     # Get the xml for the rest of the annotation_set
     foreach my $name (('fixed_transcript_annotation','features')) {
-			my $nodes = $annotation_set->findNodeArray($name);
-			if (defined($nodes)) {
-				foreach my $node (@{$nodes}) {
-					my $xml = new XML::Writer(OUTPUT => \$xml_out, DATA_INDENT => 2, DATA_MODE => 1);
-					$node->xml($xml);
-					$node->printNode();
-					$xml_out .= "\n";
-				}
-			}
+      my $nodes = $annotation_set->findNodeArray($name);
+      if (defined($nodes)) {
+        foreach my $node (@{$nodes}) {
+          my $xml = new XML::Writer(OUTPUT => \$xml_out, DATA_INDENT => 2, DATA_MODE => 1);
+          $node->xml($xml);
+          $node->printNode();
+          $xml_out .= "\n";
+        }
+      }
     }
     
     # /!\ HACK /!\ # Waiting for the NCBI to change it in their XML files
@@ -1008,16 +1017,16 @@ sub parse_mapping {
     };
 
     my $check_dup_stmt = qq{
-			SELECT count(*) FROM lrg_mapping
+      SELECT count(*) FROM lrg_mapping
       WHERE gene_id=?
         AND assembly=?
         AND chr_name=?
         AND chr_id=?
         AND chr_start=?
         AND chr_end=?
-		};
+    };
     
-		my $check_dup_sth = $db_adaptor->dbc->prepare($check_dup_stmt);
+    my $check_dup_sth = $db_adaptor->dbc->prepare($check_dup_stmt);
     my $m_ins_sth     = $db_adaptor->dbc->prepare($m_ins_stmt);
     my $ms_ins_sth    = $db_adaptor->dbc->prepare($ms_ins_stmt);
     my $diff_ins_sth  = $db_adaptor->dbc->prepare($diff_ins_stmt);
@@ -1039,10 +1048,10 @@ sub parse_mapping {
     $check_dup_sth->bind_param(3,$chr_id,SQL_VARCHAR);
     $check_dup_sth->bind_param(4,$chr_start,SQL_INTEGER);
     $check_dup_sth->bind_param(5,$chr_end,SQL_INTEGER);
-		$check_dup_sth->execute();
-		
+    $check_dup_sth->execute();
+    
     my @res = $check_dup_sth->fetchrow_array;
-		error_msg("ERROR: Duplicated entry $chr_name!") if ($res[0] !=0 );
+    error_msg("ERROR: Duplicated entry $chr_name!") if ($res[0] !=0 );
 
     $m_ins_sth->bind_param(1,$assembly,SQL_VARCHAR);
     $m_ins_sth->bind_param(2,$chr_name,SQL_VARCHAR);
@@ -1116,7 +1125,7 @@ sub parse_source {
             ?
         )
     };
-		my $lsdb_ins_stmt_2 = qq{
+    my $lsdb_ins_stmt_2 = qq{
         INSERT INTO
             lsdb (
                 code
@@ -1167,7 +1176,7 @@ sub parse_source {
 
     my $lr_ins_sth = $db_adaptor->dbc->prepare($lr_ins_stmt);
     my $lsdb_ins_sth_1 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_1);
-		my $lsdb_ins_sth_2 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_2);
+    my $lsdb_ins_sth_2 = $db_adaptor->dbc->prepare($lsdb_ins_stmt_2);
     my $requester_ins_sth = $db_adaptor->dbc->prepare($requester_ins_stmt);
     my $lc_ins_sth = $db_adaptor->dbc->prepare($lc_ins_stmt);
     my $lg_ins_sth = $db_adaptor->dbc->prepare($lg_ins_stmt);
@@ -1199,12 +1208,12 @@ sub parse_source {
     $lsdb_url ||= "";
     
     # Enter the LSDB info into db
-		my $stmt;
-		my $lsdb_id;
-		if (defined($lsdb_name) && ($lsdb_name ne '' || $lsdb_url ne '')) {
+    my $stmt;
+    my $lsdb_id;
+    if (defined($lsdb_name) && ($lsdb_name ne '' || $lsdb_url ne '')) {
       my $sel_lsdb_name = ($lsdb_name ne '') ? "= '$lsdb_name'" : ' is null';
       my $sel_lsdb_url  = ($lsdb_url ne '') ?  "= '$lsdb_url'" : ' is null';
-    	$stmt = qq{
+      $stmt = qq{
         SELECT
             lsdb_id
         FROM
@@ -1213,21 +1222,21 @@ sub parse_source {
             name $sel_lsdb_name AND
             url $sel_lsdb_url
         LIMIT 1
-    	};
+      };
 
-			$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-    	if (!defined($lsdb_id)) {
-				$lsdb_name = 'null' if ($lsdb_name eq '');
+      $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+      if (!defined($lsdb_id)) {
+        $lsdb_name = 'null' if ($lsdb_name eq '');
         $lsdb_url  = 'null' if ($lsdb_url eq '');
         $lsdb_ins_sth_1->bind_param(1,$lsdb_name,SQL_VARCHAR);
         $lsdb_ins_sth_1->bind_param(2,$lsdb_url,SQL_VARCHAR);
         $lsdb_ins_sth_1->execute();
         $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
-    	}
-		}
-		else {
-			my $lsdb_code = "$lrg_id\_$lsdb_code_id";
-			$stmt = qq{
+      }
+    }
+    else {
+      my $lsdb_code = "$lrg_id\_$lsdb_code_id";
+      $stmt = qq{
         SELECT
             lsdb_id
         FROM
@@ -1235,15 +1244,15 @@ sub parse_source {
         WHERE
             code = '$lsdb_code'
         LIMIT 1
-    	};
+      };
 
-    	$lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-    	if (!defined($lsdb_id)) {
+      $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+      if (!defined($lsdb_id)) {
         $lsdb_ins_sth_2->bind_param(1,$lsdb_code,SQL_VARCHAR);
         $lsdb_ins_sth_2->execute();
         $lsdb_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
-    	}
-			$lsdb_code_id++;
+      }
+      $lsdb_code_id++;
     }
     # Get the contact information for this source
     my $contacts = $source->findNodeArray('contact') or warn ("Could not find contact information for source " . (defined($lsdb_name) ? $lsdb_name : ""));
@@ -1415,12 +1424,12 @@ sub parse_coordinates {
   my $element = shift;
   
   #my $attribs = [];
-	my @attribs;
+  my @attribs;
   
   if (defined($element) && $element->name() eq 'coordinates') {
     push(@attribs,$element->data()->{coord_system});
-		push(@attribs,$element->data()->{start});
-		push(@attribs,$element->data()->{end});
+    push(@attribs,$element->data()->{start});
+    push(@attribs,$element->data()->{end});
   }
   
   return @attribs;
@@ -1430,24 +1439,24 @@ sub check_refseq_has_poly_a {
   my $transcript = shift;
 
   my $tr_name = $transcript->data()->{'name'};
-	my $tr_full_seq  = $transcript->findNode('sequence')->content;
-	my $tr_sub_seq = lc(substr($tr_full_seq,-20));
+  my $tr_full_seq  = $transcript->findNode('sequence')->content;
+  my $tr_sub_seq = lc(substr($tr_full_seq,-20));
 
-	my $rs_transcripts = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
-	
+  my $rs_transcripts = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
+  
   if (scalar(@$rs_transcripts)) {
     foreach my $rs_tr (@$rs_transcripts) {
       my $nm = $rs_tr->data()->{'accession'};
       next if ($rs_tr->data()->{'source'} ne 'RefSeq' || !$nm);
-		   
+       
       my $url = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id='.$nm.'&rettype=fasta&retmode=text';
 
-		  my $rs_full_seq = LWP::Simple::get($url);
-		  next if (!defined($rs_full_seq));
-		  $rs_full_seq =~ s/\n//g;
-		  my $rs_sub_seq = lc(substr($rs_full_seq,-20));
+      my $rs_full_seq = LWP::Simple::get($url);
+      next if (!defined($rs_full_seq));
+      $rs_full_seq =~ s/\n//g;
+      my $rs_sub_seq = lc(substr($rs_full_seq,-20));
       return $nm if ($tr_sub_seq ne $rs_sub_seq);
-		}
+    }
   }
   return undef;
 }
@@ -1476,16 +1485,16 @@ sub get_comment_sentence {
 
 
 sub error_msg {
-	my $msg = shift;
+  my $msg = shift;
 
-	if (defined($error_log)) {
+  if (defined($error_log)) {
     print STDERR "$error_log: $msg\n";
-		open LOG, "> $error_log" or die "Error log file $error_log can't be opened";
+    open LOG, "> $error_log" or die "Error log file $error_log can't be opened";
     print LOG "$msg\n";
     close(LOG);
-		exit(1);
-	}
+    exit(1);
+  }
   else {
     die($msg);
-	}
+  }
 }
