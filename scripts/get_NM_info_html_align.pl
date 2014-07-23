@@ -52,6 +52,8 @@ my $refseq_tr_a  = $registry->get_adaptor($species, 'otherfeatures','transcript'
 # http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=CCDS13330
 my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1);
 
+my $GI_dbname = "EntrezGene";
+
 my %exons_list;
 my %ens_tr_exons_list;
 my %refseq_tr_exons_list;
@@ -61,9 +63,9 @@ my %exons_count;
 my %unique_exon;
 my %nm_data;
 
-my $lovd_url = "http://####.lovd.nl";
-my $ucsc_url = "https://genome-euro.ucsc.edu/cgi-bin/hgTracks?clade=mammal&org=Human&db=hg38&position=####&hgt.positionInput=####&hgt.suggestTrack=knownGene&Submit=submit";
-my %external_links = ('LOVD' => $lovd_url, 'UCSC' => $ucsc_url);
+my $lovd_url = 'http://####.lovd.nl';
+my $ucsc_url = 'https://genome-euro.ucsc.edu/cgi-bin/hgTracks?clade=mammal&org=Human&db=hg38&position=####&hgt.positionInput=####&hgt.suggestTrack=knownGene&Submit=submit';
+my $rsg_url  = 'http://www.ncbi.nlm.nih.gov/gene?term=####[sym]%20AND%20Human[Organism]';
 
 
 my $ens_gene;
@@ -79,6 +81,18 @@ my $chr = $ens_gene->slice->seq_region_name;
 my $gene_slice = $slice_a->fetch_by_region('chromosome',$chr,$ens_gene->start,$ens_gene->end,$ens_gene->slice->strand);
 my $ens_tr = $ens_gene->get_all_Transcripts;
 my $gene_stable_id = $ens_gene->stable_id;
+
+foreach my $xref (@{$ens_gene->get_all_DBEntries}) {
+  my $dbname = $xref->dbname;
+  if ($dbname eq $GI_dbname) {
+    $rsg_url = "http://www.ncbi.nlm.nih.gov/gene/".$xref->primary_id;
+    last;
+  }
+}
+
+
+my %external_links = ('LOVD' => $lovd_url, 'RefSeqGene' => $rsg_url, 'UCSC' => $ucsc_url);
+
 
 #--------------------#
 # Ensembl transcript #
@@ -863,8 +877,6 @@ $html .= qq{
 # External links #
 #----------------#
 if ($gene_name !~ /^ENS(G|T)\d{11}/) {
-  my $lsdb_link = $lovd_url;
-     $lsdb_link =~ s/####/$gene_name/g;
   $html .= qq{<h2>>External links to $gene_name</h2>\n};
   $html .= qq{<table>\n};
   foreach my $external_db (sort keys(%external_links)) {
