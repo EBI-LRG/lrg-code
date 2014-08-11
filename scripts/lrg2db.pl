@@ -195,7 +195,6 @@ if ($purge) {
       # Delete the fixed annotation data
       $stmt = qq{
         DELETE FROM
-            ln,
             lt,
             lc,
             lp,
@@ -326,7 +325,7 @@ else {
   $hgnc_id = 'NULL' if (!defined($hgnc_id));
 
   # Get gene_id
-  if (defined($lrg_id) {
+  if (defined($lrg_id)) {
     $lrg_id =~ /^LRG_(\d+)$/i;
     $gene_id = $1;
   }
