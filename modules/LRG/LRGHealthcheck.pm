@@ -18,6 +18,7 @@ our $JING_JAR = POSIX::getcwd() . '/jing.jar';
 our $RNC_FILE = POSIX::getcwd() . '/LRG.rnc'; 
 # Assembly to check
 our $CHECK_ASSEMBLY = 'GRCh37';
+our $CHECK_ROOT_ASSEMBLY = 'GRCh3';
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
 our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR.'/SCHEMA_1_7_ARCHIVE';
@@ -325,50 +326,55 @@ sub compare_main_mapping {
     if (!$new_data || !$arch_data) {
       if (!$new_data) { 
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "Could not find a mapping to $CHECK_ASSEMBLY in the new LRG XML file//";
+        $self->{'check'}{$name}{'message'} .= "Could not find a mapping in the new LRG XML file//";
       }
       if (!$arch_data) { 
         $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "Could not find a mapping to $CHECK_ASSEMBLY in the archived LRG XML file $existing_archive_file//";
+        $self->{'check'}{$name}{'message'} .= "Could not find a mapping in the archived LRG XML file $existing_archive_file//";
       }
       $self->{'check'}{$name}{'passed'} = $passed;
       return $passed; 
     }
 
-    my $is_diff = 0;
-    foreach my $attr (@attr_list) { 
-      if ($new_data->{$attr} && $arch_data->{$attr}) {
-        $is_diff = 1 if ($new_data->{$attr} ne $arch_data->{$attr});
-      }
-      # For 'other_name' and 'other_id' (optional attributes)
-      elsif (($new_data->{$attr} && !$arch_data->{$attr}) || (!$new_data->{$attr} && $arch_data->{$attr})) {
-        $is_diff = 1;
-      }
-    }
-    foreach my $span_attr (@span_attr_list) {
-      $is_diff = 1 if ($new_data->{$span_attr} ne $arch_data->{$span_attr});
-    }
+    my %assemblies = map {$_ => 1} (keys(%$new_data),keys(%$arch_data));
     
-    if ($is_diff == 1) {  
-      $passed = 0;
-      $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates//";
-    }
-  
-    if (scalar keys(%{$new_data->{'diffs'}}) !=  scalar keys(%{$arch_data->{'diffs'}})) {
-      $passed = 0;
-      $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions//";
-    }
+    foreach my $assembly (sort(keys(%assemblies))) {
 
-    foreach my $diff (keys (%{$new_data->{'diffs'}})) {
-      if (!$arch_data->{'diffs'}{$diff}) {
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates ( Type '".$new_data->{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{'diffs'}{$diff}{'lrg_start'}."')//";
+      my $is_diff = 0;
+      foreach my $attr (@attr_list) { 
+        if ($new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr}) {
+          $is_diff = 1 if ($new_data->{$assembly}{$attr} ne $arch_data->{$assembly}{$attr});
+        }
+        # For 'other_name' and 'other_id' (optional attributes)
+        elsif (($new_data->{$assembly}{$attr} && !$arch_data->{$assembly}{$attr}) || (!$new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr})) {
+          $is_diff = 1;
+        }
       }
-      else {
-        foreach my $diff_attr (@diff_attr_list) {
-          if ($new_data->{'diffs'}{$diff}{$diff_attr} ne $arch_data->{'diffs'}{$diff}{$diff_attr}) {
-            $passed = 0;
-            $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff '$diff_attr' data (New '".$new_data->{'diffs'}{$diff}{$diff_attr}."' | Archive '".$arch_data->{'diffs'}{$diff}{$diff_attr}."')//";
+      foreach my $span_attr (@span_attr_list) {
+        $is_diff = 1 if ($new_data->{$assembly}{$span_attr} ne $arch_data->{$assembly}{$span_attr});
+      }
+    
+      if ($is_diff == 1) {  
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates on $assembly//";
+      }
+  
+      if (scalar keys(%{$new_data->{$assembly}{'diffs'}}) != scalar keys(%{$arch_data->{$assembly}{'diffs'}})) {
+        $passed = 0;
+        $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions on $assembly//";
+      }
+
+      foreach my $diff (keys (%{$new_data->{$assembly}{'diffs'}})) {
+        if (!$arch_data->{$assembly}{'diffs'}{$diff}) {
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates on $assembly ( Type '".$new_data->{$assembly}{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{$assembly}{'diffs'}{$diff}{'lrg_start'}."')//";
+        }
+        else {
+          foreach my $diff_attr (@diff_attr_list) {
+            if ($new_data->{$assembly}{'diffs'}{$diff}{$diff_attr} ne $arch_data->{$assembly}{'diffs'}{$diff}{$diff_attr}) {
+              $passed = 0;
+              $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff '$diff_attr' data on $assembly (New '".$new_data->{$assembly}{'diffs'}{$diff}{$diff_attr}."' | Archive '".$arch_data->{$assembly}{'diffs'}{$diff}{$diff_attr}."')//";
+            }
           }
         }
       }
@@ -872,6 +878,8 @@ sub mappings {
 
         #ÊStore the mapping set under the assembly key and source name
         my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $assembly;
+        next unless ($region_name =~ /^(X|Y)$/ || $region_name =~ /^\d+$/);
+        
         my $other_id    = $mapping_set->data()->{'other_id'};
         $mapping_hash{$assembly}{$source}{$region_name}{$other_id} = $mapping_set;
 
@@ -1713,17 +1721,22 @@ sub get_mapping_coordinates {
     #next unless($aset->findNodeSingle('source/name')->content eq 'LRG');
     my $mappings = $aset->findNodeArraySingle('mapping');
     
+    my %data;
     foreach my $mapping (@$mappings) {
-      next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ASSEMBLY/i);
-      my %data;
-    
+      next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ROOT_ASSEMBLY/i);
+      if ($mapping->data()->{'other_name'}) {
+        next unless ($mapping->data()->{'other_name'} =~ /^(X|Y)$/ || $mapping->data()->{'other_name'} =~ /^\d+$/);
+      }
+      
+      my $assembly = (split(/\./,$mapping->data->{'coord_system'}))[0];
+      
       foreach my $attr (@attr_list) {
-        $data{$attr} = ($attr eq 'coord_system') ? (split(/\./,$mapping->data->{$attr}))[0] : $mapping->data->{$attr};
+        $data{$assembly}{$attr} = ($attr eq 'coord_system') ? $assembly : $mapping->data->{$attr};
       }
     
       my $mapping_span = $mapping->findNodeSingle('mapping_span');
       foreach my $span_attr (@span_attr_list) {
-        $data{$span_attr} = $mapping_span->data->{$span_attr};
+        $data{$assembly}{$span_attr} = $mapping_span->data->{$span_attr};
       }
     
       my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
@@ -1733,7 +1746,7 @@ sub get_mapping_coordinates {
           $diff_data{$diff_attr} = $diff->data->{$diff_attr};
         }
         my $label = $diff_data{'type'}."_".$diff_data{'other_start'};
-        $data{'diffs'}{$label} = \%diff_data;
+        $data{$assembly}{'diffs'}{$label} = \%diff_data;
       }
       return \%data;
     } 
