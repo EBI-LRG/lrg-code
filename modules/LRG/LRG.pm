@@ -869,13 +869,13 @@ sub sort_nodes {
     'transcript'  =>  {
       'comment' =>  1,
       'coordinates' =>  2,
-      'cdna'  =>  3,
-      'coding_region' =>  4,
-      'partial' =>  5,
-      'long_name' =>  6,
-      'db_xref' =>  7,
+      'partial' =>  3,
+      'long_name' =>  4,
+      'db_xref' =>  5,
+      'cdna'  =>  6,
+      'coding_region' =>  7, 
       'exon'  =>  8,
-      'protein_product' =>  9
+      'protein_product' =>  9  
     },
     
     'coding_region' =>  {
