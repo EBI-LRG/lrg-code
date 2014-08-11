@@ -1635,8 +1635,8 @@
 <!--   select="substring-before($coord_system,'.')" />-->
   <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
     <xsl:choose>  
-      <xsl:when test="$main_assembly!=$previous_assembly">
-				<xsl:text>pre</xsl:text>
+      <xsl:when test="$main_assembly=$previous_assembly">
+				<xsl:text>grch37</xsl:text>
 			</xsl:when>
       <xsl:otherwise>
 				<xsl:text>www</xsl:text>
@@ -1676,7 +1676,7 @@
 			      <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
             <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>_</xsl:text><xsl:value-of select="$main_assembly"/><xsl:text>.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
           </xsl:attribute>
-          <xsl:if test="$main_assembly=$current_assembly">pre.</xsl:if>Ensembl<xsl:call-template name="external_link_icon" />
+          Ensembl<xsl:call-template name="external_link_icon" />
     </a>
     
     <span style="margin-left:5px;margin-right:10px">/</span>
