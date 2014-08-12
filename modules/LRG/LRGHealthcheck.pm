@@ -16,8 +16,7 @@ our $JAVA = 'java';
 our $JING_JAR = POSIX::getcwd() . '/jing.jar'; 
 #ÊPath to the RelaxNG Compact XML schema definition file
 our $RNC_FILE = POSIX::getcwd() . '/LRG.rnc'; 
-# Assembly to check
-our $CHECK_ASSEMBLY = 'GRCh37';
+# Assemblies to check
 our $CHECK_ROOT_ASSEMBLY = 'GRCh3';
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
@@ -878,7 +877,7 @@ sub mappings {
 
         #ÊStore the mapping set under the assembly key and source name
         my $region_name = ($mapping_set->data()->{'other_name'}) ? $mapping_set->data()->{'other_name'} : $assembly;
-        next unless ($region_name =~ /^(X|Y)$/ || $region_name =~ /^\d+$/);
+        next unless ($region_name =~ /^([0-9]+|[XY])$/i);
         
         my $other_id    = $mapping_set->data()->{'other_id'};
         $mapping_hash{$assembly}{$source}{$region_name}{$other_id} = $mapping_set;
@@ -1725,7 +1724,7 @@ sub get_mapping_coordinates {
     foreach my $mapping (@$mappings) {
       next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ROOT_ASSEMBLY/i);
       if ($mapping->data()->{'other_name'}) {
-        next unless ($mapping->data()->{'other_name'} =~ /^(X|Y)$/ || $mapping->data()->{'other_name'} =~ /^\d+$/);
+        next unless ($mapping->data()->{'other_name'} =~ /^([0-9]+|[XY])$/i);
       }
       
       my $assembly = (split(/\./,$mapping->data->{'coord_system'}))[0];
