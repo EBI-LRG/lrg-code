@@ -21,7 +21,7 @@ our $CHECK_ASSEMBLY = 'GRCh37';
 our $CHECK_ROOT_ASSEMBLY = 'GRCh3';
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
-our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR.'/SCHEMA_1_7_ARCHIVE';
+our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR;
 
 our @attr_list      = qw(coord_system other_name other_id other_start other_end);
 our @span_attr_list = qw(lrg_start lrg_end strand);
@@ -1748,8 +1748,8 @@ sub get_mapping_coordinates {
         my $label = $diff_data{'type'}."_".$diff_data{'other_start'};
         $data{$assembly}{'diffs'}{$label} = \%diff_data;
       }
-      return \%data;
     } 
+    return \%data;
   }
   return undef;
 }
