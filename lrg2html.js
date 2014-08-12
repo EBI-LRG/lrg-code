@@ -354,14 +354,16 @@ function search_in_ensembl(lrg_id, lrg_status) {
 
   var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
   var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
+  var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
  
   var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
   var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var phe_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+phe_link+'" target="_blank" style="vertical-align:middle">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
   
   for (var i = 0; i < fileArray.length; i++) {
     var id = fileArray[i];
     if (id==lrg_id) {
-      div.innerHTML = ens_html+var_html;
+      div.innerHTML = ens_html+var_html+phe_html;
       return 0;
     }
   }
