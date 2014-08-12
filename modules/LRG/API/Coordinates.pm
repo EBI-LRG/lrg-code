@@ -95,8 +95,7 @@ sub transfer {
 	my $m_assembly = $mapping->assembly();
 
   # Remove the patch version (e.g. GRCh37.p5 => GRCh37)
-  $m_assembly =~ /^(\w+)\./;
-  my $assembly_main = $1;
+  my $assembly_main = (split(/\./,$m_assembly))[0];
   my $destination_coordinate_system = shift || ($self->coordinate_system() =~ /^$assembly_main/i ? 'LRG' : $m_assembly);
 
   # If we're transferring to the same coordinate system we're on, just return a reference to ourselves

@@ -410,8 +410,13 @@ sub xref {
     
     my $xref_id = $dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : "");
 		
-		next if (grep {"$xref_source:$xref_id" eq $_} @xrefs_list);
-	  
+    # Retrieve only the ID of the HGNC identifier
+    if ($xref_id =~ /^HGNC:(\d+)$/i) {
+      $xref_id = $1;
+    }
+
+    next if (grep {"$xref_source:$xref_id" eq $_} @xrefs_list);
+
     push(@xrefs_list,"$xref_source:$xref_id");
 
     # Create a new xref object
