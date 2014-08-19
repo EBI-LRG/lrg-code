@@ -143,9 +143,28 @@ if [[ -s ${tmp_lrg_list} ]]; then
           # Update the LRG status in the LRG database
           mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
           
-          # Remove entry from lrg_index if the LRG has been moved to the "Stalled" status
+          pending_fasta="${pubpath}/fasta/${lrg_id}.fasta"
+          stalled_fasta="${pubpath}/stalled/fasta/${lrg_id}.fasta"
+          
+          # If the LRG has been moved to the "Stalled" status
           if [[ ${lrg_status} == 'stalled' ]]; then
+            # Remove entry from lrg_index
             rm -f "${lrgindex}${lrg_id}_index.xml"
+            
+            # Move the fasta file
+            if [[ -e ${pending_fasta} ]]; then
+              mv ${pending_fasta} ${stalled_fasta}
+            fi
+          
+          # If the LRG has been moved to the "Pending" status  
+          elif [[ ${lrg_status} == 'pending' ]] ; then
+            # Move the fasta file from the "Stalled" directory to the main fasta directory
+            if [[ ! -e ${pending_fasta} && -e ${stalled_fasta} ]]; then
+              mv ${stalled_fasta} ${pending_fasta}
+            # Remove the fasta file from the "Stalled" directory  
+            elif [[ -e ${stalled_fasta} ]]; then
+              rm -f ${stalled_fasta}
+            fi 
           fi
         done < ${tmp_lrg_list} 
         
