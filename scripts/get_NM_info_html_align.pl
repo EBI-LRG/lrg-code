@@ -284,7 +284,7 @@ $html .= qq{
       function isEven(n) { return (n % 2 == 0); }
       function isOdd(n)  { return (n % 2 == 1); }
 
-      function show_hide_info (ens_id,exon_id,content,ens_exon_id) {
+      function show_hide_info (e,ens_id,exon_id,content,ens_exon_id) {
         var exon_popup = '';
         var exon_popup_id = "exon_popup_"+ens_id+"_"+exon_id;
         if (document.getElementById(exon_popup_id)) {
@@ -308,7 +308,7 @@ $html .= qq{
           exon_popup_header_right.className = "hide_popup_button";
           exon_popup_header_right.innerHTML = "X";
           exon_popup_header_right.title="Hide this popup";
-          exon_popup_header_right.onclick = function() { show_hide_info(ens_id,exon_id,content); };
+          exon_popup_header_right.onclick = function() { show_hide_info(e,ens_id,exon_id,content); };
           exon_popup_header.appendChild(exon_popup_header_right);
           
           exon_popup_header_clear = document.createElement('div');
@@ -337,9 +337,7 @@ $html .= qq{
         if (exon_popup.className == "hidden exon_popup") {
           exon_popup.className = "unhidden_popup exon_popup";
           
-          var e = window.event;
-          //var posX = e.clientX;
-          //var posY = e.clientY;
+          if (!e) var e = window.event;
           var posX = e.pageX;
           var posY = e.pageY;
           
@@ -351,6 +349,8 @@ $html .= qq{
         }
       }
     </script>
+    
+    
     <style type="text/css">
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;}
       table {border-collapse:collapse}
@@ -552,7 +552,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
     if ($exon_start) {
       $has_exon = 'few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence);
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $html .= qq{ <div class="$has_exon\_coord_match" onclick="javascript:show_hide_info('$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')">$exon_number</div>};
+      $html .= qq{ <div class="$has_exon\_coord_match" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')">$exon_number</div>};
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -634,7 +634,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $html .= qq{<div class="$has_exon\_coord_match$identity" onclick="javascript:show_hide_info('$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number$identity_score</div>};
+      $html .= qq{<div class="$has_exon\_coord_match$identity" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number$identity_score</div>};
       if ($cdna_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -709,7 +709,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
-      $html .= qq{<div class="$has_exon\_coord_match" onclick="javascript:show_hide_info('$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number</div>};
+      $html .= qq{<div class="$has_exon\_coord_match" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number</div>};
       if ($refseq_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -795,7 +795,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       $exon_start = $coord;
       if ($is_first_exon_partial == 1) {
         $html .= qq{</td><td>};
-        $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info('$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
         $colspan = 1;
       }
       if ($coord == $last_exon) {
@@ -809,7 +809,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     }
     elsif ($ended == 2) {
       $html .= qq{</td><td>};
-      $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info('$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $ended = 1;
       next;
     }
@@ -819,14 +819,14 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       if ($is_last_exon_partial == 1) {
         my $tmp_colspan = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
         $html .= qq{</td><td$tmp_colspan>};
-        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info('$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
         $ended = 2;
         $colspan = 1;
       }
       else {
         $colspan ++;
         $html .= qq{</td><td colspan="$colspan">};
-        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info('$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       }
       next;
     }
@@ -838,7 +838,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene') {
-      $html .= qq{<div class="$has_gene\_coord_match" onclick="javascript:show_hide_info('$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $html .= qq{<div class="$has_gene\_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $colspan = 1;
     }
     else {
