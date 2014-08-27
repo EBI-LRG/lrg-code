@@ -260,9 +260,9 @@ if ($import) {
       };
       my $count = $dba->dbc->db_handle->selectall_arrayref($stmt)->[0]->[0] or die("Could not get COUNT for " . $dba->dbc()->dbname() . ".$table");
       print STDOUT localtime() . "\t\t " . $dba->dbc()->dbname() . ".$table has $count rows\n" if ($verbose);
-      if ($max_increment{$table} > 0 && $max_increment{$table} != $count) {
-        die($dba->dbc->dbname . " $table is not in sync with core");
-      }
+      #if ($max_increment{$table} > 0 && $max_increment{$table} != $count) {
+      #  die($dba->dbc->dbname . " $table is not in sync with core");
+      #}
       $max_increment{$table} = max($max_increment{$table}, $count);
     }
   }
@@ -519,7 +519,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       foreach my $core_lrg_transcript (@{$core_lrg_gene->get_all_Transcripts}) {
         $transcript_stable_id = $core_lrg_transcript->stable_id();
         $transcript_stable_id = $1 if ($transcript_stable_id =~ /(LRG_[0-9]+t[0-9]+).*/);
-        $display_xref = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME, $transcript_stable_id, $transcript_stable_id, $core_lrg_transcript, 'transcript',
+        $display_xref = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME. '_transcript', $transcript_stable_id, $transcript_stable_id, $core_lrg_transcript, 'transcript',
                                'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
         $core_lrg_transcript->display_xref($display_xref);
         $core_lrg_transcript->adaptor->update($core_lrg_transcript);
