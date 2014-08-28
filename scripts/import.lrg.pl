@@ -256,7 +256,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       $LRG::LRGImport::dbCore = $dba;
       
       print STDOUT localtime() . "\tCleaning $lrg_id from " . $dba->dbc()->dbname() . "\n" if ($verbose);
-      LRG::LRGImport::purge_db($lrg_id, $LRG_COORD_SYSTEM_NAME, $LRG_ANALYSIS_LOGIC_NAME, $purge);
+      LRG::LRGImport::remove_lrg($lrg_id, $LRG_COORD_SYSTEM_NAME);
     }
     # Set the db adaptor in LRGImport back to the core adaptor
     $LRG::LRGImport::dbCore = $dbCore;
@@ -666,6 +666,20 @@ while (my $lrg_id = shift(@lrg_ids)) {
   }
   # Undefine the input_file so that the next one will be fetched
   undef($input_file);
+}
+
+
+if ($clean and $purge) {
+  foreach my $dba (@db_adaptors) {
+
+    # Set the dbCore variable in LRGImport to the current db adaptor
+    $LRG::LRGImport::dbCore = $dba;
+
+    print STDOUT localtime() . "\tRemoving all LRG information from " . $dba->dbc()->dbname() . "\n" if ($verbose);
+    LRG::LRGImport::purge_all($LRG_COORD_SYSTEM_NAME, $LRG_ANALYSIS_LOGIC_NAME);
+  }
+    # Set the db adaptor in LRGImport back to the core adaptor
+  $LRG::LRGImport::dbCore = $dbCore;
 }
 
 sub usage {

@@ -758,11 +758,9 @@ sub get_assembly {
 
 # Remove all traces of a LRG from database. If last argument is defined, will even remove coord_system, analysis and meta entries unless
 # there still exists LRGs in the database
-sub purge_db {
+sub remove_lrg {
   my $lrg_name         = shift;
   my $lrg_coord_system = shift;
-  my $logic_name       = shift;
-  my $purge_all        = shift;
 
   my $slice_adaptor = $dbCore->get_SliceAdaptor();
   my $cs_adaptor = $dbCore->get_CoordSystemAdaptor();
@@ -789,44 +787,54 @@ sub purge_db {
   foreach my $slice (@seq_regions) {
     $slice_adaptor->remove($slice);
   }
+}
 
+sub purge_all {
+  my $lrg_coord_system = shift;
+  my $logic_name       = shift;
+
+  my $slice_adaptor = $dbCore->get_SliceAdaptor();
+  my $cs_adaptor = $dbCore->get_CoordSystemAdaptor();
+  my $analysis_adaptor = $dbCore->get_AnalysisAdaptor();
+  my $meta_coord_container = $dbCore->get_MetaCoordContainer();
+  my $meta_container = $dbCore->get_MetaContainer();
+
+  my $lrg_cs = $cs_adaptor->fetch_by_name($lrg_coord_system);
+  if (!$lrg_cs) {
+    warn("No entry found for $lrg_coord_system, nothing left to delete");
+    return;
+  }
 
 # If specified, remove EVERYTHING LRG-related unless there still are LRG entries left
-  if ($purge_all) {
-    my $seq_regions = $slice_adaptor->fetch_all($lrg_cs->name);
-    if ( scalar( @{$seq_regions} ) ) {
-      warn("Seq regions belonging to LRG coordinate system still exist in database, will not clear LRG data!");
-      return;
-    }
-
-    # Remove coord_system entry
-    my $lrg_cs_id = $lrg_cs->dbID();
-    my $coord_system_adaptor = $dbCore->get_CoordSystemAdaptor();
-    $coord_system_adaptor->remove($lrg_cs);
-
-    # Remove meta table entries
-    my $meta_container = $dbCore->get_MetaContainer();
-    my $key = 'assembly.mapping';
-    my $values = $meta_container->list_value_by_key($key);
-    foreach my $value (@$values) {
-      if ($value =~ /lrg/) {
-        $meta_container->delete_key_value($key, $value);
-      }
-    }
-    $meta_container->delete_key('lrg');
-
-    # Remove meta_coord entries
-    my $meta_coord_container = $dbCore->get_MetaCoordContainer();
-    my @tables = ("gene", "transcript", "exon");
-    foreach my $table (@tables) {
-      $meta_coord_container->remove_feature_type($lrg_cs, $table);
-    }
-
-    # Remove analysis entries
-    my $analysis_adaptor = $dbCore->get_AnalysisAdaptor();
-    my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
-    $analysis_adaptor->remove($analysis);
+  my $seq_regions = $slice_adaptor->fetch_all($lrg_cs->name);
+  if ( scalar( @{$seq_regions} ) ) {
+    warn("Seq regions belonging to LRG coordinate system still exist in database, will not clear LRG data!");
+    return;
   }
+
+  # Remove coord_system entry
+  my $lrg_cs_id = $lrg_cs->dbID();
+  $cs_adaptor->remove($lrg_cs);
+
+  # Remove meta table entries
+  my $key = 'assembly.mapping';
+  my $values = $meta_container->list_value_by_key($key);
+  foreach my $value (@$values) {
+    if ($value =~ /lrg/) {
+      $meta_container->delete_key_value($key, $value);
+    }
+  }
+  $meta_container->delete_key('lrg');
+
+  # Remove meta_coord entries
+  my @tables = ("gene", "transcript", "exon");
+  foreach my $table (@tables) {
+    $meta_coord_container->remove_feature_type($lrg_cs, $table);
+  }
+
+  # Remove analysis entries
+  my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
+  $analysis_adaptor->remove($analysis) if $analysis;
 }
 
 
