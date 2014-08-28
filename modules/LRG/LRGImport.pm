@@ -492,7 +492,7 @@ sub add_mapping {
         if ($is_core) {
           $contig = add_seq_region($contig_name, $contig_len, $contig_cs, \$contig_seq->sequence());
         } else {
-          $contig = add_seq_region($contig_name, $contig_len, $contig_cs);
+          $contig = add_seq_region($contig_name, $contig_len, $contig_cs, undef, 1);
         }
 
         # Add a mapping between the LRG and the contig
@@ -529,6 +529,7 @@ sub add_seq_region {
   my $length   = shift;
   my $cs       = shift;
   my $sequence = shift;
+  my $not_core = shift;
 
   my $slice = Bio::EnsEMBL::Slice->new(
        -seq_region_name   => $name,
@@ -543,7 +544,7 @@ sub add_seq_region {
   my $seq_region = $slice_adaptor->fetch_by_name($slice->name);
 
   if (!defined $seq_region) {
-    $slice_adaptor->store($slice, $sequence);
+    $slice_adaptor->store($slice, $sequence, $not_core);
   }
   $slice->adaptor($slice_adaptor);
 

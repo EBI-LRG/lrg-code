@@ -197,7 +197,6 @@ if (defined($otherfeaturesdb)) {
     -port => $port,
     -dbname => $otherfeaturesdb
   ) or die("Could not get a database adaptor to $otherfeaturesdb on $host:$port");
-  $dbOther->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $otherfeaturesdb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbOther);
 }
@@ -210,7 +209,6 @@ if (defined($cdnadb)) {
     -port => $port,
     -dbname => $cdnadb
   ) or die("Could not get a database adaptor to $cdnadb on $host:$port");
-  $dbcDNA->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $cdnadb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbcDNA);
 }
@@ -223,7 +221,6 @@ if (defined($vegadb)) {
     -port => $port,
     -dbname => $vegadb
   ) or die("Could not get a database adaptor to $vegadb on $host:$port");
-  $dbVega->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $vegadb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbVega);
 }
@@ -236,7 +233,6 @@ if (defined($rnaseqdb)) {
     -port => $port,
     -dbname => $rnaseqdb
   ) or die("Could not get a database adaptor to $rnaseqdb on $host:$port");
-  $dbRNAseq->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $rnaseqdb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbRNAseq);
 }
