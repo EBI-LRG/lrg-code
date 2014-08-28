@@ -197,6 +197,7 @@ if (defined($otherfeaturesdb)) {
     -port => $port,
     -dbname => $otherfeaturesdb
   ) or die("Could not get a database adaptor to $otherfeaturesdb on $host:$port");
+  $dbOther->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $otherfeaturesdb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbOther);
 }
@@ -209,6 +210,7 @@ if (defined($cdnadb)) {
     -port => $port,
     -dbname => $cdnadb
   ) or die("Could not get a database adaptor to $cdnadb on $host:$port");
+  $dbcDNA->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $cdnadb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbcDNA);
 }
@@ -221,6 +223,7 @@ if (defined($vegadb)) {
     -port => $port,
     -dbname => $vegadb
   ) or die("Could not get a database adaptor to $vegadb on $host:$port");
+  $dbVega->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $vegadb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbVega);
 }
@@ -233,6 +236,7 @@ if (defined($rnaseqdb)) {
     -port => $port,
     -dbname => $rnaseqdb
   ) or die("Could not get a database adaptor to $rnaseqdb on $host:$port");
+  $dbRNAseq->dnadb($dbCore);
   print STDOUT localtime() . "\tConnected to $rnaseqdb on $host:$port\n" if ($verbose);
   push(@db_adaptors, $dbRNAseq);
 }
@@ -242,32 +246,6 @@ print STDOUT localtime() . "\tGetting slice adaptor\n" if ($verbose);
 my $sa = $dbCore->get_SliceAdaptor();
 my $transcript_adaptor = $dbCore->get_TranscriptAdaptor();
 
-# If doing an import, check that the tables affected for adding the mapping information are sync'd across the relevant databases
-if ($import) {
-  my %max_increment = (
-  'seq_region'		=> 0,
-  'coord_system'        => 0,
-  'assembly'            => 0
-  );
-  foreach my $table (keys(%max_increment)) {
-  
-    print STDOUT localtime() . "\tChecking number of rows for $table\n" if ($verbose);
-    # Check each db adaptor
-    foreach my $dba (@db_adaptors) {
-
-      my $stmt = qq{
-        SELECT COUNT(*) FROM $table
-      };
-      my $count = $dba->dbc->db_handle->selectall_arrayref($stmt)->[0]->[0] or die("Could not get COUNT for " . $dba->dbc()->dbname() . ".$table");
-      print STDOUT localtime() . "\t\t " . $dba->dbc()->dbname() . ".$table has $count rows\n" if ($verbose);
-      if ($max_increment{$table} > 0 && $max_increment{$table} != $count) {
-        die($dba->dbc->dbname . " $table is not in sync with core");
-      }
-      $max_increment{$table} = max($max_increment{$table}, $count);
-    }
-  }
-}
-  
 # Loop over the specified LRG identifiers and process each one
 while (my $lrg_id = shift(@lrg_ids)) {
   
@@ -519,7 +497,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       foreach my $core_lrg_transcript (@{$core_lrg_gene->get_all_Transcripts}) {
         $transcript_stable_id = $core_lrg_transcript->stable_id();
         $transcript_stable_id = $1 if ($transcript_stable_id =~ /(LRG_[0-9]+t[0-9]+).*/);
-        $display_xref = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME, $transcript_stable_id, $transcript_stable_id, $core_lrg_transcript, 'transcript',
+        $display_xref = LRG::LRGImport::add_xref($LRG_ENSEMBL_DB_NAME. '_transcript', $transcript_stable_id, $transcript_stable_id, $core_lrg_transcript, 'transcript',
                                'Locus Reference Genomic record for ' . $hgnc_name, 'DIRECT');
         $core_lrg_transcript->display_xref($display_xref);
         $core_lrg_transcript->adaptor->update($core_lrg_transcript);
