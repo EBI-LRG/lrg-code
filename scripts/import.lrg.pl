@@ -242,6 +242,52 @@ print STDOUT localtime() . "\tGetting slice adaptor\n" if ($verbose);
 my $sa = $dbCore->get_SliceAdaptor();
 my $transcript_adaptor = $dbCore->get_TranscriptAdaptor();
 
+
+if ($import) {
+  my %max_increment = (
+  'seq_region'          => 0,
+  'assembly'            => 0,
+  'coord_system'        => 0
+  );
+  foreach my $table (keys(%max_increment)) {
+
+    print STDOUT localtime() . "\tChecking Auto_increment value for $table\n" if ($verbose);
+    # Check each db adaptor
+    my $do_sync = 0;
+    foreach my $dba (@db_adaptors) {
+      # Skip this db adaptor if it's not defined
+      next unless(defined($dba));
+
+      my $stmt = qq{
+        SHOW TABLE STATUS LIKE '$table'
+      };
+      my @current = keys(%{$dba->dbc->db_handle->selectall_hashref($stmt,'Auto_increment')}) or die("Could not get AUTO_INCREMENT value for " . $dba->dbc()->dbname() . ".$table");
+      if ($max_increment{$table} > 0 && $max_increment{$table} != $current[0]) {
+        $do_sync = 1;
+      }
+      print STDOUT localtime() . "\t\tAuto_increment value for " . $dba->dbc()->dbname() . ".$table is " . $current[0] . ($do_sync ? " => Needs to be sync'd!" : "") . "\n" if ($verbose);
+      $max_increment{$table} = max($max_increment{$table},$current[0]);
+    }
+    # If the table needs to be sync'd, loop over the db adaptors and do this
+    next unless($do_sync);
+
+    foreach my $dba (@db_adaptors) {
+      # Skip this db adaptor if it's not defined
+      next unless(defined($dba));
+
+      print STDOUT localtime() . "\tSyncing " . $dba->dbc()->dbname() . ".$table\n" if ($verbose);
+
+      my $val = $max_increment{$table};
+      my $stmt = qq{
+        ALTER TABLE
+          $table
+        AUTO_INCREMENT = $val
+      };
+      $dba->dbc()->do($stmt) or die("Could not set AUTO_INCREMENT value for " . $dba->dbc()->dbname() . ".$table");
+    }
+  }
+}
+
 # Loop over the specified LRG identifiers and process each one
 while (my $lrg_id = shift(@lrg_ids)) {
   
