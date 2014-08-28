@@ -25,6 +25,6 @@ else
   is_test_hc=''
 fi
 
-perldir=${CVSROOTDIR}/lrg-code/scripts
+perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
 
 perl ${perldir}/manage_pipeline.pl -data_file ${data_file} -xml_dir ${xml_dir} -new_dir ${new_dir} -tmp_dir ${tmp_dir} ${is_test_hc}

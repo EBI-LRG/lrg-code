@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
 hashdir=${HASHDIR}
 tmpdir=${TMPDIR}
 

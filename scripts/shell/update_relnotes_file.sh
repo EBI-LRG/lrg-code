@@ -9,7 +9,7 @@
 # Relevant paths
 cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
 cvsftp=${CVSROOTDIR}/ftp/public/
 lrgindex=${PUBFTP}/.lrg_index/
 
