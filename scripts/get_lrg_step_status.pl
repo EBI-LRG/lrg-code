@@ -9,6 +9,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
 use Date::Calc qw(Delta_Days);
 use File::Basename;
+use POSIX;
 
 
 my $outputfile;
@@ -438,7 +439,7 @@ my $html_header = qq{
                                 }
       
       
-      a.history { font-size:0.8em;cursor:pointer; }
+      a.history { font-size:0.8em;cursor:pointer;white-space:nowrap }
       a.lrg_link { font-weight:bold; }
      
       a.gene_link { color:#000; }
@@ -464,8 +465,8 @@ my $html_header = qq{
       .hidden {height:0px;display:none;margin-top:0px}
       .unhidden {height:auto;display:inline;margin-top:5px}
       
-      .progress_bar { background-color: #FFF; padding: 0px; border:1px solid #333; border-radius: 5px; width:200px /* (height of inner div) / 2 + padding */ } 
-      .progress_step { height: 16px; border-radius: 4px; }    
+      .progress_bar { background-color: #FFF; padding: 0px; border:1px solid #333; border-radius: 5px; width:200px; cursor:default; /* (height of inner div) / 2 + padding */ } 
+      .progress_step { height: 16px; border-radius: 4px }
       
       $specific_css
   
@@ -535,7 +536,8 @@ my $html_legend = qq{
 };
 foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
   my $desc = $steps{$step_id};
-  $html_legend .= qq{        <tr><td class="left_col" style="text-align:center">$step_id</td><td class="right_col" style="text-align:left">$desc</td></tr>\n};
+     $desc =~ s/\s-\s/,<br \/>/g; # To save some horizontal space
+  $html_legend .= qq{        <tr><td class="left_col" style="text-align:center;vertical-align:top">$step_id</td><td class="right_col" style="text-align:left">$desc</td></tr>\n};
 }
 
 $html_legend .= qq{
@@ -594,10 +596,11 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   my $lrg_id = $1;
 
   my $current_step   = $lrg_steps{$lrg}{'current'};
-  my $percent        = ($current_step/$step_max)*100;
-  my $progress_width = ($current_step/$step_max)*$bar_width;
+  my $progress_value = $current_step/$step_max;
+  my $percent        = ceil($progress_value*100);
+  my $progress_width = ceil($progress_value*$bar_width);
   
-  my $percent_display = ($step_max == 10) ? '' : " ($percent\%)";
+  my $percent_display = "Progress: $percent\%";
  
   # Check errors/discrepancies between the database and the FTP site
   if ($current_step == $step_max && ! -e "$xml_dir/$lrg.xml") {
@@ -636,7 +639,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     }
      
     $progression_bar = qq{
-      <div class="progress_bar">
+      <div class="progress_bar" title="$percent_display">
         <div class="progress_step $progression_class" style="width:$progress_width"></div>
       </div>
     };
@@ -686,7 +689,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
       <td sorttable_customkey="$symbol">
         <a class="gene_link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
       </td>
-      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b>$percent_display</span>$detailled_div</td>
+      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b></span>$detailled_div</td>
       <td>$step_desc</td>
       <td sorttable_customkey="$date_key">$date</td>
       $requester_cell
