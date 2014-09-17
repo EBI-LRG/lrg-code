@@ -461,10 +461,10 @@ div.submenu{
   margin-left:10px;
   margin-right:25px;
   padding:2px;
-  border:1px solid #E0E0E0;
+  border:1px solid #0E4C87;
   border-radius:5px;
   box-shadow: 2px 4px 2px #888;
-  background-color:#FEFEFE;
+  background-color:#F9F9F9;/*#F9F9F9;*/
 }
 
 div.submenu_header{
@@ -475,7 +475,8 @@ div.submenu_header{
 }
 
 div.submenu_section{
-  border-bottom:1px dotted #003399;
+  background-color: #FFF;
+  border-bottom:1px dotted #0E4C87;
   padding:2px;
   margin-bottom:2px;
 }
@@ -486,7 +487,7 @@ div.submenu_section a {
  }
 
 div.following_section{
-  border-top:1px dotted #003399;
+  border-top:1px dotted #0E4C87;
 }
 
 a.menu_item {
