@@ -53,6 +53,11 @@ h1.separator{
   font-weight: bold;
 }
 
+.white{
+  color: #FFF;
+  font-weight: bold;
+}
+
 .float_left {
   float:left;
 }
@@ -228,13 +233,14 @@ td.left_col{
   color:#000;
   padding:2px 4px;
   text-align:right;
-  border:1px solid #FDFDFD;
+  border:1px solid #FFF;
   background-color: #F9F9F9;
 }
 td.right_col{
-  border:1px solid #FDFDFD;
+  color:#000;
   padding:2px 4px;
-  background-color: #FFF;
+  border:1px solid #FFF;
+  background-color: #F9F9F9;
 }
 td.line_separator{
   border-top:2px dotted #0E4C87;
@@ -535,7 +541,6 @@ span.source_name{
 }
 
 div.other_source{
-  margin-left:-2px;
   padding:10px 0px;
   background-color:#E0E0E0;
 }
@@ -543,10 +548,11 @@ div.other_source{
 span.other_source{
   color: #003399;
   font-size: 1.1em;
-  padding-left:2px;
+  padding-left:5px;
   font-weight:bold;
   vertical-align:middle;
 }
+
 
 div.main_subsection {
   padding: 4px;
@@ -601,11 +607,11 @@ h3.mapping {
 
 .source_left {
   border: 0px;
-  padding: 5px 0px 5px;
+  padding: 5px;
   font-weight:bold;
   font-size:1.1em;
   vertical-align:top;
-  width: 80px;
+  width: 100px;
 }
 .source_right {
   border: 0px;
@@ -786,20 +792,45 @@ div.meta_source {
   margin-top:20px;
 }
 
+div.requester_info {
+	background-color: #F9F9F9;
+	padding: 2px;
+	margin-bottom:10px;
+	border-radius: 5px;
+	box-shadow: 2px 4px 2px #888;
+}
+
+div.requester_sources {
+	background-color: #F9F9F9;
+	padding: 0px;
+}
+
 div.requester_source {
-	background-color: #E0E0E0; 
-	border-style: dashed; 
-	border-width: 1px; 
-	padding-left: 5px; 
-	padding-bottom: 10px;
+	padding: 6px 2px;
+}
+
+div.requester_separator {
+	border-top:2px dotted #0E4C87;
+}
+
+div.requester_header {
+  font-weight:bold;
+  padding:2px 5px 4px;
+  color:#FFF;
+  padding-left:5px;
+  font-weight:bold;
+  vertical-align:middle;
+}
+
+table.requester_table {
+  background-color: #F9F9F9;
+  width:100%;
 }
 
 div.external_source {
 	background-color: #E0E0E0; 
-	border-style: dashed; 
-	border-width: 1px; 
-	padding-left: 5px; 
-	padding-bottom: 10px
+	border: 1px dashed #0E4C87;
+	padding-bottom: 10px;
 }
 
 div.lrg_source {
@@ -931,5 +962,10 @@ div.help_box {
 div.footer {
   padding-top:20px;
   background-color: #403c37;
+}
+
+.bottom_radius_5 {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius:5px;
 }
 

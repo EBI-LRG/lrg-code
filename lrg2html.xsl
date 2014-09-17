@@ -138,7 +138,7 @@
   <!-- Create the menu with within-page navigation  -->
   <div class="menu">  
     <div class="submenu">
-      <div class="submenu_section" id="fixed_menu" data-help="LRG specific data and requesters (stable)" onmouseover="show_help('fixed_menu')" onmouseout="hide_help('help_box')">
+      <div class="submenu_section" id="fixed_menu" data-help="LRG specific data (stable)" onmouseover="show_help('fixed_menu')" onmouseout="hide_help('help_box')">
         <xsl:call-template name="lrg_right_arrow_green" /><a href="#fixed_annotation_anchor">Fixed annotation</a>
       </div>
       <ul>
@@ -180,7 +180,8 @@
     <div class="right_side">
     <div class="summary gradient_color1">
       <div class="summary_header">Summary information</div>
-      <table>
+      <div>
+      <table class="table_bottom_radius">
         <!-- Organism --> 
         <tr><td class="left_col">Organism</td><td class="right_col"><i><xsl:value-of select="fixed_annotation/organism"/></i><span style="padding-left:8px">(<b>Taxon ID: </b><xsl:value-of select="fixed_annotation/organism/@taxon"/>)</span></td></tr>
         <!-- Creation date --> 
@@ -245,6 +246,7 @@
         </td></tr>
       </xsl:if>
       </table>
+      </div>
     </div>
     <!-- Downloads -->
     <div class="download_box gradient_color1">
@@ -389,39 +391,45 @@
 <xsl:template match="source">
   <xsl:param name="requester"/>
   <xsl:param name="external"/> 
-  <xsl:param name="setnum" />
+  <xsl:param name="setnum"/>
+  <xsl:param name="use_separator"/>
   <div>
   <xsl:choose>
     <xsl:when test="$requester=1">
       <xsl:attribute name="class">requester_source</xsl:attribute>
-      <div class="other_source"><span class="other_source">Original requester of this LRG: <span class="source_name"><xsl:value-of select="name"/></span></span></div>
+    <span class="other_source">Original requester of this LRG: <span class="source_name"><xsl:value-of select="name"/></span></span>
     </xsl:when>
     <xsl:when test="$external=1">
       <xsl:attribute name="class">external_source</xsl:attribute>
-      <div class="other_source"><span class="other_source">Database: <span class="source_name"><xsl:value-of select="name"/></span></span></div>
+    <span class="other_source">Database: <span class="source_name"><xsl:value-of select="name"/></span></span>
     </xsl:when>
     <xsl:otherwise>
       <xsl:attribute name="class">lrg_source</xsl:attribute>
     </xsl:otherwise>
   </xsl:choose>
- 
-    <table>
-    <xsl:for-each select="url">
-      <tr style="padding-bottom:10px">
-        <td class="source_left">
-          Website:
-       </td>
-       <td class="source_right">
-      <xsl:call-template name="url">
-        <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
-      </xsl:call-template> 
-        </td>
-      </tr>
-    </xsl:for-each>
+  
+    <div style="margin-top:4px">
+      <table>
+  <xsl:if test="$requester=1">
+    <xsl:attribute name="class">requester_table table_bottom_radius</xsl:attribute>
+  </xsl:if>  
+    
+  <xsl:for-each select="url">
+        <tr style="padding-bottom:10px">
+          <td class="source_left">
+            Website:
+          </td>
+          <td class="source_right">
+    <xsl:call-template name="url">
+      <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
+    </xsl:call-template> 
+          </td>
+        </tr>
+  </xsl:for-each>
     
     
 
-    <xsl:if test="count(contact)>0">
+  <xsl:if test="count(contact)>0">
      
       <xsl:variable name="contact_class">
         <xsl:choose>
@@ -430,58 +438,62 @@
         </xsl:choose>
       </xsl:variable>
 
-      <tr>
-        <td class="source_left">
+        <tr>
+          <td class="source_left">
       <xsl:choose>
         <xsl:when test="count(contact)=1">Contact:</xsl:when>
         <xsl:otherwise>Contacts:</xsl:otherwise>
       </xsl:choose>
-      </td>
-      <td class="source_right">
+          </td>
+          <td class="source_right">
 
       <xsl:for-each select="contact">
         <xsl:if test="position()!=1">
-          <div style="height:6px"></div>
+            <div style="height:6px"></div>
         </xsl:if>
-        <div>
-          <table>
+            <div>
+              <table>
         <xsl:if test="name">
-            <tr>
-              <td class="contact_val"><xsl:value-of select="name"/></td>
-            </tr>
+                <tr>
+                  <td class="contact_val"><xsl:value-of select="name"/></td>
+                </tr>
         </xsl:if>
         <xsl:if test="address">
-            <tr>
-              <td class="contact_val"><xsl:value-of select="address"/></td>
-            </tr>
+                <tr>
+                  <td class="contact_val"><xsl:value-of select="address"/></td>
+                </tr>
         </xsl:if>
         <xsl:if test="email">
-            <tr>
-              <td class="contact_val">
+                <tr>
+                  <td class="contact_val">
                 <xsl:call-template name="email" >
                   <xsl:with-param name="c_email"><xsl:value-of select="email"/></xsl:with-param>
                 </xsl:call-template>
-              </td>
-            </tr>
+                  </td>
+                </tr>
         </xsl:if>
         <xsl:for-each select="url">
-            <tr>
-              <td class="contact_val">              
+                <tr>
+                  <td class="contact_val">              
           <xsl:call-template name="url" >
             <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
           </xsl:call-template>
-              </td>
-            </tr>
+                  </td>
+                </tr>
         </xsl:for-each>
-          </table>
-         </div>
+              </table>
+            </div>
       </xsl:for-each>
-        </td>
-      </tr>
-    </xsl:if>
-    </table>
+          </td>
+        </tr>
+  </xsl:if>
+      </table>
+    </div>
   </div>
-
+  
+  <xsl:if test="$use_separator=1">
+  <div class="requester_separator"></div>
+  </xsl:if>
 </xsl:template>
   
 
@@ -625,20 +637,35 @@
 <xsl:template match="fixed_annotation">
   <xsl:param name="lrg_id" />
   <br />
+  <!-- Add a contact section for each requester -->
+  <div class="requester_info gradient_color1">
+    <div class="requester_header">Requester information</div>
+    <div class="requester_sources bottom_radius_5">
+  
+  <xsl:for-each select="source">
+    <xsl:variable name="use_separator">
+      <xsl:choose>
+		    <xsl:when test="position()!=last()">1</xsl:when>
+        <xsl:otherwise>0</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:if test="name!=$ncbi_source_name">
+      <xsl:apply-templates select=".">         
+        <xsl:with-param name="requester">1</xsl:with-param>
+        <!--<xsl:if test="position()!=last()">-->
+          <xsl:with-param name="use_separator"><xsl:value-of select="$use_separator"/></xsl:with-param>
+        <!--</xsl:if>-->
+      </xsl:apply-templates>
+    </xsl:if>
+  </xsl:for-each>  
+    </div>
+  </div>
+    <br />
   <div id="fixed_annotation_div" class="oddDiv">
     <a name="fixed_annotation_anchor" />
     <div class="section">
       <xsl:call-template name="lrg_right_arrow_green_large" /><h2 class="section">FIXED ANNOTATION</h2>
     </div>
-  <!-- Add a contact section for each requester -->
-  <xsl:for-each select="source">
-    <xsl:if test="name!=$ncbi_source_name">
-      <xsl:apply-templates select=".">         
-        <xsl:with-param name="requester">1</xsl:with-param>
-      </xsl:apply-templates>
-    </xsl:if>
-  </xsl:for-each>  
-    <br />
     
     <!-- LRG GENOMIC SEQUENCE -->
     <xsl:call-template name="genomic_sequence">
@@ -877,7 +904,8 @@
         <br />
       </xsl:if>  
       <xsl:for-each select="$translation_exception">
-        There is a translation exception for the codon number <xsl:value-of select="@codon" /> which code for the amino acid <xsl:value-of select="./sequence" />.
+        There is a translation exception for the codon number <b><xsl:value-of select="@codon" /></b> which codes for the amino acid <b><xsl:value-of select="./sequence" /></b>.
+        <xsl:if test="position() != last()"><br /></xsl:if>
       </xsl:for-each>
     </xsl:if>
    
@@ -1419,9 +1447,9 @@
     
 
     <div style="margin-top:10px">
-       <xsl:attribute name="class">external_source</xsl:attribute>
+      <xsl:attribute name="class">external_source</xsl:attribute>
       <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
-      <strong>Website: </strong>
+      <span style="font-weight:bold;padding-left:5px">Website: </span>
     <xsl:choose>
     <xsl:when test="annotation_set[source/name!=$lsdb_list]">
       <xsl:call-template name="url">
