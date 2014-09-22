@@ -318,7 +318,39 @@ if ($is_private) {
         background: linear-gradient($black1 10%, $black2 45%, $black1 85%);
       }
       
-      .step_list {margin-left:25px}
+      .step_list {position:absolute;left:520px;padding-top:4px}
+      
+      a.export_green_button {
+	      color: #FFF;
+	      background:url(img/download_white.png) no-repeat 4px 50%;
+	      background-color: #48a726;
+	      font-weight:bold;
+	      padding:2px 4px 2px 2px;
+	      margin-top:2px;
+	      margin-right:5px;
+	      border-radius:5px;
+	      border: 1px solid #EEE;
+	      text-align:center;
+	      cursor:pointer;
+	      position:absolute;
+	      left:850px;
+      }
+      a.export_green_button:before {
+        content:'';
+        float:left;
+        width: 22px;
+        height:18px;
+      }
+      a.export_green_button:hover{
+	      color: #48a726;
+	      background:url(img/download_green.png) no-repeat 4px 50%;
+	      background-color: #FFF;
+	      text-decoration: none;
+	      border: 1px solid #48a726;
+      }
+      a.export_green_button:active{
+	      box-shadow: 2px 2px 2px #CCC inset;
+      }
       
       a.show_hide_step {
         vertical-align:middle;
@@ -379,19 +411,28 @@ my $html_header = qq{
     <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
     <script type="text/javascript">
       function showhide(div_id) {
-        var div_obj  = document.getElementById(div_id);
-        var link_obj = document.getElementById("link_"+div_id);
+        var div_obj    = document.getElementById(div_id);
+        var link_obj   = document.getElementById("link_"+div_id);
+        var button_obj = document.getElementById("button_"+div_id);
         
         if(div_obj.className == "hidden") {
           div_obj.className = "unhidden";
           if (link_obj) {
             link_obj.innerHTML = "Hide history";
-          }  
+          }
+          if (button_obj) {
+            button_obj.className = "show_hide_anno selected_anno";
+            button_obj.innerHTML = "Hide table";
+          }
         }
         else {
           div_obj.className = "hidden";
           if (link_obj) {
             link_obj.innerHTML = "Show history";
+          }
+          if (button_obj) {
+            button_obj.className = "show_hide_anno";
+            button_obj.innerHTML = "Show table";
           }
         }
       }
@@ -444,23 +485,6 @@ my $html_header = qq{
      
       a.gene_link { color:#000; }
      
-      a.show_hide_table {
-        vertical-align:middle;
-        border:1px solid #3f9221;
-        border-radius:9px;
-        padding:2px;
-        margin-right:4px;
-        text-decoration:none;
-        background-color: #48a726;
-        color:#FFF;
-      }
-      a.show_hide_table:hover {
-        border:1px solid #48a726;
-        text-decoration:none;
-        background-color: #FFF;
-        color: #48a726;
-      }
-     
       .step { font-size:0.9em; }
       .hidden {height:0px;display:none;margin-top:0px}
       .unhidden {height:auto;display:inline;margin-top:5px}
@@ -471,8 +495,6 @@ my $html_header = qq{
       $specific_css
   
       .header_count  {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
-      .step_bar      {position:absolute;left:380px;padding-top:4px}
-      .export_button {position:absolute;left:850px;padding-top:6px}
       
     </style>
   </header>
@@ -764,10 +786,8 @@ my $html_pending_header = sprintf( qq{
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Pending LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <span class="step_bar">
-      <a class="show_hide_table" href="javascript:showhide('pending_lrg');">show/hide table</a>
-      %s
-    </span>
+    <a class="show_hide_anno selected_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Hide table</a>
+    %s
     %s
   </div>
   <div id="pending_lrg">
@@ -783,6 +803,8 @@ my $html_pending_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   $count_lrgs{'pending'},
+  'pending_lrg',
+  'pending_lrg',
   $select_pending_steps,
   export_link('pending'),
   $lrg_status_desc{'pending'},
@@ -794,9 +816,7 @@ my $html_public_header = sprintf( qq{
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Public LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <span class="step_bar">
-      <a class="show_hide_table" href="javascript:showhide('public_lrg');">show/hide table</a>
-    </span>
+    <a class="show_hide_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Show table</a>
     %s
   </div>
   <div class="hidden" id="public_lrg">
@@ -812,6 +832,8 @@ my $html_public_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   $count_lrgs{'public'},
+  'public_lrg',
+  'public_lrg',
   export_link('public'),
   $lrg_status_desc{'public'},
   $extra_private_column_header
@@ -822,10 +844,8 @@ my $html_stalled_header = sprintf( qq{
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Stalled LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
-    <span class="step_bar">
-      <a class="show_hide_table" href="javascript:showhide('stalled_lrg');">show/hide table</a>
-      %s
-    </span>
+    <a class="show_hide_anno selected_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Hide table</a>
+    %s
     %s
   </div>
   <div id="stalled_lrg">
@@ -841,6 +861,8 @@ my $html_stalled_header = sprintf( qq{
         <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
       </tr>\n},
   ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
+  'stalled_lrg',
+  'stalled_lrg',
   $select_stalled_steps,
   export_link('stalled'),
   $lrg_status_desc{'stalled'},
@@ -929,9 +951,7 @@ sub export_link {
   return '' if (!$is_private);
   
   my $html = qq{
-    <span class="export_button">
-      <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="green_button">Export table</a>
-    </span>
+    <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="export_green_button">Export table</a>
   };
   return $html; 
 }
