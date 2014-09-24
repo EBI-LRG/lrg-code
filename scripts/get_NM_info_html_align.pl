@@ -364,7 +364,9 @@ $html .= qq{
       table.legend {margin:2px;font-size:0.8em}
       table.legend td {padding:2px 1px}
       
-      .tsl {margin-left:15px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border-radius:10px;border:1px solid #FFF;padding:1px;background-color:#000;color:#FFF;cursor:default}
+      .manual {margin-right:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border:1px solid #FFF;padding:0px;background-color:#E00;color:#FFF;cursor:default}
+      .not_manual {margin-right:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border:1px solid #FFF;padding:0px;background-color:#888;color:#FFF;cursor:default}
+      .tsl {margin-left:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border-radius:10px;border:1px solid #FFF;padding:0px;background-color:#000;color:#FFF;cursor:default}
       
       th.coord {font-size:0.6em;width:10px;text-align:center;cursor:pointer}
       .first_column {text-align:center;border:1px solid #FFF;padding:1px 2px}
@@ -478,6 +480,11 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
+  
+  my $tr_ext_name  = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
+  my $manual_class = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  
   my $tsl_html     = get_tsl_html($ens_tr);
   
   my $hide_col = hide_button($row_id,$column_class);
@@ -489,9 +496,13 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
     <table style="width:100%;text-align:center">
       <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
       <tr>
-        <td class="$column_class" style="width:20%"></td>
-        <td class="$column_class" style="width:80%"><small>($e_count exons)</small></td>
-        <td class="$column_class" style="width:20%">$tsl_html</td>
+        <td class="$column_class" style="width:15%">
+          <span class="$manual_class" title="Transcript name: $tr_ext_name">
+            <small>$manual_label</small>
+          </span>
+        </td>
+        <td class="$column_class" style="width:70%"><small>($e_count exons)</small></td>
+        <td class="$column_class" style="width:15%">$tsl_html</td>
       </tr>
     </table>
   };
