@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
-# Version $Revision: 1.8 $
-# Last modified: 2013-08-28
+# Version $Revision: 1.9 $
+# Last modified: 2014-09-24
 
 start = LRG
 LRG = element lrg { 
@@ -34,7 +34,7 @@ FIXED_ANNOTATION = element fixed_annotation {
       },
       text
    },
-   SOURCE+,
+   SOURCE*,
    element mol_type {
       text
    },
@@ -43,7 +43,7 @@ FIXED_ANNOTATION = element fixed_annotation {
    },
    COMMENT?,
    DNA_SEQUENCE,
-   FX_TRANSCRIPT+
+   FX_TRANSCRIPT*
    
 } # /fixed_annotation
 
@@ -87,6 +87,9 @@ FX_TRANSCRIPT = element transcript {
         pattern = 't[0-9]+'
       }
    }, # e.g. "t1", "t2"
+   element creation_date {
+      xsd:date
+   }?, # e.g. when a new transcript is added to a public LRG
    COMMENT*,
 
    LRG_COORDS, # location of transcript in LRG coordinates
@@ -205,14 +208,16 @@ FX_INTRON = element intron {
    
 # updatable annotation can be updated with e.g. new annotations, mappings, labels etc
 UPDATABLE_ANNOTATION = element updatable_annotation {
-
+   
    # an annotation set comes from one source - allows multiple sets of annotations from e.g. Ensembl/NCBI
    ANNOTATION_SET+   
 
 } # /updatable_annotation
 
 ANNOTATION_SET = element annotation_set {
-   SOURCE,
+   attribute type { text }?,
+
+   SOURCE+,
    
    COMMENT?,
    
@@ -232,7 +237,10 @@ ANNOTATION_SET = element annotation_set {
       text
    }?,
    
-   FEATURES?
+   FEATURES?,
+   
+   # Optional extra note(s)/information from the community
+   NOTE*
 }
 
 FIXED_TRANSCRIPT_ANNOTATION = element fixed_transcript_annotation {
@@ -295,6 +303,9 @@ MAPPING = element mapping {
    attribute other_start { xsd:integer },
    attribute other_end { xsd:integer },
    
+   # Attribute giving the information about the type of sequence aligned
+   attribute type { 'main_assembly' | 'other_assembly' | 'patch' | 'haplotype' | 'transcript' }?,
+   
    # a mapping span corresponds to a block of the LRG sequence that aligns with an assembly
    MAPPING_SPAN+
 }
@@ -318,6 +329,12 @@ DIFF = element diff {
    attribute other_end { xsd:integer }?,
    attribute lrg_sequence {text}?, #for mismatches or lrg_ins
    attribute other_sequence {text}? #for mismatches or genome_ins
+}
+
+# Optional extra note/information from the community
+NOTE = element note {
+  attribute name { text }?,
+  text
 }
 
 FEATURE_SOURCE = attribute source {
@@ -435,5 +452,4 @@ UP_PROTEIN_PRODUCT = element protein_product {
    COMMENT*,
    DB_XREF*
 }
-
 
