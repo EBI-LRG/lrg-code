@@ -25,10 +25,18 @@ sub fetch_by_annotation_set {
   my $self = shift;
   my $annotation_set = shift;
   
-  my $source = $self->_fetch_all_by_element($annotation_set);
+  my $source = $self->fetch_all_by_annotation_set($annotation_set);
   if (scalar(@{$source})) {
     $source = $source->[0];
   }
+  return $source;
+}
+
+sub fetch_all_by_annotation_set {
+  my $self = shift;
+  my $annotation_set = shift;
+  
+  my $source = $self->_fetch_all_by_element($annotation_set);
   return $source;
 }
 

@@ -85,7 +85,7 @@ sub fetch_all_by_other_naming {
 sub fetch_all_by_transcript {
   my $self = shift;
   my $transcript = shift;
-  my $objs = $self->_fetch_all_by_element_names($transcript,['comment']);
+  my $objs = $self->_fetch_all_by_element_names($transcript,['comment','creation_date']);
   return undef unless(scalar(@{$objs}));
   return $objs;
 }

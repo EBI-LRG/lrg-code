@@ -47,8 +47,8 @@ sub objs_from_xml {
     my $name = $transcript->data->{name};
     # Get the transcript full name
     my $full_name = $lrg_id.$name;
-    # Get the comment(s) (optional)
-    my $comment = $m_adaptor->fetch_all_by_transcript($transcript);
+    # Get the comment(s) + creation date (optional)
+    my $meta = $m_adaptor->fetch_all_by_transcript($transcript);
     # Get a coordinates object
     my $coords = $c_adaptor->fetch_by_transcript($transcript);
     # Get a cDNA sequence object
@@ -59,7 +59,7 @@ sub objs_from_xml {
     my $exons = $e_adaptor->fetch_all_by_transcript($transcript);
     
     # Create the transcript object
-    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds,$comment,$full_name);
+    my $obj = LRG::API::Transcript->new($coords,$name,$cdna,$exons,$cds,$meta,$full_name);
     push(@objs,$obj);
   }
   
@@ -84,10 +84,12 @@ sub xml_from_objs {
     
     # Create the root transcript element
     my $transcript = LRG::Node::newEmpty('transcript');
+    
+    # Transcript name
     $transcript->addData({'name' => $obj->name()});
     
-    # Add a comment node(s)
-    map {$transcript->addExisting($_)} @{$m_adaptor->xml_from_objs($obj->comment())};
+    # Add a comment + creation date node(s)
+    map {$transcript->addExisting($_)} @{$m_adaptor->xml_from_objs($obj->meta())};
 
     # Different cases depending on schema version to use
     if ($self->xml_adaptor->schema_version() >= 1.7) {
