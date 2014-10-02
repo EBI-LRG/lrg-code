@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
 # Version $Revision: 1.9 $
-# Last modified: 2014-09-24
+# Last modified: 2014-10-01
 
 start = LRG
 LRG = element lrg { 
@@ -298,7 +298,8 @@ MAPPING = element mapping {
    attribute other_name { text }?,
    
    # Id can be e.g. the NCBI accession for a chromosome
-   attribute other_id { text }?,
+   attribute other_id { text },
+   attribute other_id_syn { text }?,
    
    attribute other_start { xsd:integer },
    attribute other_end { xsd:integer },
