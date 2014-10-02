@@ -120,6 +120,7 @@ sub fetch_other_by_mapping {
   my $coords = $self->_fetch_by_element($mapping,$prefix) || return;
   $coords->coordinate_system($mapping->data->{"${prefix}name"}); 
   $coords->name($mapping->data->{"${prefix}id"});
+  $coords->source_coordinate_system_syn($mapping->data->{"${prefix}id_syn"});
 
   return $coords;
 }
@@ -179,12 +180,13 @@ sub objs_from_xml {
     my $start_ext = $element->data->{start_ext};
     my $end_ext = $element->data->{end_ext};
     my $mapped_from = $element->data->{mapped_from};
+    my $mapped_from_synonym = $element->data->{$prefix . "id_syn"};
        
     next unless (defined($start) && defined($end));
     
     my $coordinate_system = $element->data->{coord_system} || 'LRG';
     
-    my $obj = LRG::API::Coordinates->new($coordinate_system,$start,$end,$strand,$start_ext,$end_ext,$name,$mapped_from,$prefix);
+    my $obj = LRG::API::Coordinates->new($coordinate_system,$start,$end,$strand,$start_ext,$end_ext,$name,$mapped_from,$mapped_from_synonym,$prefix);
     $obj->prefix($prefix); 
     push(@objs,$obj);
   }
@@ -211,6 +213,7 @@ sub xml_from_objs {
     $data{end_ext} = $obj->end_ext() if (defined($obj->end_ext()) && $obj->end_ext());
     $data{strand} = $obj->strand() if (defined($obj->strand()) && $obj->strand() != 0);
     $data{mapped_from} = $obj->source_coordinate_system() if (defined($obj->source_coordinate_system()));
+    $data{mapped_from_syn} = $obj->source_coordinate_system_syn() if (defined($obj->source_coordinate_system_syn()));
     
     my $coords = LRG::Node::newEmpty('coordinates',undef,\%data);
     push(@xml,$coords);
@@ -228,8 +231,9 @@ sub mapping_from_obj {
   
   # Set the mapping attributes
   $mapping->addData({
-    $obj->prefix() . 'name' => $obj->coordinate_system(),
-    $obj->prefix() . 'id' => $obj->name(),
+    $obj->prefix() . 'name'   => $obj->coordinate_system(),
+    $obj->prefix() . 'id'     => $obj->name(),
+    $obj->prefix() . 'id_syn' => $obj->mapped_from_synonym(),
   });
   
   return $mapping;

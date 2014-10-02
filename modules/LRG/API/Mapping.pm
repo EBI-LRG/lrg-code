@@ -76,6 +76,12 @@ sub name {
   return $self->other_coordinates->coordinate_system();
 }
 
+# Get the synonym name attribute from the coordinates object
+sub synonym {
+  my $self = shift;
+  return $self->other_coordinates->source_coordinate_system_syn();
+}
+
 # Positions that map to the reverse strand are returned as negative numbers
 sub _transfer {
   my $self = shift;

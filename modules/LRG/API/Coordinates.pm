@@ -10,7 +10,7 @@ our @ISA = "LRG::API::Base";
 
 sub initialize {
   my $self = shift;
-  my ($coordinate_system,$start,$end,$strand,$start_ext,$end_ext,$name,$source_coordinate_system,$prefix) = @_;
+  my ($coordinate_system,$start,$end,$strand,$start_ext,$end_ext,$name,$source_coordinate_system,$source_coordinate_system_syn,$prefix) = @_;
   
   # Verify that a coordinate system was passed
   unless (defined($coordinate_system) && length($coordinate_system)) {
@@ -25,8 +25,9 @@ sub initialize {
   $strand ||= 0;
   $start_ext ||= 0;
   $end_ext ||= 0;
-  $prefix ||= "";
-  $name ||= "";
+  $prefix ||= '';
+  $name ||= '';
+  $source_coordinate_system_syn ||= '';
   
   $self->coordinate_system($coordinate_system);
   $self->start($start);
@@ -36,6 +37,7 @@ sub initialize {
   $self->end_ext($end_ext);
   $self->name($name);
   $self->source_coordinate_system($source_coordinate_system);
+  $self->source_coordinate_system_syn($source_coordinate_system_syn);
   $self->prefix($prefix);
 }
 
@@ -49,6 +51,7 @@ sub _permitted {
     'end_ext',
     'name',
     'source_coordinate_system',
+    'source_coordinate_system_syn',
     'prefix'
   ];
 }
@@ -66,6 +69,13 @@ sub equals {
     $equals &&= ($self->source_coordinate_system() eq $other->source_coordinate_system());
   } 
   elsif (defined($self->source_coordinate_system()) || defined($other->source_coordinate_system())) {
+    $equals &&= 0;
+  }
+  
+  if (defined($self->source_coordinate_system_syn()) && defined($other->source_coordinate_system_syn())) {
+    $equals &&= ($self->source_coordinate_system_syn() eq $other->source_coordinate_system_syn());
+  } 
+  elsif (defined($self->source_coordinate_system_syn()) || defined($other->source_coordinate_system_syn())) {
     $equals &&= 0;
   }
   
@@ -150,7 +160,7 @@ sub transfer {
   }
   
   # Create a new coordinates object
-  my $obj = LRG::API::Coordinates->new($destination_coordinate_system,$transferred{start},$transferred{end},($strand * $self->strand()),$transferred{start_ext},$transferred{end_ext},$transferred{name},$self->coordinate_system());
+  my $obj = LRG::API::Coordinates->new($destination_coordinate_system,$transferred{start},$transferred{end},($strand * $self->strand()),$transferred{start_ext},$transferred{end_ext},$transferred{name},$self->coordinate_system(),$self->source_coordinate_system_syn());
 
   return $obj;
 }
