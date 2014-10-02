@@ -25,20 +25,20 @@ my @filter_list_lsdb;
 my @filter_list_url;
 
 GetOptions(
-  'host=s'		=> \$host,
-  'port=i'		=> \$port,
-  'dbname=s'		=> \$dbname,
-  'user=s'		=> \$user,
-  'pass=s'		=> \$pass,
-  'xmlfile=s'		=> \$xmlfile,
-  'verbose!'		=> \$verbose,
-  'hgnc_symbol=s'         => \$hgnc_symbol,
-  'lrg_id=s'         => \$lrg_id,
-  'include_external!'   => \$include_external,
-  'list_lsdbs!'         => \$list_lsdbs,
-  'filter_list_lsdb=s'  =>  \@filter_list_lsdb,
-  'filter_list_name=s'  =>  \@filter_list_name,
-  'filter_list_url=s'  =>  \@filter_list_url
+  'host=s'		         => \$host,
+  'port=i'		         => \$port,
+  'dbname=s'	         => \$dbname,
+  'user=s'		         => \$user,
+  'pass=s'		         => \$pass,
+  'xmlfile=s'		       => \$xmlfile,
+  'verbose!'		       => \$verbose,
+  'hgnc_symbol=s'      => \$hgnc_symbol,
+  'lrg_id=s'           => \$lrg_id,
+  'include_external!'  => \$include_external,
+  'list_lsdbs!'        => \$list_lsdbs,
+  'filter_list_lsdb=s' => \@filter_list_lsdb,
+  'filter_list_name=s' => \@filter_list_name,
+  'filter_list_url=s'  => \@filter_list_url
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -156,6 +156,11 @@ if (defined($list_lsdbs)) {
     exit;
 }
 
+
+#####################
+# Fixed annotations #
+#####################
+
 # Statement to get the lrg_data
 $stmt = qq{
     SELECT
@@ -164,11 +169,13 @@ $stmt = qq{
         ld.moltype,
         ld.creation_date,
 				g.refseq,
-        lc.comment
+        lc.comment,
+        lr.gene_id
     FROM
         lrg_data ld,
         gene g
         LEFT JOIN lrg_comment lc ON (g.gene_id=lc.gene_id AND g.symbol=lc.name)
+        LEFT JOIN lrg_requester_in_fixed lr ON (g.gene_id=lr.gene_id)
     WHERE
         ld.gene_id = $gene_id AND
         ld.gene_id = g.gene_id
@@ -177,8 +184,8 @@ $stmt = qq{
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 
-my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source,$fcomment);
-$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source,\$fcomment);
+my ($organism,$taxon_id,$moltype,$creation_date,$sequence_source,$fcomment,$requester_in_fixed);
+$sth->bind_columns(\$organism,\$taxon_id,\$moltype,\$creation_date,\$sequence_source,\$fcomment,\$requester_in_fixed);
 $sth->fetch();
 
 # Create LRG root elements and fixed_annotation element
@@ -217,9 +224,17 @@ $stmt = qq{
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
 my $lsdb_id;
+my @requester_sources_list;
 $sth->bind_columns(\$lsdb_id);
 while ($sth->fetch()) {
-  $fixed->addExisting(get_source($lsdb_id,$db_adaptor));
+  my $requester_source = get_source($lsdb_id,$db_adaptor);
+  # if the LRG was already public when we switch to the schema 1.9, add sources in the fixed section as well
+  if ($requester_in_fixed) { 
+    $fixed->addExisting($requester_source);
+  }
+
+  # Annotation set "requester"
+  push(@requester_sources_list,$requester_source);
 }
 
 $fixed->addNode('mol_type')->content($moltype);
@@ -231,6 +246,7 @@ if (defined($fcomment)) {
 my $sequence = get_sequence($gene_id,'genomic',$db_adaptor);
 $fixed->addNode('sequence')->content($sequence);
 
+#### Fixed transcripts ####
 my $ce_stmt = qq{
     SELECT
         lce.codon,
@@ -427,10 +443,30 @@ while ($sth->fetch()) {
     }
 }
 
+#########################
+# Updatable annotations #
+#########################
+
 # Create the updatable section
 my $updatable = $lrg->addNode('updatable_annotation');
 
 # Get the annotation sets
+$stmt = qq{
+    SELECT
+        annotation_set_id,
+        source,
+        comment,
+        type,
+        modification_date,
+        lrg_gene_name,
+        xml
+    FROM
+        lrg_annotation_set
+    WHERE
+        gene_id = '$gene_id'
+    ORDER BY
+        annotation_set_id ASC
+};
 my $asm_stmt = qq{
     SELECT
         lm.mapping_id
@@ -442,28 +478,13 @@ my $asm_stmt = qq{
     ORDER BY
         lm.assembly ASC
 };
-$stmt = qq{
-    SELECT
-        annotation_set_id,
-        source,
-        comment,
-        modification_date,
-        lrg_gene_name,
-        xml
-    FROM
-        lrg_annotation_set
-    WHERE
-        gene_id = '$gene_id'
-    ORDER BY
-        annotation_set_id ASC
-};
 my $asm_sth = $db_adaptor->dbc->prepare($asm_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
-my ($annotation_set_id,$comment,$modification_date,$lrg_gene_name,$xml);
-$sth->bind_columns(\$annotation_set_id,\$lsdb_id,\$comment,\$modification_date,\$lrg_gene_name,\$xml);
+my ($annotation_set_id,$comment,$as_type,$modification_date,$lrg_gene_name,$xml);
+$sth->bind_columns(\$annotation_set_id,\$lsdb_id,\$comment,\$as_type,\$modification_date,\$lrg_gene_name,\$xml);
 while ($sth->fetch()) {
-    my $annotation_set = $updatable->addNode('annotation_set');
+    my $annotation_set = $updatable->addNode('annotation_set', {'type' => $as_type});
     # Add source information
     $annotation_set->addExisting(get_source($lsdb_id,$db_adaptor));
     # Add comment
@@ -491,7 +512,17 @@ while ($sth->fetch()) {
     while (my $node = shift(@{$lrg->{'nodes'}})) {
         $annotation_set->addExisting($node);
     }
+
+    # Add note if exist
+    get_note($annotation_set, $as_type);
 }
+# Add the "requester" annotation set
+my $requester_type = 'requester';
+my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
+foreach my $requester_source (@requester_sources_list) {
+  $requester_annotation_set->addExisting($requester_source);
+}
+get_note($requester_annotation_set, $requester_type);
 
 
 # Check for other exon naming & alternative amino acid numbering
@@ -561,6 +592,7 @@ my $community_aset = LRG::Node::new('annotation_set');
    $community_aset->addExisting($community_source);
    $community_aset->addNode('modification_date')->content(LRG::LRG::date());
 my $community_flag = 0;
+my $community_type = 'community';
 
 my $fixed_transcript_annotation= LRG::Node::new('fixed_transcript_annotation');
 foreach my $tr (@{$fixed->findNodeArray('transcript')}) {
@@ -622,6 +654,7 @@ foreach my $tr (@{$fixed->findNodeArray('transcript')}) {
 
   $community_aset->addExisting($fixed_transcript_annotation);
 }
+get_note($community_aset, $community_type);
 $updatable->addExisting($community_aset) if ($community_flag == 1);
 
 
@@ -654,7 +687,9 @@ sub get_mapping {
             chr_name,
             chr_id,
             chr_start,
-            chr_end
+            chr_end,
+            chr_syn,
+            type
         FROM
             lrg_mapping
         WHERE
@@ -705,10 +740,11 @@ sub get_mapping {
     my $md_sth  = $db_adaptor->dbc->prepare($md_stmt);
 		my $mdc_sth = $db_adaptor->dbc->prepare($mdc_stmt);
     
-    my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
+    my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end,$chr_syn,$m_type) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
     my $mapping = LRG::Node::new('mapping');
-    $mapping->addData({'coord_system' => $assembly,'other_name' => $chr_name,'other_start' => $chr_start, 'other_end' => $chr_end});
-    $mapping->addData({'other_id' => $chr_id}) if (defined($chr_id));
+    $mapping->addData({'coord_system' => $assembly, 'type' => $m_type, 'other_id' => $chr_id,
+                       'other_name' => $chr_name,'other_start' => $chr_start, 'other_end' => $chr_end, 'type' => $m_type});
+    $mapping->addData({'other_id_syn' => $chr_syn}) if (defined($chr_syn));
     
     $ms_sth->execute();
     my ($mapping_span_id,$lrg_start,$lrg_end,$strand);
@@ -858,6 +894,39 @@ sub get_sequence {
     }
     
     return $seq;
+}
+
+sub get_note {
+  my $aset = shift;
+  my $type = shift;
+
+  my $asn_stmt = qq{
+    SELECT
+        author,
+        note
+    FROM
+        lrg_note
+    WHERE
+        gene_id = '$gene_id' AND
+        annotation_set = ?
+    ORDER BY note_id ASC
+  };
+  my $asn_sth = $db_adaptor->dbc->prepare($asn_stmt);
+
+  # Add note if exist
+  my ($author,$note_content);
+  $asn_sth->bind_param(1,$as_type,SQL_VARCHAR);
+  $asn_sth->execute();
+  $asn_sth->bind_columns(\$author,\$note_content);
+  while ($asn_sth->fetch()) {
+    if ($author) {
+      $aset->addNode('note', {'author' => $author})->content($note_content);
+    }
+    else {
+      $aset->addNode('note')->content($note_content);
+    }
+  }
+  $asn_sth->finish;
 }
 
 sub coords_node {
