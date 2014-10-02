@@ -1012,10 +1012,12 @@ sub parse_mapping {
                 chr_id,
                 chr_start,
                 chr_end,
+                chr_syn,
                 type
             )
         VALUES (
             '$gene_id',
+            ?,
             ?,
             ?,
             ?,
@@ -1082,11 +1084,12 @@ sub parse_mapping {
     my $ms_ins_sth    = $db_adaptor->dbc->prepare($ms_ins_stmt);
     my $diff_ins_sth  = $db_adaptor->dbc->prepare($diff_ins_stmt);
     
-    my $assembly = $mapping->data()->{'coord_system'} or error_msg("Could not find assembly attribute in mapping tag of $xmlfile");
-    my $chr_name = $mapping->data()->{'other_name'} or error_msg("Could not find chr_name attribute in mapping tag of $xmlfile");
+    my $assembly  = $mapping->data()->{'coord_system'} or error_msg("Could not find assembly attribute in mapping tag of $xmlfile");
+    my $chr_name  = $mapping->data()->{'other_name'} or error_msg("Could not find chr_name attribute in mapping tag of $xmlfile");
     my $chr_start = $mapping->data()->{'other_start'} or error_msg("Could not find chr_start attribute in mapping tag of $xmlfile");
-    my $chr_end = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
-    my $chr_id = $mapping->data()->{'other_id'};
+    my $chr_end   = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
+    my $chr_id    = $mapping->data()->{'other_id'};
+    my $chr_syn   = $mapping->data()->{'other_id_syn'};
     my $aligned_seq_type = ($mapping->data()->{'type'}) ? $mapping->data()->{'type'} : 'other_assembly';
     my $lrg_start;
     my $lrg_end;
@@ -1110,7 +1113,8 @@ sub parse_mapping {
     $m_ins_sth->bind_param(3,$chr_id,SQL_VARCHAR);
     $m_ins_sth->bind_param(4,$chr_start,SQL_INTEGER);
     $m_ins_sth->bind_param(5,$chr_end,SQL_INTEGER);
-    $m_ins_sth->bind_param(6,$aligned_seq_type,SQL_VARCHAR);
+    $m_ins_sth->bind_param(6,$chr_syn,SQL_VARCHAR);
+    $m_ins_sth->bind_param(7,$aligned_seq_type,SQL_VARCHAR);
     $m_ins_sth->execute();
     my $mapping_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 
