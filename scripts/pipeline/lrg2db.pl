@@ -453,6 +453,17 @@ my $tr_ins_stmt = qq{
     INSERT INTO
         lrg_transcript (
             gene_id,
+            transcript_name
+        )
+    VALUES (
+        $gene_id,
+        ?
+    )
+};
+my $tr_date_ins_stmt = qq{
+    INSERT IGNORE INTO
+        lrg_transcript_date (
+            gene_id,
             transcript_name,
             creation_date
         )
@@ -462,7 +473,6 @@ my $tr_ins_stmt = qq{
         ?
     )
 };
-
 
 my $tr_com_ins_stmt = qq{
     REPLACE INTO
@@ -576,6 +586,7 @@ my $intron_ins_stmt = qq{
     )
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
+my $tr_date_ins_sth = $db_adaptor->dbc->prepare($tr_date_ins_stmt);
 my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
 my $tr_com_up_sth  = $db_adaptor->dbc->prepare($tr_com_up_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
@@ -613,9 +624,6 @@ while (my $transcript = shift(@{$transcripts})) {
     # Transcript name
     my $name = $transcript->data()->{'name'};
 
-    # Transcript creation date (only if created after the LRG has been made public)
-    my $tr_creation_date = ($transcript->findNodeSingle('creation_date')) ? $transcript->findNodeSingle('creation_date')->content() : undef;
-
     # Check PolyA
     if ($warning eq 'polyA') {
       if (-e $warning_log && !-z $warning_log) {
@@ -636,10 +644,19 @@ while (my $transcript = shift(@{$transcripts})) {
     
     # Insert the transcript into db
     $tr_ins_sth->bind_param(1,$name,SQL_VARCHAR);
-    $tr_ins_sth->bind_param(2,$tr_creation_date,SQL_DATE);
     $tr_ins_sth->execute();
     my $transcript_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 
+
+    # Insert the transcript date into db if exists (only if transcript added after the LRG has been made public)
+    my $tr_creation_date = ($transcript->findNodeSingle('creation_date')) ? $transcript->findNodeSingle('creation_date')->content() : undef;
+print STDERR "CREATION DATE: $tr_creation_date\n";    
+    if (defined($tr_creation_date)) {
+      $tr_date_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+      $tr_date_ins_sth->bind_param(2,$tr_creation_date,SQL_DATE);
+      $tr_date_ins_sth->execute();
+    }
+    
     # Insert comment if exists (optional)
     my $tr_com_nodes = $transcript->findNodeArray('comment');
     if (defined($tr_com_nodes)) {

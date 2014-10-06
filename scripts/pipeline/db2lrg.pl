@@ -59,6 +59,9 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 # Give write permission for the group
 umask(0002);
 
+my $requester_type = 'requester';
+my $community_type = 'community';
+
 # Get the gene_id
 my $stmt;
 my $sth;
@@ -175,7 +178,7 @@ $stmt = qq{
         lrg_data ld,
         gene g
         LEFT JOIN lrg_comment lc ON (g.gene_id=lc.gene_id AND g.symbol=lc.name)
-        LEFT JOIN lrg_requester_in_fixed lr ON (g.gene_id=lr.gene_id)
+        LEFT JOIN requester_in_fixed lr ON (g.gene_id=lr.gene_id)
     WHERE
         ld.gene_id = $gene_id AND
         ld.gene_id = g.gene_id
@@ -337,12 +340,16 @@ $stmt = qq{
     SELECT
         lt.transcript_id,
         lt.transcript_name,
+        ltd.creation_date,
         cdna.cdna_id,
         cdna.lrg_start,
         cdna.lrg_end
     FROM
         lrg_transcript lt JOIN
-        lrg_cdna cdna USING (transcript_id)
+        lrg_cdna cdna USING (transcript_id) LEFT JOIN
+        lrg_transcript_date ltd 
+          ON (ltd.transcript_name = lt.transcript_name
+          AND ltd.gene_id = lt.gene_id)
     WHERE
         lt.gene_id = $gene_id 
     ORDER BY
@@ -358,12 +365,13 @@ my $cds_sth  = $db_adaptor->dbc->prepare($cds_stmt);
 my $com_sth  = $db_adaptor->dbc->prepare($com_stmt);
 $sth = $db_adaptor->dbc->prepare($stmt);
 $sth->execute();
-my ($t_id,$t_name,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start,$tr_comment);
-$sth->bind_columns(\$t_id,\$t_name,\$cdna_id,\$cdna_start,\$cdna_end);
+my ($t_id,$t_name,$t_creation_date,$cdna_id,$cdna_start,$cdna_end,$cds_id,$cds_lrg_start,$cds_lrg_end,$codon_start,$tr_comment);
+$sth->bind_columns(\$t_id,\$t_name,\$t_creation_date,\$cdna_id,\$cdna_start,\$cdna_end);
 while ($sth->fetch()) {
     my $transcript = $fixed->addNode('transcript',{'name' => $t_name});
-    my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
-    $transcript->addExisting($coords);
+    
+    # Creation date
+    $transcript->addNode('creation_date')->content($t_creation_date) if (defined($t_creation_date));
     
     # Transcript comment (optional)
     $com_sth->execute($t_name);
@@ -371,6 +379,10 @@ while ($sth->fetch()) {
     while ($com_sth->fetch()) {
       $transcript->addNode('comment')->content($tr_comment) if (defined($tr_comment));
     }
+    
+    # Transcript coordinates
+    my $coords = coords_node($lrg_id,$cdna_start,$cdna_end,1);
+    $transcript->addExisting($coords);
 
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
@@ -517,11 +529,11 @@ while ($sth->fetch()) {
     get_note($annotation_set, $as_type);
 }
 # Add the "requester" annotation set
-my $requester_type = 'requester';
 my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
 foreach my $requester_source (@requester_sources_list) {
   $requester_annotation_set->addExisting($requester_source);
 }
+$requester_annotation_set->addNode('modification_date')->content(LRG::LRG::date());
 get_note($requester_annotation_set, $requester_type);
 
 
@@ -589,13 +601,13 @@ my $community_source = LRG::Node::new('source');
    $community_source->addNode('name')->content("Community");
 
 my $community_aset = LRG::Node::new('annotation_set');
+   $community_aset->data()->{'type'} = $community_type;
    $community_aset->addExisting($community_source);
    $community_aset->addNode('modification_date')->content(LRG::LRG::date());
 my $community_flag = 0;
-my $community_type = 'community';
 
 my $fixed_transcript_annotation= LRG::Node::new('fixed_transcript_annotation');
-foreach my $tr (@{$fixed->findNodeArray('transcript')}) {
+foreach my $tr (@{$fixed->findNodeArraySingle('transcript')}) {
   my $tr_name = $tr->data()->{'name'};
   
   my $tr_id_stmt = qq{ SELECT transcript_id FROM lrg_transcript WHERE gene_id = '$gene_id' AND transcript_name = '$tr_name'};
