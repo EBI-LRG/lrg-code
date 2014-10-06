@@ -13,6 +13,7 @@ our @ISA = "LRG::API::AnnotationSet";
 sub initialize {
   my $self = shift;
   my ($source,$meta,$mapping,$annotation,$features) = @_;
+  my $type = 'lrg';
   
   # Set the source if it's not specified
   unless (defined($source)) {
@@ -20,7 +21,7 @@ sub initialize {
     $source = LRG::API::Source->new('LRG','http://www.lrg-sequence.org/',$contact);
   }
   
-  $self->SUPER::initialize($source,$meta,$mapping,$annotation,$features);
+  $self->SUPER::initialize($type,$source,$meta,$mapping,$annotation,$features);
 }
 
 1;

@@ -27,12 +27,12 @@ sub objs_from_xml {
   $xml = $self->wrap_array($xml);
   
   my @objs;
-  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
+  my $m_adaptor   = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $src_adaptor = $self->xml_adaptor->get_SourceXMLAdaptor();
   my $map_adaptor = $self->xml_adaptor->get_MappingXMLAdaptor();
-  my $t_adaptor = $self->xml_adaptor->get_TranscriptAnnotationXMLAdaptor();
-  my $f_adaptor = $self->xml_adaptor->get_FeatureUpXMLAdaptor();
-  my $n_adaptor = $self->xml_adaptor->get_NoteXMLAdaptor();
+  my $t_adaptor   = $self->xml_adaptor->get_TranscriptAnnotationXMLAdaptor();
+  my $f_adaptor   = $self->xml_adaptor->get_FeatureUpXMLAdaptor();
+  my $n_adaptor   = $self->xml_adaptor->get_NoteXMLAdaptor();
   
   foreach my $set (@{$xml}) {
     
@@ -40,10 +40,10 @@ sub objs_from_xml {
     next unless ($set->name() eq 'annotation_set');
     
     # Get the transcript name attribute
-    my $type = $set->data->{type};
+    my $type = lc($set->data()->{'type'});
     
     # Skip if this is an requester annotation set (see the object 'Requester')
-    next if ($type && $type eq $requester_set); 
+    next if ($type && $type eq $requester_type); 
     
     # Get source information
     my $source = $src_adaptor->fetch_by_annotation_set($set);
@@ -57,11 +57,11 @@ sub objs_from_xml {
     # Get the features
     my $feature = $f_adaptor->fetch_by_annotation_set($set);
     
-    # Get the rest of the annotations
+    # Get the transcript annotations
     my $annotation = $t_adaptor->fetch_all_by_annotation($set);
     
     # Get the note
-    my $note = $n_adaptor->fetch_all_by_annotation($set);
+    my $note = $n_adaptor->fetch_all_by_annotation_set($set);
     
     # Create the AnnotationSet object
     my $obj = LRG::API::AnnotationSet->new($type,$source,$meta,$mapping,$annotation,$feature,$note);
@@ -78,12 +78,12 @@ sub xml_from_objs {
   $objs = $self->wrap_array($objs);
   map {$self->assert_ref($_,'LRG::API::AnnotationSet')} @{$objs};
   
-  my $m_adaptor = $self->xml_adaptor->get_MetaXMLAdaptor();
+  my $m_adaptor   = $self->xml_adaptor->get_MetaXMLAdaptor();
   my $src_adaptor = $self->xml_adaptor->get_SourceXMLAdaptor();
   my $map_adaptor = $self->xml_adaptor->get_MappingXMLAdaptor();
-  my $f_adaptor = $self->xml_adaptor->get_FeatureUpXMLAdaptor();
-  my $t_adaptor = $self->xml_adaptor->get_TranscriptAnnotationXMLAdaptor();
-  my $n_adaptor = $self->xml_adaptor->get_NoteXMLAdaptor();
+  my $f_adaptor   = $self->xml_adaptor->get_FeatureUpXMLAdaptor();
+  my $t_adaptor   = $self->xml_adaptor->get_TranscriptAnnotationXMLAdaptor();
+  my $n_adaptor   = $self->xml_adaptor->get_NoteXMLAdaptor();
   my @xml;
   
   foreach my $obj (@{$objs}) {
@@ -92,7 +92,7 @@ sub xml_from_objs {
     my $annotation_set = LRG::Node::newEmpty('annotation_set');
     
     # Annotation set type
-    $annotation_set->addData({'type' => $obj->type()});
+    $annotation_set->addData({'type' => $obj->type()}) if ($obj->type());
     
     # Add the source information
     map {$annotation_set->addExisting($_)} @{$src_adaptor->xml_from_objs($obj->source())};
