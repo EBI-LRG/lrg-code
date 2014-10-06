@@ -27,8 +27,7 @@ sub initialize {
   $end_ext ||= 0;
   $prefix ||= '';
   $name ||= '';
-  $source_coordinate_system_syn ||= '';
-  
+
   $self->coordinate_system($coordinate_system);
   $self->start($start);
   $self->end($end);

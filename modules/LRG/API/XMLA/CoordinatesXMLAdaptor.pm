@@ -233,8 +233,10 @@ sub mapping_from_obj {
   $mapping->addData({
     $obj->prefix() . 'name'   => $obj->coordinate_system(),
     $obj->prefix() . 'id'     => $obj->name(),
-    $obj->prefix() . 'id_syn' => $obj->mapped_from_synonym(),
   });
+  $mapping->addData({
+    $obj->prefix() . 'id_syn' => $obj->source_coordinate_system_syn()
+  }) if (defined($obj->source_coordinate_system_syn()));
   
   return $mapping;
 }

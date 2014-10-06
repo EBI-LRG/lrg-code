@@ -6,6 +6,7 @@ package LRG::API::EnsemblTranscriptMapping;
 use LRG::API::Base;
 
 our @ISA = "LRG::API::Base";
+my $mapping_type = 'transcript';
 
 sub initialize {
   my $self = shift;
@@ -64,13 +65,14 @@ sub get_transcripts_mappings {
 		foreach my $tc (@{$t->coordinates}) {
 			if ($tc->coordinate_system !~ /LRG/) {
 				$tr_other = LRG::API::Coordinates->new( $tr_accession,
-                                                $tc->start,
+                                                $tc->start,     
                                                 $tc->end,
                                                 $tc->strand,
                                                 $tc->start_ext,
                                                 $tc->end_ext,
                                                 $tr_accession,
                                                 $tr_accession,
+                                                undef,
                                                 'other_'
                                               );
 			}
@@ -101,6 +103,7 @@ sub get_transcripts_mappings {
                                                    $ce->end,
                                                    $e->accession,
                                                    '',
+                                                   undef,
                                                    'other_'
                                                  );
 
@@ -139,7 +142,7 @@ sub get_transcripts_mappings {
 		}
 		$tr_other->start($cdna_start);
 		$tr_other->end($cdna_end);
-		my $tr_mapping = LRG::API::Mapping->new($tr_accession,$tr_other,$tr_span);
+		my $tr_mapping = LRG::API::Mapping->new($tr_accession,$mapping_type,$tr_other,$tr_span);
 		push (@$ens_mapping,$tr_mapping);
 	}
 	return $ens_mapping;

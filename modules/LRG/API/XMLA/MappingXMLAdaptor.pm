@@ -42,8 +42,8 @@ sub objs_from_xml {
     next unless ($mapping->name() eq 'mapping');
     
     # Get the coordinates and spans
-    my $assembly = $mapping->{data}->{$assembly_key};
-    my $type = $mapping->{data}->{'type'};
+    my $assembly = $mapping->data()->{$assembly_key};
+    my $type = $mapping->data()->{'type'};
     my $other_coordinates = $c_adaptor->fetch_other_by_mapping($mapping);
     my $spans = $s_adaptor->fetch_all_by_mapping($mapping);
     
