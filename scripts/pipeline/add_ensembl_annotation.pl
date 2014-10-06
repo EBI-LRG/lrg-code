@@ -42,8 +42,9 @@ $registry->load_registry_from_db(
     -user => 'anonymous'
 );
 
-
-my @set_list = ('LRG' , 'NCBI RefSeqGene', 'Ensembl', 'Community');
+my $ens_label = 'Ensembl';
+my $lrg_label = 'LRG';
+my @set_list = (lc($lrg_label) , 'ncbi', lc($ens_label), 'requester', 'community');
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
@@ -79,25 +80,25 @@ my $asets = $lrg->updatable_annotation->annotation_set();
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
 foreach my $aset (@{$asets}) {
-  next unless ($aset->source->name() eq 'Ensembl');
+  next unless ($aset->source->name() eq $ens_label || $aset->type eq lc($ens_label));
   $ensembl_aset = $aset;
   last;
 }
 
 # If we already have an Ensembl annotation set and the replace flag was not set, warn about this and quit
 if ($ensembl_aset && !$option{replace}) {
-  die (sprintf("The XML file '\%s' already contains an Ensembl annotation set. Run the script with the -replace flag if you want to overwrite this",$option{xmlfile}));
+  die (sprintf("The XML file '\%s' already contains an $ens_label annotation set. Run the script with the -replace flag if you want to overwrite this",$option{xmlfile}));
 }
 elsif ($ensembl_aset) {
-  warn (sprintf("Will overwrite the existing Ensembl annotation set in '\%s'",$option{xmlfile}));
+  warn (sprintf("Will overwrite the existing $ens_label annotation set in '\%s'",$option{xmlfile}));
 }
 else {
-  warn (sprintf("A new Ensembl annotation set will be added"));
+  warn (sprintf("A new $ens_label annotation set will be added"));
   $ensembl_aset = LRG::API::EnsemblAnnotationSet->new();
   
   my %sets;
   foreach my $set (@{$lrg->updatable_annotation->annotation_set()}) {
-    my $name = $set->source->name;
+    my $name = (defined($set->type)) ? $set->type : lc((split(' ',$set->source->name))[0]);
     $sets{$name} = $set;
   }
   
@@ -105,7 +106,7 @@ else {
   my @set_data;
   foreach my $set_name (@set_list) {
     push @set_data, $sets{$set_name} if ($sets{$set_name});
-    if (!$sets{$set_name} && $set_name eq 'Ensembl') {
+    if (!$sets{$set_name} && $set_name eq lc($ens_label)) {
       push @set_data, $ensembl_aset;
     }
   }
@@ -116,7 +117,7 @@ else {
 }
 
 # Update the meta information for the annotation_set
-$ensembl_aset->comment(sprintf("Annotation is based on Ensembl release \%d (\%s  primary assembly)",$ens_db_version,$option{assembly}));
+$ensembl_aset->comment(sprintf("Annotation is based on $ens_label release \%d (\%s  primary assembly)",$ens_db_version,$option{assembly}));
 $ensembl_aset->modification_date($date);
 
 # Loop over the annotation sets and search for a mapping to the desired assembly
@@ -164,7 +165,7 @@ my $ex_adaptor = $registry->get_adaptor('human','core','exon');
 my $lrg_aset;
 my $lrg_locus;
 foreach my $aset (@{$asets}) {
-  next unless ($aset->source->name() eq 'LRG');
+  next unless ($aset->source->name() eq $lrg_label || $aset->type eq lc($lrg_label));
   $lrg_aset = $aset;
   $lrg_locus = $lrg_aset->lrg_locus->value;
   # Check LRG locus source (sometimes lost when parsing the XML file ...)
@@ -176,7 +177,7 @@ foreach my $aset (@{$asets}) {
 my $diffs_list = get_diff($asets);
 foreach my $f (@ens_feature) {
   foreach my $g (@{$f->gene}) {
-    next if($g->source ne 'Ensembl');
+    next if($g->source ne $ens_label);
 
     # Check gene name
     my $gene_flag = 0;
@@ -228,7 +229,7 @@ sub get_diff {
   my $sets = shift;
   my %diffs_list;
   foreach my $set (@{$sets}) {
-    next unless ($set->source->name() eq 'LRG');
+    next unless ($set->source->name() eq $lrg_label || $set->type eq lc($lrg_label));
     
     foreach my $m (@{$set->mapping() || []}) {
       foreach my $ms (@{$m->mapping_span()}) {
@@ -246,7 +247,7 @@ sub remove_grc_coordinates {
   my $obj = shift;
   my @coord;
   foreach my $c (@{$obj->coordinates}) {
-    push (@coord,$c) if ($c->coordinate_system =~ /^LRG/);
+    push (@coord,$c) if ($c->coordinate_system =~ /^$lrg_label/);
   }
   $obj->coordinates(\@coord);
 }
