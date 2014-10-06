@@ -24,6 +24,8 @@ use LRG::API::XMLA::MappingXMLAdaptor;
 use LRG::API::XMLA::MappingDiffXMLAdaptor;
 use LRG::API::XMLA::MappingSpanXMLAdaptor;
 use LRG::API::XMLA::MetaXMLAdaptor;
+use LRG::API::XMLA::NoteXMLAdaptor;
+use LRG::API::XMLA::RequesterXMLAdaptor;
 use LRG::API::XMLA::SequenceXMLAdaptor;
 use LRG::API::XMLA::SourceXMLAdaptor;
 use LRG::API::XMLA::SymbolXMLAdaptor;
@@ -45,11 +47,11 @@ our %XML_ADAPTORS = (
   'AminoAcidAlign' => 'LRG::API::XMLA::AminoAcidAlignXMLAdaptor',
   'AminoAcidNumbering' => 'LRG::API::XMLA::AminoAcidNumberingXMLAdaptor',
   'AnnotationSet' => 'LRG::API::XMLA::AnnotationSetXMLAdaptor',
-  'CodingRegion' => 'LRG::API::XMLA::CodingRegionXMLAdaptor',
+  'CodingRegion'  => 'LRG::API::XMLA::CodingRegionXMLAdaptor',
   'Contact' => 'LRG::API::XMLA::ContactXMLAdaptor',
   'Coordinates' => 'LRG::API::XMLA::CoordinatesXMLAdaptor',
   'Exon' => 'LRG::API::XMLA::ExonXMLAdaptor',
-  'ExonLabel' => 'LRG::API::XMLA::ExonLabelXMLAdaptor',
+  'ExonLabel'  => 'LRG::API::XMLA::ExonLabelXMLAdaptor',
   'ExonNaming' => 'LRG::API::XMLA::ExonNamingXMLAdaptor',
   'ExonUp' => 'LRG::API::XMLA::ExonUpXMLAdaptor',
   'FeatureUp' => 'LRG::API::XMLA::FeatureUpXMLAdaptor',
@@ -59,14 +61,16 @@ our %XML_ADAPTORS = (
   'Mapping' => 'LRG::API::XMLA::MappingXMLAdaptor',
   'MappingDiff' => 'LRG::API::XMLA::MappingDiffXMLAdaptor',
   'MappingSpan' => 'LRG::API::XMLA::MappingSpanXMLAdaptor',
-  'Meta' => 'LRG::API::XMLA::MetaXMLAdaptor',
-  'Sequence' => 'LRG::API::XMLA::SequenceXMLAdaptor',
+  'Meta'      => 'LRG::API::XMLA::MetaXMLAdaptor',
+  'Note'      => 'LRG::API::XMLA::NoteXMLAdaptor',
+  'Requester' => 'LRG::API::XMLA::RequesterXMLAdaptor',
+  'Sequence'  => 'LRG::API::XMLA::SequenceXMLAdaptor',
   'Source' => 'LRG::API::XMLA::SourceXMLAdaptor', 
   'Symbol' => 'LRG::API::XMLA::SymbolXMLAdaptor', 
   'Transcript' => 'LRG::API::XMLA::TranscriptXMLAdaptor',
   'TranscriptAnnotation' => 'LRG::API::XMLA::TranscriptAnnotationXMLAdaptor', 
   'TranscriptUp' => 'LRG::API::XMLA::TranscriptUpXMLAdaptor', 
-	'Translation' => 'LRG::API::XMLA::TranslationXMLAdaptor',
+	'Translation'  => 'LRG::API::XMLA::TranslationXMLAdaptor',
 	'TranslationException' => 'LRG::API::XMLA::TranslationExceptionXMLAdaptor',
 	'TranslationShift' => 'LRG::API::XMLA::TranslationShiftXMLAdaptor',
   'TranslationUp' => 'LRG::API::XMLA::TranslationUpXMLAdaptor', 
@@ -127,7 +131,8 @@ sub AUTOLOAD {
 
     # Check that the adaptor name could be determined and that it exists in the list of available adaptors
     unless (defined($adaptor) && exists($XML_ADAPTORS{$adaptor})) {
-      die ("Can not create an adaptor");
+      my $error_msg = (defined($adaptor)) ? " for the $adaptor object" : ''; 
+      die ("Can not create an adaptor$error_msg");
     }
 
     # Return the appropriate adaptor object with a pre-loaded reference to this instance, load the package if necessary
