@@ -694,14 +694,15 @@ sub printNode {
 		  'coord_system' => 1,
       'other_name'   => 2,
       'other_id'     => 3,
-      'other_start'  => 4,
-      'other_end'    => 5,
-      'assembly'  => 1,
-      'chr_name'  => 2,
-      'chr_id'    => 3,
-      'chr_start' => 4,
-      'chr_end'   => 5,
-      'type'      => 6,
+      'other_id_syn' => 4,
+      'other_start'  => 5,
+      'other_end'    => 6,
+      #'assembly'  => 1,
+      #'chr_name'  => 2,
+      #'chr_id'    => 3,
+      #'chr_start' => 4,
+      #'chr_end'   => 5,
+      'type'      => 7,
 		},
 		
 		'mapping_span' => {
@@ -749,7 +750,6 @@ sub printNode {
     
     'transcript' => {
       'name'          => 1,
-      'creation_date' => 2,
       'source'          => 1,
       'start'           => 2,
       'end'             => 3,
@@ -869,15 +869,16 @@ sub sort_nodes {
     },
     
     'transcript' => {
-      'comment'         => 1,
-      'coordinates'     => 2,
-      'partial'         => 3,
-      'long_name'       => 4,
-      'db_xref'         => 5,
-      'cdna'            => 6,
-      'coding_region'   => 7, 
-      'exon'            => 8,
-      'protein_product' => 9  
+      'creation_date'   => 1,
+      'comment'         => 2,
+      'coordinates'     => 3,
+      'partial'         => 4,
+      'long_name'       => 5,
+      'db_xref'         => 6,
+      'cdna'            => 7,
+      'coding_region'   => 8, 
+      'exon'            => 9,
+      'protein_product' => 10  
     },
     
     'coding_region' => {

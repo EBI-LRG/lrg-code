@@ -18,11 +18,13 @@ our $JING_JAR = POSIX::getcwd() . '/jing.jar';
 our $RNC_FILE = POSIX::getcwd() . '/LRG.rnc'; 
 # Assemblies to check
 our $CHECK_ROOT_ASSEMBLY = 'GRCh3';
+# Requester annotation set type
+our $requester_type = 'requester';
 
 our $EBI_FTP_DIR = '/ebi/ftp/pub/databases/lrgex';
 our $EBI_FTP_ARCHIVE_DIR = $EBI_FTP_DIR;
 
-our @attr_list      = qw(coord_system other_name other_id other_start other_end);
+our @attr_list      = qw(coord_system other_name other_id other_start other_end other_id_syns);
 our @span_attr_list = qw(lrg_start lrg_end strand);
 our @diff_attr_list = qw(type lrg_start lrg_end other_start other_end lrg_sequence other_sequence);
 
@@ -260,14 +262,14 @@ sub existing_entry {
     }
 
     # Compare coordinates
-    my $new_mapping_coord = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
-    foreach my $mapping (@$new_mapping_coord) {
+    my $new_mappings_list = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
+    foreach my $mapping (@$new_mappings_list) {
       my $assembly = $mapping->data()->{'coord_system'};
       next if ($assembly !~ /^(GRCh\d+)/);
       $assembly = $1;   
-      my $existing_mapping_coord = $existing_lrg->findNodeArray('updatable_annotation/annotation_set/mapping');
+      my $existing_mappings_list = $existing_lrg->findNodeArray('updatable_annotation/annotation_set/mapping');
       my $has_same_assembly = 0;
-      foreach my $existing_mapping (@$existing_mapping_coord) {
+      foreach my $existing_mapping (@$existing_mappings_list) {
         next if ($existing_mapping->data()->{'coord_system'} !~ /$assembly/);
         $has_same_assembly = 1;
         if ($mapping->data()->{'other_start'} != $existing_mapping->data()->{'other_start'} || $mapping->data()->{'other_end'} != $existing_mapping->data()->{'other_end'}) {
@@ -344,7 +346,7 @@ sub compare_main_mapping {
         if ($new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr}) {
           $is_diff = 1 if ($new_data->{$assembly}{$attr} ne $arch_data->{$assembly}{$attr});
         }
-        # For 'other_name' and 'other_id' (optional attributes)
+        # For 'other_id_syn' (optional attribute)
         elsif (($new_data->{$assembly}{$attr} && !$arch_data->{$assembly}{$attr}) || (!$new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr})) {
           $is_diff = 1;
         }
@@ -499,6 +501,7 @@ sub other_exon_labels {
     
     #ÊGo through all annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
+        next if ($annotation_set->data()->{'type'} && $annotation_set->data()->{'type'} eq $requester_type);
         
         # Get the source/name for this annotation_set
         my $source = $annotation_set->findNode('source/name')->content();
@@ -1649,7 +1652,17 @@ sub get_sources {
   my $self = shift;
   my $name = shift;
 
-  my $sources = $self->{'lrg'}->findNodeArray("fixed_annotation/source");
+  my $sources;
+  # Annotation set
+  foreach my $a_set (@{$self->{'lrg'}->findNodeArraySingle("updatable_annotation/annotation_set")}) {
+    if ($a_set->data()->{'type'} && $a_set->data()->{'type'} eq 'requester') {
+      $sources = $a_set->findNodeArraySingle('source');
+      last;
+    }
+  }
+  # Fixed annotation (only for public LRGs before schema 1.9)
+  $sources = $self->{'lrg'}->findNodeArray("fixed_annotation/source") if (!defined($sources));
+ 
   if (!defined($sources) || scalar(@{$sources}) == 0) {
         
     # Get the LRG id
