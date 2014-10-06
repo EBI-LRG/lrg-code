@@ -650,7 +650,6 @@ while (my $transcript = shift(@{$transcripts})) {
 
     # Insert the transcript date into db if exists (only if transcript added after the LRG has been made public)
     my $tr_creation_date = ($transcript->findNodeSingle('creation_date')) ? $transcript->findNodeSingle('creation_date')->content() : undef;
-print STDERR "CREATION DATE: $tr_creation_date\n";    
     if (defined($tr_creation_date)) {
       $tr_date_ins_sth->bind_param(1,$name,SQL_VARCHAR);
       $tr_date_ins_sth->bind_param(2,$tr_creation_date,SQL_DATE);
