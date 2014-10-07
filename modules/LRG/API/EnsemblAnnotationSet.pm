@@ -12,7 +12,7 @@ our @ISA = "LRG::API::AnnotationSet";
 
 sub initialize {
   my $self = shift;
-  my ($source,$meta,$mapping,$annotation,$features) = @_;
+  my ($source,$meta,$mapping,$annotation,$features,$note) = @_;
   my $type = 'ensembl';
   
   # Set the source if it's not specified
@@ -21,7 +21,7 @@ sub initialize {
     $source = LRG::API::Source->new('Ensembl','http://www.ensembl.org/',$contact);
   }
   
-  $self->SUPER::initialize($type,$source,$meta,$mapping,$annotation,$features);
+  $self->SUPER::initialize($type,$source,$meta,$mapping,$annotation,$features,$note);
 }
 
 1;
