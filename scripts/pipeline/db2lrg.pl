@@ -675,7 +675,7 @@ if (defined($include_external)) {
     # LSDBs list link
     my $lsdb_name = "List of locus specific databases for $hgnc_symbol";
     my $lsdb_url  = "http://grenada.lumc.nl/LSDB_list/lsdbs/$hgnc_symbol";
-    my $annotation_set = $updatable->addNode('annotation_set');
+    my $annotation_set = $updatable->addNode('annotation_set',{'type' => 'lsdb'});
     my $source = LRG::Node::new('source');
     $source->addNode('name')->content($lsdb_name);
     $source->addNode('url')->content($lsdb_url);

@@ -69,7 +69,7 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 
 $lrg_id =~ /(LRG_\d+)/;
 $lrg_id = $1;
-my $requester_set = 'requester';
+my $requester_type = 'requester';
 
 my $warning_log;
 if (defined($error_log)) {
@@ -597,23 +597,6 @@ my $exon_ins_sth = $db_adaptor->dbc->prepare($exon_ins_stmt);
 my $exon_pep_ins_sth = $db_adaptor->dbc->prepare($exon_pep_ins_stmt);
 my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 
-# Get the requester data
-$node = $fixed->findNodeArray('source') or warn ("Could not find requester data");
-if (defined($node)) {
-  
-  my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
-
-  # Check if some requester information are already in the database for this LRG. 
-  my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
-  if (defined($lsdb_id)) {
-    print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
-  }
-  else {
-    while (my $source = shift(@{$node})) {
-        parse_source($source,$gene_id,$db_adaptor);
-    }
-  }
-}
 
 # Get the transcript nodes
 my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could not find transcript tags");
@@ -854,7 +837,8 @@ while (my $annotation_set = shift(@{$annotation_sets})) {
 }
 
 # Requester data
-parse_requester_data($annotation_sets,$fixed,$gene_id,$db_adaptor);
+my $requester_set = $updatable->findNodeSingle('annotation_set',{'type' => $requester_type});
+parse_requester_data($requester_set,$fixed,$gene_id,$db_adaptor);
 
 
 sub parse_annotation_set {
@@ -862,7 +846,7 @@ sub parse_annotation_set {
     my $gene_id = shift;
     my $db_adaptor = shift;
     my $use_annotation_set = shift || [];
-        
+
     # Use different syntax depending on whether we are inserting or updating
     my $insert_mode = (scalar(@{$use_annotation_set}) ? qq{REPLACE} : qq{INSERT IGNORE});
     my $as_ins_stmt = qq{
@@ -900,14 +884,17 @@ sub parse_annotation_set {
     my $as_ins_sth = $db_adaptor->dbc->prepare($as_ins_stmt);
     my $asm_ins_sth = $db_adaptor->dbc->prepare($asm_ins_stmt);
 
+    my $annotation_set_type = ($annotation_set->data()->{'type'}) ? lc($annotation_set->data()->{'type'}) : undef;
+    return if ($annotation_set_type eq $requester_type); # Skip the requester annotation set
+
     # Get and parse the source
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-    return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
+    return undef if ($source_name !~ /LRG/ && $source_name !~ /NCBI\sRefSeqGene/ && $source_name !~ /Ensembl/);
 
-    my $annotation_set_type = ($annotation_set->data()->{'type'}) ? $annotation_set->data()->{'type'} : lc((split(' ',$source_name))[0]);
-    
+    $annotation_set_type = lc((split(' ',$source_name))[0]) if (!$annotation_set_type);
+
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
     
@@ -974,21 +961,18 @@ sub parse_annotation_set {
         $asm_ins_sth->bind_param(2,$mid,SQL_INTEGER);
         $asm_ins_sth->execute();
     }
-    
-    return $annotation_set_id;
 }
 
 sub parse_requester_data {
-  my $annotation_sets  = shift;
+  my $requester_set    = shift;
   my $fixed_annotation = shift;
   my $gene_id          = shift;
   my $db_adaptor       = shift;
 
-  my $source_nodes;
-  foreach my $aset (@{$annotation_sets}) {
-    next if ($aset->data()->{'type'} ne $requester_set);
-    $source_nodes = $aset->findNodeArray('source');
-  }
+  # From annotation set
+  my $source_nodes = (defined($requester_set)) ? $requester_set->findNodeArray('source') : undef;
+
+  # From fixed annotation
   if (!defined($source_nodes)) {
     $source_nodes = $fixed_annotation->findNodeArray('source');
   }

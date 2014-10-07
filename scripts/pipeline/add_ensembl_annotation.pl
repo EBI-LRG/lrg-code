@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 
+use LRG::LRG qw(date);
 use LRG::LRGAnnotation;
 use LRG::LRGMapping;
 use LRG::API::EnsemblAnnotationSet;
@@ -51,8 +52,7 @@ my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
 my $ens_db_version = $mca->get_schema_version();
 
 # Get the current date
-my (undef,undef,undef,$mday,$mon,$year,undef,undef,undef) = localtime;
-my $date = sprintf("\%d-\%02d-%02d",($year+1900),($mon+1),$mday);
+my $date = LRG::LRG::date();
 
 # If no assembly was specified, use the default assembly from the database
 unless ($option{assembly}) {
@@ -98,8 +98,8 @@ else {
   
   my %sets;
   foreach my $set (@{$lrg->updatable_annotation->annotation_set()}) {
-    my $name = (defined($set->type)) ? $set->type : lc((split(' ',$set->source->name))[0]);
-    $sets{$name} = $set;
+    my $name = (defined($set->type)) ? $set->type : (split(' ',$set->source->name))[0];
+    $sets{lc($name)} = $set;
   }
   
   # Attach the Ensembl annotation set to the LRG object, keeping the right order

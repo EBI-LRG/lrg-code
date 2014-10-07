@@ -46,6 +46,7 @@ my $lrg = $lrg_adaptor->fetch();
 # Put the annotation sets into a hash with the source name as key
 my %sets;
 map {$sets{$_->source->name()} = $_} @{$lrg->updatable_annotation->annotation_set() || []};
+my $requester_set = $lrg->updatable_annotation->requester();
 
 # If we already have a LRG annotation set and the replace flag was not set, warn about this and quit
 if ($sets{$option{lrg_set_name}} && !$option{replace}) {
@@ -61,6 +62,7 @@ else {
   
   	# Attach the LRG annotation set to the LRG object
   	$lrg->updatable_annotation->annotation_set([values(%sets)]);
+    $lrg->updatable_annotation->requester($requester_set) if (defined($requester_set));
 	}
 }
 
