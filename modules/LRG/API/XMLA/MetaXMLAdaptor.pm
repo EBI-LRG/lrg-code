@@ -45,7 +45,16 @@ sub fetch_all_by_coding_region {
   
 }
 
-# Fetch all named attributes on the coding_region element
+# Fetch all meta information from annotation sets
+sub fetch_by_requester_set {
+  my $self = shift;
+  my $annotation_set = shift;
+  my $objs = $self->_fetch_all_by_element_names($annotation_set,['modification_date']);
+  return undef unless(scalar(@{$objs}));
+  return $objs->[0];
+}
+
+# Fetch all meta information from annotation sets
 sub fetch_all_by_annotation_set {
   my $self = shift;
   my $annotation_set = shift;

@@ -13,7 +13,7 @@ sub initialize {
   my ($annotation_set,$requester) = @_;
   
   $self->annotation_set($annotation_set,'LRG::API::AnnotationSet',1);
-  $self->requester($requester,'LRG::API::Requester',1);
+  $self->requester($requester,'LRG::API::Requester');
 }
 
 sub _permitted {

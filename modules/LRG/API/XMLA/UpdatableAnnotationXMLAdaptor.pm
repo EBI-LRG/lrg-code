@@ -56,6 +56,8 @@ sub xml_from_objs {
   
   my @xml;
   my $a_adaptor = $self->xml_adaptor->get_AnnotationSetXMLAdaptor();
+  my $r_adaptor = $self->xml_adaptor->get_RequesterXMLAdaptor();
+  
   foreach my $obj (@{$objs}) {
     
     # Create the root node
@@ -63,6 +65,7 @@ sub xml_from_objs {
     
     # Add annotation sets
     map {$root->addExisting($_)} @{$a_adaptor->xml_from_objs($obj->annotation_set())};
+    map {$root->addExisting($_)} @{$r_adaptor->xml_from_objs($obj->requester())};
     
     push(@xml,$root);
   }
