@@ -184,12 +184,14 @@ sub existing_entry {
       foreach my $pr (@$new_proteins) {
         my $pr_name = $pr->data()->{'name'};
         my $pr_seq = $pr->findNode('sequence')->content();
-        my $existing_protein = $existing_transcript->findNode('coding_region/translation',{'name' => $pr_name});
+        my @existing_proteins = grep { $pr_name eq $_->data()->{'name'} } @{$existing_transcript->findNodeArraySingle('coding_region/translation')};
+        my $existing_protein = $existing_proteins[0] if (scalar(@existing_proteins));
+
         if (!defined($existing_protein)) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "- The protein '$pr_name' doesn't exist in the file $existing_file!//";
+          $self->{'check'}{$name}{'message'} .= "- The protein '$tr_name/$pr_name' doesn't exist in the file $existing_file!//";
         }
-        if ($pr_seq ne $existing_protein->findNode('sequence')->content()) {
+        elsif ($pr_seq ne $existing_protein->findNode('sequence')->content()) {
           $passed = 0;
           $self->{'check'}{$name}{'message'} .= "- The protein sequences of '$pr_name' are different!//";
         }  
@@ -239,7 +241,7 @@ sub existing_entry {
         my $existing_prot = $e_tr->findNodeArray('coding_region/translation');
         foreach my $e_pr (@$existing_prot) {
           my $e_pr_name = $e_pr->data()->{'name'};
-          my $new_pr = $new_tr->findNode('coding_region/translation',{'name' => $e_pr_name});
+          my $new_pr = map { $e_pr_name eq $_->data()->{'name'} } @{$new_tr->findNodeArraySingle('coding_region/translation')};
           if (!$new_pr) {
             $passed = 0;
             $self->{'check'}{$name}{'message'} .= "- The existing translation '$e_pr_name' can't be found in the new file!//";
@@ -264,13 +266,16 @@ sub existing_entry {
     # Compare coordinates
     my $new_mappings_list = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
     foreach my $mapping (@$new_mappings_list) {
-      my $assembly = $mapping->data()->{'coord_system'};
+      my $assembly   = $mapping->data()->{'coord_system'};
+      my $other_attr = ($mapping->data()->{'other_name'}) ? 'other_id' : 'other_name';
+      my $chr = $mapping->data()->{$other_attr};
+
       next if ($assembly !~ /^(GRCh\d+)/);
       $assembly = $1;   
       my $existing_mappings_list = $existing_lrg->findNodeArray('updatable_annotation/annotation_set/mapping');
       my $has_same_assembly = 0;
       foreach my $existing_mapping (@$existing_mappings_list) {
-        next if ($existing_mapping->data()->{'coord_system'} !~ /$assembly/);
+        next if ($existing_mapping->data()->{'coord_system'} !~ /$assembly/ || $existing_mapping->data()->{$other_attr} ne $chr);
         $has_same_assembly = 1;
         if ($mapping->data()->{'other_start'} != $existing_mapping->data()->{'other_start'} || $mapping->data()->{'other_end'} != $existing_mapping->data()->{'other_end'}) {
           $passed = 0;
@@ -338,43 +343,57 @@ sub compare_main_mapping {
     }
 
     my %assemblies = map {$_ => 1} (keys(%$new_data),keys(%$arch_data));
-    
+
     foreach my $assembly (sort(keys(%assemblies))) {
 
-      my $is_diff = 0;
-      foreach my $attr (@attr_list) { 
-        if ($new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr}) {
-          $is_diff = 1 if ($new_data->{$assembly}{$attr} ne $arch_data->{$assembly}{$attr});
-        }
-        # For 'other_id_syn' (optional attribute)
-        elsif (($new_data->{$assembly}{$attr} && !$arch_data->{$assembly}{$attr}) || (!$new_data->{$assembly}{$attr} && $arch_data->{$assembly}{$attr})) {
-          $is_diff = 1;
-        }
-      }
-      foreach my $span_attr (@span_attr_list) {
-        $is_diff = 1 if ($new_data->{$assembly}{$span_attr} ne $arch_data->{$assembly}{$span_attr});
-      }
-    
-      if ($is_diff == 1) {  
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates on $assembly//";
-      }
-  
-      if (scalar keys(%{$new_data->{$assembly}{'diffs'}}) != scalar keys(%{$arch_data->{$assembly}{'diffs'}})) {
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions on $assembly//";
-      }
+      my %chrs = map {$_ => 1} (keys(%{$new_data->{$assembly}}),keys(%{$arch_data->{$assembly}}));
 
-      foreach my $diff (keys (%{$new_data->{$assembly}{'diffs'}})) {
-        if (!$arch_data->{$assembly}{'diffs'}{$diff}) {
+      # Extra loop because of LRG_186 having mapping on the PAR region on X and Y chromosome
+      foreach my $chr (sort(keys(%chrs))) {
+        # Chromosome mapping missing
+        if (!$new_data->{$assembly}{$chr} || !$arch_data->{$assembly}{$chr}) {
+          my $type = ($new_data->{$assembly}{$chr}) ? 'archive' : 'new';
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates on $assembly ( Type '".$new_data->{$assembly}{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{$assembly}{'diffs'}{$diff}{'lrg_start'}."')//";
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: mapping to the chromosome '$chr' on $assembly is missing on the $type LRG XML file//";
+          next;
         }
-        else {
-          foreach my $diff_attr (@diff_attr_list) {
-            if ($new_data->{$assembly}{'diffs'}{$diff}{$diff_attr} ne $arch_data->{$assembly}{'diffs'}{$diff}{$diff_attr}) {
-              $passed = 0;
-              $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff '$diff_attr' data on $assembly (New '".$new_data->{$assembly}{'diffs'}{$diff}{$diff_attr}."' | Archive '".$arch_data->{$assembly}{'diffs'}{$diff}{$diff_attr}."')//";
+
+        my $is_diff = 0;
+
+        foreach my $attr (@attr_list) { 
+          if ($new_data->{$assembly}{$chr}{$attr} && $arch_data->{$assembly}{$chr}{$attr}) {
+            $is_diff = 1 if ($new_data->{$assembly}{$chr}{$attr} ne $arch_data->{$assembly}{$chr}{$attr});
+          }
+          # For 'other_id_syn' (optional attribute)
+          elsif (($new_data->{$assembly}{$chr}{$attr} && !$arch_data->{$assembly}{$chr}{$attr}) || (!$new_data->{$assembly}{$chr}{$attr} && $arch_data->{$assembly}{$chr}{$attr})) {
+            $is_diff = 1;
+          }
+        }
+        foreach my $span_attr (@span_attr_list) {
+          $is_diff = 1 if ($new_data->{$assembly}{$chr}{$span_attr} ne $arch_data->{$assembly}{$chr}{$span_attr});
+        }
+    
+        if ($is_diff == 1) {  
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates on $assembly//";
+        }
+  
+        if (scalar keys(%{$new_data->{$assembly}{$chr}{'diffs'}}) != scalar keys(%{$arch_data->{$assembly}{$chr}{'diffs'}})) {
+          $passed = 0;
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions on $assembly//";
+        }
+
+        foreach my $diff (keys (%{$new_data->{$assembly}{$chr}{'diffs'}})) {
+          if (!$arch_data->{$assembly}{$chr}{'diffs'}{$diff}) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates on $assembly ( Type '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'lrg_start'}."')//";
+          }
+          else {
+            foreach my $diff_attr (@diff_attr_list) {
+              if ($new_data->{$assembly}{$chr}{'diffs'}{$diff}{$diff_attr} ne $arch_data->{$assembly}{$chr}{'diffs'}{$diff}{$diff_attr}) {
+                $passed = 0;
+                $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff '$diff_attr' data on $assembly (New '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{$diff_attr}."' | Archive '".$arch_data->{$assembly}{$chr}{'diffs'}{$diff}{$diff_attr}."')//";
+              }
             }
           }
         }
@@ -501,7 +520,7 @@ sub other_exon_labels {
     
     #ÊGo through all annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
-        next if ($annotation_set->data()->{'type'} && $annotation_set->data()->{'type'} eq $requester_type);
+        next if ($annotation_set->data()->{'type'} && $annotation_set->data()->{'type'} =~ /$requester_type/i);
         
         # Get the source/name for this annotation_set
         my $source = $annotation_set->findNode('source/name')->content();
@@ -1655,7 +1674,7 @@ sub get_sources {
   my $sources;
   # Annotation set
   foreach my $a_set (@{$self->{'lrg'}->findNodeArraySingle("updatable_annotation/annotation_set")}) {
-    if ($a_set->data()->{'type'} && $a_set->data()->{'type'} eq 'requester') {
+    if ($a_set->data()->{'type'} && $a_set->data()->{'type'} =~ /$requester_type/i) {
       $sources = $a_set->findNodeArraySingle('source');
       last;
     }
@@ -1728,7 +1747,8 @@ sub get_coordinates {
 sub get_mapping_coordinates {
   my $lrg_node = shift;
   my $asets = $lrg_node->findNodeArraySingle('updatable_annotation/annotation_set');
-  
+  my $chr_attr = 'other_name';  
+
   foreach my $aset (@$asets) {
     #next unless($aset->findNodeSingle('source/name')->content eq 'LRG');
     my $mappings = $aset->findNodeArraySingle('mapping');
@@ -1736,19 +1756,20 @@ sub get_mapping_coordinates {
     my %data;
     foreach my $mapping (@$mappings) {
       next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ROOT_ASSEMBLY/i);
-      if ($mapping->data()->{'other_name'}) {
-        next unless ($mapping->data()->{'other_name'} =~ /^([0-9]+|[XY])$/i);
-      }
+
+      my $chr = $mapping->data()->{$chr_attr};
+        next unless ($chr && $chr =~ /^([0-9]+|[XY])$/i);
       
       my $assembly = (split(/\./,$mapping->data->{'coord_system'}))[0];
       
       foreach my $attr (@attr_list) {
-        $data{$assembly}{$attr} = ($attr eq 'coord_system') ? $assembly : $mapping->data->{$attr};
+        next if ($attr eq $chr_attr);
+        $data{$assembly}{$chr}{$attr} = ($attr eq 'coord_system') ? $assembly : $mapping->data->{$attr};
       }
     
       my $mapping_span = $mapping->findNodeSingle('mapping_span');
       foreach my $span_attr (@span_attr_list) {
-        $data{$assembly}{$span_attr} = $mapping_span->data->{$span_attr};
+        $data{$assembly}{$chr}{$span_attr} = $mapping_span->data->{$span_attr};
       }
     
       my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
@@ -1758,7 +1779,7 @@ sub get_mapping_coordinates {
           $diff_data{$diff_attr} = $diff->data->{$diff_attr};
         }
         my $label = $diff_data{'type'}."_".$diff_data{'other_start'};
-        $data{$assembly}{'diffs'}{$label} = \%diff_data;
+        $data{$assembly}{$chr}{'diffs'}{$label} = \%diff_data;
       }
     } 
     return \%data;
