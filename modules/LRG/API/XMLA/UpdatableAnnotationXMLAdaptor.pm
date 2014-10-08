@@ -64,8 +64,8 @@ sub xml_from_objs {
     my $root = LRG::Node::newEmpty('updatable_annotation');
     
     # Add annotation sets
-    map {$root->addExisting($_)} @{$a_adaptor->xml_from_objs($obj->annotation_set())};
     map {$root->addExisting($_)} @{$r_adaptor->xml_from_objs($obj->requester())};
+    map {$root->addExisting($_)} @{$a_adaptor->xml_from_objs($obj->annotation_set())};
     
     push(@xml,$root);
   }

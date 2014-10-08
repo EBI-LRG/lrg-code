@@ -212,6 +212,7 @@ if (defined($sequence_source)) {
 }
 $fixed->addNode('organism',{'taxon' => $taxon_id})->content($organism);
 
+# Requester data
 $stmt = qq{
     SELECT DISTINCT
         lr.lsdb_id
@@ -235,7 +236,6 @@ while ($sth->fetch()) {
   if ($requester_in_fixed) { 
     $fixed->addExisting($requester_source);
   }
-
   # Annotation set "requester"
   push(@requester_sources_list,$requester_source);
 }
@@ -462,6 +462,15 @@ while ($sth->fetch()) {
 # Create the updatable section
 my $updatable = $lrg->addNode('updatable_annotation');
 
+# Add the "requester" annotation set
+my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
+foreach my $requester_source (@requester_sources_list) {
+  $requester_annotation_set->addExisting($requester_source);
+}
+$requester_annotation_set->addNode('modification_date')->content(LRG::LRG::date());
+get_note($requester_annotation_set, $requester_type);
+
+
 # Get the annotation sets
 $stmt = qq{
     SELECT
@@ -528,13 +537,6 @@ while ($sth->fetch()) {
     # Add note if exist
     get_note($annotation_set, $as_type);
 }
-# Add the "requester" annotation set
-my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
-foreach my $requester_source (@requester_sources_list) {
-  $requester_annotation_set->addExisting($requester_source);
-}
-$requester_annotation_set->addNode('modification_date')->content(LRG::LRG::date());
-get_note($requester_annotation_set, $requester_type);
 
 
 # Check for other exon naming & alternative amino acid numbering

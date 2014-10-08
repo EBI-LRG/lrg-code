@@ -45,7 +45,7 @@ $registry->load_registry_from_db(
 
 my $ens_label = 'Ensembl';
 my $lrg_label = 'LRG';
-my @set_list = (lc($lrg_label) , 'ncbi', lc($ens_label), 'requester', 'community');
+my @set_list = ('requester', lc($lrg_label) , 'ncbi', lc($ens_label), 'community');
 
 # Determine the schema version
 my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
