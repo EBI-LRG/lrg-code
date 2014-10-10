@@ -15,22 +15,21 @@ usage() if ($help);
 
 usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.") if (!$gene_name);
 usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
-warn("No TranscriptSupportLevel filename has been given.If you want to add it, please use the option '-tsl'. For more information, please use the option '-help'.") if (!$tsl);
 
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
 
-#$registry->load_registry_from_db(
-#    -host => 'ensembldb.ensembl.org',
-#    -user => 'anonymous'
-#);
-
 $registry->load_registry_from_db(
-    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
-    -user => 'anonymous',
-    -port => 4240
+    -host => 'ensembldb.ensembl.org',
+    -user => 'anonymous'
 );
+
+#$registry->load_registry_from_db(
+#    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
+#    -user => 'anonymous',
+#    -port => 4240
+#);
 
 my $cdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,'core');
 my $dbCore = $cdb->dbc->db_handle;
@@ -41,7 +40,7 @@ my $slice_a      = $registry->get_adaptor($species, 'core','slice');
 my $tr_a         = $registry->get_adaptor($species, 'core','transcript');
 my $cdna_dna_a   = $registry->get_adaptor($species, 'cdna','transcript');
 my $refseq_tr_a  = $registry->get_adaptor($species, 'otherfeatures','transcript');
-#my $rnaseq_slice_a = $registry->get_adaptor($species, 'rnaseq','slice');
+my $attribute_a  = $registry->get_adaptor($species, 'core', 'attribute');
 
 ## Examples:
 # Gene: HNF4A
@@ -169,7 +168,7 @@ foreach my $refseq_tr (@$refseq) {
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
 
   my $refseq_name = $refseq_tr->stable_id;
-  next unless ($refseq_name =~ /^(N|X)(M|P)_/);
+  next unless ($refseq_name =~ /^N(M|P)_/);
   
   my $refseq_exons = $refseq_tr->get_all_Exons;
   my $refseq_exon_count = scalar(@$refseq_exons);
@@ -485,7 +484,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $manual_class = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
   my $manual_label = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
   
-  my $tsl_html     = get_tsl_html($ens_tr);
+  my $tsl_html     = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'});
   
   my $hide_col = hide_button($row_id,$column_class);
   
@@ -1031,31 +1030,41 @@ sub hide_button {
   my $id    = shift;
   my $class = shift;
   
-  #my $html  = qq{<input type="hidden" id="button_color_$row_id" value="$column_class"/>};
   return qq{<span id="button_$id\_x" class="hide_button" onclick="showhide($id)" title="Hide this row">X</span>};
 }
 
 
 sub get_tsl_html {
-  my $tr_id = shift;
+  my $transcript = shift;
   
+  my $tr_id = $transcript->stable_id;
   my $level = 0;
-  if (-e $tsl) {
+  
+  # Use the -tsl file option
+  if ($tsl && -e $tsl) {
     my $line = `grep "$tr_id." $tsl`;
     if ($line =~ /$tr_id\.\d+\t(-?\d+)$/) {
       $level = $1;
       $level = 'INA' if ($level eq "-1");
     }
   }
+  # Use the EnsEMBL API
+  else {
+    warn("TSL file $tsl not found! Using the EnsEMBL API instead to retrieve the TSL value associated with the transcript ".$tr_id.".") if ($tsl && !-e $tsl);
+    my $attribute = $attribute_a->fetch_all_by_Transcript($transcript, 'TSL');
+    if (scalar(@$attribute)) {
+      my $tsl_value = $attribute->[0]->value;
+      if ($tsl_value =~ /^tsl([A-Z0-9]+)/i) {
+        $level = $1;
+      }
+    }
+  }
   
   # HTML
-  if ($level eq '0') {
-    return '';
-  }
-  else {
-    my $bg_colour = $tsl_colour{$level};
-    return qq{<span class="tsl" style="background-color:$bg_colour" title="Transcript Support Level = $level"><small>$level</small></span>};
-  }
+  return '' if ($level eq '0');
+ 
+  my $bg_colour = $tsl_colour{$level};
+  return qq{<span class="tsl" style="background-color:$bg_colour" title="Transcript Support Level = $level"><small>$level</small></span>};
 }
 
 
@@ -1082,9 +1091,10 @@ OPTIONS:
   -outputfile  : file path to the output HTML file (required)
   -o           : alias of the option "-outputfile"
   -tsl         : path to the Transcript Support Level text file (optional)
+                 By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
                  The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
                  http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
-                 First, you will need to uncompress it by using the command "gunzip <file>".\n
+                 First, you will need to uncompress it by using the command "gunzip <file>".
   };
   exit(0);
 }
