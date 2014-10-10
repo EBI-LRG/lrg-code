@@ -18,17 +18,41 @@ function append(id,content,clear) {
 // function to show/hide layers
 function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);
+  var button = document.getElementById(lyr+'_button');
   
   if(lyrobj.className == "hidden") {
 	  fadeIn(lyrobj);
 	  lyrobj.className = "unhidden";
 	  rotate90('img_'+lyr);
+	  if (button) {
+	    button.className='show_hide selected';
+	  }
   }
   else {
     fadeOut(lyrobj);
 	  lyrobj.className = "hidden";
 	  rotate90('img_'+lyr, 1);
-	  
+	  if (button) {
+	    button.className='show_hide';
+	  }
+  }
+}
+
+// function to show/hide annotation set
+function showhide_anno(lyr) {
+
+  showhide(lyr);
+
+  var lyrobj = document.getElementById(lyr);
+  var button = document.getElementById('show_hide_anno_'+lyr);
+  
+  if(lyrobj.className == "unhidden") {
+    button.innerHTML='Hide annotations';
+    button.className="show_hide_anno selected_anno";
+  }
+  else {
+    button.innerHTML='Show annotations';
+    button.className="show_hide_anno";
   }
 }
 
@@ -53,27 +77,28 @@ function fadeIn(element) {
     var op = 0;  // initial opacity
     element.style.display = "inline";
     var timer = setInterval(function () {
-        if (op >= 0.9){
+        if (op >= 0.95){
           clearInterval(timer);
         }
         element.style.opacity = op;
         element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-        op += 0.1;
+        op += 0.05;
     }, interval);
 }
 
 function fadeOut(element) {
     var op = 1;  // initial opacity
     var timer = setInterval(function () {
-        if (op <= 0.1){
+        if (op <= 0.05){
           clearInterval(timer);
           element.style.display = "none";
         }
         element.style.opacity = op;
         element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-        op -= 0.1;
+        op -= 0.05;
     }, interval);
 }
+
 
 // function to rotate image
 function rotate90(img,reset) {
