@@ -2898,30 +2898,23 @@
 <!-- FOOTER -->
 <xsl:template name="footer">
   <div class="footer">
-    <div style="float:left;width:30%;padding:5px 0px;text-align:right">
+    <div style="float:left;width:45%;padding:5px 0px;text-align:right">
       <a href="http://www.ebi.ac.uk" target="_blank">
         <img alt="EMBL-EBI logo" style="width:100px;height:156px;border:0px">
           <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/embl-ebi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
-    <div style="float:left;width:40%;padding:5px 0px;text-align:center">
+    <div style="float:left;width:10%;padding:5px 0px"></div>
+    <div style="float:left;width:45%;padding:5px 0px;text-align:left">
       <a href="http://www.ncbi.nlm.nih.gov/" target="_blank">
         <img alt="NCBI logo" style="width:100px;height:156px;border:0px">
           <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/ncbi_logo.jpg</xsl:attribute>
         </img>
       </a>
     </div>
-    <div style="float:right;width:30%;padding:5px 0px;text-align:left">
-      <a href="http://www.gen2phen.org/" target="_blank">
-        <img alt="GEN2PHEN logo" style="width:100px;height:156px;border:0px">
-          <xsl:attribute name="src"><xsl:value-of select="$relative_path"/>img/gen2phen_logo.jpg</xsl:attribute>
-        </img>
-      </a>
-    </div>
     <div style="clear:both" />
   </div>
-
 </xsl:template>
 
 
