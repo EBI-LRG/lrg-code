@@ -20,16 +20,16 @@ my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
 
-$registry->load_registry_from_db(
-    -host => 'ensembldb.ensembl.org',
-    -user => 'anonymous'
-);
-
 #$registry->load_registry_from_db(
-#    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
-#    -user => 'anonymous',
-#    -port => 4240
+#    -host => 'ensembldb.ensembl.org',
+#    -user => 'anonymous'
 #);
+
+$registry->load_registry_from_db(
+    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
+    -user => 'anonymous',
+    -port => 4240
+);
 
 my $cdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,'core');
 my $dbCore = $cdb->dbc->db_handle;
@@ -363,9 +363,9 @@ $html .= qq{
       table.legend {margin:2px;font-size:0.8em}
       table.legend td {padding:2px 1px}
       
-      .manual {margin-right:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border:1px solid #FFF;padding:0px;background-color:#E00;color:#FFF;cursor:default}
-      .not_manual {margin-right:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border:1px solid #FFF;padding:0px;background-color:#888;color:#FFF;cursor:default}
-      .tsl {margin-left:10px;margin-bottom:1px;display:inline-block;height:15px;width:15px;border-radius:10px;border:1px solid #FFF;padding:0px;background-color:#000;color:#FFF;cursor:default}
+      .manual {margin-right:10px;margin-bottom:1px;padding:1px;cursor:help;color:#FFF;border:1px solid #FFF;background-color:#E00;font-size:14px;font-weight:bold;display:inline-block;line-height:14px}
+      .not_manual {margin-right:10px;margin-bottom:1px;padding:1px 2px;cursor:help;color:#FFF;border:1px solid #FFF;background-color:#888;font-size:14px;font-weight:bold;display:inline-block;line-height:14px}
+      .tsl {margin-left:10px;margin-bottom:1px;padding:1px 3px;cursor:help;color:#FFF;border-radius:20px;border:1px solid #FFF;background-color:#000;font-size:14px;font-weight:bold;display:inline-block;line-height:14px;}
       
       th.coord {font-size:0.6em;width:10px;text-align:center;cursor:pointer}
       .first_column {text-align:center;border:1px solid #FFF;padding:1px 2px}
@@ -391,6 +391,9 @@ $html .= qq{
       .button:hover {border:2px solid #48a726}
       .hide_button {border-radius:5px;border:2px solid #CCC;cursor:pointer;padding:1px 4px;font-size:0.7em;background-color:#336;color:#EEE}
       .hide_button:hover {border:2px solid #48a726}
+      .hide_button_x {cursor:pointer;color:#555;font-size:16px;font-weight:bold;display:inline-block;line-height:14px;padding:1px 2px 2px}
+      .hide_button_x:before { content: "×";}
+      .hide_button_x:hover {color:#FFF;background-color:#D22;border-radius:20px}
       .on {background-color:#090;color:#FFF}
       .off {background-color:#DDD;color:#000}
       .white {color:#FFF}
@@ -480,11 +483,12 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
-  my $tr_ext_name  = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
-  my $manual_class = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-  my $manual_label = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $tr_ext_name   = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
+  my $manual_class  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_border = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  my $tsl_html     = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'});
+  my $tsl_html      = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   
   my $hide_col = hide_button($row_id,$column_class);
   
@@ -496,9 +500,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
       <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
       <tr>
         <td class="$column_class" style="width:15%">
-          <span class="$manual_class" title="Transcript name: $tr_ext_name">
-            <small>$manual_label</small>
-          </span>
+          <span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>
         </td>
         <td class="$column_class" style="width:70%"><small>($e_count exons)</small></td>
         <td class="$column_class" style="width:15%">$tsl_html</td>
@@ -1030,12 +1032,13 @@ sub hide_button {
   my $id    = shift;
   my $class = shift;
   
-  return qq{<span id="button_$id\_x" class="hide_button" onclick="showhide($id)" title="Hide this row">X</span>};
+  return qq{<div id="button_$id\_x" class="hide_button_x" onclick="showhide($id)" title="Hide this row"></div>};
 }
 
 
 sub get_tsl_html {
   my $transcript = shift;
+  my $tr_type    = shift;
   
   my $tr_id = $transcript->stable_id;
   my $level = 0;
@@ -1063,8 +1066,9 @@ sub get_tsl_html {
   # HTML
   return '' if ($level eq '0');
  
-  my $bg_colour = $tsl_colour{$level};
-  return qq{<span class="tsl" style="background-color:$bg_colour" title="Transcript Support Level = $level"><small>$level</small></span>};
+  my $bg_colour     = $tsl_colour{$level};
+  my $border_colour = ($tr_type eq 'gold') ? qq{ ;border-color:#555} : '';
+  return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" title="Transcript Support Level = $level">$level</span>};
 }
 
 
