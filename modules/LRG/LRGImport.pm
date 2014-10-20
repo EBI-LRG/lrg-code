@@ -300,7 +300,9 @@ sub add_exon {
     -start     => $seq_region_start,
     -end       => $seq_region_end,
     -strand    => $seq_region_strand,
-    -slice     => $slice
+    -slice     => $slice,
+    -created_date => time,
+    -modified_date =>time
   );
 
   # Transcripts can share exon, only store once
@@ -330,8 +332,12 @@ sub add_gene {
     -slice     => $slice,
     -biotype   => $biotype,
     -status    => $status,
-    -source    => $source
+    -source    => $source,
+    -created_date => time,
+    -modified_date =>time 
   );
+
+print localtime(time) . " this is the local time for " . time  . "\n";
 
   return $gene;
 }
@@ -612,7 +618,9 @@ sub add_transcript {
     -end       => $end,
     -biotype   => $biotype,
     -source    => $source,
-    -status    => $status
+    -status    => $status,
+    -created_date => time,
+    -modified_date =>time
   );
 
   return $transcript;
@@ -632,7 +640,9 @@ sub add_translation {
     -start_exon => $start_exon,
     -end_exon => $end_exon,
     -seq_start => $cds_start,
-    -seq_end => $cds_end
+    -seq_end => $cds_end,
+    -created_date => time,
+    -modified_date =>time
   );
 
   return $translation;
