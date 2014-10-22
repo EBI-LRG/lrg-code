@@ -2777,6 +2777,14 @@
   <xsl:for-each select="comment">
       <strong>Comment: </strong><xsl:value-of select="."/><br/>
   </xsl:for-each>
+  <xsl:if test="@fixed_id">
+      <strong>Comment: </strong>This protein was used for 
+      <a>
+    <xsl:attribute name="href">#transcript_t<xsl:value-of select="$transcript_idx"/></xsl:attribute>
+        LRG protein <xsl:value-of select="@fixed_id"/>
+      </a>
+      <br/>
+  </xsl:if>
   <xsl:if test="partial">
     <xsl:for-each select="partial">
       <xsl:variable name="part" select="." />
