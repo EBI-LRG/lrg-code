@@ -127,6 +127,9 @@ sub add_annotation {
     if (scalar(@translations) == 0) {
       $transcript = add_transcript($transcript_stable_id, $analysis, $slice, $biotype, $lrg_source, $transcript_start, $transcript_end);
       $gene->add_Transcript($transcript);
+      if ($transcript_name eq 't1') {
+        $gene->canonical_transcript($transcript);
+      }
 
       foreach my $exon (@$lrg_exons) {
   
@@ -171,6 +174,10 @@ sub add_annotation {
       # If there is more than one translation, will increment the stable id version
       $transcript_count++;
       $gene->add_Transcript($transcript);
+      if ($transcript_name eq 't1') {
+        $gene->canonical_transcript($transcript);
+      }
+
       $cds_start = $translation->start();
       $cds_end = $translation->end();
       $translation_stable_id = $translation->stable_id();
@@ -336,8 +343,6 @@ sub add_gene {
     -created_date => time,
     -modified_date =>time 
   );
-
-print localtime(time) . " this is the local time for " . time  . "\n";
 
   return $gene;
 }
