@@ -910,6 +910,14 @@
       <xsl:value-of select="$cds_start"/>-<xsl:value-of select="$cds_end"/>
       <br/>
     </xsl:if>
+    
+    <xsl:if test="creation_date">
+      <span class="line_header">Creation date:</span>
+      <xsl:call-template name="format_date">
+        <xsl:with-param name="date2format"><xsl:value-of select="creation_date" /></xsl:with-param>
+      </xsl:call-template>
+      <br/>
+    </xsl:if>
 
     <!-- get comments and transcript info from the updatable layer-->
     <xsl:for-each select="/*/updatable_annotation/annotation_set">
@@ -1810,7 +1818,31 @@
   </xsl:choose>
 
   <p>
-    <span class="line_header">Region covered:</span><xsl:value-of select="$region_name"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/>
+    <xsl:variable name="region_display">
+      <xsl:choose>
+        <xsl:when test="$region_name='unlocalized'">
+          <xsl:value-of select="$region_id"/>
+        </xsl:when>
+		    <xsl:otherwise>
+		      <xsl:value-of select="$region_name"/>
+		    </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+  
+    <span class="line_header">Region covered:</span><span class="external_link"><xsl:value-of select="$region_display"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></span>
+    
+    <!-- Region synonyms for the patches and haplotypes -->
+    <xsl:if test="$type='patch' or $type='haplotype'">
+      <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
+      <span style="margin-right:10px;font-weight:bold">Region synonym(s):</span>
+      <span class="external_link">
+      <xsl:if test="$region_name!='unlocalized'">
+        <xsl:value-of select="$region_id"/>, 
+      </xsl:if>
+      <xsl:value-of select="$region_id_syn"/>
+      </span>
+    </xsl:if>
+    
     <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
     <span style="margin-right:10px;font-weight:bold">See in:</span>
     <xsl:choose>
@@ -2906,6 +2938,14 @@
   <xsl:for-each select="comment">
       <strong>Comment: </strong><xsl:value-of select="."/><br/>
   </xsl:for-each>
+  <xsl:if test="@fixed_id">
+      <strong>Comment: </strong>This protein was used for 
+      <a>
+    <xsl:attribute name="href">#transcript_t<xsl:value-of select="$transcript_idx"/></xsl:attribute>
+        LRG protein <xsl:value-of select="@fixed_id"/>
+      </a>
+      <br/>
+  </xsl:if>
   <xsl:if test="partial">
     <xsl:for-each select="partial">
       <xsl:variable name="part" select="." />
