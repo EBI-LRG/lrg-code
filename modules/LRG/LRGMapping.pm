@@ -1038,6 +1038,8 @@ sub attach_protein {
   # Create a node for the long name to use if one was found
   if (length($name_content) > 0) {
     my $name_node = LRG::Node->new('long_name');
+    my %names = map { $_ => 1 } split(/\s?,\s/, $name_content); # If several names
+    $name_content = join(', ',sort(keys(%names))); # Avoid duplicates
     $name_node->content($name_content);
     $protein_node->addExisting($name_node);
   }
