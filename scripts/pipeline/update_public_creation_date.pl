@@ -1,3 +1,14 @@
+#################################################################################
+# For each file which has just made public:                                     #
+# 1) Copy the file in a temporary directory                                     #
+# 2) Fetch the current creation date in the database                            #
+# 3) Get the today date                                                         #
+# 4) Replace the creation date by the today date in the temporary LRG XML file  #
+# 5) Update the creation date in the database                                   #
+# 6) Creates entry in the "lrg_status" table using the lrg_step "LRG published" #
+# 7) Copy the updated temporary file to the EBI FTP directory                   #
+#################################################################################
+
 use strict;
 use LRG::LRG qw(date);
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -81,9 +92,11 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   my $xml_file = "$xml_dir$lrg_id.xml";
   my $tmp_file = "$tmp_dir$lrg_id.xml";
   
+  # 1) Copy the file in a temporary directory
   `cp $xml_file $tmp_file`;
 
   # Creation date
+  # 2) Fetch the current creation date in the database
   $select_sth->execute($gene_id);
   my $creation_date = ($select_sth->fetchrow_array)[0];
   
@@ -94,7 +107,9 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   print STDOUT localtime() . "\t$lrg_id: Creation date $creation_date retrieved from the database\n" if ($verbose);
   
   # Publication date
+  # 3) Get the today date
   my $publication_date = LRG::LRG::date();
+  # 4) Replace the creation date by the today date in the temporary LRG XML file
   `sed -i 's/<creation_date>$creation_date/<creation_date>$publication_date/' $tmp_file`;
   my $grep_result = `grep "<creation_date>$publication_date</creation_date>" $tmp_file`;
 
@@ -104,6 +119,7 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   }
   print STDOUT localtime() . "\t$lrg_id: Publication date $publication_date inserted into the temporary file ($tmp_file)\n" if ($verbose);
   
+  # 5) Update the creation date in the database
   $update_sth->execute($publication_date,$gene_id);
   
   # Check publication date in database
@@ -118,6 +134,8 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   # LRG status
   $select_status_sth->execute($lrg_step_id,$lrg_id);
   if(!$select_status_sth->fetchrow_array) {
+  
+    # 6) Creates entry in the "lrg_status" table using the lrg_step "LRG published"
     $insert_status_sth->execute($lrg_id,$published_msg,$published_msg,$publication_date,$lrg_step_id);
     $select_status_sth->execute($lrg_step_id,$lrg_id);
     if(!$select_status_sth->fetchrow_array) {
@@ -127,7 +145,7 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   }
   print STDOUT localtime() . "\t$lrg_id: LRG status '$published_msg' inserted into the database\n" if ($verbose);
   
-  
+  # 7) Copy the updated temporary file to the EBI FTP directory
   `cp $tmp_file $xml_file`;
   print STDOUT localtime() . "\t$lrg_id: Temporary file $tmp_file copied to the $xml_dir directory\n" if ($verbose);
   
