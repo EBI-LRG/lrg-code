@@ -49,6 +49,8 @@ my $select_sth = $db_adaptor->dbc->prepare($select_stmt);
 my $update_sth = $db_adaptor->dbc->prepare($update_stmt);
 my $check_sth  = $db_adaptor->dbc->prepare($check_stmt);
 
+my @updated_lrgs;
+
 foreach my $lrg_id (split(',',$lrgs_list)) {
   $lrg_id =~ s/ //g;
   $lrg_id =~ /LRG_(\d+)$/;
@@ -98,11 +100,12 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
   
   `cp $tmp_file $xml_file`;
   print STDOUT localtime() . "\t$lrg_id: Temporary file $tmp_file copied to the $xml_dir directory\n" if ($verbose);
-   
-  `rm -f $tmp_file`;
-  print STDOUT localtime() . "\t$lrg_id: Temporary file $tmp_file removed\n" if ($verbose);
   
   print STDOUT localtime() . "\t$lrg_id: Creation date '$creation_date' had been successfully replaced by '$publication_date'.\n" if ($verbose);
+  
+  push (@updated_lrgs, $lrg_id);
+  
 }
-
+# Export for the shell/update_relnotes.sh script
+print join(',',@updated_lrgs);
 
