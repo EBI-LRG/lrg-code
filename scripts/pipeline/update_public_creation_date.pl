@@ -41,13 +41,29 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
 
+my $published_step = 'LRG published';
+my $published_msg  = 'Published';
+
 my $select_stmt = qq{ SELECT creation_date from lrg_data WHERE gene_id=? };
 my $update_stmt = qq{ UPDATE lrg_data SET creation_date=? WHERE gene_id=? };
 my $check_stmt  = qq{ SELECT creation_date from lrg_data WHERE creation_date=? AND gene_id=? };
 
+my $select_pub_step_stmt = qq{ SELECT lrg_step_id FROM lrg_step WHERE description like "$published_step%" };
+my $select_status_stmt   = qq{ SELECT lrg_id FROM lrg_status WHERE lrg_step_id=? and lrg_id=? };
+my $insert_status_stmt   = qq{ INSERT INTO lrg_status (lrg_id,title,status,description,status_date,lrg_step_id) VALUES (?,?,'public',?,?,?) };
+
 my $select_sth = $db_adaptor->dbc->prepare($select_stmt);
 my $update_sth = $db_adaptor->dbc->prepare($update_stmt);
 my $check_sth  = $db_adaptor->dbc->prepare($check_stmt);
+
+my $select_pub_step_sth = $db_adaptor->dbc->prepare($select_pub_step_stmt);
+my $select_status_sth   = $db_adaptor->dbc->prepare($select_status_stmt);
+my $insert_status_sth   = $db_adaptor->dbc->prepare($insert_status_stmt);
+
+$select_pub_step_sth->execute;
+my $lrg_step_id = ($select_pub_step_sth->fetchrow_array)[0];
+
+die ("Can't find the lrg_step_id corresponding the the '$published_step' in the lrg_step table") unless($lrg_step_id);
 
 my @updated_lrgs;
 
@@ -97,6 +113,20 @@ foreach my $lrg_id (split(',',$lrgs_list)) {
     next;
   }
   print STDOUT localtime() . "\t$lrg_id: Creation date $publication_date updated into the database\n" if ($verbose);
+  
+  
+  # LRG status
+  $select_status_sth->execute($lrg_step_id,$lrg_id);
+  if(!$select_status_sth->fetchrow_array) {
+    $insert_status_sth->execute($lrg_id,$published_msg,$published_msg,$publication_date,$lrg_step_id);
+    $select_status_sth->execute($lrg_step_id,$lrg_id);
+    if(!$select_status_sth->fetchrow_array) {
+      print STDOUT "Error: The insertion of the lrg status '$published_msg' in the database didn't work for the LRG $lrg_id\nLRG skipped!\n";
+      next;
+    }
+  }
+  print STDOUT localtime() . "\t$lrg_id: LRG status '$published_msg' inserted into the database\n" if ($verbose);
+  
   
   `cp $tmp_file $xml_file`;
   print STDOUT localtime() . "\t$lrg_id: Temporary file $tmp_file copied to the $xml_dir directory\n" if ($verbose);
