@@ -431,6 +431,7 @@ if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
             organism,
             taxon_id,
             moltype,
+            initial_creation_date,
             creation_date
         )
     VALUES (
@@ -438,6 +439,7 @@ if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
         '$organism',
         $taxon_id,
         '$moltype',
+        '$creation_date',
         '$creation_date'
     )
   };
