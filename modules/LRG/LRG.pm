@@ -841,15 +841,13 @@ sub printNode {
 
 sub sort_nodes {
     
-    # If $a or $b are undefined we return 0
-    if (!defined($a) || !defined($b)) {
-	return 0;
-    }
+  # If $a or $b are undefined we return 0
+  return 0 if (!defined($a) || !defined($b));
  
   # Get the parent node name
   my $parent = $a->parent->name();
   
-    # For tags that need to have their elements in a specific order
+  # For tags that need to have their elements in a specific order
   my %element_order = (
     'lrg' => {
       'fixed_annotation'     => 1,
@@ -868,7 +866,7 @@ sub sort_nodes {
       'transcript'    => 9
     },
     
-    'transcript' => {
+    'transcript' => { # Global (fixed + updatable)
       'creation_date'   => 1,
       'comment'         => 2,
       'coordinates'     => 3,
@@ -881,6 +879,16 @@ sub sort_nodes {
       'protein_product' => 10  
     },
     
+    'transcript_up' => { # Specific to the updatable section
+      'coordinates'     => 1,
+      'partial'         => 2,
+      'long_name'       => 3,
+      'comment'         => 4,
+      'db_xref'         => 5,
+      'exon'            => 6,
+      'protein_product' => 7
+    },
+
     'coding_region' => {
       'coordinates'    => 1,
       'selenocysteine' => 2,
@@ -1042,6 +1050,11 @@ sub sort_nodes {
     
   # If a and b are both in the %element_order hash, order them accordingly. Otherwise do nothing (return 0)
   if (exists($element_order{$parent}->{$a->name()}) && exists($element_order{$parent}->{$b->name()})) {
+    # Hacky way to order properly the tags under the "updatable transcript" tags
+    my $tr_up_name = 'transcript_up';
+    if ($parent eq 'transcript' && $a->parent->parent->name() eq 'gene' && exists($element_order{$tr_up_name}->{$a->name()}) && exists($element_order{$tr_up_name}->{$b->name()})) {
+      return ($element_order{$tr_up_name}->{$a->name()} <=> $element_order{$tr_up_name}->{$b->name()}); 
+    }
     return ($element_order{$parent}->{$a->name()} <=> $element_order{$parent}->{$b->name()});
   }
     
