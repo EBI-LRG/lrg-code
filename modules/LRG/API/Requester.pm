@@ -3,7 +3,6 @@ use warnings;
 
 package LRG::API::Requester;
 
-use LRG::LRG qw(date);
 use LRG::API::Base;
 use LRG::API::Meta;
 
@@ -14,8 +13,7 @@ sub initialize {
   my $self = shift;
   my ($source,$modification_date,$note) = @_;
   my $type = 'requester';
-  $modification_date ||= date();
-  
+
   $self->type($type);
   $self->source($source,'LRG::API::Source',1);
   $self->modification_date($modification_date,'LRG::API::Meta');
