@@ -1142,10 +1142,18 @@ sub partial {
 
     # Loop over the annotation sets
     foreach my $annotation_set (@{$annotation_sets}) {
-        
+
         # Get the annotation source
-        my $source = $annotation_set->findNode('source/name')->content();
-        
+        my $source = '';
+        if ($annotation_set->data()->{'type'}) {
+          $source = $annotation_set->data()->{'type'};
+        }
+        elsif ($annotation_set->findNode('source/name')) {
+          $source = $annotation_set->findNode('source/name')->content();
+        }
+        next if ($source eq $requester_type);
+        $source = ucfirst($source);
+
         # Grab the gene features
         my $gene_sets = $annotation_set->findNodeArray('features/gene');
         next if (!defined($gene_sets));
