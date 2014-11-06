@@ -305,19 +305,19 @@ $html .= qq{
           
           exon_popup_header_right = document.createElement('div');
           exon_popup_header_right.className = "hide_popup_button";
-          exon_popup_header_right.innerHTML = "X";
           exon_popup_header_right.title="Hide this popup";
           exon_popup_header_right.onclick = function() { show_hide_info(e,ens_id,exon_id,content); };
           exon_popup_header.appendChild(exon_popup_header_right);
           
           exon_popup_header_clear = document.createElement('div');
-          exon_popup_header_clear.style.clear = "both";
+          exon_popup_header_clear.className = "exon_popup_header_clear";
           exon_popup_header.appendChild(exon_popup_header_clear);
           
           exon_popup.appendChild(exon_popup_header);
           
           // Body
           exon_popup_body = document.createElement('div');
+          exon_popup_body.className = "exon_popup_body";
           var popup_content = "";
           if (ens_id.substr(0,4) != 'ENSG') {
             popup_content = "<b>Exon:</b> "+exon_id+"<br />";
@@ -365,7 +365,7 @@ $html .= qq{
       
       .manual {margin-right:10px;margin-bottom:1px;padding:1px;cursor:help;color:#FFF;border:1px solid #FFF;background-color:#E00;font-size:14px;font-weight:bold;display:inline-block;line-height:14px}
       .not_manual {margin-right:10px;margin-bottom:1px;padding:1px 2px;cursor:help;color:#FFF;border:1px solid #FFF;background-color:#888;font-size:14px;font-weight:bold;display:inline-block;line-height:14px}
-      .tsl {margin-left:10px;margin-bottom:1px;padding:1px 3px;cursor:help;color:#FFF;border-radius:20px;border:1px solid #FFF;background-color:#000;font-size:14px;font-weight:bold;display:inline-block;line-height:14px;}
+      .tsl {margin-left:10px;margin-bottom:1px;padding:1px 3px;cursor:help;color:#FFF;border-radius:20px;border:1px solid #FFF;background-color:#000;font-size:14px;font-weight:bold;display:inline-block;line-height:14px}
       
       th.coord {font-size:0.6em;width:10px;text-align:center;cursor:pointer}
       .first_column {text-align:center;border:1px solid #FFF;padding:1px 2px}
@@ -404,11 +404,14 @@ $html .= qq{
       .forward_strand {font-weight:bold;font-size:1.1em;color:#00B}
       .reverse_strand {font-weight:bold;font-size:1.1em;color:#B00}
       
-      .exon_popup {border:1px solid black;background-color:white;position:absolute;font-size:0.8em;padding:1px}
-      .exon_popup_header {background-color:#008;color:#FFF}
+      .exon_popup {border:1px solid black;background-color:white;position:absolute;font-size:0.8em;width-min:160px;border-radius:5px}
+      .exon_popup_header {background-color:#008;color:#FFF;padding:2px;border-top-left-radius:4px;border-top-right-radius:4px}
       .exon_popup_header_title {float:left;text-align:center;padding:1px}
-      .hide_popup_button {float:right;margin:1px;border-radius:5px;border:1px solid #CCC;cursor:pointer;padding:1px 4px;font-size:0.6em;background-color:#48a726;color:#FFF}
-      .hide_popup_button:hover {background-color:#336}
+      .hide_popup_button {float:right;padding:1px 2px 2px;cursor:pointer;color:#FFF;border-radius:20px;background-color:#48a726;font-size:16px;font-weight:bold;display:inline-block;line-height:14px}
+      .hide_popup_button:before { content: "×";}
+      .hide_popup_button:hover {background-color:#D22}
+      .exon_popup_header_clear {clear:both}
+      .exon_popup_body {padding:2px}
       
       /* Button */
       .green_button {
@@ -836,7 +839,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
         $colspan = 1;
       }
       else {
-        $colspan ++;
+        #$colspan ++;
         $html .= qq{</td><td colspan="$colspan">};
         $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       }
