@@ -404,7 +404,7 @@ $html .= qq{
       .forward_strand {font-weight:bold;font-size:1.1em;color:#00B}
       .reverse_strand {font-weight:bold;font-size:1.1em;color:#B00}
       
-      .exon_popup {border:1px solid black;background-color:white;position:absolute;font-size:0.8em;width-min:160px;border-radius:5px}
+      .exon_popup {border:1px solid black;background-color:white;position:absolute;font-size:0.8em;min-width:160px;border-radius:5px}
       .exon_popup_header {background-color:#008;color:#FFF;padding:2px;border-top-left-radius:4px;border-top-right-radius:4px}
       .exon_popup_header_title {float:left;text-align:center;padding:1px}
       .hide_popup_button {float:right;padding:1px 2px 2px;cursor:pointer;color:#FFF;border-radius:20px;background-color:#48a726;font-size:16px;font-weight:bold;display:inline-block;line-height:14px}
@@ -805,32 +805,36 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
   my $ended = 0;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
     
-    # Exon start found
+    # Gene start found
     if (!$exon_start && $coord == $first_exon) {
       $exon_start = $coord;
+      # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
         $html .= qq{</td><td>};
         $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
-        $colspan = 1;
       }
       if ($coord == $last_exon) {
         $ended = 1;
       }
+      $colspan = 1;
       next;
     }
+    # Gene overlap coordinates
     elsif ($exon_start and $coord < $last_exon) {
       $colspan ++;
       next;
     }
+    # Gene end partially matches coordinates
     elsif ($ended == 2) {
       $html .= qq{</td><td>};
       $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $ended = 1;
       next;
     }
-    # Exon end found
+    # Gene end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
       $ended = 1;
+      # Last gene coordinates matching exon coordinates
       if ($is_last_exon_partial == 1) {
         my $tmp_colspan = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
         $html .= qq{</td><td$tmp_colspan>};
@@ -838,10 +842,12 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
         $ended = 2;
         $colspan = 1;
       }
+      # Gene end matches coordinates
       else {
         #$colspan ++;
         $html .= qq{</td><td colspan="$colspan">};
         $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $colspan = 1;
       }
       next;
     }
@@ -849,13 +855,15 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
     
     my $has_gene = ($exon_start && $ended == 0) ? 'gene' : $no_match;
-      
+    
+    # Extra gene display  
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene') {
       $html .= qq{<div class="$has_gene\_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $colspan = 1;
     }
+    # No data
     else {
       $html .= qq{<div class="$has_gene\_coord_match"> </div>};
     }
