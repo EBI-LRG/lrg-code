@@ -257,10 +257,7 @@ my $hgnc_symbol_stmt = qq{
         gene
     WHERE
         symbol = ? AND
-        (
-            lrg_id IS NULL OR
-            lrg_id = '$lrg_id'
-        )
+        lrg_id = '$lrg_id'
     LIMIT 1
 };
 
@@ -316,7 +313,7 @@ if (defined($gene_id)) {
     $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if (!defined($db_refseq) || $refseq ne $db_refseq);
   }
   # Update the LRG status
-  $db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
+  #$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
 }
 
 ## Create new "gene" entry ##
