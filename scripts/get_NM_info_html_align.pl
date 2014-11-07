@@ -375,15 +375,24 @@ $html .= qq{
       .nm   {background-color:#55F;color:#EEE}
       .cdna {background-color:#AFA;color:#000}
       .gene {background-color:#000;color:#FFF}
-      .exon_coord_match {height:20px;background-color:#090;text-align:center;color:#FFF;cursor:pointer}
-      .exon_coord_match_np {height:20px;background-color:#900;text-align:center;color:#FFF;padding-left:2px;padding-right:2px;cursor:pointer}
-      .non_coding_coord_match {height:18px;position:relative;background-color:#FFF;border:2px dotted #090;text-align:center;color:#000;cursor:pointer}
-      .non_coding_coord_match_np {height:18px;position:relative;background-color:#FFF;border:2px dotted #900;text-align:center;color:#000;cursor:pointer}
-      .few_evidence_coord_match {height:20px;background-color:#ADA;text-align:center;color:#FFF;cursor:pointer}
-      .no_coord_match {height:1px;background-color:#000;position:relative;top:50%}
-      .gene_coord_match {height:20px;background-color:#000;text-align:center;color:#FFF;cursor:pointer}
-      .partial_gene_coord_match {height:20px;background-color:#888;text-align:center;color:#FFF;cursor:pointer}
-      .none_coord_match {display:none} 
+      
+      .exon {background-color:#FEFEFE;text-align:center;color:#FFF;cursor:pointer}
+      .coding    {height:20px;background-color:#090;box-shadow:2px 2px 1px #CCC}
+      .coding_np {height:20px;background-color:#900;padding-left:2px;padding-right:2px;box-shadow:2px 2px 1px #CCC}
+      
+      .partial {background-image: repeating-linear-gradient(135deg,transparent, transparent 5px, rgba(255,255,255,.5) 5px, rgba(255,255,255,.5) 10px)}
+
+      .few_evidence {border-top-left-radius:15px;border-top-right-radius:15px}
+      .few_evidence::after {content: " *"}
+      
+      .non_coding    {height:18px;position:relative;border:1px inset #090;border-top-color:#0B0;border-left-color:#0B0;color:#000;box-shadow:1px 1px 1px #CCC inset}
+      .non_coding_np {height:18px;position:relative;border:1px inset #900;border-top-color:#B00;border-left-color:#B00;color:#000;box-shadow:1px 1px 1px #CCC inset}
+      
+      .no_exon {height:1px;background-color:#000;position:relative;top:50%}
+      .none {display:none} 
+      
+      .gene_exon {height:20px;background-color:#000;box-shadow:2px 2px 1px #CCC}
+      
       .separator {width:1px;background-color:#888;padding:0px;margin:0px 1px 0px}
       .bg1 {background-color:#FFF}
       .bg2 {background-color:#EEE}
@@ -480,7 +489,7 @@ my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column">
 # Display ENSEMBL transcript #
 #----------------------------#
 my %ens_rows_list;
-foreach my $ens_tr (keys(%ens_tr_exons_list)) {
+foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
@@ -540,7 +549,9 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
   my $exon_end;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    
+    my $is_partial = '';
+    my $is_coding  = ' coding';
+    my $few_evidence = ''; 
     if ($exon_start and !$ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
       next;
@@ -555,26 +566,38 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
       $colspan ++;
     }
     
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
+    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
     
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
-    if ($exon_start && ! $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object)) {
-      $has_exon = 'non_coding';
-    }
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
-      $has_exon = 'few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence);
+      if(! $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object)) {
+        $is_coding = ' non_coding';
+      }
+      else {
+        my $coding_start = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object);
+        my $coding_end   = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_end($tr_object);
+
+        #if ($tr_object->strand == 1) {
+          $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+        #}
+        #elsif ($tr_object->strand == -1) {
+        #  $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+        #}
+      }
+      
+      $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $html .= qq{ <div class="$has_exon\_coord_match" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')">$exon_number</div>};
+      $html .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')">$exon_number</div>};
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon"> </div>};
     }
   }
   my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
@@ -589,7 +612,7 @@ foreach my $ens_tr (keys(%ens_tr_exons_list)) {
 # Display cDNA transcripts #
 #--------------------------#
 my %cdna_rows_list;
-foreach my $nm (keys(%cdna_tr_exons_list)) {
+foreach my $nm (sort keys(%cdna_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'cdna';
@@ -624,6 +647,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    my $is_coding  = ' coding';
     
     if ($exon_start and !$cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
@@ -639,7 +663,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       $colspan ++;
     }
     
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
+    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
     
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
@@ -649,14 +673,14 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $html .= qq{<div class="$has_exon\_coord_match$identity" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number$identity_score</div>};
+      $html .= qq{<div class="$has_exon$is_coding$identity" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number$identity_score</div>};
       if ($cdna_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon"> </div>};
     }
   }
   $html .= $end_of_row;
@@ -667,7 +691,7 @@ foreach my $nm (keys(%cdna_tr_exons_list)) {
 # Display REFSEQ transcripts #
 #----------------------------#
 my %refseq_rows_list;
-foreach my $nm (keys(%refseq_tr_exons_list)) {
+foreach my $nm (sort keys(%refseq_tr_exons_list)) {
 
   my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'nm';
@@ -702,6 +726,8 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    my $is_coding  = ' coding';
+    my $is_partial = '';
     
     if ($exon_start and !$refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
@@ -717,21 +743,30 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
       $colspan ++;
     }
     
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
+    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
     
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
-      $html .= qq{<div class="$has_exon\_coord_match" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number</div>};
+      if(! $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object)) {
+        $is_coding = ' non_coding';
+      }
+      elsif ($refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object) > $exon_start) {
+        my $coding_start = $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object);
+        my $coding_end   = $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_end($refseq_object);
+        $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+      }
+      
+      $html .= qq{<div class="$has_exon$is_coding$is_partial" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number</div>};
       if ($refseq_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon\_coord_match"> </div>};
+      $html .= qq{<div class="$has_exon"> </div>};
     }
   }
   $html .= $end_of_row;
@@ -742,7 +777,7 @@ foreach my $nm (keys(%refseq_tr_exons_list)) {
 # Display overlapping gene(s) #
 #-----------------------------#
 my %gene_rows_list;
-foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
+foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   my $gene_object = $overlapping_genes_list{$o_ens_gene}{'object'};
 
   # HGNC symbol
@@ -790,7 +825,7 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
     }  
     
     if ($gene_end < $coord && !defined($last_exon)) {
-      $last_exon = $previous_exon;
+      $last_exon = $coord;
       $is_last_exon_partial = 1;
     }
     elsif ($gene_end == $coord && !defined($last_exon)) {
@@ -811,12 +846,10 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
         $html .= qq{</td><td>};
-        $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $html .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       }
-      if ($coord == $last_exon) {
-        $ended = 1;
-      }
-      $colspan = 1;
+      $ended = 1 if ($coord == $last_exon);
+      $colspan = 0;
       next;
     }
     # Gene overlap coordinates
@@ -824,48 +857,51 @@ foreach my $o_ens_gene (keys(%overlapping_genes_list)) {
       $colspan ++;
       next;
     }
-    # Gene end partially matches coordinates
+    # Gene end partially matches end coordinates
     elsif ($ended == 2) {
       $html .= qq{</td><td>};
-      $html .= qq{<div class="partial_gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $html .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $html .= qq{</td><td>};
       $ended = 1;
       next;
     }
     # Gene end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
       $ended = 1;
+      $colspan ++;
       # Last gene coordinates matching exon coordinates
       if ($is_last_exon_partial == 1) {
-        my $tmp_colspan = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-        $html .= qq{</td><td$tmp_colspan>};
-        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        if ($colspan > 1) {
+          my $html_colspan = qq{ colspan="$colspan"};
+          $html .= qq{</td><td$html_colspan>};
+          $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        }
         $ended = 2;
-        $colspan = 1;
+        $colspan = 0;
       }
       # Gene end matches coordinates
       else {
-        #$colspan ++;
         $html .= qq{</td><td colspan="$colspan">};
-        $html .= qq{<div class="gene_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
-        $colspan = 1;
+        $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $colspan = 0;
       }
       next;
     }
     
     my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no';
     
-    my $has_gene = ($exon_start && $ended == 0) ? 'gene' : $no_match;
+    my $has_gene = ($exon_start && $ended == 0) ? 'exon gene_exon' : $no_match;
     
     # Extra gene display  
-    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
+    my $colspan_html = ($colspan == 0) ? '' : qq{ colspan="$colspan"};
     $html .= qq{</td><td$colspan_html>}; 
-    if ($has_gene eq 'gene') {
-      $html .= qq{<div class="$has_gene\_coord_match" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+    if ($has_gene eq 'gene' ) {
+      $html .= qq{<div class="$has_gene" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $colspan = 1;
     }
     # No data
     else {
-      $html .= qq{<div class="$has_gene\_coord_match"> </div>};
+      $html .= qq{<div class="$has_gene"> </div>};
     }
   }  
   $html .= $end_of_row;
@@ -996,10 +1032,11 @@ my $nb_exon_evidence = $min_exon_evidence+1;
 my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
 $html .= qq{ 
-    <div style="margin-top:50px;width:650px;border:1px solid #336;border-radius:5px">
+    <div style="margin-top:50px;width:920px;border:1px solid #336;border-radius:5px">
       <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
     
     <!-- Transcript -->
+    <div style="float:left;width:450px">
     <table class="legend">
       <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
       <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
@@ -1009,25 +1046,33 @@ $html .= qq{
       <tr class="bg1"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
       <tr class="bg2">
         <td>
-          <span class="tsl" style="text-align:center;background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1"><small>1</small></span>
-          <span class="tsl" style="text-align:center;background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2"><small>2</small></span>
+          <span class="tsl" style="background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1">1</span>
+          <span class="tsl" style="background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2">2</span>
         </td>
         <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td></tr>
     </table>
-    
+    </div>
+   
       <!-- Exons -->
-    <table class="legend" style="margin-top:10px">
+    <div style="float:left;width:450px;margin-left:10px">
+    <table class="legend">
       <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon_coord_match_np" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="non_coding_coord_match">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="non_coding_coord_match_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="few_evidence_coord_match" style="border:1px solid #FFF;">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="partial_gene_coord_match">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="none_coord_match"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="no_coord_match"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon coding">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon non_coding">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon coding few_evidence">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon coding few_evidence partial">#</div></td><td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon non_coding few_evidence">#</div></td><td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="exon gene_exon">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="exon gene_exon partial">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+      <tr class="bg2"><td style="width:50px"><div class="none"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
+      <tr class="bg1"><td style="width:50px"><div class="no_exon"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
     </table>
+    </div>
+    <div style="clear:both"></div>
     </div>
   </body>
 </html>  
