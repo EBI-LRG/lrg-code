@@ -2898,7 +2898,7 @@
     		  </table>  
     		  </td>
           </xsl:when>
-          <xsl:otherwise><td>-</td></xsl:otherwise>
+          <xsl:otherwise><td><span style="color:#888">none</span></td></xsl:otherwise>
         </xsl:choose>
 </xsl:template>
 
