@@ -251,6 +251,12 @@ $html .= qq{
         }
       }
       
+      function showhide_range(start_row_id,end_row_id) {
+        for (var id=start_row_id; id<=end_row_id; id++) {
+          showhide(id);
+        }  
+      }
+      
       function showall(row_id) {
         for (var id=1; id<=row_id; id++) {
           var row_obj = document.getElementById("tr_"+id);
@@ -868,11 +874,12 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     # Gene end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
       $ended = 1;
-      $colspan ++;
+      
       # Last gene coordinates matching exon coordinates
       if ($is_last_exon_partial == 1) {
-        if ($colspan > 1) {
-          my $html_colspan = qq{ colspan="$colspan"};
+        if ($colspan > 0) {
+          $colspan ++ if (!$is_first_exon_partial);
+          my $html_colspan = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
           $html .= qq{</td><td$html_colspan>};
           $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
         }
@@ -881,6 +888,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       }
       # Gene end matches coordinates
       else {
+        $colspan ++;
         $html .= qq{</td><td colspan="$colspan">};
         $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
         $colspan = 0;
@@ -913,97 +921,113 @@ $html .= qq{
       </table>
     </div>
     <h3>>Show/hide rows</h3>
-    <div style="margin:10px 0px">
-      <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">Ensembl rows:</div>
-      <div style="float:left">
-        <div style="margin-bottom:10px">  
-}; 
+    <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
+    
 my $max_per_line = 5;
 
 # Ensembl transcripts
 my $ens_count = 0; 
-foreach my $ens_row_id (sort {$a <=> $b} keys(%ens_rows_list)) {
+my @ens_row_ids = (sort {$a <=> $b} keys(%ens_rows_list));
+my $ens_buttons_html = '';
+foreach my $ens_row_id (@ens_row_ids) {
   if ($ens_count == $max_per_line) {
-    $html .= qq{</div><div style="margin-bottom:10px">};
+    $ens_buttons_html .= qq{</div><div style="margin-bottom:10px">};
     $ens_count = 0;
   }
   my $label = $ens_rows_list{$ens_row_id}{'label'};
   my $class = $ens_rows_list{$ens_row_id}{'class'};
-  $html .= qq{<input type="hidden" id="button_color_$ens_row_id" value="$class"/>};
-  $html .= qq{<span id="button_$ens_row_id" class="button $class" onclick="showhide($ens_row_id)">$label</span>};
+  $ens_buttons_html .= qq{<input type="hidden" id="button_color_$ens_row_id" value="$class"/>};
+  $ens_buttons_html .= qq{<span id="button_$ens_row_id" class="button $class" onclick="showhide($ens_row_id)">$label</span>};
   $ens_count ++;
 }
 
-$html .= qq{</div></div><div style="clear:both"></div></div>
-         <div style="margin:10px 0px">
-           <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">cDNA rows:</div>
-           <div style="float:left">
-             <div style="margin-bottom:10px">
-        };
+my $first_ens_row_id = $ens_row_ids[0];
+my $last_ens_row_id  = $ens_row_ids[@ens_row_ids-1];
+
+$html .= get_showhide_buttons('Ensembl', $first_ens_row_id, $last_ens_row_id);
+$html .= $ens_buttons_html;
+
+$html .= qq{</div></div><div style="clear:both"></div></div>};
+
 
 # cDNA
 my $cdna_count = 0;
-foreach my $cdna_row_id (sort {$a <=> $b} keys(%cdna_rows_list)) {
+my @cdna_row_ids = (sort {$a <=> $b} keys(%cdna_rows_list));
+my $cdna_buttons_html = '';
+foreach my $cdna_row_id (@cdna_row_ids) {
   if ($cdna_count == $max_per_line) {
-    $html .= qq{</div><div style="margin-bottom:10px">};
+    $cdna_buttons_html .= qq{</div><div style="margin-bottom:10px">};
     $cdna_count = 0;
   }
   my $label = $cdna_rows_list{$cdna_row_id}{'label'};
   my $class = $cdna_rows_list{$cdna_row_id}{'class'};
-  $html .= qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
-  $html .= qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
+  $cdna_buttons_html .= qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
+  $cdna_buttons_html .= qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
   $cdna_count ++;
 }  
+my $first_cdna_row_id = $cdna_row_ids[0];
+my $last_cdna_row_id  = $cdna_row_ids[@cdna_row_ids-1];
 
-$html .= qq{</div></div><div style="clear:both"></div></div>
-         <div style="margin:10px 0px">
-         <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">RefSeq rows:</div>
-           <div style="float:left">
-             <div style="margin-bottom:10px">
-        };
+$html .= get_showhide_buttons('cDNA', $first_cdna_row_id, $last_cdna_row_id);
+$html .= $cdna_buttons_html;
+
+$html .= qq{</div></div><div style="clear:both"></div></div>};
+
 
 # RefSeq
 my $refseq_count = 0;
-foreach my $refseq_row_id (sort {$a <=> $b} keys(%refseq_rows_list)) {
+my @refseq_row_ids = (sort {$a <=> $b} keys(%refseq_rows_list));
+my $refseq_buttons_html = '';
+foreach my $refseq_row_id (@refseq_row_ids) {
   if ($refseq_count == $max_per_line) {
-    $html .= qq{</div><div style="margin-bottom:10px">};
+    $refseq_buttons_html .= qq{</div><div style="margin-bottom:10px">};
     $refseq_count = 0;
   }
   my $label = $refseq_rows_list{$refseq_row_id}{'label'};
   my $class = $refseq_rows_list{$refseq_row_id}{'class'};
-  $html .= qq{<input type="hidden" id="button_color_$refseq_row_id" value="$class"/>};
-  $html .= qq{<span id="button_$refseq_row_id" class="button $class" onclick="showhide($refseq_row_id)">$label</span>};
+  $refseq_buttons_html .= qq{<input type="hidden" id="button_color_$refseq_row_id" value="$class"/>};
+  $refseq_buttons_html .= qq{<span id="button_$refseq_row_id" class="button $class" onclick="showhide($refseq_row_id)">$label</span>};
   $refseq_count ++;
 }
+
+my $first_refseq_row_id = $refseq_row_ids[0];
+my $last_refseq_row_id  = $refseq_row_ids[@refseq_row_ids-1];
+
+$html .= get_showhide_buttons('RefSeq', $first_refseq_row_id, $last_refseq_row_id);
+$html .= $refseq_buttons_html;
 
 
 $html .= qq{</div></div><div style="clear:both"></div></div>\n};
   
 # Ensembl genes
 if (scalar(keys(%gene_rows_list))) {
-  $html .= qq{ <div style="margin:10px 0px">
-             <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">Gene rows:</div>
-             <div style="float:left">
-               <div style="margin-bottom:10px">
-          };
   my $ens_g_count = 0; 
-  foreach my $gene_row_id (sort {$a <=> $b} keys(%gene_rows_list)) {
+  my @gene_row_ids = (sort {$a <=> $b} keys(%gene_rows_list));
+  my $gene_buttons_html = '';
+  foreach my $gene_row_id (@gene_row_ids) {
     if ($ens_g_count == $max_per_line) {
-      $html .= qq{</div><div style="margin-bottom:10px">};
+      $gene_buttons_html .= qq{</div><div style="margin-bottom:10px">};
       $ens_count = 0;
     }
     my $label = $gene_rows_list{$gene_row_id}{'label'};
     my $class = $gene_rows_list{$gene_row_id}{'class'};
-    $html .= qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
-    $html .= qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
+    $gene_buttons_html .= qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
+    $gene_buttons_html .= qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
     $ens_count ++;
   }
+  
+  my $first_gene_row_id = $gene_row_ids[0];
+  my $last_gene_row_id  = $gene_row_ids[@gene_row_ids-1];
+
+  $html .= get_showhide_buttons('Gene', $first_gene_row_id, $last_gene_row_id);
+  $html .= $gene_buttons_html;
+
 }
 $html .= qq{ 
     </div></div><div style="clear:both"></div></div>
     <div style="margin:10px 0px 60px">
-      <div style="float:left;font-weight:bold;width:140px">All rows:</div>
-      <div style="float:left;padding-left:5px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
+      <div style="float:left;font-weight:bold">All rows:</div>
+      <div style="float:left;margin-left:10px;padding-top:4px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
      <div style="clear:both"></div>
     </div>
 };
@@ -1136,6 +1160,20 @@ sub get_biotype {
     $biotype = qq{<span style="border-bottom:1px dotted #555;cursor:default" title="nonsense_mediated_decay">NMD</span>};
   }
   return $biotype;
+}
+
+sub get_showhide_buttons {
+  my $type  = shift;
+  my $start = shift;
+  my $end   = shift;
+  return qq{
+       <div style="margin:10px 0px;border-bottom:2px dotted #888;padding:2px">
+         <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">$type rows:</div>
+         <div style="float:left;margin:0px 2px;padding-top:2px">
+           <a class="green_button" href="javascript:showhide_range($start,$end);"><small>Show/Hide all rows</small></a>
+         </div>
+         <div style="float:left;padding-top:2px;padding-left:2px;margin-bottom:10px;border-left:2px dotted #888">
+           <div style="margin-bottom:10px">\n};
 }
 
 
