@@ -708,9 +708,9 @@
   <a name="genomic_sequence_anchor" />
   <div class="main_subsection">
     <div style="float:left">
-    <xsl:call-template name="lrg_right_arrow_blue">
-      <xsl:with-param name="img_id">img_sequence</xsl:with-param>
-    </xsl:call-template>
+      <xsl:call-template name="lrg_right_arrow_blue">
+        <xsl:with-param name="img_id">img_sequence</xsl:with-param>
+      </xsl:call-template>
       <h3 class="main_subsection">Genomic sequence</h3>
     </div>
     <div class="show_hide_box" style="margin-top:2px">
@@ -3059,7 +3059,7 @@
     		  </table>  
     		  </td>
           </xsl:when>
-          <xsl:otherwise><td>-</td></xsl:otherwise>
+          <xsl:otherwise><td><span style="color:#888">none</span></td></xsl:otherwise>
         </xsl:choose>
 </xsl:template>
 
