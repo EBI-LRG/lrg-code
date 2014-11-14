@@ -1790,7 +1790,6 @@
     </xsl:choose>
   </xsl:variable>
     
-<!--   select="substring-before($coord_system,'.')" />-->
   <xsl:variable name="ensembl_url"><xsl:text>http://</xsl:text>
     <xsl:choose>  
       <xsl:when test="$main_assembly=$previous_assembly">
@@ -1829,7 +1828,7 @@
       </xsl:choose>
     </xsl:variable>
   
-    <span class="line_header">Region covered:</span><span class="external_link"><xsl:value-of select="$region_display"/>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></span>
+    <span class="line_header">Region covered:</span><span class="external_link"><span class="blue"><xsl:value-of select="$region_display"/></span>:<xsl:value-of select="$region_start"/>-<xsl:value-of select="$region_end"/></span>
     
     <!-- Region synonyms for the patches and haplotypes -->
     <xsl:if test="$type='patch' or $type='haplotype'">
@@ -3017,50 +3016,175 @@
             <th title="Reference allele">Ref. al.</th>
             <th></th>
             <th title="LRG allele">LRG al.</th>
-            <th class="no_border_right" title="LRG coordinates">LRG coord.</th>
-           </tr>
+            <th title="LRG coordinates">LRG coord.</th>
+            <th title="HGVS notation">HGVS</th>
+            <th class="no_border_right" title="Diffence in exon">in exon</th>
+          </tr>
              
-             <xsl:for-each select="diff">
-             <tr>
-               <td class="no_border_bottom no_border_left" style="font-weight:bold">
-                 <xsl:variable name="diff_type" select="@type" />
-                 <xsl:choose>
-                   <xsl:when test="$diff_type='lrg_ins'">
-                     insertion
-                   </xsl:when>
-                   <xsl:when test="$diff_type='other_ins'">
-                     deletion
-                   </xsl:when>
-                   <xsl:otherwise><xsl:value-of select="$diff_type" /></xsl:otherwise>
-                 </xsl:choose>
-               </td>
-               <td class="no_border_bottom"><xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if></td>
-               <td class="no_border_bottom" style="font-weight:bold;text-align:right">
-      		       <xsl:choose>
-        		       <xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
-        		       <xsl:otherwise>-</xsl:otherwise>
-      		       </xsl:choose>
-               </td>
+          <xsl:for-each select="diff">
+          <tr>
+            <td class="no_border_bottom no_border_left" style="font-weight:bold">
+              <xsl:variable name="diff_type" select="@type" />
+              <xsl:choose>
+                <xsl:when test="$diff_type='lrg_ins'">
+                  insertion
+                </xsl:when>
+                <xsl:when test="$diff_type='other_ins'">
+                  deletion
+                </xsl:when>
+                <xsl:otherwise><xsl:value-of select="$diff_type" /></xsl:otherwise>
+              </xsl:choose>
+            </td>
+            <td class="no_border_bottom"><xsl:value-of select="@other_start"/><xsl:if test="@other_start != @other_end">-<xsl:value-of select="@other_end"/></xsl:if></td>
+            <td class="no_border_bottom" style="font-weight:bold;text-align:right">
+      		    <xsl:choose>
+        		    <xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
+        		    <xsl:otherwise>-</xsl:otherwise>
+      		    </xsl:choose>
+            </td>
           
-               <td class="no_border_bottom">
-                 <xsl:call-template name="right_arrow_green">
-                   <xsl:with-param name="no_margin">1</xsl:with-param>
-                 </xsl:call-template>
-               </td>
-               <td class="no_border_bottom" style="font-weight:bold">
-      		       <xsl:choose>
-        		       <xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
-        		       <xsl:otherwise>-</xsl:otherwise>
-      		       </xsl:choose>
-      		     </td>
-               <td class="no_border_bottom no_border_right"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
-             </tr>
-    		     </xsl:for-each>
-    		  </table>  
-    		  </td>
+            <td class="no_border_bottom">
+              <xsl:call-template name="right_arrow_green">
+                <xsl:with-param name="no_margin">1</xsl:with-param>
+              </xsl:call-template>
+            </td>
+            <td class="no_border_bottom" style="font-weight:bold">
+      		    <xsl:choose>
+        		    <xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
+        		    <xsl:otherwise>-</xsl:otherwise>
+      		    </xsl:choose>
+      		  </td>
+            <td class="no_border_bottom"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
+            <td class="no_border_bottom">
+              <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">
+                <xsl:call-template name="diff_hgvs_genomic_ref">
+                  <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
+                </xsl:call-template>
+              </xsl:if>
+              <xsl:call-template name="diff_hgvs_genomic_lrg"></xsl:call-template>
+            </td>
+            <td class="no_border_bottom no_border_right">
+              <xsl:call-template name="diff_in_exon">
+                <xsl:with-param name="diff_start"><xsl:value-of select="@lrg_start"/></xsl:with-param>
+                <xsl:with-param name="diff_end"><xsl:value-of select="@lrg_end"/></xsl:with-param>
+              </xsl:call-template>
+            </td>
+          </tr>
+          </xsl:for-each>
+    		</table>  
+    </td>
+    </xsl:when>
+    <xsl:otherwise><td><span style="color:#888">none</span></td></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
+
+<!-- HGVS genomic ref diff -->
+<xsl:template name="diff_hgvs_genomic_ref">
+  <xsl:param name="chr" />
+  
+  <xsl:variable name="hgvs_type">:g.</xsl:variable>
+  
+  <xsl:for-each select=".">
+     <span class="blue"><xsl:value-of select="$chr"/></span><xsl:value-of select="$hgvs_type"/>
+    <xsl:choose>
+      <!-- Ref deletion -->
+      <xsl:when test="@type='lrg_ins'">
+        <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>ins<xsl:value-of select="@lrg_sequence"/>
+      </xsl:when>
+      <!-- Ref insertion -->
+      <xsl:when test="@type='other_ins'">
+        <xsl:choose>
+          <xsl:when test="@other_start=@other_end">
+            <xsl:value-of select="@other_start"/>del<xsl:value-of select="@other_sequence"/>
           </xsl:when>
-          <xsl:otherwise><td><span style="color:#888">none</span></td></xsl:otherwise>
+          <xsl:otherwise>
+            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="@other_sequence"/>
+          </xsl:otherwise>
         </xsl:choose>
+      </xsl:when>
+      <!-- Ref mismatch -->
+      <xsl:otherwise>
+        <xsl:choose>
+          <xsl:when test="@other_start=@other_end">
+            <xsl:value-of select="@other_start"/><xsl:value-of select="@other_sequence"/>><xsl:value-of select="@lrg_sequence"/>
+          </xsl:when>  
+          <xsl:otherwise>
+            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/><xsl:value-of select="@other_sequence"/>><xsl:value-of select="@lrg_sequence"/>
+          </xsl:otherwise>
+        </xsl:choose>  
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each>
+  <br />
+   
+</xsl:template>
+
+
+<!-- HGVS genomic diff lrg -->
+<xsl:template name="diff_hgvs_genomic_lrg">
+  
+  <xsl:variable name="hgvs_type">:g.</xsl:variable>
+  
+  <xsl:for-each select=".">
+     <span class="green"><xsl:value-of select="$lrg_id"/></span><xsl:value-of select="$hgvs_type"/>
+    <xsl:choose>
+      <!-- LRG insertion -->
+      <xsl:when test="@type='lrg_ins'">
+        <xsl:choose>
+          <xsl:when test="@lrg_start=@lrg_end">
+            <xsl:value-of select="@lrg_start"/>del<xsl:value-of select="@lrg_sequence"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>del<xsl:value-of select="@lrg_sequence"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:when>
+      <!-- LRG deletion -->
+      <xsl:when test="@type='other_ins'">
+        <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>ins<xsl:value-of select="@other_sequence"/>
+      </xsl:when>
+      <!-- LRG mismatch -->
+      <xsl:otherwise>
+        <xsl:choose>
+          <xsl:when test="@lrg_start=@lrg_end">
+            <xsl:value-of select="@lrg_start"/><xsl:value-of select="@lrg_sequence"/>><xsl:value-of select="@other_sequence"/>
+          </xsl:when>  
+          <xsl:otherwise>
+            <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/><xsl:value-of select="@lrg_sequence"/>><xsl:value-of select="@other_sequence"/>
+          </xsl:otherwise>
+        </xsl:choose>  
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:for-each>
+   
+</xsl:template>
+
+
+<!-- Exon diff -->
+<xsl:template name="diff_in_exon">
+   <xsl:param name="diff_start" />
+   <xsl:param name="diff_end" />
+   <xsl:for-each select="/lrg/fixed_annotation/transcript">
+     <xsl:variable name="transname" select="@name"/>
+     <xsl:if test="position()!=1"><br /></xsl:if>
+     <a>
+       <xsl:attribute name="href">#transcript_<xsl:value-of select="$transname"/></xsl:attribute>
+       <xsl:value-of select="$transname"/>
+     </a>: 
+     <xsl:variable name="exon_number">
+       <xsl:for-each select="exon">
+         <xsl:if test="coordinates[@coord_system=$lrg_id and @start &lt;= $diff_start and @end &gt;= $diff_start] or
+         coordinates[@coord_system=$lrg_id and @start &lt;= $diff_end and @end &gt;= $diff_end]"><xsl:value-of select="@label"/></xsl:if>
+       </xsl:for-each>
+     </xsl:variable>
+     <xsl:choose>
+       <xsl:when test="$exon_number != ''">
+         exon <xsl:value-of select="$exon_number"/>
+       </xsl:when>
+       <xsl:otherwise>no</xsl:otherwise>
+     </xsl:choose>
+   </xsl:for-each>
 </xsl:template>
 
 
