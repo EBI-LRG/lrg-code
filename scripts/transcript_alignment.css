@@ -1,0 +1,375 @@
+body {  
+  font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif;
+}
+
+.sub_title {
+  font-size:0.7em;
+  padding-left:10px;
+}
+
+table {
+  border-collapse:collapse;
+}
+th {
+  background-color:#008;
+  color:#FFF;
+  font-weight:normal;
+  text-align:center;
+  padding:2px;
+  border:1px solid #FFF;
+}
+
+
+a {
+  text-decoration:none;
+  font-weight:bold;
+  color:#000
+}
+a:hover {
+  color:#00F
+}
+
+a.external {
+  text-decoration:none;
+  font-weight:nornal;
+  color:#48a726;
+}
+a.external:hover {
+  text-decoration:underline;
+}
+ 
+table.legend {
+  margin:2px;
+  font-size:0.8em
+}
+table.legend td {
+  padding:2px 1px
+}
+
+.manual {
+  margin-right:10px;
+  margin-bottom:1px;
+  padding:1px;
+  cursor:help;
+  color:#FFF;
+  border:1px solid #FFF;
+  background-color:#E00;
+  font-size:14px;
+  font-weight:bold;
+  display:inline-block;
+  line-height:14px
+}
+.not_manual {
+  margin-right:10px;
+  margin-bottom:1px;
+  padding:1px 2px;
+  cursor:help;
+  color:#FFF;
+  border:1px solid #FFF;
+  background-color:#888;
+  font-size:14px;
+  font-weight:bold;
+  display:inline-block;
+  line-height:14px
+}
+
+.tsl {
+  margin-left:10px;
+  margin-bottom:1px;
+  padding:1px 3px;
+  cursor:help;
+  color:#FFF;
+  border-radius:20px;
+  border:1px solid #FFF;
+  background-color:#000;
+  font-size:14px;
+  font-weight:bold;
+  display:inline-block;
+  line-height:14px
+}
+
+th.coord {
+  font-size:0.6em;
+  width:10px;
+  text-align:center;
+  cursor:pointer
+}
+
+
+.first_column {
+  text-align:center;
+  border:1px solid #FFF;
+  padding:1px 2px
+}
+
+.extra_column {
+  background-color:#DDD;
+  color:#000;
+  text-align:center;
+  border:1px solid #FFF;
+  padding:1px 2px;
+  font-size:0.8em
+}
+
+.gold {
+  background-color:gold;
+  color:#000
+}
+.ens  {
+  background-color:#336;
+  color:#EEE
+}
+.nm   {
+  background-color:#55F;
+  color:#EEE
+}
+.cdna {
+  background-color:#AFA;
+  color:#000
+}
+.gene {
+  background-color:#000;
+  color:#FFF
+}
+
+.exon {
+  background-color:#FEFEFE;
+  text-align:center;
+  color:#FFF;
+  cursor:pointer
+}
+.coding   {
+  height:20px;
+  background-color:#090;
+  box-shadow:2px 2px 1px #CCC
+}
+.coding_np{
+  height:20px;
+  background-color:#900;
+  padding-left:2px;
+  padding-right:2px;
+  box-shadow:2px 2px 1px #CCC
+}
+.coding_unknown {
+  height:20px;
+  background-color:#009;
+  box-shadow:2px 2px 1px #CCC
+}
+
+.partial {
+  background-image: repeating-linear-gradient(135deg,transparent, transparent 5px, rgba(255,255,255,.5) 5px, rgba(255,255,255,.5) 10px)
+}
+
+.few_evidence {
+  border-radius:15px
+}
+.few_evidence::after {
+  content: "*"
+}
+
+.non_coding   {
+  height:18px;
+  position:relative;
+  border:1px inset #090;
+  border-top-color:#0B0;
+  border-left-color:#0B0;
+  color:#000;
+  box-shadow:1px 1px 1px #CCC inset
+}
+.non_coding_np{
+  height:18px;
+  position:relative;
+  border:1px inset #900;
+  border-top-color:#B00;
+  border-left-color:#B00;
+  color:#000;
+  box-shadow:1px 1px 1px #CCC inset
+}
+.non_coding_unknown {
+  height:18px;
+  position:relative;
+  border:1px inset #009;
+  border-top-color:#00B;
+  border-left-color:#0B0;
+  color:#000;
+  box-shadow:1px 1px 1px #CCC inset
+}
+
+.no_exon {
+  height:1px;
+  background-color:#000;
+  position:relative;
+  top:50%
+}
+.none {
+  display:none
+} 
+
+.gene_exon {
+  height:20px;
+  background-color:#000;
+  box-shadow:2px 2px 1px #CCC
+}
+
+.separator {
+  width:1px;
+  background-color:#888;
+  padding:0px;
+  margin:0px 1px 0px
+}
+.bg1 {
+  background-color:#FFF
+}
+.bg2 {
+  background-color:#EEE
+}
+.button {
+  margin-left:5px;
+  border-radius:5px;
+  border:2px solid #CCC;
+  cursor:pointer;
+  padding:1px 4px;
+  font-size:0.8em
+}
+.button:hover {
+  border:2px solid #48a726
+}
+.hide_button {
+  border-radius:5px;
+  border:2px solid #CCC;
+  cursor:pointer;
+  padding:1px 4px;
+  font-size:0.7em;
+  background-color:#336;
+  color:#EEE
+}
+.hide_button:hover {
+  border:2px solid #48a726
+}
+.hide_button_x {
+  cursor:pointer;
+  color:#555;
+  font-size:16px;
+  font-weight:bold;
+  display:inline-block;
+  line-height:14px;
+  padding:1px 2px 2px
+}
+.hide_button_x:before {
+  content: "×"
+}
+.hide_button_x:hover {
+  color:#FFF;
+  background-color:#D22;
+  border-radius:20px
+}
+.on {
+  background-color:#090;
+  color:#FFF
+}
+.off {
+  background-color:#DDD;
+  color:#000;
+}
+.white {
+  color:#FFF;
+}
+.blue {
+  color:#00B;
+}
+.hidden {
+  height:0px;
+  display:none
+}
+.unhidden {
+  height:auto;
+  display:table-row
+}
+.unhidden_popup {
+  height:auto;
+  display:block
+}
+.identity{
+  font-size:0.7em;
+  padding-left:5px
+}
+.forward_strand {
+  font-weight:bold;
+  font-size:1.1em;
+  color:#00B
+}
+.reverse_strand {
+  font-weight:bold;
+  font-size:1.1em;
+  color:#B00
+}
+
+.exon_popup {
+  border:1px solid black;
+  background-color:white;
+  position:absolute;
+  font-size:0.8em;
+  min-width:160px;
+  border-radius:5px
+}
+.exon_popup_header {
+  background-color:#008;
+  color:#FFF;
+  padding:2px;
+  border-top-left-radius:4px;
+  border-top-right-radius:4px
+}
+.exon_popup_header_title {
+  float:left;
+  text-align:center;
+  padding:1px
+}
+.hide_popup_button {
+  float:right;
+  padding:1px 2px 2px;
+  cursor:pointer;
+  color:#FFF;
+  border-radius:20px;
+  background-color:#48a726;
+  font-size:16px;
+  font-weight:bold;
+  display:inline-block;
+  line-height:14px
+}
+.hide_popup_button:before {
+  content: "×";
+}
+.hide_popup_button:hover {
+  background-color:#D22
+}
+.exon_popup_header_clear {
+  clear:both
+}
+.exon_popup_body {
+  padding:2px
+}
+
+/* Button */
+.green_button {
+	background-color: #48a726;
+  color: #FFF;
+	font-weight:bold;
+  font-size: 0.8em;
+	border-radius:5px;
+  border: 1px solid #EEE;
+	box-shadow: 2px 2px 2px #CCC;
+	margin-right:5px;
+  margin-bottom:5px;
+  padding:1px 3px;
+	text-align:center;
+  cursor:default;
+}
+.green_button:hover { 
+	background-color: #FFF;
+  color: #48a726; 
+	text-decoration: none; 
+	border: 1px solid #48a726;
+}
+.green_button:active {
+  box-shadow: 2px 2px 2px #CCC inset;  
+}
