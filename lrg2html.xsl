@@ -3110,7 +3110,7 @@
             <xsl:value-of select="@other_start"/><xsl:value-of select="@other_sequence"/>><xsl:value-of select="@lrg_sequence"/>
           </xsl:when>  
           <xsl:otherwise>
-            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/><xsl:value-of select="@other_sequence"/>><xsl:value-of select="@lrg_sequence"/>
+            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="@other_sequence"/>ins<xsl:value-of select="@lrg_sequence"/>
           </xsl:otherwise>
         </xsl:choose>  
       </xsl:otherwise>
@@ -3151,7 +3151,7 @@
             <xsl:value-of select="@lrg_start"/><xsl:value-of select="@lrg_sequence"/>><xsl:value-of select="@other_sequence"/>
           </xsl:when>  
           <xsl:otherwise>
-            <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/><xsl:value-of select="@lrg_sequence"/>><xsl:value-of select="@other_sequence"/>
+            <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>del<xsl:value-of select="@lrg_sequence"/>ins<xsl:value-of select="@other_sequence"/>
           </xsl:otherwise>
         </xsl:choose>  
       </xsl:otherwise>
