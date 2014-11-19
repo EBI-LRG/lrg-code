@@ -91,23 +91,35 @@ foreach my $xml (@xmlfiles) {
 	my $entries = $database->addNode('entries');
 	my $entry = $entries->addNode('entry',{'id' => $lrg_id});
 
-	my $hgnc = $lrg->findNode('updatable_annotation/annotation_set/lrg_locus')->content;
-	$entry->addNode('name')->content($hgnc);
-
 	# Get information by source
-	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified);
+	my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified, $hgnc, $locus);
 
 	my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set')	;
 
+  # HGNC symbol (lrg_locus)
+  foreach my $set (@$asets) {
+    next if ($set->data()->{'type'} ne 'lrg');
+    $locus = $set->findNode('lrg_locus');
+	  if ($locus) {
+	    $hgnc = $locus->content;
+	    $entry->addNode('name')->content($hgnc);
+	  }
+  }
+
 	foreach my $set (@$asets) {
-    my $s_name = $set->findNodeSingle('source/name')->content;
+
+	  my $source_name_node = $set->findNodeSingle('source/name');
+	  next if (!$source_name_node);
+
+    my $s_name = $source_name_node->content;
+    next if (!$s_name || $s_name eq '');
     
 		# Gene description
     if ($s_name =~ /NCBI/) {
 	    my $genes = $set->findNodeArraySingle('features/gene');
 		  foreach my $gene (@{$genes}) {
 		    my $symbol = $gene->findNodeSingle('symbol');
-		    if ($symbol->data->{name} eq $hgnc) {
+		    if ($symbol->data->{name} eq $hgnc && $hgnc) {
             $desc = ($gene->findNodeArraySingle('long_name'))->[0]->content;
             last;
 		    }
@@ -161,9 +173,10 @@ foreach my $xml (@xmlfiles) {
 	# Synonym
   # > Locus
 	my %synonyms;
-	my $locus = $lrg->findNodeSingle('updatable_annotation/annotation_set/lrg_locus');
-	my $l_content = $locus->content;
-  $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
+	if ($locus) {
+	  my $l_content = $locus->content;
+    $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
+  }
 	# > Symbol
 	my $symbols = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/symbol');
 	foreach my $symbol (@{$symbols}) {
@@ -222,10 +235,14 @@ foreach my $xml (@xmlfiles) {
 	$dates->addEmptyNode('date',{'type' => 'creation', 'value' =>  $creation_date});
 	
 	foreach my $set (@$asets) {
-    if ($set->findNode('source/name')->content =~ /LRG/) {
-      my $last_modified = $set->findNodeSingle('modification_date')->content;
-      $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $last_modified});
-      last;
+	  if ($set->findNode('source/name')) {
+	    my $source_name_node = $set->findNode('source/name');
+	    next if (!$source_name_node->content);
+      if ($source_name_node->content =~ /LRG/) {
+        my $last_modified = $set->findNodeSingle('modification_date')->content;
+        $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $last_modified});
+        last;
+      }
     }
   }      
 
