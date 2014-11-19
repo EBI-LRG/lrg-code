@@ -165,8 +165,8 @@ if [[ -s ${tmp_lrg_list} ]]; then
             # Remove the fasta file from the "Stalled" directory  
             elif [[ -e ${stalled_fasta} ]]; then
               rm -f ${stalled_fasta}
-            fi 
-          fi
+            fi
+           
            # If the LRG has been moved to the "Public" status
           elif [[ ${lrg_status} == 'public' ]] ; then
             # Update the creation date
