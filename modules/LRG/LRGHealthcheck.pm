@@ -112,8 +112,8 @@ sub existing_entry {
 
     my $existing_lrg = LRG::LRG::newFromFile($existing_file) or die("Could not create LRG object from XML file $existing_file");
       
-    ## Compare "sequence_source", "organism", "mol_type", "creation_date"
-    foreach my $tag ('hgnc_id','sequence_source','organism','mol_type','creation_date') {
+    ## Compare "sequence_source", "organism", "mol_type", # "creation_date"
+    foreach my $tag ('hgnc_id','sequence_source','organism','mol_type') { #'creation_date'
    
       # Temporary check (during the transition between schema 1.7 and schema 1.8)
       next if (!$existing_lrg->findNode("fixed_annotation/".$tag));
