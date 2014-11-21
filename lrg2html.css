@@ -53,6 +53,11 @@ h1.separator{
   font-weight: bold;
 }
 
+.red{
+  color: #E00000;
+  font-weight: bold;
+}
+
 .white{
   color: #FFF;
   font-weight: bold;
@@ -245,6 +250,14 @@ td.right_col{
 }
 td.line_separator{
   border-top:2px dotted #0E4C87;
+}
+
+.new_transcript {
+  cursor:help;
+}
+.new_transcript:after {
+  content: "*";
+  color: #E00000;
 }
 
 div.download_box {

@@ -27,6 +27,7 @@
 <xsl:variable name="previous_assembly">GRCh37</xsl:variable>
 <xsl:variable name="current_assembly">GRCh38</xsl:variable>
 <xsl:variable name="requester_type">requester</xsl:variable>
+<xsl:variable name="new_public_transcript">This transcript was added to the LRG record after it was made public</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -234,14 +235,21 @@
           </xsl:if>
           <xsl:variable name="tr_name" select="@name" />
           <xsl:variable name="nm_transcript" select="/*/updatable_annotation/annotation_set[source/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $tr_name]" />
-          <xsl:choose>
-            <xsl:when test="$nm_transcript">
-              <xsl:value-of select="$tr_name" /> (<xsl:value-of select="$nm_transcript/@accession" />)
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:value-of select="$tr_name" />
-            </xsl:otherwise>  
-          </xsl:choose>    
+          
+           <span>
+             <xsl:if test="creation_date">
+               <xsl:attribute name="class">new_transcript</xsl:attribute>
+               <xsl:attribute name="title"><xsl:value-of select="$new_public_transcript" /><xsl:text>: </xsl:text>
+                 <xsl:call-template name="format_date">
+                   <xsl:with-param name="date2format"><xsl:value-of select="creation_date" /></xsl:with-param>
+                 </xsl:call-template>
+               </xsl:attribute>
+             </xsl:if>
+             <xsl:value-of select="$tr_name" />
+           </span>  
+            <xsl:if test="$nm_transcript">
+              (<xsl:value-of select="$nm_transcript/@accession" />)
+            </xsl:if>
         </xsl:for-each>
     
         </td></tr>
@@ -899,7 +907,24 @@
     <a>
       <xsl:attribute name="id">transcript_<xsl:value-of select="$transname"/></xsl:attribute>
     </a>
-    <div class="lrg_transcript">Transcript: <span class="blue"><xsl:value-of select="$transname"/></span></div>
+    <div class="lrg_transcript">Transcript: 
+      <span>
+        <xsl:choose>
+          <xsl:when test="creation_date">
+            <xsl:attribute name="class">blue new_transcript</xsl:attribute>
+            <xsl:attribute name="title"><xsl:value-of select="$new_public_transcript" /><xsl:text>: </xsl:text>
+              <xsl:call-template name="format_date">
+                <xsl:with-param name="date2format"><xsl:value-of select="creation_date" /></xsl:with-param>
+              </xsl:call-template>
+            </xsl:attribute>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:attribute name="class">blue</xsl:attribute>
+          </xsl:otherwise>
+        </xsl:choose>  
+        <xsl:value-of select="$transname"/>
+      </span>
+    </div>
     <div class="lrg_transcript_content">
       <span class="line_header">Start/end:</span>
       <xsl:value-of select="$t_start"/>-<xsl:value-of select="$t_end"/>
@@ -912,7 +937,7 @@
     </xsl:if>
     
     <xsl:if test="creation_date">
-      <span class="line_header">Creation date:</span>
+      <span class="line_header red">Creation date:</span>
       <xsl:call-template name="format_date">
         <xsl:with-param name="date2format"><xsl:value-of select="creation_date" /></xsl:with-param>
       </xsl:call-template>
@@ -936,11 +961,16 @@
   <xsl:variable name="transcript_comment" select="./comment" />
   <xsl:variable name="translation_exception" select="/*/fixed_annotation/transcript[@name = $transname]/coding_region/translation_exception" />
   
-    <xsl:if test="$ref_transcript or $transcript_comment or $translation_exception">
+    <xsl:if test="$ref_transcript or $transcript_comment or $translation_exception or creation_date">
     <div style="padding-bottom:10px">
       <span class="float_left line_header">Comment:</span>
       <div class="float_left external_link">
 
+      <xsl:if test="creation_date">
+        <xsl:value-of select="$new_public_transcript" />.
+        <br />
+      </xsl:if>
+      
       <xsl:if test="$ref_transcript">
         <xsl:variable name="rf_accession"><xsl:value-of select="$ref_transcript/@accession" /></xsl:variable>
         <xsl:if test="not($transcript_comment) or not(contains(comment,$rf_accession))">
