@@ -11,6 +11,7 @@ cvspath=${CVSROOTDIR}
 pubpath=${PUBFTP}
 perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
 cvsftp=${CVSROOTDIR}/ftp/public/
+cvsxml=${CVSROOTDIR}/xml/
 lrgindex=${PUBFTP}/.lrg_index/
 
 # Database settings
@@ -164,7 +165,20 @@ if [[ -s ${tmp_lrg_list} ]]; then
             # Remove the fasta file from the "Stalled" directory  
             elif [[ -e ${stalled_fasta} ]]; then
               rm -f ${stalled_fasta}
-            fi 
+            fi
+           
+           # If the LRG has been moved to the "Public" status
+          elif [[ ${lrg_status} == 'public' ]] ; then
+            # Update the creation date
+            lrg_updated=`perl ${perldir}/update_public_creation_date.pl -xml_dir ${pubpath} ${tmpdir} -host ${host} -dbname ${dbname} -port ${port} -user ${user} -pass ${pass} -lrgs_list ${lrg_id}`
+            lrg_xml="${lrg_id}.xml"
+            # Update CVS for the updated file
+            if [[ ${lrg_updated} =~ ${lrg_id} && -e "${tmp}/${lrg_xml}" ]] ; then
+              cd ${cvsxml}
+              cvs update ${lrg_xml}
+              cp "${tmp}/${lrg_xml}" ${cvsxml}
+              cvs ci -m "Creation date updated" ${lrg_xml}
+            fi
           fi
         done < ${tmp_lrg_list} 
         

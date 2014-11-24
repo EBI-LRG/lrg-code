@@ -597,162 +597,164 @@ sub findOrAdd() {
 sub printNode {
     my $self = shift;
     
-	# hash for putting key/value pairs in a nice order in the output
+	# Attributes - hash for putting key/value pairs in a nice order in the output
 	my %priority = (
 		
-    'align' =>  {
-      'lrg_start' =>  1,
-      'lrg_end' =>  2,
-      'start' =>  3,
-      'end' =>  4,
+    'align' => {
+      'lrg_start' => 1,
+      'lrg_end'   => 2,
+      'start'     => 3,
+      'end'       => 4,
     },
     
-    'alternate_amino_acid_numbering'  =>  {
-      'description' =>  1
+    'alternate_amino_acid_numbering' => {
+      'description' => 1
     },
     
-    'cdna_coords'  =>  {
-      'start' =>  1,
-      'end' =>  2
+    'cdna_coords' => {
+      'start' => 1,
+      'end'   => 2
     },
     
-    'coding_region'  =>  {
-      'start' =>  1,
-      'end' =>  2,
-      'codon_start' =>  3
+    'coding_region' => {
+      'start'       => 1,
+      'end'         => 2,
+      'codon_start' => 3
     },
     
-    'coordinates' =>  {
-      'coord_system'  =>  1,
-      'name'  =>  2,
-      'start' =>  3,
-      'end' =>  4,
-      'start_ext' =>  5,
-      'end_ext' =>  6,
-      'strand'  =>  7,
-      'mapped_from' =>  8
+    'coordinates' => {
+      'coord_system' => 1,
+      'name'         => 2,
+      'start'        => 3,
+      'end'          => 4,
+      'start_ext'    => 5,
+      'end_ext'      => 6,
+      'strand'       => 7,
+      'mapped_from'  => 8
     },
     
-    'db_xref'  =>  {
-      'source'  =>  1,
-      'accession' =>  2,
+    'db_xref' => {
+      'source'    => 1,
+      'accession' => 2,
     },
     
-    'diff'  =>  {
-      'type'  =>  1,
-      'lrg_start' =>  2,
-      'lrg_end' =>  3,
-      'other_start' =>  4,
-      'other_end' =>  5,
-      'start' =>  4,
-      'end' =>  5,
-      'lrg_sequence' =>  6,
-      'other_sequence' =>  7,
-      'genomic_sequence' =>  7
+    'diff' => {
+      'type'        => 1,
+      'lrg_start'   => 2,
+      'lrg_end'     => 3,
+      'other_start' => 4,
+      'other_end'   => 5,
+      'start' => 4,
+      'end'   => 5,
+      'lrg_sequence'     => 6,
+      'other_sequence'   => 7,
+      'genomic_sequence' => 7  # Schema < 1.7
     },
     
-    'exon'  =>  {
-      'source'  =>  1,
-      'accession' =>  2,
+    'exon' => {
+      'source'    => 1,
+      'accession' => 2,
     },
     
-    'fixed_transcript_annotation'  =>  {
-      'name' =>  1
+    'fixed_transcript_annotation' => {
+      'name' => 1
     },
     
-    'gene'  =>  {
-      'source'  =>  1,
-      'accession' =>  2,
-      'symbol'  =>  1,
-      'strand' =>  2,
-      'start' =>  3,
-      'end' =>  4
+    'gene' => {
+      'source'    => 1,
+      'accession' => 2,
+      'symbol'  => 1,
+      'strand'  => 2,
+      'start'   => 3,
+      'end'     => 4
     },
     
-    'intron'  =>  {
+    'intron' => {
       'phase' =>  1
     },
     
-    'lrg'  =>  {
-      'schema_version' =>  1
+    'lrg' => {
+      'schema_version' => 1
     },
     
-    'lrg_coords'  =>  {
-      'start' =>  1,
-      'end' =>  2
-   },
-    
-    'lrg_gene_name' =>  {
-      'source'  =>  1
+    'lrg_coords' => {
+      'start' => 1,
+      'end'   => 2
     },
     
-    'lrg_locus' =>  {
-      'source'  =>  1
+    'lrg_gene_name' => {
+      'source' => 1
+    },
+    
+    'lrg_locus' => {
+      'source' => 1
     },
     
 		'mapping' => {
-		  'coord_system'  => 1,
-      'other_name'  =>  2,
-      'other_id'  =>  3,
-      'other_start' =>  4,
-      'other_end' =>  5,
-      'assembly'  =>  1,
-      'chr_name'  =>  2,
-      'chr_id'  =>  3,
-      'chr_start' =>  4,
-      'chr_end' =>  5
+		  'coord_system' => 1,
+      'other_name'   => 2,
+      'other_id'     => 3,
+      'other_id_syn' => 4,
+      'other_start'  => 5,
+      'other_end'    => 6,
+      #'assembly'  => 1,
+      #'chr_name'  => 2,
+      #'chr_id'    => 3,
+      #'chr_start' => 4,
+      #'chr_end'   => 5,
+      'type'      => 7,
 		},
 		
-		'mapping_span'  =>  {
-		  'lrg_start' =>  1,
-		  'lrg_end' =>  2,
-      'other_start' =>  3,
-      'other_end' =>  4,
-      'start' =>  3,
-      'end' =>  4,
-		  'strand'  =>  5
+		'mapping_span' => {
+		  'lrg_start'   => 1,
+		  'lrg_end'     => 2,
+      'other_start' => 3,
+      'other_end'   => 4,
+      'start' => 3,
+      'end'   => 4,
+		  'strand'      => 5
 		},
 		
-    'organism'  =>  {
+    'organism' => {
       'taxon' =>  1
     },
     
-    'other_exon_naming'  =>  {
-      'description' =>  1
+    'other_exon_naming' => {
+      'description' => 1
     },
     
-    'peptide_coords'  =>  {
-      'start' =>  1,
-      'end' =>  2
+    'peptide_coords' => {
+      'start' => 1,
+      'end'   => 2
     },
     
-    'protein_product'  =>  {
-      'source'  =>  1,
-      'accession' =>  2,
-      'cds_start' =>  3,
-      'cds_end' =>  4,
-      'codon_start' =>  5
+    'protein_product' => {
+      'source'      => 1,
+      'accession'   => 2,
+      'cds_start'   => 3,
+      'cds_end'     => 4,
+      'codon_start' => 5
     },
     
-    'pyrrolysine'  =>  {
-      'codon' =>  1
+    'pyrrolysine' => {
+      'codon' => 1
     },
     
-    'selenocysteine'  =>  {
-      'codon' =>  1
+    'selenocysteine' => {
+      'codon' => 1
     },
     
-    'source'  =>  {
-      'description' =>  1
+    'source' => {
+      'description' => 1
     },
     
-    'transcript'  =>  {
-      'name'  =>  1,
-      'source'  =>  1,
-      'start' =>  2,
-      'end' =>  3,
-      'transcript_id' =>  4,
-      'source'  =>  1,
+    'transcript' => {
+      'name'          => 1,
+      'source'          => 1,
+      'start'           => 2,
+      'end'             => 3,
+      'transcript_id'   => 4,
+      'source'    =>  1,
       'accession' =>  2,
       'fixed_id'  =>  5
     },
@@ -839,143 +841,153 @@ sub printNode {
 
 sub sort_nodes {
     
-    # If $a or $b are undefined we return 0
-    if (!defined($a) || !defined($b)) {
-	return 0;
-    }
+  # If $a or $b are undefined we return 0
+  return 0 if (!defined($a) || !defined($b));
  
   # Get the parent node name
   my $parent = $a->parent->name();
   
-    # For tags that need to have their elements in a specific order
+  # For tags that need to have their elements in a specific order
   my %element_order = (
-    'lrg' =>  {
-      'fixed_annotation'  =>  1,
-      'updatable_annotation'  =>  2
+    'lrg' => {
+      'fixed_annotation'     => 1,
+      'updatable_annotation' => 2
     },
     
-    'fixed_annotation'  =>  {
-      'id'  =>  1,
-      'hgnc_id' => 2,
-      'organism'  =>  3,
-      'source'  =>  4,
-      'mol_type' =>  5,
-      'creation_date' =>  6,
-      'comment' => 7,
-      'sequence'  =>  8,
-      'transcript'  =>  9
+    'fixed_annotation' => {
+      'id'            => 1,
+      'hgnc_id'       => 2,
+      'organism'      => 3,
+      'source'        => 4,
+      'mol_type'      => 5,
+      'creation_date' => 6,
+      'comment'       => 7,
+      'sequence'      => 8,
+      'transcript'    => 9
     },
     
-    'transcript'  =>  {
-      'comment' =>  1,
-      'coordinates' =>  2,
-      'partial' =>  3,
-      'long_name' =>  4,
-      'db_xref' =>  5,
-      'cdna'  =>  6,
-      'coding_region' =>  7, 
-      'exon'  =>  8,
-      'protein_product' =>  9  
+    'transcript' => { # Global (fixed + updatable)
+      'creation_date'   => 1,
+      'comment'         => 2,
+      'coordinates'     => 3,
+      'partial'         => 4,
+      'long_name'       => 5,
+      'db_xref'         => 6,
+      'cdna'            => 7,
+      'coding_region'   => 8, 
+      'exon'            => 9,
+      'protein_product' => 10  
     },
     
-    'coding_region' =>  {
-      'coordinates' =>  1,
-      'selenocysteine'  =>  2,
-      'pyrrolysine' =>  3,
-      'translation' =>  4
-    },
-    
-    'translation' =>  {
-      'sequence'  =>  1
-    },
-    
-    'exon'  =>  {
-      'coordinates' =>  1,
-      'lrg_coords'  =>  2,
-      'cdna_coords' =>  3,
-      'peptide_coords'  =>  4,
-      'partial' =>  5,
-      'comment' =>  6,
-      'label' =>  7
+    'transcript_up' => { # Specific to the updatable section
+      'coordinates'     => 1,
+      'partial'         => 2,
+      'long_name'       => 3,
+      'comment'         => 4,
+      'db_xref'         => 5,
+      'exon'            => 6,
+      'protein_product' => 7
     },
 
-    'updatable_annotation'  =>  {
-      'annotation_set'  =>  1
+    'coding_region' => {
+      'coordinates'    => 1,
+      'selenocysteine' => 2,
+      'pyrrolysine'    => 3,
+      'translation'    => 4
     },
     
-    'annotation_set'  =>  {
-      'source'  =>  1,
-      'comment' =>  2,
-      'modification_date' =>  3,
-      'fixed_transcript_annotation' =>  4,
-      'mapping' =>  5,
-      'lrg_locus' =>  6,
-      'features'  =>  7
+    'translation' => {
+      'sequence' => 1
     },
     
-    'source'  =>  {
-      'name'  =>  1,
-      'url' =>  2,
-      'contact' =>  3
+    'exon'  => {
+      'coordinates'    => 1,
+      'lrg_coords'     => 2,
+      'cdna_coords'    => 3,
+      'peptide_coords' => 4,
+      'partial'        => 5,
+      'comment'        => 6,
+      'label'          => 7
+    },
+
+    'updatable_annotation'  => {
+      'annotation_set' => 1
     },
     
-    'contact' =>  {
-      'name'  =>  1,
-      'url' =>  2,
-      'address' =>  3,
-      'email' =>  4
-    },
-    
-    'fixed_transcript_annotation' =>  {
-      'comment' =>  1,
-      'other_exon_naming' =>  2,
-      'alternate_amino_acid_numbering'  =>  3
-    },
-    
-    'other_exon_naming' =>  {
-      'url' => 1,
+    'annotation_set' => {
+      'source'  => 1,
       'comment' => 2,
-      'exon'  =>  3
+      'modification_date' => 3,
+      'fixed_transcript_annotation' => 4,
+      'mapping'   => 5,
+      'lrg_locus' => 6,
+      'features'  => 7,
+      'notes'     => 8
     },
     
-    'alternate_amino_acid_numbering'  =>  {
-      'url' => 1,
+    'source' => {
+      'name'    => 1,
+      'url'     => 2,
+      'contact' => 3
+    },
+    
+    'contact' => {
+      'name'    => 1,
+      'url'     => 2,
+      'address' => 3,
+      'email'   => 4
+    },
+    
+    'fixed_transcript_annotation' => {
+      'comment' => 1,
+      'other_exon_naming' => 2,
+      'alternate_amino_acid_numbering' => 3
+    },
+    
+    'other_exon_naming' => {
+      'url'     => 1,
       'comment' => 2,
-      'align' =>  3
+      'exon'    => 3
     },
     
-    'mapping' =>  {
-      'mapping_span'  =>  1
+    'alternate_amino_acid_numbering' => {
+      'url'     => 1,
+      'comment' => 2,
+      'align'   => 3
     },
     
-    'mapping_span'  =>  {
-      'diff'  =>  1
+    'mapping' => {
+      'mapping_span' => 1
     },
     
-    'features' =>  {
-      'gene'  =>  1
+    'mapping_span' => {
+      'diff' => 1
     },
     
-    'gene'  =>  {
-      'symbol'  =>  1,
-      'coordinates' =>  2,
-      'partial' =>  3,
-      'long_name' =>  4,
-      'comment' =>  5,
-      'db_xref' =>  6,
-      'transcript'  =>  7
+    'features' => {
+      'gene' => 1
     },
     
-    'protein_product' =>  {
-      'coordinates' =>  1,
-      'partial' =>  2,
-      'long_name' =>  3,
-      'comment' =>  4,
-      'db_xref' =>  5
+    'gene' => {
+      'symbol'      => 1,
+      'coordinates' => 2,
+      'partial'     => 3,
+      'long_name'   => 4,
+      'comment'     => 5,
+      'db_xref'     => 6,
+      'transcript'  => 7
     },
     
-    'db_xref' =>  {
-      'synonym' =>  1
+    'protein_product' => {
+      'coordinates' => 1,
+      'partial'     => 2,
+      'long_name'   => 3,
+      'comment'     => 4,
+      'db_xref'     => 5
+    },
+    
+    'db_xref' => {
+      'synonym' => 1
     }
   ); 
 
@@ -1038,6 +1050,11 @@ sub sort_nodes {
     
   # If a and b are both in the %element_order hash, order them accordingly. Otherwise do nothing (return 0)
   if (exists($element_order{$parent}->{$a->name()}) && exists($element_order{$parent}->{$b->name()})) {
+    # Hacky way to order properly the tags under the "updatable transcript" tags
+    my $tr_up_name = 'transcript_up';
+    if ($parent eq 'transcript' && $a->parent->parent->name() eq 'gene' && exists($element_order{$tr_up_name}->{$a->name()}) && exists($element_order{$tr_up_name}->{$b->name()})) {
+      return ($element_order{$tr_up_name}->{$a->name()} <=> $element_order{$tr_up_name}->{$b->name()}); 
+    }
     return ($element_order{$parent}->{$a->name()} <=> $element_order{$parent}->{$b->name()});
   }
     

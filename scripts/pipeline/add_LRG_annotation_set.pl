@@ -46,6 +46,7 @@ my $lrg = $lrg_adaptor->fetch();
 # Put the annotation sets into a hash with the source name as key
 my %sets;
 map {$sets{$_->source->name()} = $_} @{$lrg->updatable_annotation->annotation_set() || []};
+my $requester_set = $lrg->updatable_annotation->requester();
 
 # If we already have a LRG annotation set and the replace flag was not set, warn about this and quit
 if ($sets{$option{lrg_set_name}} && !$option{replace}) {
@@ -61,13 +62,14 @@ else {
   
   	# Attach the LRG annotation set to the LRG object
   	$lrg->updatable_annotation->annotation_set([values(%sets)]);
+    $lrg->updatable_annotation->requester($requester_set) if (defined($requester_set));
 	}
 }
 
 # Update the meta information for the annotation_set
 $sets{$option{lrg_set_name}}->modification_date($date);
 
-# Add the lrg locus information specified on the command line
+# Add the lrg locus information specified on the command line + add the annotation set types
 my $lrg_locus = LRG::API::Meta->new('lrg_locus',$option{locus},[LRG::API::Meta->new('source',$option{locus_source})]);
 $sets{$option{lrg_set_name}}->lrg_locus($lrg_locus->value);
 # Loop over the other sets and remove any locus element. At the same time make sure that it matches the one in the LRG annotation set
@@ -78,6 +80,12 @@ while (my ($name,$obj) = each(%sets)) {
     warn (sprintf("The pre-existing lrg_locus '\%s' (source '\%s') in annotation set from '\%s' will be replaced by the specified lrg_locus '\%s' (source '\%s')",$obj->lrg_locus->value(),join("', '",@src),$name,$option{locus},$option{locus_source}));
   }
   $obj->remove_lrg_locus;
+  
+  # Check the annotation set type
+  if (!$obj->type) {
+    my $a_type = lc((split(' ',$name))[0]);
+    $obj->type($a_type);
+  }
 } 
 
 

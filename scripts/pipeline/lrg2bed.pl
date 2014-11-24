@@ -128,6 +128,7 @@ foreach my $status (keys(%lrg_meta)) {
     #	Genomic coordinates
 	  my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set');
 	  foreach my $aset (@$asets) {
+	    next if (!$aset->findNode('source/name') || !$aset->findNode('source/name')->content());
 	    next if ($aset->findNodeSingle('source/name')->content ne "LRG");
 	    my $gene_name = $aset->findNodeSingle('lrg_locus')->content;
 	    my $mappings = $aset->findNodeArraySingle('mapping');

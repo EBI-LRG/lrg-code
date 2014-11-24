@@ -69,6 +69,7 @@ print STDOUT localtime() . "\tConnected to $dbname on $host:$port\n" if ($verbos
 
 $lrg_id =~ /(LRG_\d+)/;
 $lrg_id = $1;
+my $requester_type = 'requester';
 
 my $warning_log;
 if (defined($error_log)) {
@@ -256,10 +257,7 @@ my $hgnc_symbol_stmt = qq{
         gene
     WHERE
         symbol = ? AND
-        (
-            lrg_id IS NULL OR
-            lrg_id = '$lrg_id'
-        )
+        lrg_id = '$lrg_id'
     LIMIT 1
 };
 
@@ -315,7 +313,7 @@ if (defined($gene_id)) {
     $db_adaptor->dbc->do("UPDATE gene SET refseq='$refseq' WHERE gene_id=$gene_id;") if (!defined($db_refseq) || $refseq ne $db_refseq);
   }
   # Update the LRG status
-  $db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
+  #$db_adaptor->dbc->do("UPDATE gene SET status='pending' WHERE gene_id=$gene_id;") if (!defined($db_status));
 }
 
 ## Create new "gene" entry ##
@@ -376,7 +374,7 @@ $node = $fixed->findNode('mol_type') or error_msg("ERROR: Could not find moltype
 my $moltype = $node->content();
 
 # Get the creation date
-$node = $fixed->findNode('creation_date') or error_msg("ERROR: Could not find creation date tag");
+$node = $fixed->findNodeSingle('creation_date') or error_msg("ERROR: Could not find creation date tag");
 my $creation_date = $node->content();
 
 # Get the comment (optional)
@@ -430,6 +428,7 @@ if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
             organism,
             taxon_id,
             moltype,
+            initial_creation_date,
             creation_date
         )
     VALUES (
@@ -437,6 +436,7 @@ if (!$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0]) {
         '$organism',
         $taxon_id,
         '$moltype',
+        '$creation_date',
         '$creation_date'
     )
   };
@@ -459,7 +459,19 @@ my $tr_ins_stmt = qq{
         ?
     )
 };
-
+my $tr_date_ins_stmt = qq{
+    INSERT IGNORE INTO
+        lrg_transcript_date (
+            gene_id,
+            transcript_name,
+            creation_date
+        )
+    VALUES (
+        $gene_id,
+        ?,
+        ?
+    )
+};
 
 my $tr_com_ins_stmt = qq{
     REPLACE INTO
@@ -573,6 +585,7 @@ my $intron_ins_stmt = qq{
     )
 };
 my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
+my $tr_date_ins_sth = $db_adaptor->dbc->prepare($tr_date_ins_stmt);
 my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
 my $tr_com_up_sth  = $db_adaptor->dbc->prepare($tr_com_up_stmt);
 my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
@@ -583,23 +596,6 @@ my $exon_ins_sth = $db_adaptor->dbc->prepare($exon_ins_stmt);
 my $exon_pep_ins_sth = $db_adaptor->dbc->prepare($exon_pep_ins_stmt);
 my $intron_ins_sth = $db_adaptor->dbc->prepare($intron_ins_stmt);
 
-# Get the requester data
-$node = $fixed->findNodeArray('source') or warn ("Could not find requester data");
-if (defined($node)) {
-  
-  my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
-
-  # Check if some requester information are already in the database for this LRG. 
-  my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
-  if (defined($lsdb_id)) {
-    print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
-  }
-  else {
-    while (my $source = shift(@{$node})) {
-        parse_source($source,$gene_id,$db_adaptor);
-    }
-  }
-}
 
 # Get the transcript nodes
 my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could not find transcript tags");
@@ -633,6 +629,15 @@ while (my $transcript = shift(@{$transcripts})) {
     $tr_ins_sth->execute();
     my $transcript_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 
+
+    # Insert the transcript date into db if exists (only if transcript added after the LRG has been made public)
+    my $tr_creation_date = ($transcript->findNodeSingle('creation_date')) ? $transcript->findNodeSingle('creation_date')->content() : undef;
+    if (defined($tr_creation_date)) {
+      $tr_date_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+      $tr_date_ins_sth->bind_param(2,$tr_creation_date,SQL_DATE);
+      $tr_date_ins_sth->execute();
+    }
+    
     # Insert comment if exists (optional)
     my $tr_com_nodes = $transcript->findNodeArray('comment');
     if (defined($tr_com_nodes)) {
@@ -646,7 +651,7 @@ while (my $transcript = shift(@{$transcripts})) {
         my $comment_id = check_existing_comment($name,$tr_comment);
         if (defined($comment_id)) {
           $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
-          $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
+          $tr_com_up_sth->bind_param(2,$comment_id);
           $tr_com_up_sth->execute();
         }
         else {
@@ -825,24 +830,29 @@ my $updatable = $lrg->findNode('updatable_annotation') or error_msg("ERROR: Coul
 my $annotation_sets = $updatable->findNodeArray('annotation_set');
 $annotation_sets ||= [];
 
+# Annotation sets
 while (my $annotation_set = shift(@{$annotation_sets})) {
-
-    parse_annotation_set($annotation_set,$gene_id,$db_adaptor,\@update_annotation_set);
-    
+  parse_annotation_set($annotation_set,$gene_id,$db_adaptor,\@update_annotation_set);
 }
+
+# Requester data
+my $requester_set = $updatable->findNodeSingle('annotation_set',{'type' => $requester_type});
+parse_requester_data($requester_set,$fixed,$gene_id,$db_adaptor);
+
 
 sub parse_annotation_set {
     my $annotation_set = shift;
     my $gene_id = shift;
     my $db_adaptor = shift;
     my $use_annotation_set = shift || [];
-        
+
     # Use different syntax depending on whether we are inserting or updating
     my $insert_mode = (scalar(@{$use_annotation_set}) ? qq{REPLACE} : qq{INSERT IGNORE});
     my $as_ins_stmt = qq{
         $insert_mode INTO
             lrg_annotation_set (
                 gene_id,
+                type,
                 source,
                 comment,
                 modification_date,
@@ -851,6 +861,7 @@ sub parse_annotation_set {
             )
         VALUES (
             '$gene_id',
+            ?,
             ?,
             ?,
             ?,
@@ -872,11 +883,16 @@ sub parse_annotation_set {
     my $as_ins_sth = $db_adaptor->dbc->prepare($as_ins_stmt);
     my $asm_ins_sth = $db_adaptor->dbc->prepare($asm_ins_stmt);
 
+    my $annotation_set_type = ($annotation_set->data()->{'type'}) ? lc($annotation_set->data()->{'type'}) : undef;
+    return if ($annotation_set_type eq $requester_type); # Skip the requester annotation set
+
     # Get and parse the source
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-     return undef if ($source_name ne 'LRG' && $source_name ne 'NCBI RefSeqGene' && $source_name ne 'Ensembl');
+    return undef if ($source_name !~ /LRG/ && $source_name !~ /NCBI\sRefSeqGene/ && $source_name !~ /Ensembl/);
+
+    $annotation_set_type = lc((split(' ',$source_name))[0]) if (!$annotation_set_type);
 
     my $source_id = parse_source($source,$gene_id,$db_adaptor,$use_annotation_set) or warn ("Could not properly parse source information in annotation_set in $xmlfile");
     return $source_id if (!defined($source_id) || $source_id < 0);
@@ -930,11 +946,12 @@ sub parse_annotation_set {
     $xml_out =~ s/NCBI RefSeqGene-specific naming for all variants/NCBI RefSeqGene-specific numbering for all exons/ if ($xml_out);
     # /!\ HACK /!\ # End
 
-    $as_ins_sth->bind_param(1,$source_id,SQL_INTEGER);
-    $as_ins_sth->bind_param(2,$comment,SQL_VARCHAR);
-    $as_ins_sth->bind_param(3,$modification_date,SQL_VARCHAR);
-    $as_ins_sth->bind_param(4,$lrg_gene_name,SQL_VARCHAR);
-    $as_ins_sth->bind_param(5,$xml_out,SQL_VARCHAR);
+    $as_ins_sth->bind_param(1,$annotation_set_type,SQL_VARCHAR);
+    $as_ins_sth->bind_param(2,$source_id,SQL_INTEGER);
+    $as_ins_sth->bind_param(3,$comment,SQL_VARCHAR);
+    $as_ins_sth->bind_param(4,$modification_date,SQL_VARCHAR);
+    $as_ins_sth->bind_param(5,$lrg_gene_name,SQL_VARCHAR);
+    $as_ins_sth->bind_param(6,$xml_out,SQL_VARCHAR);
     $as_ins_sth->execute();
     my $annotation_set_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
     # Link the mappings to the annotation_set
@@ -943,8 +960,40 @@ sub parse_annotation_set {
         $asm_ins_sth->bind_param(2,$mid,SQL_INTEGER);
         $asm_ins_sth->execute();
     }
-    
-    return $annotation_set_id;
+}
+
+sub parse_requester_data {
+  my $requester_set    = shift;
+  my $fixed_annotation = shift;
+  my $gene_id          = shift;
+  my $db_adaptor       = shift;
+
+  # From annotation set
+  my $source_nodes = (defined($requester_set)) ? $requester_set->findNodeArray('source') : undef;
+
+  # From fixed annotation
+  if (!defined($source_nodes)) {
+    $source_nodes = $fixed_annotation->findNodeArray('source');
+  }
+  
+  if (defined($source_nodes)) {
+  
+    my $lr_sel_stmt = qq { SELECT lsdb_id FROM lrg_request WHERE gene_id=$gene_id LIMIT 1};
+
+    # Check if some requester information are already in the database for this LRG. 
+    my $lsdb_id = $db_adaptor->dbc->db_handle->selectall_arrayref($lr_sel_stmt)->[0][0];
+    if (defined($lsdb_id)) {
+      print STDOUT localtime() . "\tRequester information already exist in the database for $lrg_id\n" if ($verbose);
+    }
+    else {
+      while (my $source = shift(@{$source_nodes})) {
+        parse_source($source,$gene_id,$db_adaptor);
+      }
+    }
+  }
+  else {
+    warn ("Could not find requester data");
+  }
 }
 
 sub parse_mapping {
@@ -961,10 +1010,14 @@ sub parse_mapping {
                 chr_name,
                 chr_id,
                 chr_start,
-                chr_end
+                chr_end,
+                chr_syn,
+                type
             )
         VALUES (
             '$gene_id',
+            ?,
+            ?,
             ?,
             ?,
             ?,
@@ -1030,11 +1083,13 @@ sub parse_mapping {
     my $ms_ins_sth    = $db_adaptor->dbc->prepare($ms_ins_stmt);
     my $diff_ins_sth  = $db_adaptor->dbc->prepare($diff_ins_stmt);
     
-    my $assembly = $mapping->data()->{'coord_system'} or error_msg("Could not find assembly attribute in mapping tag of $xmlfile");
-    my $chr_name = $mapping->data()->{'other_name'} or error_msg("Could not find chr_name attribute in mapping tag of $xmlfile");
+    my $assembly  = $mapping->data()->{'coord_system'} or error_msg("Could not find assembly attribute in mapping tag of $xmlfile");
+    my $chr_name  = $mapping->data()->{'other_name'} or error_msg("Could not find chr_name attribute in mapping tag of $xmlfile");
     my $chr_start = $mapping->data()->{'other_start'} or error_msg("Could not find chr_start attribute in mapping tag of $xmlfile");
-    my $chr_end = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
-    my $chr_id = $mapping->data()->{'other_id'};
+    my $chr_end   = $mapping->data()->{'other_end'} or error_msg("Could not find chr_end attribute in mapping tag of $xmlfile");
+    my $chr_id    = $mapping->data()->{'other_id'};
+    my $chr_syn   = $mapping->data()->{'other_id_syn'};
+    my $aligned_seq_type = ($mapping->data()->{'type'}) ? $mapping->data()->{'type'} : 'other_assembly';
     my $lrg_start;
     my $lrg_end;
     my $strand;
@@ -1057,6 +1112,8 @@ sub parse_mapping {
     $m_ins_sth->bind_param(3,$chr_id,SQL_VARCHAR);
     $m_ins_sth->bind_param(4,$chr_start,SQL_INTEGER);
     $m_ins_sth->bind_param(5,$chr_end,SQL_INTEGER);
+    $m_ins_sth->bind_param(6,$chr_syn,SQL_VARCHAR);
+    $m_ins_sth->bind_param(7,$aligned_seq_type,SQL_VARCHAR);
     $m_ins_sth->execute();
     my $mapping_id = $db_adaptor->dbc->db_handle->{'mysql_insertid'};
 

@@ -26,17 +26,21 @@ sub objs_from_xml {
   
   my @objs;
   my $a_adaptor = $self->xml_adaptor->get_AnnotationSetXMLAdaptor();
+  my $r_adaptor = $self->xml_adaptor->get_RequesterXMLAdaptor();
   
-  foreach my $lrg (@{$xml}) {
+  foreach my $upd (@{$xml}) {
     
     # Skip if it's not a fixed_annotation element
-    next unless ($lrg->name() eq 'updatable_annotation');
+    next unless ($upd->name() eq 'updatable_annotation');
     
     # Get the annotation sets
-    my $annotation_set = $a_adaptor->fetch_all_by_updatable_annotation($lrg);
+    my $annotation_set = $a_adaptor->fetch_all_by_updatable_annotation($upd);
+    
+    # Get the requester information
+    my $requester = $r_adaptor->fetch_by_updatable_annotation($upd);
     
     # Create the Locus Reference object
-    my $obj = LRG::API::UpdatableAnnotation->new($annotation_set);
+    my $obj = LRG::API::UpdatableAnnotation->new($annotation_set,$requester);
     push(@objs,$obj);
   }
   
@@ -52,12 +56,15 @@ sub xml_from_objs {
   
   my @xml;
   my $a_adaptor = $self->xml_adaptor->get_AnnotationSetXMLAdaptor();
+  my $r_adaptor = $self->xml_adaptor->get_RequesterXMLAdaptor();
+  
   foreach my $obj (@{$objs}) {
     
     # Create the root node
     my $root = LRG::Node::newEmpty('updatable_annotation');
     
     # Add annotation sets
+    map {$root->addExisting($_)} @{$r_adaptor->xml_from_objs($obj->requester())};
     map {$root->addExisting($_)} @{$a_adaptor->xml_from_objs($obj->annotation_set())};
     
     push(@xml,$root);

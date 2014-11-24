@@ -10,10 +10,13 @@ our @ISA = "LRG::API::Base";
 
 sub initialize {
   my $self = shift;
-  my ($assembly,$other_coordinates,$mapping_span,$name) = @_;
+  my ($assembly,$type,$other_coordinates,$mapping_span) = @_;
   
   unless (defined($assembly)) {
     die ("Assembly must be specified in call to $self constructor");
+  }
+  unless (defined($type)) {
+    die ("A type of sequence aligned must be specified in call to $self constructor (e.g. main_assembly, other_assembly, patch, haplotype, transcript)");
   }
   unless (defined($other_coordinates)) {
     die ("Genomic coordinates must be specified in call to $self constructor");
@@ -23,6 +26,7 @@ sub initialize {
   }
 
 	$self->assembly($assembly);
+	$self->type($type);
   $self->other_coordinates($other_coordinates,'LRG::API::Coordinates');
   $self->mapping_span($mapping_span,'LRG::API::MappingSpan',1);
 }
@@ -30,6 +34,7 @@ sub initialize {
 sub _permitted {
   return [
     'assembly',
+    'type',
     'other_coordinates',
     'mapping_span'
   ];
@@ -69,6 +74,12 @@ sub strand {
 sub name {
   my $self = shift;
   return $self->other_coordinates->coordinate_system();
+}
+
+# Get the synonym name attribute from the coordinates object
+sub synonym {
+  my $self = shift;
+  return $self->other_coordinates->source_coordinate_system_syn();
 }
 
 # Positions that map to the reverse strand are returned as negative numbers

@@ -86,6 +86,7 @@ foreach my $file (@files) {
   # Coordinates
   my $a_sets = $lrg->findNodeArray('updatable_annotation/annotation_set');
   LOOP: foreach my $set (@$a_sets) {
+    next if (!$set->findNode('source/name') || !$set->findNode('source/name')->content());
     next if ($set->findNode('source/name')->content() ne 'LRG');
     
     $hgnc = $set->findNode('lrg_locus')->content();

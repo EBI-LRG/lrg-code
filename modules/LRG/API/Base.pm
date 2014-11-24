@@ -62,6 +62,47 @@ sub _get_set {
     return $self->{$attribute};
 }
 
+sub _meta {
+  my $self = shift;
+  my $key = shift;
+  my $value = shift;
+  
+  # Locate the meta object that contains the key
+  my $meta;
+  my @keep;
+  foreach my $m (@{$self->meta() || []}) {
+    unless ($m->key() eq $key) {
+      push(@keep,$m);
+      next;
+    }
+    $meta = $m;
+  }
+  # If we're not updating the value, return what we did or did not find
+  return $meta unless (defined($value));
+  
+  # Update the meta with the pre-existing and the new value
+
+  $self->meta([@keep,LRG::API::Meta->new($key,$value)]);
+  #$self->meta([@keep,$value]);
+
+  return $value;
+}
+
+sub _remove_meta {
+  my $self = shift;
+  my $key = shift;
+  
+  # Locate the meta object that contains the key
+  my @keep;
+  foreach my $m (@{$self->meta() || []}) {
+    next if ($m->key() eq $key);
+    push(@keep,$m);
+  }
+  
+  # Update the meta with the existing list except the removed metadata
+  $self->meta(\@keep);
+}
+
 sub AUTOLOAD {
     my $self = shift;
     my $type = ref($self) or die("$self is not an object");

@@ -53,6 +53,11 @@ h1.separator{
   font-weight: bold;
 }
 
+.red{
+  color: #E00000;
+  font-weight: bold;
+}
+
 .white{
   color: #FFF;
   font-weight: bold;
@@ -157,6 +162,7 @@ td.sequence_cell {
 span.line_header {
   font-weight:bold;
   padding-right:5px;
+  padding-bottom:2px;
 }
 
 div.right_side{
@@ -244,6 +250,14 @@ td.right_col{
 }
 td.line_separator{
   border-top:2px dotted #0E4C87;
+}
+
+.new_transcript {
+  cursor:help;
+}
+.new_transcript:after {
+  content: "*";
+  color: #E00000;
 }
 
 div.download_box {
@@ -358,22 +372,15 @@ ul.ext_id{
   list-style-type:disc;
 }
 
-ul.transcript_label{
-  list-style-type:disc;
-  color: #003399;
-  margin-top: 0px;
-  padding-bottom: 3px;
-}
-
-li.transcript_label{
-  padding-top: 0px;
-  padding-bottom: 3px;
+ul.region{
+  margin-left:35px;
+  margin-top:8px;
 }
 
 span.transcript_label{
+  color: #003399;
   font-weight: bold;
   font-style: italic;
-  padding-right: 5px;
 }
 
 span.translation_label{
@@ -603,7 +610,6 @@ div.mapping {
 
 h3.mapping {
   display:inline;
-  padding-right:10px;
 }
 
 .source_left {
@@ -719,8 +725,11 @@ h3.mapping {
 .utr {
   font-family: monospace;
   text-transform: lowercase;
-  color: #666666;
-  background: #CCCCCC;
+  background: #CCC;
+}
+
+.genomic_utr {
+  background: #CCC;
 }
 
 .startcodon {
@@ -765,11 +774,13 @@ h3.mapping {
 .oddDiv {
   background: #F9F9F9;
   margin: 5px 5px 75px;
+  padding-bottom: 5px;
 }
      
 .evenDiv {
   background: #FFFFFF;
   margin: 5px 5px 75px;
+  padding-bottom: 5px;
 }
 
 .hidden {
@@ -841,11 +852,20 @@ div.lrg_source {
 }
 
 div.lrg_transcript {
-	padding: 8px 0px 2px;
+	padding: 10px 0px 4px 5px;
   text-decoration:underline;
   font-weight:bold;
   font-size:1.1em;
   margin-bottom:4px;
+}
+
+div.lrg_transcript_content {
+  padding-left: 5px;
+}
+
+div.lrg_transcript_separator {
+  margin:6px 0px 2px;
+  border-top: 2px dotted #E0E0E0;
 }
 
 div.fixed_transcript_annotation {
@@ -902,45 +922,106 @@ li.key {
 .hide_button {
   vertical-align:middle;
   border:1px solid #3f9221;
-  border-radius:8px;
-  padding:1px 2px;
+  border-radius:9px;
+  padding:1px 4px 1px 20px;
   text-decoration:none;
-  background-color: #48a726;
   color:#FFF;
+  position:relative;
+  left:-20px;
+  box-shadow:2px 2px 2px #888;
+  background:url(img/top_arrow_green.png) no-repeat 4px 50%;
+  background-color: #48a726;
+}
+.hide_button:before{
+  content:'';
+  float:left;
+  width: 19px;
+  height:17px;
 }
 .hide_button:hover {
   border:1px solid #003399;
-  text-decoration:underline;
+  text-decoration:none;
+}
+
+.show_hide_box {
+  float:left;
+  margin-left:6px;
+  margin-right:5px;
+  vertical-align:middle;
+}
+.show_hide_box_text {
+  float:left;
+  vertical-align:middle
 }
 
 .show_hide {
-  border:1px solid #AAA;
-  border-radius:8px;
-  padding:1px 2px;
-  margin-left:5px;
-  background-color:#FFF;
+  vertical-align:middle;
+  border:1px solid #FAFAFA;
+  border-radius:50%;
+  display: block;
+  width:16px;
+  height:16px;
+  background:url(img/plus_button_green.png) no-repeat 0 0;
 }
 .show_hide:hover {
   border:1px solid #48a726;
-  text-decoration:none;
+  background:url(img/plus_button_white.png) no-repeat 0 0;
+}
+.show_hide:active{
+	box-shadow: 2px 2px 2px #CCC inset;
+	background:url(img/plus_button_white.png) no-repeat 0 0;
 }
 
-a.show_hide_anno {
+.selected {
+  background:url(img/minus_button_green.png) no-repeat 0 0;
+}
+.selected:hover {
+  border:1px solid #48a726;
+  background:url(img/minus_button_white.png) no-repeat 0 0;
+}
+.selected:active{
+  box-shadow: 2px 2px 2px #CCC inset;
+}
+
+.show_hide_anno {
   vertical-align:middle;
   border:1px solid #3f9221;
   border-radius:9px;
-  padding:2px;
+  padding:2px 4px 2px 2px;
   left:400px;
   position:absolute;
   text-decoration:none;
-  background-color: #48a726;
   color:#FFF;
+  box-shadow:2px 2px 2px #888;
+  background:url(img/plus_button_white.png) no-repeat 4px 50%;
+  background-color: #48a726;
 }
-a.show_hide_anno:hover {
+.show_hide_anno:before{
+  content:'';
+  float:left;
+  width: 22px;
+  height:18px;
+}
+.show_hide_anno:hover {
   border:1px solid #48a726;
   text-decoration:none;
-  background-color: #FFF;
   color: #48a726;
+  background:url(img/plus_button_green.png) no-repeat 4px 50%;
+  background-color: #FFF;
+}
+.show_hide_anno:active{
+	box-shadow: 2px 2px 2px #CCC inset;
+}
+.selected_anno {
+  background:url(img/minus_button_white.png) no-repeat 4px 50%;
+  background-color: #48a726;
+}
+.selected_anno:hover {
+  background:url(img/minus_button_green.png) no-repeat 4px 50%;
+  background-color: #FFF;
+}
+.selected_anno:active{
+  box-shadow: 2px 2px 2px #CCC inset;
 }
 
 div.top_up_anno_link {
