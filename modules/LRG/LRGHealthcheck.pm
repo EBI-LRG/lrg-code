@@ -316,7 +316,7 @@ sub compare_main_mapping {
     } elsif (-e "$EBI_FTP_ARCHIVE_DIR/pending/$lrg_id.xml") {
       $existing_archive_file = "$EBI_FTP_ARCHIVE_DIR/pending/$lrg_id.xml";
     }
-    
+
     if (!defined($existing_archive_file)) {
       $self->{'check'}{$name}{'passed'} = $passed;
       return $passed;
@@ -1766,7 +1766,12 @@ sub get_mapping_coordinates {
   my $chr_attr = 'other_name';  
 
   foreach my $aset (@$asets) {
-    #next unless($aset->findNodeSingle('source/name')->content eq 'LRG');
+    my $source_name_node = $aset->findNodeSingle('source/name');
+    next unless ($source_name_node);
+
+    my $s_name = $source_name_node->content;
+    next unless ($s_name && $s_name =~ /^\w+/);
+
     my $mappings = $aset->findNodeArraySingle('mapping');
     
     my %data;
@@ -1774,10 +1779,10 @@ sub get_mapping_coordinates {
       next if ($mapping->data->{'coord_system'} !~ /^$CHECK_ROOT_ASSEMBLY/i);
 
       my $chr = $mapping->data()->{$chr_attr};
-        next unless ($chr && $chr =~ /^([0-9]+|[XY])$/i);
+      next unless ($chr && $chr =~ /^([0-9]+|[XY])$/i);
       
       my $assembly = (split(/\./,$mapping->data->{'coord_system'}))[0];
-      
+;
       foreach my $attr (@attr_list) {
         next if ($attr eq $chr_attr);
         $data{$assembly}{$chr}{$attr} = ($attr eq 'coord_system') ? $assembly : $mapping->data->{$attr};
@@ -1798,7 +1803,7 @@ sub get_mapping_coordinates {
         $data{$assembly}{$chr}{'diffs'}{$label} = \%diff_data;
       }
     } 
-    return \%data;
+    return \%data if (scalar(keys(%data)));
   }
   return undef;
 }
