@@ -216,13 +216,13 @@ foreach my $o_gene (@$o_genes) {
 #############
 ## DISPLAY ##
 #############
-
+my $tsl_default_bgcolour = '#002366';
 my %tsl_colour = ( '1'   => '#090',
-                   '2'   => '#002366',
-                   '3'   => '#002366',#'#d700ff',
-                   '4'   => '#002366',#'#FFA500',
-                   '5'   => '#002366',#'#900',
-                   'INA' => '#002366',#'#000'
+                   '2'   => $tsl_default_bgcolour,
+                   '3'   => $tsl_default_bgcolour,#'#d700ff',
+                   '4'   => $tsl_default_bgcolour,#'#FFA500',
+                   '5'   => $tsl_default_bgcolour,#'#900',
+                   'INA' => $tsl_default_bgcolour,#'#000'
                  );
 
 my $coord_span = scalar(keys(%exons_list));
@@ -955,7 +955,7 @@ sub get_tsl_html {
   # HTML
   return '' if ($level eq '0');
  
-  my $bg_colour     = $tsl_colour{$level};
+  my $bg_colour     = ($tsl_colour{$level}) ? $tsl_colour{$level} : $tsl_default_bgcolour;
   my $border_colour = ($tr_type eq 'gold') ? qq{ ;border-color:#555} : '';
   return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" title="Transcript Support Level = $level">$level</span>};
 }
@@ -975,6 +975,8 @@ sub get_showhide_buttons {
   my $type  = shift;
   my $start = shift;
   my $end   = shift;
+  $start ||= 1;
+  $end   ||= 1;
   return qq{
        <div style="margin:10px 0px;border-bottom:2px dotted #888;padding:2px">
          <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">$type rows:</div>
