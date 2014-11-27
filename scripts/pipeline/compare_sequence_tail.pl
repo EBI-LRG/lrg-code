@@ -17,6 +17,7 @@ my $pass;
 my $dbname;
 my $verbose;
 my $error_log;
+my $warning_log;
 my $warning_msg;
 
 my $lsdb_code_id = 1;
@@ -26,14 +27,15 @@ my $failed       = 0;
 
 
 GetOptions(
-  'host=s'		  => \$host,
-  'port=i'		  => \$port,
-  'dbname=s'    => \$dbname,
-  'user=s'		  => \$user,
-  'pass=s'		  => \$pass,
-  'xmlfile=s'	  => \$xmlfile,
-  'verbose!'	  => \$verbose,
-  'error_log=s' => \$error_log,
+  'host=s'		    => \$host,
+  'port=i'		    => \$port,
+  'dbname=s'      => \$dbname,
+  'user=s'		    => \$user,
+  'pass=s'		    => \$pass,
+  'xmlfile=s'	    => \$xmlfile,
+  'verbose!'	    => \$verbose,
+  'error_log=s'   => \$error_log,
+  'warning_log=s' => \$warning_log,
 );
 
 error_msg("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
@@ -160,8 +162,7 @@ sub error_msg {
 sub warning_msg {
 	my $msg = shift;
 
-  my $warning_log;
-  if (defined($error_log)) {
+  if (defined($error_log) && !defined($warning_log)) {
     $warning_log = $error_log;
     $warning_log =~ s/error_log/warning_log/;
   }
