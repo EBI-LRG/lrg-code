@@ -127,9 +127,9 @@ function end_of_script {
     if [[ ${not_successful} == 1 ]] ; then
       echo -e "stopped\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Stopped!"
-    elif [[ ${status} == 'pending' && ${fixed_section_diff} == 1 ]] ; then
+    elif [[ ${status} != 'public' && ${fixed_section_diff} == 1 ]] ; then
       echo -e "waiting\t${comment}\t${comment_warning}" >> ${report_file}
-      echo_stderr "Waiting to copy to FTP site!"
+      echo_stderr "Waiting to manually check and copy the XML file to the FTP site!"
     else
       echo -e "succeed\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Succeed!"
@@ -322,7 +322,11 @@ elif [[ ${status} == 'pending' ]] ; then
   fi
 # Stalled
 elif [[ ${status} == 'stalled' ]] ; then
-  lrg_xml_dir="${new_dir}/stalled"
+  if [[ ${fixed_section_diff} == 1 ]] ; then
+    lrg_xml_dir="${new_dir}/temp/stalled"
+  else
+    lrg_xml_dir="${new_dir}/stalled"
+  fi
 # New
 elif [[ ${status} == 'new' ]] ; then
   lrg_xml_dir="${new_dir}/temp/new"
