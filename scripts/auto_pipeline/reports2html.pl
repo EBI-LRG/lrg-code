@@ -6,17 +6,19 @@ use LRG::LRG qw(date);
 use Getopt::Long;
 use Cwd 'abs_path';
 
-my ($reports_dir,$reports_file,$xml_dir,$date);
+my ($reports_dir,$reports_file,$xml_dir,$ftp_dir,$date);
 
 GetOptions(
   'reports_dir=s'  => \$reports_dir,
   'reports_file=s' => \$reports_file,
   'xml_dir=s'      => \$xml_dir,
+  'ftp_dir=s'      => \$ftp_dir,
   'date=s'         => \$date
 );
 
 $date ||= LRG::LRG::date();
 $reports_dir .= "/$date";
+$ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
 die("Reports directory (-reports_dir) needs to be specified!") unless (defined($reports_dir));
 die("Reports file (-reports_file) needs to be specified!")     unless (defined($reports_file));
@@ -28,7 +30,14 @@ die("XML directory '$xml_dir' doesn't exist!") unless (-d $xml_dir);
 
 my $reports_html_file = (split(/\./,$reports_file))[0].'.html';
 
-my @lrg_xml_dirs = ('public', 'pending', 'stalled', 'failed', 'temp/new', 'temp/public', 'temp/pending');
+my $public  = 'public';
+my $pending = 'pending';
+my $stalled = 'stalled';
+
+my @lrg_status   = ($public, $pending, $stalled, 'new');
+my @lrg_xml_dirs = ($public, $pending, $stalled, 'failed', 'temp/new', "temp/$public", "temp/$pending", "temp/$stalled");
+
+my %lrg_ftp_dirs = ( $public => '', $pending => $pending, $stalled => $stalled);
 
 my $succed_colour  = '#0B0';
 my $waiting_colour = '#00B';
@@ -40,6 +49,10 @@ my $abs_xml_dir = abs_path("$xml_dir/$date");
 my $html_content = '';
 my $html_log_content = '';
 
+my %lrgs_list;
+my %lrg_counts;
+my $total_lrg_count = 0;
+
 my $html_header = qq{
 <html>
   <head>
@@ -50,7 +63,6 @@ my $html_header = qq{
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
       table {border:1px solid #000;border-collapse:collapse}
       th {
-         background-color:#0E4C87;
          color:#FFF;
          font-weight:bold;
          text-align:center;
@@ -65,6 +77,8 @@ my $html_header = qq{
         padding-left:15px;
         margin-bottom:0px;
       }
+      table.count {border:none}
+      table.count td {border:none;text-align:right;padding:0px 0px 2px 0px}
       .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px }
       .header_count  {position:absolute;left:240px;padding-top:5px;color:#0E4C87}
       
@@ -123,6 +137,7 @@ my $html_header = qq{
     </div>
 };
 
+
 my $html_footer = qq{
     </table>
   </body>
@@ -131,17 +146,17 @@ my $html_footer = qq{
 
 my $html_table_header = qq{
     <table style="margin-bottom:20px">
-      <tr>
+      <tr class="gradient_color2">
         <th>LRG</th>
+        <th title="FTP status">Status</th>
         <th>Comment(s)</th>
         <th>Warning(s)</th>
-        <th>File location</th>
-        <th>Log</th>
+        <th title="File location in the temporary directory 'XML files location'">File location</th>
+        <th title="Link to a popup containing the main log reports">Log</th>
       </tr>
 };
 
-my @status_list = ('failed','stopped','waiting','succeed');
-my %lrgs_list;
+my @pipeline_status_list = ('failed','stopped','waiting','succeed');
 
 open F, "< $reports_dir/$reports_file" or die $!;
 while (<F>) {
@@ -196,11 +211,10 @@ while (<F>) {
                               'lrg_path'  => $lrg_path,
                               'log_found' => ($log_content ne '') ? 1 : undef
                              };
-  
 }
 close(F);
 
-foreach my $status (@status_list) {
+foreach my $status (@pipeline_status_list) {
   next if (!$lrgs_list{$status});
   
   my $lrg_count = scalar(keys(%{$lrgs_list{$status}}));
@@ -235,14 +249,16 @@ foreach my $status (@status_list) {
 
   foreach my $id (sort{ $a <=> $b } keys %{$lrgs_list{$status}}) {
 
-    my $lrg_id   = $lrgs_list{$status}{$id}{'lrg_id'};
-    my $comments = $lrgs_list{$status}{$id}{'comments'};
-    my $warnings = $lrgs_list{$status}{$id}{'warnings'};
-    my $lrg_path = $lrgs_list{$status}{$id}{'lrg_path'};
-    my $log_link = '';
+    my $lrg_id     = $lrgs_list{$status}{$id}{'lrg_id'};
+    my $comments   = $lrgs_list{$status}{$id}{'comments'};
+    my $warnings   = $lrgs_list{$status}{$id}{'warnings'};
+    my $lrg_path   = $lrgs_list{$status}{$id}{'lrg_path'};
+    my $lrg_status = find_lrg_on_ftp($lrg_id);
+    my $log_link   = '';
   
     if ($lrgs_list{$status}{$id}{'log_found'}) {
-      $log_link = qq{<input type="button" onclick="show_log_info('$lrg_id');" value="Show log" />};
+      #$log_link = qq{<input type="button" onclick="show_log_info('$lrg_id');" value="Show log" />};
+      $log_link = qq{<a class="green_button" href="javascript:show_log_info('$lrg_id');">Show log</a>};
     }
     
     my $error_log_column = ($status eq 'failed') ? '<td>'.get_detailled_log_info($lrg_id,'error').'</td>' : '';
@@ -250,6 +266,7 @@ foreach my $status (@status_list) {
     $html_content .= qq{
       <tr id="$lrg_id">
         <td>$lrg_id</td>
+        <td>$lrg_status</td>
         <td>$comments</td>
         <td>$warnings</td>
         <td>$lrg_path</td>
@@ -257,12 +274,34 @@ foreach my $status (@status_list) {
         $error_log_column
       </tr>
     };
+    $lrg_counts{$lrg_status}++;
+    $total_lrg_count++;
   }
   $html_content .= qq{</table>\n</div>};
 }
 
+
+my $html_summary = qq{
+<div class="summary gradient_color1" style="width:260px">
+    <div class="summary_header">Summary information</div>
+    <div>
+      <table class="table_bottom_radius" style="width:100%">
+      <tr><td class="left_col">Total number of LRGs</td><td class="right_col" style="text-align:right">$total_lrg_count</td></tr> 
+};
+my $first_row = 1;
+foreach my $l_status (@lrg_status) {
+  next if (!$lrg_counts{$l_status});
+  my $count = $lrg_counts{$l_status};
+  my $separator = ($first_row == 1) ? ' line_separator' : '';
+  $first_row = 0;
+  $html_summary .= qq{      <tr><td class="left_col$separator">$l_status</td><td class="right_col$separator" style="text-align:right">$count</td></tr>};
+}
+$html_summary .= qq{      </table>\n</div>\n</div>};
+
+
 open OUT, "> $reports_dir/$reports_html_file" or die $!;
 print OUT $html_header;
+print OUT $html_summary;
 print OUT $html_content;
 print OUT qq{<div id="logs" class="hidden">$html_log_content</div>};
 print OUT $html_footer;
@@ -309,6 +348,17 @@ sub find_lrg_xml_file {
     return "$dir/$lrg_id.xml" if (-e $lrg_file);
   }
   return '-';
+}
+
+sub find_lrg_on_ftp {
+  my $lrg_id = shift;
+  
+  foreach my $type (keys(%lrg_ftp_dirs)) {
+    my $dir = $lrg_ftp_dirs{$type};
+    my $lrg_file = "$ftp_dir/$dir/$lrg_id.xml";
+    return $dir if (-e $lrg_file);
+  }
+  return 'new';
 }
 
 sub get_log_reports {
