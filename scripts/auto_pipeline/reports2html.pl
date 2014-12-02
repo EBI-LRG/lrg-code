@@ -178,7 +178,7 @@ while (<F>) {
     else {
       $html_comments = $com_list[0];
     }
-    $html_comments .= get_log_info($lrg_id,'error');
+    $html_comments .= get_log_reports($lrg_id,'error');
   }
   else {
     $html_comments = '<span style="color:#888">none</span>';
@@ -253,8 +253,8 @@ foreach my $status (@pipeline_status_list) {
     my $comments   = $lrgs_list{$status}{$id}{'comments'};
     my $warnings   = $lrgs_list{$status}{$id}{'warnings'};
     my $lrg_path   = $lrgs_list{$status}{$id}{'lrg_path'};
-    my $lrg_status = find_lrg_on_ftp($lrg_id);
     my $log_link   = '';
+    my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
   
     if ($lrgs_list{$status}{$id}{'log_found'}) {
       #$log_link = qq{<input type="button" onclick="show_log_info('$lrg_id');" value="Show log" />};
@@ -265,11 +265,11 @@ foreach my $status (@pipeline_status_list) {
 
     $html_content .= qq{
       <tr id="$lrg_id">
-        <td>$lrg_id</td>
-        <td>$lrg_status</td>
+        <td style="font-weight:bold">$lrg_id</td>
+        <td>$lrg_status_html</td>
         <td>$comments</td>
         <td>$warnings</td>
-        <td>$lrg_path</td>
+        <td><a style="text-decoration:none;color:#000" href="javascript:alert('$abs_xml_dir/$lrg_path')">$lrg_path</a></td>
         <td>$log_link</td>
         $error_log_column
       </tr>
@@ -356,9 +356,23 @@ sub find_lrg_on_ftp {
   foreach my $type (keys(%lrg_ftp_dirs)) {
     my $dir = $lrg_ftp_dirs{$type};
     my $lrg_file = "$ftp_dir/$dir/$lrg_id.xml";
-    return $dir if (-e $lrg_file);
+    my $status = $dir;
+    my $status_html = $dir;
+    if (-e $lrg_file) {
+      if ($dir eq '') {
+        $status = 'public';
+        $status_html = qq{<span style="color:#090">public</span>};
+      }
+      elsif ($dir eq 'pending') {
+        $status_html = qq{<span style="color:#900">$dir</span>};
+      }
+      elsif ($dir eq 'stalled') {
+        $status_html = qq{<span style="color:#E69400">$dir</span>};
+      }
+      return ($status, $status_html);
+    }
   }
-  return 'new';
+  return ('new', qq{<span class="blue">new</span>});
 }
 
 sub get_log_reports {
