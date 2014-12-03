@@ -16,11 +16,9 @@ sub run {
   my $date           = $self->param('date');
  
   my $dh;
-  
-  $reports_dir .= "/$date";
 
   # Open a directory handle to get the list of reports files
-  my $reports_subdir = "$reports_dir/reports";
+  my $reports_subdir = "$reports_dir/$date/reports";
   opendir($dh,$reports_subdir);
   die("Could not process directory $reports_subdir") unless (defined($dh));
   my @reports_files = readdir($dh);
@@ -30,12 +28,12 @@ sub run {
   
   @reports_files = sort { (split /_|\./, $a)[2] <=> (split /_|\./, $b)[2] } @reports_files;
   
-  open OUT, "> $reports_dir/$global_reports" or die $!;
+  open OUT, "> $reports_dir/$date/$global_reports" or die $!;
   foreach my $r_file (@reports_files) {
     print OUT `cat $reports_subdir/$r_file`;
   }
   close(OUT);
   
-  `perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -xml_dir $new_xml_dir -ftp_dir $ftp_dir`
+  `perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -xml_dir $new_xml_dir -ftp_dir $ftp_dir -date $date`
 }
 1;
