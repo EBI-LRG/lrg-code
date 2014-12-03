@@ -3087,9 +3087,13 @@
             <td class="no_border_bottom"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
             <td class="no_border_bottom">
               <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">
-                <xsl:call-template name="diff_hgvs_genomic_ref">
-                  <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
-                </xsl:call-template>
+                <!-- Can't perform the reverse complement on the fly -->
+                 <xsl:variable name="strand" select="../@strand"/>
+                <xsl:if test="$strand=1">
+                  <xsl:call-template name="diff_hgvs_genomic_ref">
+                    <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
+                  </xsl:call-template>
+                </xsl:if>
               </xsl:if>
               <xsl:call-template name="diff_hgvs_genomic_lrg"></xsl:call-template>
             </td>
