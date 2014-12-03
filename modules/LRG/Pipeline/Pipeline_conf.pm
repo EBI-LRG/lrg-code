@@ -49,11 +49,9 @@ sub default_options {
 
         run_extract_xml_files   => 1,
         
-        small_lsf_options   => '-R"select[mem>250] rusage[mem=250]" -M250',
+        small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
         default_lsf_options => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
-        urgent_lsf_options  => '-q yesterday -R"select[mem>2000] rusage[mem=2000]" -M2000',
         highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is Sanger LSF speak for "give me 15GB of memory"
-        long_lsf_options    => '-q long -R"select[mem>2000] rusage[mem=2000]" -M2000',
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
@@ -71,9 +69,7 @@ sub resource_classes {
     return {
           'small'   => { 'LSF' => $self->o('small_lsf_options')   },
           'default' => { 'LSF' => $self->o('default_lsf_options') },
-          'urgent'  => { 'LSF' => $self->o('urgent_lsf_options')  },
           'highmem' => { 'LSF' => $self->o('highmem_lsf_options') },
-          'long'    => { 'LSF' => $self->o('long_lsf_options')    },
     };
 }
 
@@ -128,8 +124,8 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::AnnotateXMLFiles',
             -rc_name           => 'small',
             -input_ids         => [],
-            -hive_capacity     => 5,
-            -analysis_capacity => 5,
+            -hive_capacity     => 10,
+            -analysis_capacity => 10,
             -wait_for          => [ 'init_annotation' ],
             -flow_into         => {},
         },
@@ -143,6 +139,7 @@ sub pipeline_analyses {
                 reports_file => $self->o('reports_file_name'),
                 ftp_dir      => $self->o('ftp_dir'),
                 run_dir      => $self->o('run_dir'),
+                date         => $self->o('date'),
             },
             -input_ids  => [],
             -wait_for   => [ 'annotate_xml_files' ],

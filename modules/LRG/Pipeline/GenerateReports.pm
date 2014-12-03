@@ -13,9 +13,12 @@ sub run {
   my $new_xml_dir    = $self->param('new_xml_dir');
   my $ftp_dir        = $self->param('ftp_dir');
   my $global_reports = $self->param('reports_file');
+  my $date           = $self->param('date');
  
   my $dh;
   
+  $reports_dir .= "/$date";
+
   # Open a directory handle to get the list of reports files
   my $reports_subdir = "$reports_dir/reports";
   opendir($dh,$reports_subdir);
