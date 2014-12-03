@@ -119,19 +119,19 @@ function end_of_script {
       is_partial=`perl ${perldir}/pipeline/check.lrg.pl -xml_file ${file_path} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment}Partial gene/transcript/protein found;"
-        echo -e "failed\t${comment}\t${comment_warning}" >> ${report_file}
+        echo -e "${lrg_id}\tfailed\t${comment}\t${comment_warning}" >> ${report_file}
         return 1
       fi
     fi  
     
     if [[ ${not_successful} == 1 ]] ; then
-      echo -e "stopped\t${comment}\t${comment_warning}" >> ${report_file}
+      echo -e "${lrg_id}\tstopped\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Stopped!"
     elif [[ ${status} != 'public' && ${fixed_section_diff} == 1 ]] ; then
-      echo -e "waiting\t${comment}\t${comment_warning}" >> ${report_file}
+      echo -e ${lrg_id}\t"waiting\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Waiting to manually check and copy the XML file to the FTP site!"
     else
-      echo -e "succeed\t${comment}\t${comment_warning}" >> ${report_file}
+      echo -e "${lrg_id}\tsucceed\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Succeed!"
     fi
   fi
@@ -180,10 +180,10 @@ if [[ ${skip_hc} ]] ; then
         echo_log "ERROR: the HealthCheck skip option '$i' is not recognized!"
         echo_log "The script is ended for this LRG."
         echo_stderr "Failed!"
-		    if [ -n "${report_file}" ] ; then
-			    echo -e "failed\t(wrong HealthChecks skip option used)" >> ${report_file}
-		    fi
-		    exit 1
+        if [ -n "${report_file}" ] ; then
+	  echo -e "${lrg_id}\tfailed\t(wrong HealthChecks skip option used)" >> ${report_file}
+	fi
+	exit 1
       fi
     done
   fi

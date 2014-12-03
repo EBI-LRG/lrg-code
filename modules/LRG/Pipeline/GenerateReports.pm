@@ -22,14 +22,14 @@ sub run {
   opendir($dh,$reports_subdir);
   die("Could not process directory $reports_subdir") unless (defined($dh));
   my @reports_files = readdir($dh);
-  @reports_files = grep {$_ =~ m/^pipeline_reports_\d+\.txt$/} @reports_files;
   # Close the dir handle
   closedir($dh);
+
+  my %list_files =  map { $_ =~ m/^pipeline_reports_(\d+)\.txt/ => $_ } grep {$_ =~ m/^pipeline_reports_\d+\.txt$/} @reports_files;
   
-  @reports_files = sort { (split /_|\./, $a)[2] <=> (split /_|\./, $b)[2] } @reports_files;
-  
-  open OUT, "> $reports_dir/$date/$global_reports" or die $!;
-  foreach my $r_file (@reports_files) {
+  open OUT, "> $reports_dir/$global_reports" or die $!;
+  foreach my $id (sort {$a <=> $b} keys(%list_files)) {
+    my $r_file = $list_files{$id};
     print OUT `cat $reports_subdir/$r_file`;
   }
   close(OUT);
