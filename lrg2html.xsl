@@ -3087,9 +3087,14 @@
             <td class="no_border_bottom"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
             <td class="no_border_bottom">
               <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">
-                <xsl:call-template name="diff_hgvs_genomic_ref">
-                  <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
-                </xsl:call-template>
+                <!-- Can't perform the reverse complement on the fly -->
+                <xsl:variable name="strand" select="../@strand"/>
+                <!--<xsl:if test="$strand=1">-->
+                  <xsl:call-template name="diff_hgvs_genomic_ref">
+                    <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
+                    <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
+                  </xsl:call-template>
+                <!--</xsl:if>-->
               </xsl:if>
               <xsl:call-template name="diff_hgvs_genomic_lrg"></xsl:call-template>
             </td>
@@ -3101,7 +3106,7 @@
             </td>
           </tr>
           </xsl:for-each>
-    		</table>  
+    	</table>  
     </td>
     </xsl:when>
     <xsl:otherwise><td><span style="color:#888">none</span></td></xsl:otherwise>
@@ -3112,24 +3117,46 @@
 <!-- HGVS genomic ref diff -->
 <xsl:template name="diff_hgvs_genomic_ref">
   <xsl:param name="chr" />
+  <xsl:param name="strand" />
   
   <xsl:variable name="hgvs_type">:g.</xsl:variable>
   
   <xsl:for-each select=".">
-     <span class="blue"><xsl:value-of select="$chr"/></span><xsl:value-of select="$hgvs_type"/>
+    <span class="blue"><xsl:value-of select="$chr"/></span><xsl:value-of select="$hgvs_type"/>
+    <xsl:variable name="lrg_seq">
+      <xsl:choose>
+        <xsl:when test="$strand=1"><xsl:value-of select="@lrg_sequence"/></xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="reverse">
+            <xsl:with-param name="input" select="@lrg_sequence"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="ref_seq">
+      <xsl:choose>
+        <xsl:when test="$strand=1"><xsl:value-of select="@other_sequence"/></xsl:when>
+        <xsl:otherwise>
+          <xsl:call-template name="reverse">
+            <xsl:with-param name="input" select="@other_sequence"/>
+          </xsl:call-template>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+
     <xsl:choose>
       <!-- Ref deletion -->
       <xsl:when test="@type='lrg_ins'">
-        <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>ins<xsl:value-of select="@lrg_sequence"/>
+        <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>ins<xsl:value-of select="$lrg_seq"/>
       </xsl:when>
       <!-- Ref insertion -->
       <xsl:when test="@type='other_ins'">
         <xsl:choose>
           <xsl:when test="@other_start=@other_end">
-            <xsl:value-of select="@other_start"/>del<xsl:value-of select="@other_sequence"/>
+            <xsl:value-of select="@other_start"/>del<xsl:value-of select="$ref_seq"/>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="@other_sequence"/>
+            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="$ref_seq"/>
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
@@ -3137,10 +3164,10 @@
       <xsl:otherwise>
         <xsl:choose>
           <xsl:when test="@other_start=@other_end">
-            <xsl:value-of select="@other_start"/><xsl:value-of select="@other_sequence"/>><xsl:value-of select="@lrg_sequence"/>
+            <xsl:value-of select="@other_start"/><xsl:value-of select="$ref_seq"/>><xsl:value-of select="$lrg_seq"/>
           </xsl:when>  
           <xsl:otherwise>
-            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="@other_sequence"/>ins<xsl:value-of select="@lrg_sequence"/>
+            <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="$ref_seq"/>ins<xsl:value-of select="$lrg_seq"/>
           </xsl:otherwise>
         </xsl:choose>  
       </xsl:otherwise>
@@ -3217,6 +3244,52 @@
    </xsl:for-each>
 </xsl:template>
 
+
+<xsl:template name="reverse">
+  <xsl:param name="input"/>
+  <xsl:variable name="len" select="string-length($input)"/>
+  <xsl:choose>
+    <!-- Strings of length less than 2 are trivial to reverse -->
+    <xsl:when test="$len &lt; 2">
+      <xsl:call-template name="complement">
+        <xsl:with-param name="nt" select="$input"/>
+      </xsl:call-template>
+      <!--<xsl:value-of select="$input"/>-->
+    </xsl:when>
+    <!-- Strings of length 2 are also trivial to reverse -->
+    <xsl:when test="$len = 2">
+      <xsl:call-template name="complement">
+        <xsl:with-param name="nt" select="substring($input,2,1)"/>
+      </xsl:call-template>
+      <xsl:call-template name="complement">
+        <xsl:with-param name="nt" select="substring($input,1,1)"/>
+      </xsl:call-template>
+      <!--<xsl:value-of select="substring($input,2,1)"/>
+      <xsl:value-of select="substring($input,1,1)"/>-->
+    </xsl:when>
+    <xsl:otherwise>
+      <!-- Swap the recursive application of this template to the first half and second half of input -->
+      <xsl:variable name="mid" select="floor($len div 2)"/>
+      <xsl:call-template name="reverse">
+        <xsl:with-param name="input" select="substring($input,$mid+1,$mid+1)"/>
+      </xsl:call-template>
+      <xsl:call-template name="reverse">
+        <xsl:with-param name="input" select="substring($input,1,$mid)"/>
+      </xsl:call-template>
+    </xsl:otherwise>
+     </xsl:choose>
+</xsl:template>
+
+<xsl:template name="complement">
+  <xsl:param name="nt"/>
+  <xsl:choose>
+    <xsl:when test="$nt='A'">T</xsl:when>
+    <xsl:when test="$nt='T'">A</xsl:when>  
+    <xsl:when test="$nt='G'">C</xsl:when>
+    <xsl:when test="$nt='C'">G</xsl:when> 
+    <xsl:otherwise><xsl:value-of select="$nt"/></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <!-- FOOTER -->
 <xsl:template name="footer">
