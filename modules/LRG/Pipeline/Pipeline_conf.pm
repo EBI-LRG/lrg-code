@@ -84,11 +84,11 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::ExtractXMLFiles',
             -rc_name    => 'small',
             -parameters => {
-                xml_tmp_dir => $self->o('xml_dir')
+               xml_tmp_dir => $self->o('xml_dir')
             },
             -input_ids  => [{}],
             -flow_into  => {
-                1 => ['init_annotation']
+               1 => ['init_annotation']
             },
         }
       );
@@ -99,24 +99,22 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::InitAnnotation',
             -rc_name           => 'small',
             -parameters        => {
-              ncbi_xml_dir => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
-              new_xml_dir  => $self->o('new_dir'),
-              reports_dir  => $self->o('tmp_dir'),
-              ftp_dir      => $self->o('ftp_dir'),
-              run_dir      => $self->o('run_dir'),
-              date         => $self->o('date'),
-              assembly     => $self->o('assembly'),
-              is_test      => $self->o('is_test'),
-              skip_hc      => $self->o('skip_hc'),
+               ncbi_xml_dir => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
+               new_xml_dir  => $self->o('new_dir'),
+               reports_dir  => $self->o('tmp_dir'),
+               ftp_dir      => $self->o('ftp_dir'),
+               run_dir      => $self->o('run_dir'),
+               date         => $self->o('date'),
+               assembly     => $self->o('assembly'),
+               is_test      => $self->o('is_test'),
+               skip_hc      => $self->o('skip_hc'),
             },
             -input_ids     => [],
             -wait_for      => ($self->o('run_extract_xml_files')) ? [ 'extract_xml_files' ] : [],
-            #-flow_into => {
-            #  2 => ['annotate_xml_files']
-            #},
-            -flow_into => { 
-                '2->A' => ['annotate_xml_files'],
-                'A->1' => ['generate_reports']
+            -flow_into     => { 
+               '2->A' => ['annotate_xml_files'],
+               'A->1' => ['generate_reports']
+#               'A->1' => ['move_xml_files']
             },		
         },
         {   
@@ -129,19 +127,63 @@ sub pipeline_analyses {
             -wait_for          => [ 'init_annotation' ],
             -flow_into         => {},
         },
+#        {
+#            -logic_name        => 'move_xml_files', 
+#            -module            => 'LRG::Pipeline::MoveXMLFiles',
+#            -rc_name           => 'small',
+#            -parameters        => {
+#               run_dir     => $self->o('run_dir'),
+#               new_xml_dir => $self->o('new_dir'),
+#               ftp_dir     => $self->o('ftp_dir'),
+#               date        => $self->o('date'),
+#            },
+#            -input_ids         => [],
+#            -wait_for          => [ 'annotate_xml_files' ],
+#            -flow_into         => {},
+#        },
+#        {   
+#            -logic_name        => 'create_indexes', 
+#            -module            => 'LRG::Pipeline::CreateIndexes',
+#            -rc_name           => 'small',
+#            -parameters        => {
+#               run_dir     => $self->o('run_dir'),
+#               new_xml_dir => $self->o('new_dir'),
+#               ftp_dir     => $self->o('ftp_dir'),
+#               date        => $self->o('date'),
+#            },
+#            -input_ids         => [],
+#            -wait_for          => [ 'move_xml_files' ],
+#            -flow_into         => {},
+#        },        
+#        {   
+#            -logic_name        => 'update_relnotes_file', 
+#            -module            => 'LRG::Pipeline::UpdateRelnotesFile',
+#            -rc_name           => 'small',
+#            -parameters        => {
+#               run_dir     => $self->o('run_dir'),
+#               assembly    => $self->o('assembly'),
+#               new_xml_dir => $self->o('new_dir'),
+#               is_test     => $self->o('is_test'),
+#               date        => $self->o('date'),
+#            },
+#            -input_ids         => [],
+#            -wait_for          => [ 'create_indexes' ],
+#            -flow_into         => {},
+#        },
         {
             -logic_name => 'generate_reports',
             -module     => 'LRG::Pipeline::GenerateReports',
             -rc_name    => 'small',
             -parameters => {
-                xml_dir      => $self->o('new_dir'),
-                reports_dir  => $self->o('tmp_dir'),
-                reports_file => $self->o('reports_file_name'),
-                ftp_dir      => $self->o('ftp_dir'),
-                run_dir      => $self->o('run_dir'),
-                date         => $self->o('date'),
+               xml_dir      => $self->o('new_dir'),
+               reports_dir  => $self->o('tmp_dir'),
+               reports_file => $self->o('reports_file_name'),
+               ftp_dir      => $self->o('ftp_dir'),
+               run_dir      => $self->o('run_dir'),
+               date         => $self->o('date'),
             },
             -input_ids  => [],
+            #-wait_for   => [ 'create_indexes' ],
             -wait_for   => [ 'annotate_xml_files' ],
             -flow_into  => {},
         },
