@@ -73,7 +73,7 @@ sub write_output {
     make_path $new_xml_dir or die "Failed to create directory: $new_xml_dir";
   }
   
-  foreach my $dir ('public','pending','stalled','temp','temp/new','temp/public','temp/pending','temp/stalled','failed') {
+  foreach my $dir ('public','pending','stalled','temp','temp/new','temp/public','temp/pending','temp/stalled','failed','index', 'tmp') {
     my $sub_dir = "$new_xml_dir/$dir";
     if (!-d $sub_dir) {
       make_path $sub_dir or die "Failed to create directory: $sub_dir";
@@ -81,13 +81,13 @@ sub write_output {
     # Directory for public   => copy to FTP public
     # Directory for pending  => copy to FTP pending
     # Directory for stalled  => copy to FTP stalled
-    # Directory for temp
-  
-    # Directory for temp/new     => copy to FTP temp
-    # Directory for temp/pending => copy to FTP temp
-    # Directory for temp/stalled => copy to FTP temp
-    # Directory for temp/public
+    # Directory for temp:
+        # Directory for temp/new     => copy to FTP temp
+        # Directory for temp/pending => copy to FTP temp
+        # Directory for temp/stalled => copy to FTP temp
+        # Directory for temp/public
     # Directory for failed
+    # Directory for index files
   }
 
 
