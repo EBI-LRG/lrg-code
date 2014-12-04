@@ -41,7 +41,9 @@ my %lrg_ftp_dirs = ( $public => '', $pending => $pending, $stalled => $stalled);
 
 my $succed_colour  = '#0B0';
 my $waiting_colour = '#00B';
-my $stopped_colour = '#ffa500';
+my $stopped_colour = '#ffa500.hide_button_x:before {
+    content: "×";
+}';
 my $failed_colour  = '#B00';
 
 my $abs_xml_dir = abs_path("$xml_dir/$date");
@@ -82,11 +84,11 @@ my $html_header = qq{
       .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px }
       .header_count  {position:absolute;left:240px;padding-top:5px;color:#0E4C87}
       
-      .status  {border-radius:15px;border:1px solid #888;box-shadow:2px 2px 2px #CCC;width:22px;height:22px;position:relative;top:2px;left:6px}
-      .succeed {background-color:$succed_colour}
-      .waiting {background-color:$waiting_colour}
-      .stopped {background-color:$stopped_colour}
-      .failed  {background-color:#B00}
+      .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
+      .succeed {background:url(img/succeed.png) no-repeat 50% 0%}
+      .waiting {background:url(img/waiting.png) no-repeat 50% 0%}
+      .stopped {background:url(img/stopped.png) no-repeat 50% 0%}
+      .failed  {background:url(img/failed.png) no-repeat 50% 0%}
       
       .succeed_font {color:$succed_colour}
       .waiting_font {color:$waiting_colour}
@@ -221,9 +223,7 @@ foreach my $status (@pipeline_status_list) {
   my $status_label = ucfirst($status);
   $html_content .= qq{
   <div class="section" style="background-color:#F0F0F0;margin-top:40px;margin-bottom:15px">
-    <div style="float:left">
-      <div class="status $status" title="Pipeline $status"></div>
-    </div>
+    <div class="status $status" title="Pipeline $status"></div>
     <div style="float:left;margin-left:15px">
       <h2 class="section $status\_font">$status_label LRGs</h2> 
     </div>
