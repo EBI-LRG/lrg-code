@@ -45,12 +45,6 @@ sub write_output {
   # Close the dir handle
   closedir($dh);
 
-  ##################
-  # TEST MODE!!!!! #
-  #my $max_count = 50;
-  #print STDERR "TEST MODE: only run for $max_count LRGs\n";
-  #@ncbi_xml_files = @ncbi_xml_files[0..($max_count-1)];
-  ##################
 
   @ncbi_xml_files = sort { (split /_|\./, $a)[1] <=> (split /_|\./, $b)[1] } @ncbi_xml_files; 
    

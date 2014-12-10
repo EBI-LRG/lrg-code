@@ -12,6 +12,7 @@ sub run {
   my $new_xml_dir    = $self->param('new_xml_dir');
   my $ftp_dir        = $self->param('ftp_dir');
   my $date           = $self->param('date');
+  my $is_test        = $self->param('is_test');
  
   my $cvs_xml_dir    = "$run_dir/xml";
 
@@ -23,12 +24,12 @@ sub run {
   `cvs update ./`;
 
   ## CVS updates
-  foreach my $tmp_dir ('public','pending','stalled') {
+  foreach my $type_dir ('public','pending','stalled') {
     my $dh;
     my @copied_files;
 
     # Open a directory handle to get the list of reports files
-    my $sub_dir = "$new_xml_dir/$date/$tmp_dir";
+    my $sub_dir = "$new_xml_dir/$date/$type_dir";
     
     opendir($dh,$sub_dir);
     my @files = readdir($dh);
@@ -37,23 +38,25 @@ sub run {
   
     @files = grep {$_ =~ m/^LRG_\d+\.xml$/} @files;
 
-    foreach my $file (@files) {
-      # Copy to CVS xml
-      $self->run_cmd("cp $sub_dir/$file $cvs_xml_dir/");
-      push(@copied_files, $file);
-    }
+    if ($is_test != 1) {
+#    foreach my $file (@files) {
+#      # Copy to CVS xml
+#      $self->run_cmd("cp $sub_dir/$file $cvs_xml_dir/");
+#      push(@copied_files, $file);
+#    }
     
-    my $files_list = join(' ', @files);
-    `cvs ci -m "Automatic updates of $tmp_dir LRG - $date" $files_list`;
+#    my $files_list = join(' ', @files);
+#    `cvs ci -m "Automatic updates of $type_dir LRG - $date" $files_list`;
+    }
   }
 
 
   ## FTP updates (keeps both processes separated for safety)
-  foreach my $tmp_dir ('public','pending','stalled') {
+  foreach my $type_dir ('public','pending','stalled') {
     my $dh;
 
     # Open a directory handle to get the list of reports files
-    my $sub_dir = "$new_xml_dir/$date/$tmp_dir";
+    my $sub_dir = "$new_xml_dir/$date/$type_dir";
     
     opendir($dh,$sub_dir);
     my @files = readdir($dh);
@@ -62,7 +65,7 @@ sub run {
   
     @files = grep {$_ =~ m/^LRG_\d+\.xml$/} @files;
 
-    my $ftp_subdir = ($sub_dir eq 'public') ? $ftp_dir : "$ftp_dir/$sub_dir";
+    my $ftp_subdir = ($type_dir eq 'public') ? $ftp_dir : "$ftp_dir/$type_dir";
     foreach my $file (@files) {
       # Copy to FTP site
       $self->run_cmd("cp $sub_dir/$file $ftp_subdir/");
