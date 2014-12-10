@@ -19,7 +19,7 @@ skip_hc=${10}
 annotation_test=${11}
 
 if [ -z ${tmp_dir} ] ; then
-	tmp_dir='.'
+  tmp_dir='.'
 fi
 
 skip_hc_options="fixed mapping polya main" # all: all of these options
@@ -33,55 +33,55 @@ fixed_section_diff='no'
 #### METHODS ##########################################################################
 
 function check_script_result {
-	if [[ -s ${error_log} ]] ; then
-		echo_log  "ERROR: the script failed!"
-		echo_log  "Please, look at the error log file ${error_log} for more details"
-		if [ -n "${report_file}" ] ; then
-			echo -e "failed\t\t" >> ${report_file}
-		fi
-		echo_stderr "Failed!"
-		# Copy failed LRG XML file to the 'failed' directory 
-		cp ${xml_dir}/${xml_file} ${new_dir}/failed/${xml_file}
-		exit 1 #exit shell script
-	fi
+  if [[ -s ${error_log} ]] ; then
+    echo_log  "ERROR: the script failed!"
+    echo_log  "Please, look at the error log file ${error_log} for more details"
+    if [ -n "${report_file}" ] ; then
+      echo -e "${lrg_id}\tfailed\t\t" >> ${report_file}
+    fi
+    echo_stderr "Failed!"
+    # Copy failed LRG XML file to the 'failed' directory 
+    cp ${xml_dir}/${xml_file} ${new_dir}/failed/${xml_file}
+    exit 1 #exit shell script
+  fi
 }
 
 function check_script_warning {
   type=$1
-	if [[ -s ${warning_log} ]] ; then
-	  if [[ ${type} = 'polyA' ]] ; then
-		  echo_log  "WARNING: at least one NCBI transcript has a polyA!"
-		elif [[ ${type} = 'fixed' ]] ; then
-		  echo_log  "WARNING: the fixed section of the LRG is different from the EBI FTP site!"
-		fi
-		echo_log  "Please, look at the warning log file ${warning_log} for more details"
-		if [[ ${warning} = 'none' ]] ; then
-		  warning=${type}
-		else
-		  warning="${warning},${type}"
-		fi
-	fi
+  if [[ -s ${warning_log} ]] ; then
+    if [[ ${type} = 'polyA' ]] ; then
+      echo_log  "WARNING: at least one NCBI transcript has a polyA!"
+    elif [[ ${type} = 'fixed' ]] ; then
+      echo_log  "WARNING: the fixed section of the LRG is different from the EBI FTP site!"
+    fi
+    echo_log  "Please, look at the warning log file ${warning_log} for more details"
+    if [[ ${warning} = 'none' ]] ; then
+      warning=${type}
+    else
+      warning="${warning},${type}"
+    fi
+  fi
 }
 
 function check_empty_file {
-	file_path=$1
-	msg=$2
-	if [[ -s ${file_path} ]] ; then
-		echo_log  "> ${msg}"
-		echo_log  ""
-	else	
-		echo_log  "ERROR: the script failed!"
-		if [ -n "${report_file}" ] ; then
-			echo "failed" >> ${report_file}
-		fi
-		echo_stderr "Failed!"
-		exit 1 #exit shell script
-	fi
+  file_path=$1
+  msg=$2
+  if [[ -s ${file_path} ]] ; then
+    echo_log  "> ${msg}"
+    echo_log  ""
+  else  
+    echo_log  "ERROR: the script failed!"
+    if [ -n "${report_file}" ] ; then
+      echo "${lrg_id}\tfailed\t\t" >> ${report_file}
+    fi
+    echo_stderr "Failed!"
+    exit 1 #exit shell script
+  fi
 }
 
 function echo_log {
-	msg=$1
-	echo ${msg} >> ${log_file}
+  msg=$1
+  echo ${msg} >> ${log_file}
 }
 
 function echo_stderr {
@@ -181,9 +181,9 @@ if [[ ${skip_hc} ]] ; then
         echo_log "The script is ended for this LRG."
         echo_stderr "Failed!"
         if [ -n "${report_file}" ] ; then
-	  echo -e "${lrg_id}\tfailed\t(wrong HealthChecks skip option used)" >> ${report_file}
-	fi
-	exit 1
+    echo -e "${lrg_id}\tfailed\t(wrong HealthChecks skip option used)" >> ${report_file}
+  fi
+  exit 1
       fi
     done
   fi
@@ -261,8 +261,8 @@ fi
 
 # End the script if in test mode (only want to test the Ensembl annotations)
 if [[ ${annotation_test} == 1 ]] ; then
-	end_of_script ${xml_dir}/${xml_file}.new
-	echo_log "TEST done."
+  end_of_script ${xml_dir}/${xml_file}.new
+  echo_log "TEST done."
   exit 0
 fi
 
