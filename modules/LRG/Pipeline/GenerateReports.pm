@@ -39,7 +39,7 @@ sub run {
 
   # Copy HTMl reports to a website
   my $html_reports_file = (split(/\./,$global_reports))[0].'.html';
-  if (-e $reports_dir/$date/$html_reports_file) {
+  if (-e "$reports_dir/$date/$html_reports_file") {
     $self->run_cmd("cp $reports_dir/$date/$html_reports_file $reports_html/");
   }
   else {
