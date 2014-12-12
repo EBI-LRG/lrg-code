@@ -135,7 +135,7 @@ foreach my $transcript (@{$transcripts}) {
     @row[8] = $lrgid . '_' . $tr_name;
     
     # Add a track line for this transcript
-    $track_line = "track name=\"$lrgid\_$tr_name\" description=\"Transcript $tr_name for gene of $lrgid\" color=128,128,255";
+    $track_line = "track name=\"$lrgid\_$tr_name\" description=\"Transcript $tr_name for gene of $lrgid\" color=72,167,38";
     push(@output,$track_line);
     
     # Loop over the exons and print them to the GFF
@@ -168,7 +168,7 @@ my $lrgrow = shift(@output);
 # Add the LRG region entry to the top
 unshift(@output,$lrgrow);
 # Add a track line for the LRG region
-$track_line = "track name=\"$lrgid\" description=\"Genomic region spanned by $lrgid\" color=128,128,255";
+$track_line = "track name=\"$lrgid\" description=\"Genomic region spanned by $lrgid\" color=54,125,29";
 unshift(@output,$track_line);
 
 # Add browser line
