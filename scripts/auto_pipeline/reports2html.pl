@@ -51,6 +51,7 @@ my $abs_xml_dir = abs_path("$xml_dir/$date");
 my $html_content = '';
 my $html_log_content = '';
 
+my %new_lrgs;
 my %lrgs_list;
 my %lrg_counts;
 my $total_lrg_count = 0;
@@ -274,15 +275,20 @@ foreach my $status (@pipeline_status_list) {
         $error_log_column
       </tr>
     };
+    if ($lrg_status eq 'new') {
+      $new_lrgs{$id} = { 'lrg_id' => $lrg_id, 'status' => $status};
+    }
+
     $lrg_counts{$lrg_status}++;
     $total_lrg_count++;
   }
   $html_content .= qq{</table>\n</div>};
 }
 
-
+# Summary table
 my $html_summary = qq{
-<div class="summary gradient_color1" style="width:260px">
+<div>
+  <div class="summary gradient_color1" style="float:left;max-width:260px">
     <div class="summary_header">Summary information</div>
     <div>
       <table class="table_bottom_radius" style="width:100%">
@@ -296,8 +302,27 @@ foreach my $l_status (@lrg_status) {
   $first_row = 0;
   $html_summary .= qq{      <tr><td class="left_col$separator">$l_status</td><td class="right_col$separator" style="text-align:right">$count</td></tr>};
 }
-$html_summary .= qq{      </table>\n</div>\n</div>};
+$html_summary .= qq{      </table>\n    </div>\n  </div>};
 
+# New LRGs
+if (scalar(%new_lrgs)) {
+  $html_summary .= qq{
+  <div class="summary gradient_color1" style="float:left;max-width:260px;margin-left:100px">
+    <div class="summary_header">New LRG(s)</div>
+    <div>
+      <table class="table_bottom_radius" style="width:100%">
+};
+  foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
+    my $lrg_id = $new_lrgs{$id}{'lrg_id'};
+    my $pipeline_status = $new_lrgs{$id}{'status'};
+
+    $html_summary .= qq{        <tr><td class="left_col"><a href="#$lrg_id">$lrg_id</a></td><td class="right_col">$pipeline_status</td></tr>};
+  }
+  $html_summary .= qq{      </table>\n    </div>\n  </div>};
+}
+
+
+$html_summary .= qq{  <div style="clear:both"/>\n</div>};
 
 open OUT, "> $reports_dir/$reports_html_file" or die $!;
 print OUT $html_header;
