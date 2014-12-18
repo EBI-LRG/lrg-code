@@ -170,29 +170,20 @@ th.coord {
 .non_coding   {
   height:18px;
   position:relative;
-  border:1px inset #090;
-  border-top-color:#0B0;
-  border-left-color:#0B0;
-  color:#000;
-  box-shadow:1px 1px 1px #CCC inset
+  border:1px inset #CCC;
+  background-color:rgba(0,153,0, 0.4); /*#090*/
 }
 .non_coding_np{
   height:18px;
   position:relative;
-  border:1px inset #900;
-  border-top-color:#B00;
-  border-left-color:#B00;
-  color:#000;
-  box-shadow:1px 1px 1px #CCC inset
+  border:1px inset #CCC;
+  background-color:rgba(153,0,0, 0.4); /*#900*/
 }
 .non_coding_unknown {
   height:18px;
   position:relative;
-  border:1px inset #009;
-  border-top-color:#00B;
-  border-left-color:#0B0;
-  color:#000;
-  box-shadow:1px 1px 1px #CCC inset
+  border:1px inset #CCC;
+  background-color:rgba(0,0,153, 0.4); /*#009*/
 }
 
 .no_exon {
