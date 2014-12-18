@@ -39,6 +39,9 @@ my @lrg_xml_dirs = ($public, $pending, $stalled, 'failed', 'temp/new', "temp/$pu
 
 my %lrg_ftp_dirs = ( $public => '', $pending => $pending, $stalled => $stalled);
 
+$date =~ /^(\d{4}-(\d{2})-(\d{2})$/;
+my $formatted_date = "$3/$2/$1";
+
 my $succed_colour  = '#0B0';
 my $waiting_colour = '#00B';
 my $stopped_colour = '#ffa500.hide_button_x:before {
@@ -131,7 +134,7 @@ my $html_header = qq{
       </script>
   </head>
   <body>
-    <h1>Summary reports of the LRG automated pipeline - <span class="blue">$date</span></h1>
+    <h1>Summary reports of the LRG automated pipeline - <span class="blue">$formatted_date</span></h1>
     <br />
     <div style="margin:15px 0px">
       <span class="round_border">
