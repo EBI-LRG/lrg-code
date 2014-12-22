@@ -342,24 +342,25 @@ th.coord {
 
 /* Button */
 .green_button {
-	background-color: #48a726;
+  background-color: #48a726;
   color: #FFF;
-	font-weight:bold;
+  font-weight:bold;
   font-size: 0.8em;
-	border-radius:5px;
+  border-radius:5px;
   border: 1px solid #EEE;
-	box-shadow: 2px 2px 2px #CCC;
-	margin-right:5px;
+  box-shadow: 2px 2px 2px #CCC;
+  margin-right:5px;
   margin-bottom:5px;
   padding:1px 3px;
-	text-align:center;
+  text-align:center;
+  white-space:nowrap;
   cursor:default;
 }
 .green_button:hover { 
-	background-color: #FFF;
+  background-color: #FFF;
   color: #48a726; 
-	text-decoration: none; 
-	border: 1px solid #48a726;
+  text-decoration: none; 
+  border: 1px solid #48a726;
 }
 .green_button:active {
   box-shadow: 2px 2px 2px #CCC inset;  

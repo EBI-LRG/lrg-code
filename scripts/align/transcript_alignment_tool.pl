@@ -242,10 +242,11 @@ $html .= qq{
   <div id="exon_popup" class="hidden exon_popup"></div>
   <a class="green_button" href="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</a>
   <div style="border:1px solid #000;width:100%;margin:15px 0px 20px">
-    <table>
+    <table id="align_table">
 };
 
 my $exon_number = 1;
+my $bigger_exon_coord = 1;
 my %exon_list_number;
 # Header
 my $exon_tab_list = qq{
@@ -265,7 +266,9 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
   $exon_tab_list .= qq{</th>} if ($exon_number == 1);
   $exon_tab_list .= qq{<th class="coord" id="coord_$exon_number" title="$exon_coord" onclick="alert('Genomic coordinate $chr:$exon_coord')">};
   $exon_tab_list .= $exon_coord;
-  
+
+  $bigger_exon_coord = $exon_coord if ($exon_coord > $bigger_exon_coord);
+
   $exon_list_number{$exon_number}{'coord'} = $exon_coord;
   $exon_number ++;
 }
@@ -321,13 +324,21 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
   my $biotype = get_biotype($tr_object);
   $html .= qq{</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
   
+  
+
+  my @ccds   = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
+  my @refseq = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
+  my $refseq_button = '';
+
+  if (scalar(@refseq)) {
+    my @nm_list = keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
+    my $nm_ids = "['".join("','",@nm_list)."']";
+    $refseq_button = qq{ <a class="green_button" id='button_$row_id\_$nm_list[0]' href="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</a>};
+  }
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $ens_rows_list{$row_id}{'label'} = $ens_tr;
   $ens_rows_list{$row_id}{'class'} = $column_class;
   $row_id++;
-  
-  my @ccds   = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
-  my @refseq = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
   
   my %exon_set_match;
   my $first_exon;
@@ -381,7 +392,7 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
       
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $html .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')">$exon_number</div>};
+      $html .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -392,7 +403,7 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
     }
   }
   my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
-  my $refseq_display = (scalar @refseq) ? join(", ",@refseq) : '-';
+  my $refseq_display = (scalar @refseq) ? join(", ",@refseq).$refseq_button : '-';
   $html .= qq{</td><td class="extra_column">$ccds_display};
   $html .= qq{</td><td class="extra_column">$refseq_display};
   $html .= qq{</td></tr>\n};
@@ -464,7 +475,7 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $html .= qq{<div class="$has_exon$is_coding$identity" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number$identity_score</div>};
+      $html .= qq{<div class="$has_exon$is_coding$identity" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number$identity_score</div>};
       if ($cdna_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -550,7 +561,7 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
         $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
       }
       
-      $html .= qq{<div class="$has_exon$is_coding$is_partial" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')">$exon_number</div>};
+      $html .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
       if ($refseq_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -658,8 +669,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     }
     # Gene end found
     elsif ($exon_start and $coord == $last_exon and $ended == 0) {
-      $ended = 1;
-      
+     
       # Last gene coordinates matching exon coordinates
       if ($is_last_exon_partial == 1) {
         if ($colspan > 0) {
@@ -674,8 +684,11 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       # Gene end matches coordinates
       else {
         $colspan ++;
-        $html .= qq{</td><td colspan="$colspan">};
+        $html .= ($colspan > 1) ? qq{</td><td colspan="$colspan">} : qq{</td><td>};
         $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $html .= qq{</td><td>} if ($coord != $bigger_exon_coord);
+
+        $ended = 1;
         $colspan = 0;
       }
       next;
@@ -686,7 +699,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     my $has_gene = ($exon_start && $ended == 0) ? 'exon gene_exon' : $no_match;
     
     # Extra gene display  
-    my $colspan_html = ($colspan == 0) ? '' : qq{ colspan="$colspan"};
+    my $colspan_html = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
     $html .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene' ) {
       $html .= qq{<div class="$has_gene" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};

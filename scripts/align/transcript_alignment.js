@@ -1,5 +1,7 @@
+var TR_ID_PREFIX='tr_';
+
 function showhide(row_id,param) {
-  var row_obj = document.getElementById("tr_"+row_id);
+  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
   
   if(row_obj.className == "hidden") {
     show_row(row_id);
@@ -16,8 +18,14 @@ function showhide_range(start_row_id,end_row_id) {
 }
 
 function showall(row_id) {
+
+  if (!row_id) {
+    var trs = document.getElementById('align_table').tBodies[0].getElementsByTagName('tr');
+    row_id = trs.length - 2; // 2 Rows for the headers
+  }
+
   for (var id=1; id<=row_id; id++) {
-    var row_obj = document.getElementById("tr_"+id);
+    var row_obj = document.getElementById(TR_ID_PREFIX+id);
     if(row_obj.className == "hidden") {
       show_row(id);
     }
@@ -25,7 +33,7 @@ function showall(row_id) {
 }
 
 function show_row(row_id) {
-  var row_obj = document.getElementById("tr_"+row_id);
+  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
   var button_obj = document.getElementById("button_"+row_id);
   var button_color = "button "+document.getElementById("button_color_"+row_id).value;
 
@@ -38,7 +46,7 @@ function show_row(row_id) {
 }
 
 function hide_row(row_id) {
-  var row_obj = document.getElementById("tr_"+row_id);
+  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
   var button_obj = document.getElementById("button_"+row_id);
   var button_color = "button "+document.getElementById("button_color_"+row_id).value;
 
@@ -57,7 +65,7 @@ function hide_all_but_one() {
     var last_row_id  = document.getElementById("last_ens_row_id").value;
 
     for (var id=first_row_id; id<=last_row_id; id++) {
-      var row_obj = document.getElementById("tr_"+id);
+      var row_obj = document.getElementById(TR_ID_PREFIX+id);
       var tr_name = row_obj.getAttribute(attr_name);
        
       if(tr_id_param === tr_name) {
@@ -72,6 +80,73 @@ function hide_all_but_one() {
       showhide_range(first_row_id,last_row_id);
     }
   }
+}
+
+function show_hide_in_between_rows(row_id,tr_names) {
+ 
+  var trs = getElementsStartsWithId(TR_ID_PREFIX,'tr');
+  final_row_id = trs.length;
+  
+  row_loop:  
+    for (var id=0; id<=final_row_id-1; id++) {
+      row_obj = trs[id];
+      if (row_obj.id == TR_ID_PREFIX+row_id) { continue row_loop; }
+      else {
+        for (var j=0; j<tr_names.length; j++) {
+          if (row_obj.getAttribute('data-name') == tr_names[j]) { continue row_loop; }
+        }
+      }    
+
+      current_row_id = row_obj.id.substr(TR_ID_PREFIX.length);
+      if (row_obj.className == "hidden") {
+        show_row(current_row_id);
+      }
+      else {
+        hide_row(current_row_id);
+      }
+    }
+  // end of 'row_loop'  
+
+  var button_row_obj = document.getElementById('button_'+row_id+'_'+tr_name[0]);
+  var show_nm  = 'Show line(s)';
+  var show_all = 'Show all';
+  if (button_row_obj.innerHTML == show_nm) {
+    button_row_obj.innerHTML = show_all;
+  }
+  else {
+    button_row_obj.innerHTML = show_nm;
+  }
+}
+
+
+
+function highlight_exons(param,hide) {
+
+  var divs = document.getElementsByClassName('exon');
+
+  for (var id=0; id<=divs.length; id++) {
+    if (divs[id].getAttribute('data-name') == param) {
+      if (hide) {
+        divs[id].style.color='#FFF';
+      }
+      else {
+        divs[id].style.color='#34DDDD';
+      }
+    }
+  }
+}
+
+
+function getElementsStartsWithId( id, tag ) {
+  var children = document.body.getElementsByTagName(tag);
+  var elements = [], child;
+  for (var i = 0, length = children.length; i < length; i++) {
+    child = children[i];
+    if (child.id.substr(0, id.length) == id) {
+      elements.push(child);
+    }
+  }
+  return elements;
 }
 
 function compact_expand(column_count) {
