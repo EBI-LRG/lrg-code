@@ -411,7 +411,7 @@ function show_help(id) {
   var help_div = document.getElementById('help_box');
   help_div.className = "unhidden help_box";
   help_div.style.top = element.offsetTop+'px';
-  help_div.innerHTML="> "+help_text;
+  help_div.innerHTML=help_text;
 }
 
 // function to hide help information
@@ -419,3 +419,47 @@ function hide_help(id) {
   var element = document.getElementById(id);
   element.className = "hidden";
 }
+
+// function to display information about different sections of the LRG page
+function show_info(id) {
+  var popup_id = id+"_info";
+  var popup_div = '';
+  var attr_name='data-info';
+  var element = document.getElementById(id);
+
+  if (document.getElementById(popup_id)) {
+    popup_div = document.getElementById(popup_id);
+  }
+  else {
+    popup_div = document.createElement('div');
+    popup_div.id = popup_id;
+    element.appendChild(popup_div);
+  }
+  var info_text = element.getAttribute(attr_name);
+  popup_div.className = "unhidden info_box";
+  popup_div.innerHTML=info_text;
+  
+
+  var el_pos = element.getBoundingClientRect();
+
+  // Y position
+  top_pos = window.pageYOffset+ el_pos.bottom + 6;
+  popup_div.style.top = top_pos+"px";
+
+  // X position
+  var posXcenter = el_pos.left + ((el_pos.right - el_pos.left)/2 - 1);
+  var popup_pos = popup_div.getBoundingClientRect();
+  var popup_length = popup_pos.right - popup_pos.left;
+  var popup_left = window.pageXOffset + posXcenter - (popup_length/2);
+  popup_div.style.left = popup_left+"px";
+}
+
+// function to hide help information
+function hide_info(id) {
+  var popup_id = id+"_info";
+  if (document.getElementById(popup_id)) {
+    var popup_div = document.getElementById(popup_id);
+    popup_div.className = "hidden info_box";
+  }
+}
+
