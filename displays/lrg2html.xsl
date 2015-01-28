@@ -265,14 +265,18 @@
       <span class="icon icon-functional" data-icon="="></span>
 	    <span style="padding-left:2px;margin-right:5px;color:#FFF;font-weight:bold">Download <xsl:value-of select="$lrg_id" /> data in </span>
 	      <xsl:variable name="xml_file_name"><xsl:value-of select="$lrg_id" />.xml</xsl:variable>
-        <a class="green_button" title="File containing all the LRG data in a XML file">
+        <a class="green_button" id="download_xml" data-info="File containing all the LRG data in a XML file">
+                <xsl:attribute name="onmouseover">show_info('download_xml')</xsl:attribute>
+                <xsl:attribute name="onmouseout">hide_info('download_xml')</xsl:attribute>
 	        <xsl:attribute name="download"><xsl:value-of select="$xml_file_name"/></xsl:attribute>
 	        <xsl:attribute name="href"><xsl:value-of select="$xml_file_name"/></xsl:attribute>XML</a>
-	        
+  
         <span style="margin-left:2px;margin-right:8px;color:#FFF;font-weight:bold">or</span>
         
 	      <xsl:variable name="fasta_file_name"><xsl:value-of select="$lrg_id" />.fasta</xsl:variable>
-	      <a class="green_button" title="FASTA file containing the LRG genomic, transcript and protein sequences">
+	      <a class="green_button" id="download_fasta" data-info="FASTA file containing the LRG genomic, transcript and protein sequences">
+                <xsl:attribute name="onmouseover">show_info('download_fasta')</xsl:attribute>
+                <xsl:attribute name="onmouseout">hide_info('download_fasta')</xsl:attribute>
 	        <xsl:attribute name="download"><xsl:value-of select="$fasta_file_name"/></xsl:attribute>
 	        <xsl:attribute name="href"><xsl:if test="$lrg_status=1">../</xsl:if>fasta/<xsl:value-of select="$fasta_file_name"/></xsl:attribute>FASTA</a>
 	       <span style="margin-left:2px;margin-right:4px;color:#FFF;font-weight:bold">format</span>
@@ -532,14 +536,14 @@
 
 
 <!-- cds_exon_coords -->
-<xsl:template xmlns:xslt="http://www.w3.org/1999/XSL/Transform" name="cds_exon_coords">
-	<xsl:param name="lrg_start"/>
-	<xsl:param name="lrg_end"/>
-	<xsl:param name="cdna_start"/>
-	<xsl:param name="cdna_end"/>
-	<xsl:param name="cds_start"/>
-	<xsl:param name="cds_end"/>
-	<xsl:param name="cds_offset"/>
+<xsl:template name="cds_exon_coords">
+  <xsl:param name="lrg_start"/>
+  <xsl:param name="lrg_end"/>
+  <xsl:param name="cdna_start"/>
+  <xsl:param name="cdna_end"/>
+  <xsl:param name="cds_start"/>
+  <xsl:param name="cds_end"/>
+  <xsl:param name="cds_offset"/>
 
   <xsl:choose>
     <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt; $cds_end">
@@ -557,11 +561,12 @@
   <td>
       <xsl:choose>
         <xsl:when test="$lrg_end &gt; $cds_end">
-          <xsl:attribute name="class">partial</xsl:attribute>
+          <xsl:attribute name="class">border_separator partial</xsl:attribute>
           <xsl:value-of select="($cds_end - $lrg_start) + ($cdna_start - $cds_offset + 1)"/>
     (<xsl:value-of select="$lrg_end - $cds_end"/>bp UTR)
         </xsl:when>
         <xsl:otherwise>
+          <xsl:attribute name="class">border_separator</xsl:attribute>
           <xsl:value-of select="$cdna_end - $cds_offset + 1"/>
         </xsl:otherwise>
       </xsl:choose>
@@ -569,16 +574,16 @@
     </xsl:when>
     <xsl:otherwise>
   <td>-</td>
-  <td>-</td>
+  <td class="border_separator">-</td>
     </xsl:otherwise>
   </xsl:choose>
      
 </xsl:template>
    			
 <xsl:template xmlns:xslt="http://www.w3.org/1999/XSL/Transform" name="for-loop-d1e144"> 
-	<xsl:param name="i"/>
-	<xsl:param name="tod1e144"/>
-	<xsl:param name="stepd1e144"/>
+  <xsl:param name="i"/>
+  <xsl:param name="tod1e144"/>
+  <xsl:param name="stepd1e144"/>
 
   <tr>
     <td class="sequence">
@@ -1625,7 +1630,7 @@
     <xsl:with-param name="setnum"><xsl:value-of select="$setnum"/></xsl:with-param>
   </xsl:call-template>
   
-  <div style="padding-bottom:10px">
+  <div style="margin-bottom:50px">
   <xsl:if test="source/name!='LRG'">
     <xsl:attribute name="class">hidden</xsl:attribute>
     <xsl:attribute name="id">source_<xsl:value-of select="$setnum"/></xsl:attribute>
@@ -1781,13 +1786,11 @@
 		    </xsl:if>
 	    </xsl:when>
       <xsl:otherwise>
-        <div style="height:20px;background-color:#FFF">
-          <div class="top_up_anno_link">
-            <a>
-              <xsl:attribute name="href">#set_<xsl:value-of select="$setnum" />_anchor</xsl:attribute>
-              [Back to the top of the <b><xsl:value-of select="source/name" /></b> annotation]
-            </a>
-          </div>
+        <div class="top_upd_anno_link">
+          <a>
+            <xsl:attribute name="href">#set_<xsl:value-of select="$setnum" />_anchor</xsl:attribute>
+            [Back to the top of the <b><xsl:value-of select="source/name" /></b> annotation]
+          </a>
         </div>
       </xsl:otherwise>
     </xsl:choose>
@@ -1875,19 +1878,16 @@
     <span class="blue" style="margin-left:15px;margin-right:15px">|</span>
     <span style="margin-right:10px;font-weight:bold">See in:</span>
     <xsl:choose>
-		  <xsl:when test="$type='main_assembly' or $type='other_assembly'">
-		  
-		<!-- Ensembl link -->
-		
+      <xsl:when test="$type='main_assembly' or $type='other_assembly'">
+
+    <!-- Ensembl link -->	
     <a>
-          <xsl:attribute name="target">_blank</xsl:attribute>
-          <xsl:attribute name="href">
-            <xsl:value-of select="$ensembl_url" />
-            <xsl:value-of select="$ensembl_region" />
-			      <xsl:variable name="ens_tracks">,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:variable>
-            <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>_</xsl:text><xsl:value-of select="$main_assembly"/><xsl:text>.gff=labels</xsl:text><xsl:value-of select="$ens_tracks"/>
-          </xsl:attribute>
-          Ensembl<xsl:call-template name="external_link_icon" />
+      <xsl:attribute name="target">_blank</xsl:attribute>
+      <xsl:attribute name="href">
+        <xsl:value-of select="$ensembl_url" />
+        <xsl:value-of select="$ensembl_region" />
+        <xsl:text>&amp;</xsl:text><xsl:text>contigviewbottom=url:ftp://ftp.ebi.ac.uk/pub/databases/lrgex/.ensembl_internal/</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>_</xsl:text><xsl:value-of select="$main_assembly"/><xsl:text>.gff=labels,variation_feature_variation=normal,variation_set_ph_variants=normal</xsl:text>
+      </xsl:attribute>Ensembl<xsl:call-template name="external_link_icon" />
     </a>
     
     <span style="margin-left:5px;margin-right:10px">/</span>
@@ -1941,25 +1941,25 @@
 
 <xsl:template name="g_mapping_table">
   <table class="mapping_detail">
-		<tr class="gradient_color2">
-			<th>Strand</th>
-			<th>LRG start</th>
-			<th>LRG end</th>
-			<th>Start</th>
-			<th>End</th>
-			<th>Differences</th>
-		</tr>
-  	<xsl:for-each select="mapping_span">
-			<tr>
-				<td><xsl:value-of select="@strand"/></td>
-        <td><xsl:value-of select="@lrg_start"/></td>
-        <td><xsl:value-of select="@lrg_end"/></td>
-        <td><xsl:value-of select="@other_start"/></td>
-        <td><xsl:value-of select="@other_end"/></td>
-        <xsl:call-template name="diff_table"/>
-      </tr>      
-  	</xsl:for-each>
-	</table>
+    <tr class="gradient_color2">
+      <th>Strand</th>
+      <th>Start</th>
+      <th>End</th>
+      <th>LRG start</th>
+      <th>LRG end</th>
+      <th>Differences</th>
+    </tr>
+  <xsl:for-each select="mapping_span">
+    <tr>
+      <td><xsl:call-template name="strand_label"/></td>
+      <td><xsl:value-of select="@other_start"/></td>
+      <td><xsl:value-of select="@other_end"/></td>
+      <td><xsl:value-of select="@lrg_start"/></td>
+      <td><xsl:value-of select="@lrg_end"/></td>
+      <xsl:call-template name="diff_table"/>
+    </tr>      
+  </xsl:for-each>
+  </table>
   <br />
 </xsl:template>
 
@@ -2021,20 +2021,18 @@
     
       <table class="mapping_detail">
         <tr class="gradient_color2">
-          <th>Strand</th>
-          <th>LRG start</th>
-          <th>LRG end</th>
           <th>Transcript start</th>
           <th>Transcript end</th>
+          <th>LRG start</th>
+          <th>LRG end</th>
           <th>Differences</th>
         </tr>
     <xsl:for-each select="mapping_span">
         <tr>
-          <td><xsl:value-of select="@strand"/></td>
-          <td><xsl:value-of select="@lrg_start"/></td>
-          <td><xsl:value-of select="@lrg_end"/></td>
           <td><xsl:value-of select="@other_start"/></td>
           <td><xsl:value-of select="@other_end"/></td>
+          <td><xsl:value-of select="@lrg_start"/></td>
+          <td><xsl:value-of select="@lrg_end"/></td>
           <xsl:call-template name="diff_table"/>
         </tr>      
     </xsl:for-each>
@@ -2044,6 +2042,14 @@
   <br />
 </xsl:template>
 
+<!-- Display the strand value -->
+<xsl:template name="strand_label">
+  <xsl:choose>
+    <xsl:when test="@strand=1" >Forward</xsl:when>
+    <xsl:when test="@strand=-1">Reverse</xsl:when>
+    <xsl:otherwise><xsl:value-of select="@strand"/></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <!-- Detect web addresses in a string and create hyperlinks -->
 <xsl:template name="urlify">
@@ -2222,10 +2228,10 @@
       <table>
     
         <tr class="gradient_color2">
-          <th colspan="3">LRG genomic</th>
-          <th colspan="2">Transcript</th>
-          <th colspan="2">CDS</th>
-		      <th colspan="2">Protein <xsl:value-of select="$pepname" /></th>
+          <th class="border_separator" colspan="3">LRG genomic</th>
+          <th class="border_separator" colspan="2">Transcript</th>
+          <th class="border_separator" colspan="2">CDS</th>
+          <th class="border_separator" colspan="2">Protein <xsl:value-of select="$pepname" /></th>
           <th>Intron</th>
         <xsl:if test="$show_other_exon_naming=1 and /*/updatable_annotation/annotation_set/fixed_transcript_annotation[@name = $transname]/other_exon_naming">
           <th class="other_separator"> </th>
@@ -2236,10 +2242,10 @@
       
         <tr class="sub_header">
           <th>LRG-specific exon numbering</th>
-          <th>Start</th><th>End</th>
-          <th>Start</th><th>End</th>
-          <th>Start</th><th>End</th>
-          <th>Start</th><th>End</th>
+          <th>Start</th><th class="border_separator">End</th>
+          <th>Start</th><th class="border_separator">End</th>
+          <th>Start</th><th class="border_separator">End</th>
+          <th>Start</th><th class="border_separator">End</th>
           <th>Phase</th>
 
       <xsl:if test="$show_other_exon_naming=1">
@@ -2305,11 +2311,11 @@
          
           <td><xsl:value-of select="$exon_label"/></td>
           <td><xsl:value-of select="$lrg_start"/></td>
-          <td><xsl:value-of select="$lrg_end"/></td>
+          <td class="border_separator"><xsl:value-of select="$lrg_end"/></td>
           <td><xsl:value-of select="$cdna_start"/></td>
-          <td><xsl:value-of select="$cdna_end"/></td>
+          <td class="border_separator"><xsl:value-of select="$cdna_end"/></td>
         
-        <xsl:call-template xmlns:xslt="http://www.w3.org/1999/XSL/Transform" name="cds_exon_coords">
+        <xsl:call-template name="cds_exon_coords">
           <xsl:with-param name="lrg_start" select="$lrg_start"/>
           <xsl:with-param name="lrg_end" select="$lrg_end"/>
           <xsl:with-param name="cdna_start" select="$cdna_start"/>
@@ -2320,7 +2326,7 @@
         </xsl:call-template>
       
 
-		    <xsl:choose>
+	<xsl:choose>
           <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt; $cds_end">
           <td>
             <xsl:if test="$lrg_start &lt; $cds_start">
@@ -2329,15 +2335,20 @@
             <xsl:value-of select="$peptide_start"/>
           </td>         
           <td>
-            <xsl:if test="$lrg_end &gt; $cds_end">
-              <xsl:attribute name="class">partial</xsl:attribute>
-            </xsl:if>
-          <xsl:value-of select="$peptide_end"/>
+            <xsl:choose>
+              <xsl:when test="$lrg_end &gt; $cds_end">
+                <xsl:attribute name="class">border_separator partial</xsl:attribute>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:attribute name="class">border_separator</xsl:attribute>
+              </xsl:otherwise>
+            </xsl:choose>
+            <xsl:value-of select="$peptide_end"/>
           </td>
           </xsl:when>
           <xsl:otherwise>
           <td>-</td>
-          <td>-</td>
+          <td class="border_separator">-</td>
           </xsl:otherwise>
         </xsl:choose>
     
@@ -3047,8 +3058,8 @@
             <th></th>
             <th title="LRG allele">LRG al.</th>
             <th title="LRG coordinates">LRG coord.</th>
-            <th title="HGVS notation">HGVS</th>
-            <th class="no_border_right" title="Diffence in exon">in exon</th>
+            <th title="HGVS notation on genomic reference sequence and LRG sequence">HGVS</th>
+            <th class="no_border_right" title="Display whether the difference falls into an exon, by transcript">in exon</th>
           </tr>
              
           <xsl:for-each select="diff">
@@ -3086,13 +3097,42 @@
       		  </td>
             <td class="no_border_bottom"><xsl:value-of select="@lrg_start"/><xsl:if test="@lrg_start != @lrg_end">-<xsl:value-of select="@lrg_end"/></xsl:if></td>
             <td class="no_border_bottom">
-              <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">
+              
+              <!--HGVS assembly -->
+              <xsl:variable name="hgvs_assembly">
+                <xsl:choose>
+                  <xsl:when test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
+                    <xsl:choose>
+                      <xsl:when test="contains(../../@coord_system,$previous_assembly)"><xsl:value-of select="$previous_assembly"/></xsl:when>
+                      <xsl:when test="contains(../../@coord_system,$current_assembly)"><xsl:value-of select="$current_assembly"/></xsl:when>
+                    </xsl:choose>
+                  </xsl:when>
+                  <xsl:otherwise>none</xsl:otherwise>
+                </xsl:choose>
+              </xsl:variable> 
+                
+              <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
+                <!--ID / Key -->
+                <xsl:variable name="genkey">
+                  <xsl:text>gen_</xsl:text><xsl:value-of select="@type"/>_<xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>_<xsl:value-of select="$hgvs_assembly"/>
+                </xsl:variable>   
+         
                 <xsl:call-template name="diff_hgvs_genomic_ref">
                   <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
                   <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
+                  <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
+                  <xsl:with-param name="key"><xsl:value-of select="$genkey"/></xsl:with-param>
                 </xsl:call-template>
               </xsl:if>
-              <xsl:call-template name="diff_hgvs_genomic_lrg"></xsl:call-template>
+
+               <!--ID / Key -->
+              <xsl:variable name="lrgkey">
+                <xsl:text>lrg_</xsl:text><xsl:value-of select="@type"/>_<xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>_<xsl:value-of select="$hgvs_assembly"/>
+              </xsl:variable>
+              <xsl:call-template name="diff_hgvs_genomic_lrg">
+                <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
+                <xsl:with-param name="key"><xsl:value-of select="$lrgkey"/></xsl:with-param>
+              </xsl:call-template>
             </td>
             <td class="no_border_bottom no_border_right">
               <xsl:call-template name="diff_in_exon">
@@ -3114,11 +3154,12 @@
 <xsl:template name="diff_hgvs_genomic_ref">
   <xsl:param name="chr" />
   <xsl:param name="strand" />
+  <xsl:param name="assembly" />
+  <xsl:param name="key" />
   
   <xsl:variable name="hgvs_type">:g.</xsl:variable>
   
   <xsl:for-each select=".">
-    <span class="blue"><xsl:value-of select="$chr"/></span><xsl:value-of select="$hgvs_type"/>
     <xsl:variable name="lrg_seq">
       <xsl:choose>
         <xsl:when test="$strand=1"><xsl:value-of select="@lrg_sequence"/></xsl:when>
@@ -3140,6 +3181,7 @@
       </xsl:choose>
     </xsl:variable>
 
+    <xsl:variable name="diff">
     <xsl:choose>
       <!-- Ref deletion -->
       <xsl:when test="@type='lrg_ins'">
@@ -3168,19 +3210,41 @@
         </xsl:choose>  
       </xsl:otherwise>
     </xsl:choose>
+    </xsl:variable>
+    
+    <div style="padding-bottom:1px;margin-bottom:1px;border-bottom:1px dotted #CCC">
+      <div style="float:left">
+        <span class="blue" style="vertical-align:middle"><xsl:value-of select="$chr"/></span>
+        <span style="color:#000;vertical-align:middle;padding-right:12px"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
+      </div>
+      <div style="float:right">
+        <a class="vep_icon">
+          <xsl:attribute name="href">
+            <xsl:value-of select="$relative_path"/><xsl:text>vep_parser.php?assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
+          </xsl:attribute>
+          <xsl:attribute name="target">_blank</xsl:attribute>
+          <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="onmouseover">show_info('<xsl:value-of select="$key"/>')</xsl:attribute>
+          <xsl:attribute name="onmouseout">hide_info('<xsl:value-of select="$key"/>')</xsl:attribute>
+          <xsl:attribute name="data-info">Click on the link above to see the VEP output for <xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></xsl:attribute>
+        </a>
+      </div>
+      <div style="clear:both"></div>
+    </div>
   </xsl:for-each>
-  <br />
    
 </xsl:template>
 
 
 <!-- HGVS genomic diff lrg -->
 <xsl:template name="diff_hgvs_genomic_lrg">
-  
+  <xsl:param name="assembly" />
+  <xsl:param name="key" />
+
   <xsl:variable name="hgvs_type">:g.</xsl:variable>
   
   <xsl:for-each select=".">
-     <span class="green"><xsl:value-of select="$lrg_id"/></span><xsl:value-of select="$hgvs_type"/>
+    <xsl:variable name="diff">
     <xsl:choose>
       <!-- LRG insertion -->
       <xsl:when test="@type='lrg_ins'">
@@ -3209,6 +3273,28 @@
         </xsl:choose>  
       </xsl:otherwise>
     </xsl:choose>
+    </xsl:variable>
+    <div>
+      <div style="float:left">
+        <span class="green" style="vertical-align:middle"><xsl:value-of select="$lrg_id"/></span>
+        <span style="color:#000;vertical-align:middle;padding-right:12px"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
+      </div>
+    <xsl:if test="$assembly!='none' and $pending=0">
+      <div style="float:right">
+        <a class="vep_icon">
+          <xsl:attribute name="href">
+            <xsl:value-of select="$relative_path"/><xsl:text>vep_parser.php?assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
+          </xsl:attribute>
+          <xsl:attribute name="target">_blank</xsl:attribute>
+          <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
+          <xsl:attribute name="onmouseover">show_info('<xsl:value-of select="$key"/>')</xsl:attribute>
+          <xsl:attribute name="onmouseout">hide_info('<xsl:value-of select="$key"/>')</xsl:attribute>
+          <xsl:attribute name="data-info">Click on the link above to see the VEP output for <xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></xsl:attribute>
+        </a>
+      </div>
+    </xsl:if>
+      <div style="clear:both"></div>
+    </div>
   </xsl:for-each>
    
 </xsl:template>
@@ -3374,3 +3460,4 @@
 <xsl:template name="hide_button">hide</xsl:template> 
 
 </xsl:stylesheet>
+
