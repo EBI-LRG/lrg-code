@@ -23,6 +23,7 @@ h1 {
   vertical-align:middle;
   padding:0px;
   margin:0px;
+  text-shadow: 1px 1px #000;
 }
 
 h2 {
@@ -132,9 +133,16 @@ a.other_label:hover {
   color:#55DD55;
 }
 
+th.border_separator {
+  border-right:2px solid #333;
+}
+td.border_separator {
+  border-right:2px solid #000;
+}
+
 .other_separator {
-	background:#000000;
-	border-color:#000000;
+  background:#000;
+  border-color:#000;
   width:5px;
   padding:0px;
 }
@@ -277,6 +285,7 @@ a.green_button {
 	margin-right:5px;
 	text-align:center;
 	cursor:pointer;
+	white-space:nowrap;
 }
 a.green_button:hover{
 	color: #48a726;
@@ -1024,22 +1033,95 @@ li.key {
   box-shadow: 2px 2px 2px #CCC inset;
 }
 
-div.top_up_anno_link {
-  float:right;
-  padding:0px 4px 4px;
+div.top_upd_anno_link{
+  padding:2px 4px;
+  margin-bottom:50px;
+  background-color:#F0F0F0;
   font-size:0.9em;
-  background-color:#F9F9F9;
+  text-align:right;
 }
 
-div.help_box {
-  padding: 2px 4px;
+.help_box {
+  padding: 2px 4px 2px 14px;
   border: 1px solid #48a726;
   border-radius:5px;
   position:absolute;
+  font-size: 13px;
   margin-left:-20px;
   background-color:#FFF;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
   z-index:100;
 }
+
+.help_box:before{
+    position: absolute;
+    content: '';
+    width:16px;
+    height: 0;
+    border:6px solid transparent;
+    border-left-color:#48a726;/*#1E2021;*/
+    top:4px;
+    left:4px;
+}
+
+.info_box { /* The tooltip */
+    /*display: none;*/
+    text-align: left;
+    text-decoration:none;
+    background-color: #FFF;/*#1E2021;*/
+    padding: 5px;/*20px*/
+    max-width: 280px;
+    position: absolute;
+    border:1px solid #48a726; 
+    border-radius: 5px;
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+    /*right: -4px;*/
+    color: #000;/*#FFF;*/
+    font-size: 13px;
+    white-space: normal;
+    /*line-height: 1.4;*/
+}
+
+.info_box:before{ /* The pointer of the tooltip */
+    position: absolute;
+    content: '';
+    width:0;
+    height: 0;
+    left: 49%;
+    border:6px solid transparent;
+    border-bottom-color:#48a726;/*#1E2021;*/
+    top:-12px;
+}
+
+.info_box:after{ /* Prevents the tooltip from being hidden */
+    width:100%;
+    height:40px;
+    content:'';
+    position: absolute;
+    top:-40px;
+    left:0;
+}
+
+.vep_icon {
+  height:18px;
+  width:36px;
+  display:inline-block;
+  background:url(img/vep_icon.png) no-repeat 50% 50%;
+  border:1px solid #0E4C87;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+  border-radius:5px;
+  vertical-align:middle;
+}
+.vep_icon:hover {
+  border:1px solid #48a726;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
+.vep_icon:active {
+  border:1px inset #48a726;
+
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2) inset;
+}
+
 
 div.footer {
   padding-top:20px;
