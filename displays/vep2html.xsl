@@ -65,7 +65,13 @@
         </div>
        
         <div class="download_box gradient_color1">
-          <span id="allele_title" class="help" style="padding-left:2px;color:#FFF;font-weight:bold" data-info="Ref/LRG">
+          <span id="allele_title" class="help" style="padding-left:2px;color:#FFF;font-weight:bold">
+            <xsl:attribute name="data-info">
+              <xsl:choose>
+                <xsl:when test="contains($hgvs,'LRG')">LRG/Ref</xsl:when>
+                <xsl:otherwise>Ref/LRG</xsl:otherwise>
+              </xsl:choose>
+            </xsl:attribute>
             <xsl:attribute name="onmouseover">show_info('allele_title')</xsl:attribute>
             <xsl:attribute name="onmouseout">hide_info('allele_title')</xsl:attribute>
             Alleles</span><span style="color:#FFF;font-weight:bold;margin-right:5px">:</span> <span class="light_green"><xsl:value-of select="$allele_string"/></span>
@@ -82,10 +88,10 @@
         </div>
       </div>
 
-      <!-- Colocated variants -->
+      <!-- Co-located variants -->
       <div style="float:left;max-width:700px;margin-left:50px">
         <div class="summary gradient_color1">
-          <div class="summary_header">Colocated variant(s)</div>
+          <div class="summary_header">Co-located variant(s)</div>
           <div>
            <table class="table_bottom_radius" style="width:100%">
            <xsl:choose>
