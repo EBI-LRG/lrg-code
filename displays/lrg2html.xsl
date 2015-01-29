@@ -3279,7 +3279,7 @@
         <span class="green" style="vertical-align:middle"><xsl:value-of select="$lrg_id"/></span>
         <span style="color:#000;vertical-align:middle;padding-right:12px"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
       </div>
-    <xsl:if test="$assembly!='none' and $pending=0">
+    <xsl:if test="$assembly!='none' and $lrg_status=0">
       <div style="float:right">
         <a class="vep_icon">
           <xsl:attribute name="href">
