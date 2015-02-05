@@ -6,11 +6,12 @@ use LRG::LRG qw(date);
 use Getopt::Long;
 use Cwd 'abs_path';
 
-my ($reports_dir,$reports_file,$xml_dir,$ftp_dir,$date);
+my ($reports_dir,$reports_file,$reports_sum,$xml_dir,$ftp_dir,$date);
 
 GetOptions(
   'reports_dir=s'  => \$reports_dir,
   'reports_file=s' => \$reports_file,
+  'reports_sum=s'  => \$reports_sum,
   'xml_dir=s'      => \$xml_dir,
   'ftp_dir=s'      => \$ftp_dir,
   'date=s'         => \$date
@@ -20,9 +21,10 @@ $date ||= LRG::LRG::date();
 $reports_dir .= "/$date";
 $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
-die("Reports directory (-reports_dir) needs to be specified!") unless (defined($reports_dir));
-die("Reports file (-reports_file) needs to be specified!")     unless (defined($reports_file));
-die("XML directory (-xml_dir) needs to be specified!")         unless (defined($xml_dir));
+die("Reports directory (-reports_dir) needs to be specified!")    unless (defined($reports_dir));
+die("Reports file (-reports_file) needs to be specified!")        unless (defined($reports_file));
+die("Reports summary file (-reports_sum) needs to be specified!") unless (defined($reports_sum));
+die("XML directory (-xml_dir) needs to be specified!")            unless (defined($xml_dir));
 
 die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
 die("Reports file '$reports_file' doesn't exist in '$reports_dir'!") unless (-e "$reports_dir/$reports_file");
@@ -39,7 +41,7 @@ my @lrg_xml_dirs = ($public, $pending, $stalled, 'failed', 'temp/new', "temp/$pu
 
 my %lrg_ftp_dirs = ( $public => '', $pending => $pending, $stalled => $stalled);
 
-$date =~ /^(\d{4}-(\d{2})-(\d{2})$/;
+$date =~ /^(\d{4})-(\d{2})-(\d{2})$/;
 my $formatted_date = "$3/$2/$1";
 
 my $succed_colour  = '#0B0';
@@ -261,7 +263,6 @@ foreach my $status (@pipeline_status_list) {
     my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
   
     if ($lrgs_list{$status}{$id}{'log_found'}) {
-      #$log_link = qq{<input type="button" onclick="show_log_info('$lrg_id');" value="Show log" />};
       $log_link = qq{<a class="green_button" href="javascript:show_log_info('$lrg_id');">Show log</a>};
     }
     
@@ -335,6 +336,32 @@ print OUT qq{<div id="logs" class="hidden">$html_log_content</div>};
 print OUT $html_footer;
 close(OUT);
 
+
+# Summary reports file
+open S, "> $reports_dir/$reports_sum" or die $!;
+print S "> Total number of LRGs: <b>$total_lrg_count</b><br />\n";
+print S "<table>\n";
+foreach my $l_status (@lrg_status) {
+  next if (!$lrg_counts{$l_status});
+  my $count = $lrg_counts{$l_status};
+  print S "<tr><td>$l_status</td><td>$count</td></tr>\n";
+}
+print S "</table>\n";
+my $count_failed = ($lrgs_list{'failed'}) ? $lrgs_list{'failed'} : 0;
+print S "> Number of failed LRG(s): $count_failed<br />\n";
+
+if (scalar(%new_lrgs)) {
+  print S "<br />> List of the new LRG(s):\n";
+  print S "<ul>\n"
+  foreach my $id (sort {$a <=> $b} keys(%new_lrgs)) {
+    print S "<li>".$new_lrgs{$id}{'lrg_id'}."</li>\n";
+  }
+  print S "</ul>\n";
+}
+close(S);
+
+
+## METHODS ##
 
 sub get_detailled_log_info {
   my $lrg_id = shift;
