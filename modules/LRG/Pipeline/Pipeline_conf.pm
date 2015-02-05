@@ -33,6 +33,7 @@ sub default_options {
         pipeline_name           => 'lrg_automated_pipeline',
         
         reports_file_name       => 'pipeline_reports.txt',
+        reports_sum_file_name   => 'pipeline_summary_reports.txt',
         reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/test',
         reports_html            => '/homes/lgil/public_html/LRG/test',
 
@@ -191,6 +192,7 @@ sub pipeline_analyses {
                reports_file => $self->o('reports_file_name'),
                reports_url  => $self->o('reports_url'),
                reports_html => $self->o('reports_html'),
+               reports_sum  => $self->o('reports_sum_file_name'),
                ftp_dir      => $self->o('ftp_dir'),
                run_dir      => $self->o('run_dir'),
                date         => $self->o('date'),
