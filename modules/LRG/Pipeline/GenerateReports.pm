@@ -11,6 +11,7 @@ sub run {
   my $run_dir        = $self->param('run_dir');
   my $reports_dir    = $self->param('reports_dir');
   my $reports_html   = $self->param('reports_html');
+  my $reports_sum    = $self->param('reports_sum');
   my $new_xml_dir    = $self->param('new_xml_dir');
   my $ftp_dir        = $self->param('ftp_dir');
   my $global_reports = $self->param('reports_file');
@@ -35,7 +36,7 @@ sub run {
   }
   close(OUT);
   
-  $self->run_cmd("perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -xml_dir $new_xml_dir -ftp_dir $ftp_dir -date $date");
+  $self->run_cmd("perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -reports_sum $reports_sum -xml_dir $new_xml_dir -ftp_dir $ftp_dir -date $date");
 
   # Copy HTMl reports to a website
   my $html_reports_file = (split(/\./,$global_reports))[0].'.html';
@@ -47,12 +48,14 @@ sub run {
   }
 
   # Send email
-  $self->send_email($html_reports_file,$date);
+  $self->send_email($html_reports_file,$reports_dir,$reports_sum,$date);
 }
 
 sub send_email {
   my $self           = shift;
   my $html_file_name = shift;
+  my $reports_dir    = shift;
+  my $reports_sum    = shift;
   my $date           = shift;
 
   my $reports_url    = $self->param('reports_url');
@@ -69,12 +72,27 @@ sub send_email {
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG pipeline] Automated pipeline ran the $formatted_date";
 
+  my $summary = '';
+  if (-e "$reports_dir/$date/$reports_sum") {
+    open (my $file, '<', "$reports_dir/$date/$reports_sum") or die $!;
+    {
+        local $/;
+        $summary .= "<br />";
+        $summary .= "#==== Summary reports ====#<br />";
+        $summary .= <$file>;
+        $summary .= "#=========================#<br />";
+        $summary .= "<br />";
+    }
+    close($file);
+  }
+
   my $message = qq{
 Dear $recipient_name,
 <br />
 <br />
 The automated pipeline ran fully the $formatted_date. However this doesn't mean that everything worked perfectly.
 <br />
+$summary
 Please, have a look at the HTML reports on the following link: 
 <a href="$reports_url/$html_file_name">HTML reports</a>.
 <br />
