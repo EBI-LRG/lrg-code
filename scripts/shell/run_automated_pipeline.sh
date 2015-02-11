@@ -117,7 +117,7 @@ function end_of_script {
     fi
     if [[ ! ${skip_hc} =~ 'main' ]] ; then
       is_partial=`perl ${perldir}/pipeline/check.lrg.pl -xml_file ${file_path} -check partial_gene`
-      if [[ -n ${is_partial} ]] ; then
+      if [[ -n ${is_partial} && ${status} != 'public' ]] ; then
         comment="${comment}Partial gene/transcript/protein found;"
         echo -e "${lrg_id}\tfailed\t${comment}\t${comment_warning}" >> ${report_file}
         return 1
@@ -194,14 +194,14 @@ fi
 if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
   echo_log  "# Preliminary check: compare fixed section with existing LRG entry ... "
   if [[ ${status} == 'public' || ${status} == 'pending' ]] ; then
-    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} "-check existing_entry" 2> ${warning_log}
+    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${warning_log}
     check_script_warning 'fixed'
     if [[ -s ${warning_log} ]] ; then
       fixed_section_diff=1
     fi
   else
     rm -f ${error_log}
-    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} "-check existing_entry" 2> ${error_log}
+    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${error_log}
     check_script_result
   fi
   echo_log  "> checking comparison done" 
@@ -212,7 +212,7 @@ fi
 if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
   echo_log  "# Mapping check: compare global mapping with existing LRG entry ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} "-check compare_main_mapping" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_log  "> checking comparison done" 
   echo_log  ""
@@ -235,7 +235,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} 2> ${error_log}
   check_script_result
   echo_log  "> checking #1 done" 
   echo_log  ""
@@ -252,7 +252,7 @@ check_empty_file ${xml_dir}/${xml_file}.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} ${status} 2> ${error_log}
   check_script_result
   echo_log  "> checking #2 done"
   echo_log  ""
@@ -298,7 +298,7 @@ check_empty_file ${xml_dir}/${xml_file}.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.exp ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.exp ${assembly} ${status} 2> ${error_log}
   check_script_result
   echo_log  "> checking #3 done"
   echo_log  ""
