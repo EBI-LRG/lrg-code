@@ -339,24 +339,34 @@ close(OUT);
 
 # Summary reports file
 open S, "> $reports_dir/$reports_sum" or die $!;
-print S "> Total number of LRGs: <b>$total_lrg_count</b><br />\n";
-print S "<table>\n";
+print S qq{<ul style="margin:0px;padding-bottom:5px">\n};
+print S qq{  <li>Total number of LRGs: <b>$total_lrg_count</b></li>\n};
+print S qq{  <table style="border:1px solid #48A726;margin:5px 20px;border-collapse:collapse">\n};
+my $is_first_line = 1;
 foreach my $l_status (@lrg_status) {
   next if (!$lrg_counts{$l_status});
   my $count = $lrg_counts{$l_status};
-  print S "<tr><td>$l_status</td><td>$count</td></tr>\n";
+  my $padding = 'padding:2px 4px';
+  my $font    = 'font-weight:bold';
+  my $border  = 'border-top:1px dotted #48A726';
+
+  my $left_style = ($is_first_line) ? qq{style="$padding"} : qq{style="$padding;$border"};
+  my $right_style = ($is_first_line) ? qq{style="$padding;$font"} : qq{style="$padding;$font;$border"};
+
+  print S qq{    <tr><td $left_style>$l_status</td><td $right_style>$count</td></tr>\n};
+  $is_first_line = 0 if ($is_first_line);
 }
-print S "</table>\n";
-my $count_failed = ($lrgs_list{'failed'}) ? $lrgs_list{'failed'} : 0;
-print S "> Number of failed LRG(s): $count_failed<br />\n";
+print S "  </table>\n";
+my $count_failed = ($lrgs_list{'failed'}) ? qq{<span style="color:#E00">}.scalar(keys(%{$lrgs_list{'failed'}})).qq{</span>} : 0;
+print S "  <li>Number of failed LRG(s): $count_failed</li>\n";
 
 if (scalar(%new_lrgs)) {
-  print S "<br />> List of the new LRG(s):\n";
-  print S "<ul>\n"
+  print S "  <li>List of the new LRG(s):\n";
+  print S "    <ul>\n";
   foreach my $id (sort {$a <=> $b} keys(%new_lrgs)) {
-    print S "<li>".$new_lrgs{$id}{'lrg_id'}."</li>\n";
+    print S qq{      <li style="font-weight:bold">}.$new_lrgs{$id}{'lrg_id'}.qq{</li>\n};
   }
-  print S "</ul>\n";
+  print S "    </ul>\n  </li>\n</ul>";
 }
 close(S);
 

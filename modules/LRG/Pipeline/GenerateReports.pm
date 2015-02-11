@@ -16,6 +16,7 @@ sub run {
   my $ftp_dir        = $self->param('ftp_dir');
   my $global_reports = $self->param('reports_file');
   my $date           = $self->param('date');
+  my $is_test        = $self->param('is_test');
  
   my $dh;
 
@@ -48,7 +49,7 @@ sub run {
   }
 
   # Send email
-  $self->send_email($html_reports_file,$reports_dir,$reports_sum,$date);
+  $self->send_email($html_reports_file,$reports_dir,$reports_sum,$date, $is_test);
 }
 
 sub send_email {
@@ -57,6 +58,7 @@ sub send_email {
   my $reports_dir    = shift;
   my $reports_sum    = shift;
   my $date           = shift;
+  my $is_test        = shift;
 
   my $reports_url    = $self->param('reports_url');
   my $host           = $self->param('host');
@@ -67,10 +69,12 @@ sub send_email {
   $date =~ /^(\d{4})-(\d{2})-(\d{2})$/;
   my $formatted_date = "$3/$2/$1";
 
+  my $test = ($is_test) ? ' - TEST' : '';
+
   my $email_sender      = 'automated_pipeline@lrg-sequence.org';
   my $email_recipient   = 'lrg-internal@ebi.ac.uk';#'jmorales@ebi.ac.uk,jalm@ebi.ac.uk,fiona@ebi.ac.uk,lgil@ebi.ac.uk';
   my $recipient_name  ||= 'LRG team';
-  my $subject           = "[LRG pipeline] Automated pipeline ran the $formatted_date";
+  my $subject           = "[LRG pipeline$test] Automated pipeline ran the $formatted_date";
 
   my $summary = '';
   if (-e "$reports_dir/$date/$reports_sum") {
@@ -78,9 +82,12 @@ sub send_email {
     {
         local $/;
         $summary .= "<br />";
-        $summary .= "#==== Summary reports ====#<br />";
+        $summary .= qq{
+  <div style="border-radius:5px;border:1px solid #CCC;background-color:#1A4468;padding:2px 4px 4px;max-width:500px">
+    <div style="color:#FFF;font-weight:bold;padding:2px"># Summary reports</div>
+    <div style="background-color:#FFF;padding-top:8px">};
         $summary .= <$file>;
-        $summary .= "#=========================#<br />";
+        $summary .= "  </div>\n</div>";
         $summary .= "<br />";
     }
     close($file);
@@ -94,7 +101,7 @@ The automated pipeline ran fully the $formatted_date. However this doesn't mean 
 <br />
 $summary
 Please, have a look at the HTML reports on the following link: 
-<a href="$reports_url/$html_file_name">HTML reports</a>.
+<a style="color:#FFF;background-color:48A726;font-weight:bold;padding:3px;border-radius:5px;border:1px solid #EEE;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">HTML reports</a>.
 <br />
 <br />
 You can also have a look at the <a href="http://guihive.ebi.ac.uk:8080/?username=$user&host$host&dbname=$dbname&port=$port&passwd=xxxxx">ehive pipeline</a> (you will need to provide the MySQL admin password).
