@@ -196,6 +196,7 @@ sub pipeline_analyses {
                ftp_dir      => $self->o('ftp_dir'),
                run_dir      => $self->o('run_dir'),
                date         => $self->o('date'),
+               is_test      => $self->o('is_test'),
                # To send the guiHive link
                host         => $self->o('hive_db_host'),
                port         => $self->o('hive_db_port'),
