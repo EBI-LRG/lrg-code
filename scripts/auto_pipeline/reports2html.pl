@@ -338,35 +338,42 @@ close(OUT);
 
 
 # Summary reports file
+my $div_style  = 'background-color:#1A4468;padding:3px 4px;color:#FFF;border-radius:5px';
+my $span_style = 'margin-left:5px;padding:2px 6px;color:#FFF';
 open S, "> $reports_dir/$reports_sum" or die $!;
-print S qq{<ul style="margin:0px;padding-bottom:5px">\n};
-print S qq{  <li>Total number of LRGs: <b>$total_lrg_count</b></li>\n};
-print S qq{  <table style="border:1px solid #48A726;margin:5px 20px;border-collapse:collapse">\n};
+print S qq{  <div style="$div_style;margin:0px 2px 8px">Total number of LRGs: <span style="$span_style;background-color:#48A726">$total_lrg_count</span></div>\n};
+print S qq{
+  <table style="border:1px solid #1A4468;margin:10px 5px 15px 25px">
+    <tr>
+      <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Status</th>
+      <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Count</th>
+    </tr>\n};
+
 my $is_first_line = 1;
 foreach my $l_status (@lrg_status) {
   next if (!$lrg_counts{$l_status});
   my $count = $lrg_counts{$l_status};
   my $padding = 'padding:2px 4px';
   my $font    = 'font-weight:bold';
-  my $border  = 'border-top:1px dotted #48A726';
+  my $bg      = 'background-color:#F9F9F9';
 
-  my $left_style = ($is_first_line) ? qq{style="$padding"} : qq{style="$padding;$border"};
-  my $right_style = ($is_first_line) ? qq{style="$padding;$font"} : qq{style="$padding;$font;$border"};
+  my $left_style  = qq{style="$padding;$bg"};
+  my $right_style = qq{style="text-align:right;$padding;$bg;$font"};
 
   print S qq{    <tr><td $left_style>$l_status</td><td $right_style>$count</td></tr>\n};
-  $is_first_line = 0 if ($is_first_line);
 }
 print S "  </table>\n";
-my $count_failed = ($lrgs_list{'failed'}) ? qq{<span style="color:#E00">}.scalar(keys(%{$lrgs_list{'failed'}})).qq{</span>} : 0;
-print S "  <li>Number of failed LRG(s): $count_failed</li>\n";
+my $count_failed  = ($lrgs_list{'failed'}) ? scalar(keys(%{$lrgs_list{'failed'}})) : 0;
+my $colour_failed = ($count_failed == 0) ? '#48A726' : '#F00';
+print S qq{  <div style="$div_style;margin:0px 2px 10px">Number of failed LRG(s): <span style="$span_style;background-color:$colour_failed">$count_failed</span></div>\n};
 
 if (scalar(%new_lrgs)) {
-  print S "  <li>List of the new LRG(s):\n";
-  print S "    <ul>\n";
+  print S qq{  <div style="$div_style;margin:0px 2px 10px">List of the new LRG(s):</div>\n};
+  print S qq{  <ul style="padding-bottom:15px;margin-top:0px;margin-bottom:0px;font-weight:bold">\n};
   foreach my $id (sort {$a <=> $b} keys(%new_lrgs)) {
-    print S qq{      <li style="font-weight:bold">}.$new_lrgs{$id}{'lrg_id'}.qq{</li>\n};
+    print S qq{    <li>}.$new_lrgs{$id}{'lrg_id'}.qq{</li>\n};
   }
-  print S "    </ul>\n  </li>\n</ul>";
+  print S "  </ul>";
 }
 close(S);
 
