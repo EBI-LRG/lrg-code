@@ -2,48 +2,63 @@ use strict;
 use warnings;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::ApiVersion;
+use Cwd 'abs_path';
 use Getopt::Long;
 
 my ($xml_dir, $output_dir, $help);
 GetOptions(
-  'xml_dir=s'	      => \$xml_dir,
-  'output_dir|od=s' => \$output_dir,
-  'help!'           => \$help
+  'xml_dir=s'	        => \$xml_dir,
+  'output_dirs|ods=s'   => \$output_dir,
+  'help!'               => \$help
 );
 
 usage() if ($help);
 usage("You need to give an output directory as argument of the script, using the option '-output_dir'.") if (!$output_dir);
 
-my $dh;
+my $current_dir = abs_path($0);
+my @path = split('/',$current_dir);
+pop(@path);
+$current_dir = join('/',@path);
+
 my $default_xml_dir = '/ebi/ftp/pub/databases/lrgex/pending';
 $xml_dir ||= $default_xml_dir;
 
+my %files;
 
-opendir($dh,$xml_dir);
-warn("Could not process directory $xml_dir") unless (defined($dh));
-my @lrg_files = readdir($dh);
-@lrg_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @lrg_files;
-# Close the dir handle
-closedir($dh);
-
-my $nb_files = @lrg_files;
-my $percent = 10;
+my $nb_files = 0;
+my $percent  = 10;
 my $count_files = 0;
 
-foreach my $file (@lrg_files) {
-  my $gene;
-  my $lrg_locus = `grep -m1 'lrg_locus' $xml_dir/$file`;
+foreach my $dir (split(',',$xml_dir)) {
+  my $dh;
+  opendir($dh,$dir);
+  warn("Could not process directory $dir") unless (defined($dh));
+  my @lrg_files = readdir($dh);
+  @lrg_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @lrg_files;
+  $files{$dir} = \@lrg_files;
+  $nb_files += @lrg_files;
+  # Close the dir handle
+  closedir($dh);
+}
+
+
+foreach my $dir (keys(%files)) {
+
+  foreach my $file (@{$files{$dir}}) {
+    my $gene;
+    my $lrg_locus = `grep -m1 'lrg_locus' $dir/$file`;
   
-  if ($lrg_locus =~ /lrg_locus source="\w+">(\w+)</) {
-    $gene = $1;
-  }
-  if ($gene) {
-    `perl transcript_alignment_tool.pl -g $gene -o $output_dir/$gene.html`
-  }
+    if ($lrg_locus =~ /lrg_locus source="\w+">(\w+)</) {
+      $gene = $1;
+    }
+    if ($gene) {
+      `perl $current_dir/transcript_alignment_tool.pl -g $gene -o $output_dir/$gene.html`
+    }
   
-  # Count
-  $count_files ++;
-  get_count();
+    # Count
+    $count_files ++;
+    get_count();
+  }
 }
 
 
@@ -65,11 +80,12 @@ sub usage {
 $msg
 
 OPTIONS:
-  -xml_dir     : directory path to the LRG XML files (optional)
-                 By default, the script is pointing to the EBI LRG FTP pending directory:
-                 $default_xml_dir
-  -output_dir  : directory path to the output HTML files (required)
-  -od          : alias of the option "-output_dir"
+  -xml_dir           : directory path to the LRG XML files (optional)
+                       By default, the script is pointing to the EBI LRG FTP pending directory:
+                       $default_xml_dir
+  -output_dirs       : directory paths to the output HTML files, separated by a comma (required)
+  -ods          : alias of the option "-output_dirs"
   };
   exit(0);
 }
+
