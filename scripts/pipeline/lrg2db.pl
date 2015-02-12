@@ -1356,8 +1356,13 @@ sub parse_source {
         $lc_ins_sth->execute();
     }
     
-    # Set the LSDB as a requester for this LRG if necessary (that is, if this source is in the fixed section)
-    if ($source->parent()->name() eq 'fixed_annotation') {
+    # Set the LSDB as a requester for this LRG if necessary (that is, if this source is in the fixed section or if this source is in the requester annotation set)
+    my $is_requester_set;
+    if ($source->parent()->name() eq 'annotation_set' && $source->parent()->data()->{'type'}) {
+      $is_requester_set = 1 if ($source->parent()->data()->{'type'} eq $requester_type);
+    }
+
+    if ($source->parent()->name() eq 'fixed_annotation' || $is_requester_set) {
         $lr_ins_sth->bind_param(1,$lsdb_id,SQL_INTEGER);
         $lr_ins_sth->execute();
     }
