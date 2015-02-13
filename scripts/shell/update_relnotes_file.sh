@@ -38,18 +38,18 @@ fi
 
 
 if [[ -n "${is_test}" ]]; then
-	is_test=1
+  is_test=1
 fi
 
 if [[ -n "${tmp}" ]]; then
-	if [[ ${tmp} == 'test' ]] ; then
-		is_test=1
-	elif [[ -d ${tmp} ]] ; then
-	  tmpdir="-tmp_dir ${tmp}"
-	else 
-	  tmp=${cvsftp}
-		tmpdir="-tmp_dir ${tmp}"
-	fi
+  if [[ ${tmp} == 'test' ]] ; then
+    is_test=1
+  elif [[ -d ${tmp} ]] ; then
+    tmpdir="-tmp_dir ${tmp}"
+  else 
+    tmp=${cvsftp}
+    tmpdir="-tmp_dir ${tmp}"
+  fi
 else
   tmp=${cvsftp}
   tmpdir="-tmp_dir ${tmp}"
@@ -94,16 +94,16 @@ fi
 
 #### IF on TEST MODE ####
 if [[ ${is_test} == 1 ]]; then
-	echo ""
-	echo ">>>>> TEST MODE <<<<<"
-	echo ""
-	cat ${new_relnotes}
-	echo ""
-	echo ">>>>> END of TEST MODE <<<<<"
-	echo ""
-	
-	## Clean the tmp data ##
-	# Delete the new_relnotes file
+  echo ""
+  echo ">>>>> TEST MODE <<<<<"
+  echo ""
+  cat ${new_relnotes}
+  echo ""
+  echo ">>>>> END of TEST MODE <<<<<"
+  echo ""
+  
+  ## Clean the tmp data ##
+  # Delete the new_relnotes file
   if [[ -e ${new_relnotes} ]]; then
     rm -f ${new_relnotes}
   fi
@@ -111,11 +111,11 @@ if [[ ${is_test} == 1 ]]; then
   if [[ -e ${new_record} ]]; then
     rm -f ${new_record}
   fi
-	# Delete the tmp_lrg_list.txt file
+  # Delete the tmp_lrg_list.txt file
   if [[ -e ${tmp_lrg_list} ]]; then
     rm -f ${tmp_lrg_list}
   fi
-	exit 0
+  exit 0
 fi
 
 
@@ -208,20 +208,20 @@ if [[ -e ${new_relnotes} ]] ; then
   if [[ -s ${new_relnotes} ]] ; then
     cd ${cvsftp}
 
-		echo "Update relnotes.txt on CVS"
+    echo "Update relnotes.txt on CVS"
     cvs update ${relnotes_fname}
-		
-		echo "Copy, commit & tag the new relnotes.txt on CVS"
+    
+    echo "Copy, commit & tag the new relnotes.txt on CVS"
     cp ${new_relnotes} "./${relnotes_fname}"
     cvs ci -m "New relnote file ${tag_release}" ${relnotes_fname}
     cvs tag ${tag_release} ${relnotes_fname}
 
     # 2 - Copy the committed relnotes.txt to the EBI FTP.
-		echo "Copy the new relnotes.txt to the EBI FTP"
+    echo "Copy the new relnotes.txt to the EBI FTP"
     cp ${relnotes_fname} ${pubpath}
 
     # 3 - Copy the new ftp_record.txt to the CVS ftp/public/ and commit it.
-		echo "Update ftp_record.txt on CVS"
+    echo "Update ftp_record.txt on CVS"
     cvs update ${record_fname}
     
     echo "Copy, commit & tag the new ftp_record.txt on CVS"
@@ -229,10 +229,10 @@ if [[ -e ${new_relnotes} ]] ; then
     cvs ci -m "FTP record of the release ${tag_release}" ${record_fname}
     cvs tag ${tag_release} ${record_fname}
 
-		# 4 - Tag the LRG XML files
-		
+    # 4 - Tag the LRG XML files
+    
     cd ${cvspath}/xml
-		cvs update ./*
+    cvs update ./*
     echo "Tagging LRG public records"
     for path in ${pubpath}/LRG_*.xml
     do

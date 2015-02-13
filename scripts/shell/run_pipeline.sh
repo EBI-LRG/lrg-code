@@ -16,7 +16,7 @@ skip_hc=$7
 annotation_test=${8}
 
 if [ -z ${tmp_dir} ] ; then
-	tmp_dir='.'
+  tmp_dir='.'
 fi
 
 skip_hc_options="fixed mapping polya main" # all: all of these options
@@ -29,42 +29,42 @@ warning='none'
 #### METHODS ##########################################################################
 
 function check_script_result {
-	if [[ -s ${error_log} ]] ; then
-		echo_stderr  "ERROR: the script failed!"
-		echo_stderr  "Please, look at the error log file ${error_log} for more details"
-		if [ -n "${report_file}" ] ; then
-			echo  "failed" >> ${report_file}
-		fi
-		exit 1 #exit shell script
-	fi
+  if [[ -s ${error_log} ]] ; then
+    echo_stderr  "ERROR: the script failed!"
+    echo_stderr  "Please, look at the error log file ${error_log} for more details"
+    if [ -n "${report_file}" ] ; then
+      echo  "failed" >> ${report_file}
+    fi
+    exit 1 #exit shell script
+  fi
 }
 
 function check_script_warning {
-	if [[ -s ${warning_log} ]] ; then
-		echo_stderr  "WARNING: at least one NCBI transcript has a polyA!"
-		echo_stderr  "Please, look at the warning log file ${warning_log} for more details"
-		warning='polyA'
-	fi
+  if [[ -s ${warning_log} ]] ; then
+    echo_stderr  "WARNING: at least one NCBI transcript has a polyA!"
+    echo_stderr  "Please, look at the warning log file ${warning_log} for more details"
+    warning='polyA'
+  fi
 }
 
 function check_empty_file {
-	file_path=$1
-	msg=$2
-	if [[ -s ${file_path} ]] ; then
-		echo_stderr  "> ${msg}"
-		echo_stderr  ""
-	else	
-		echo_stderr  "ERROR: the script failed!"
-		if [ -n "${report_file}" ] ; then
-			echo "failed" >> ${report_file}
-		fi
-		exit 1 #exit shell script
-	fi
+  file_path=$1
+  msg=$2
+  if [[ -s ${file_path} ]] ; then
+    echo_stderr  "> ${msg}"
+    echo_stderr  ""
+  else  
+    echo_stderr  "ERROR: the script failed!"
+    if [ -n "${report_file}" ] ; then
+      echo "failed" >> ${report_file}
+    fi
+    exit 1 #exit shell script
+  fi
 }
 
 function echo_stderr {
-	msg=$1
-	echo ${msg} >&2
+  msg=$1
+  echo ${msg} >&2
 }
 
 function end_of_script {
@@ -130,10 +130,10 @@ if [[ ${skip_hc} ]] ; then
       if [[ -z ${found} ]] ; then
         echo_stderr "ERROR: the HealthCheck skip option '$i' is not recognized!"
         echo_stderr "The script is ended for this LRG."
-		    if [ -n "${report_file}" ] ; then
-			    echo "failed (wrong HealthChecks skip option used)" >> ${report_file}
-		    fi
-		    exit 1
+        if [ -n "${report_file}" ] ; then
+          echo "failed (wrong HealthChecks skip option used)" >> ${report_file}
+        fi
+        exit 1
       fi
     done
   fi
@@ -144,7 +144,7 @@ fi
 if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
   echo_stderr  "# Preliminary check: compare fixed section with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check existing_entry" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown "-check existing_entry" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -154,7 +154,7 @@ fi
 if [[ ! ${skip_hc} =~ 'mapping' ]] ; then
   echo_stderr  "# Mapping check: compare global mapping with existing LRG entry ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} "-check compare_main_mapping" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown "-check compare_main_mapping" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking comparison done" 
   echo_stderr  ""
@@ -178,7 +178,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #1 done" 
   echo_stderr  ""
@@ -195,7 +195,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} unknown 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #2 done"
   echo_stderr  ""
@@ -204,8 +204,8 @@ fi
 
 # End the script if in test mode (only want to test the Ensembl annotations)
 if [[ ${annotation_test} == 1 ]] ; then
-	end_of_script ${xml_dir}/${lrg_id}.xml.new
-	echo_stderr "TEST done."
+  end_of_script ${xml_dir}/${lrg_id}.xml.new
+  echo_stderr "TEST done."
   exit 0
 fi
 
@@ -228,7 +228,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} unknown 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #3 done"
   echo_stderr  ""

@@ -38,17 +38,19 @@ my $rnc_file;
 my $list;
 my $assembly;
 my $verbose;
+my $status;
 my $help;
 
 # get options from command line
 GetOptions(
-  'xml_file=s'	 => \$xml_file,
-  'check=s'		   => \$check_list,
-  'java=s'		   => \$java_executable,
-  'jing=s'		   => \$jing_jar,
-  'rnc=s' 		   => \$rnc_file,
+  'xml_file=s'   => \$xml_file,
+  'check=s'      => \$check_list,
+  'java=s'       => \$java_executable,
+  'jing=s'       => \$jing_jar,
+  'rnc=s'        => \$rnc_file,
   'list_checks!' => \$list,
   'assembly=s'   => \$assembly,
+  'status=s'     => \$status,
   'verbose|v!' 	 => \$verbose,
   'help!'        => \$help
 );
@@ -74,6 +76,17 @@ $LRG::LRGHealthcheck::CHECK_ASSEMBLY = $assembly;
 
 my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
+    # Skip 'partial' HCs for public LRGs
+    if ($status eq 'public' && ($check eq 'partial' || $check eq 'partial_gene')) {
+      $hc->{'check'}{$check}{'passed'} = 1;
+      next;
+    } 
+    # Skip 'requester' HCs for stalled LRGs
+    if (($status eq 'stalled' || $status eq 'new') && $check eq 'requester') {
+      $hc->{'check'}{$check}{'passed'} = 1;
+      next;
+    }
+    # Skip when HC not found
     if (!grep(/^$check$/,@LRG::LRGHealthcheck::CHECKS) && !grep(/^$check$/,@LRG::LRGHealthcheck::PRELIMINARY_CHECKS)) {
         print STDOUT "Unknown healthcheck '$check'\n";
         next;
