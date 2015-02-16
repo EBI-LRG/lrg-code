@@ -5,9 +5,9 @@ use Bio::EnsEMBL::ApiVersion;
 use Cwd 'abs_path';
 use Getopt::Long;
 
-my ($xml_dir, $output_dir, $help);
+my ($xml_dirs, $output_dir, $help);
 GetOptions(
-  'xml_dir=s'	        => \$xml_dir,
+  'xml_dirs=s'	        => \$xml_dirs,
   'output_dirs|ods=s'   => \$output_dir,
   'help!'               => \$help
 );
@@ -21,7 +21,7 @@ pop(@path);
 $current_dir = join('/',@path);
 
 my $default_xml_dir = '/ebi/ftp/pub/databases/lrgex/pending';
-$xml_dir ||= $default_xml_dir;
+$xml_dirs ||= $default_xml_dir;
 
 my %files;
 
@@ -29,7 +29,7 @@ my $nb_files = 0;
 my $percent  = 10;
 my $count_files = 0;
 
-foreach my $dir (split(',',$xml_dir)) {
+foreach my $dir (split(',',$xml_dirs)) {
   my $dh;
   opendir($dh,$dir);
   warn("Could not process directory $dir") unless (defined($dh));
