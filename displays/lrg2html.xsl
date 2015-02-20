@@ -28,6 +28,7 @@
 <xsl:variable name="current_assembly">GRCh38</xsl:variable>
 <xsl:variable name="requester_type">requester</xsl:variable>
 <xsl:variable name="new_public_transcript">This transcript was added to the LRG record after it was made public</xsl:variable>
+<xsl:variable name="vep_parser">http://www.lrg-sequence.org/vep_parser?</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -3220,7 +3221,7 @@
       <div style="float:right">
         <a class="vep_icon">
           <xsl:attribute name="href">
-            <xsl:value-of select="$relative_path"/><xsl:text>vep_parser.php?assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
+            <xsl:value-of select="$vep_parser"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
           </xsl:attribute>
           <xsl:attribute name="target">_blank</xsl:attribute>
           <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
@@ -3283,7 +3284,7 @@
       <div style="float:right">
         <a class="vep_icon">
           <xsl:attribute name="href">
-            <xsl:value-of select="$relative_path"/><xsl:text>vep_parser.php?assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
+            <xsl:value-of select="$vep_parser"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
           </xsl:attribute>
           <xsl:attribute name="target">_blank</xsl:attribute>
           <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
