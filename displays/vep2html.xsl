@@ -13,6 +13,7 @@
 <xsl:variable name="strand" select="/opt/data/@strand"/>
 <xsl:variable name="assembly" select="/opt/data/@assembly_name"/>
 <xsl:variable name="most_severe_consequence" select="/opt/data/@most_severe_consequence"/>
+<xsl:variable name="ftp_url">ftp://ftp.ebi.ac.uk/pub/databases/lrgex</xsl:variable>
 
 <!-- Ensembl variables -->
 <xsl:variable name="ensembl">http://www.ensembl.org</xsl:variable>
@@ -20,8 +21,8 @@
 <xsl:variable name="ens_trans"><xsl:value-of select="$ensembl"/>/Homo_sapiens/Transcript/Summary?t=</xsl:variable>
 <xsl:variable name="ens_var"><xsl:value-of select="$ensembl"/>/Homo_sapiens/Variation/Explore?v=</xsl:variable>
 <xsl:variable name="consequence_info"><xsl:value-of select="$ensembl"/>/info/genome/variation/predicted_data.html#</xsl:variable>
-<xsl:variable name="vep_img">./img/vep_logo.png</xsl:variable>
-<xsl:variable name="info_img">./img/info.png</xsl:variable>
+<xsl:variable name="vep_img"><xsl:value-of select="$ftp_url"/>/img/vep_logo.png</xsl:variable>
+<xsl:variable name="info_img"><xsl:value-of select="$ftp_url"/>/img/info.png</xsl:variable>
 
 
 <!-- # MAIN TEMPLATE - Begin # -->
@@ -32,9 +33,15 @@
     <title>VEP results for <xsl:value-of select="$hgvs"/></title>
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
     <!-- Load the stylesheet and javascript functions -->	 
-    <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
-    <script type="text/javascript" src="lrg2html.js" />
-    <link rel="icon" type="image/ico" href="img/favicon_public.ico" />
+    <link type="text/css" rel="stylesheet" media="all">
+      <xsl:attribute name="href"><xsl:value-of select="$ftp_url"/>/lrg2html.css</xsl:attribute>
+    </link>
+    <script type="text/javascript">
+      <xsl:attribute name="src"><xsl:value-of select="$ftp_url"/>/lrg2html.js</xsl:attribute>
+    </script>
+    <link rel="icon" type="image/ico">
+      <xsl:attribute name="href"><xsl:value-of select="$ftp_url"/>/img/favicon_public.ico</xsl:attribute>
+    </link>
     <style type="text/css">
       .request_title { margin-left:8px }
       .light_green { color:#79d956; font-weight:bold }
@@ -113,7 +120,9 @@
 
     <!-- Transcripts -->
     <div class="section" style="background-color:#F0F0F0;margin-top:40px">
-      <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"/>
+      <img alt="right_arrow">
+        <xsl:attribute name="src"><xsl:value-of select="$ftp_url"/>/img/lrg_right_arrow_green_large.png</xsl:attribute>
+      </img>
       <h2 class="section">Transcript consequences</h2>
     </div>
     <div style="margin-bottom:20px">
