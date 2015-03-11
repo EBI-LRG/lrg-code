@@ -141,7 +141,12 @@ function move_file_to_directory {
   xmlfile=$1
   # Do not import public LRG with different fixed annotations
   if [[ ${status} == 'public' && ${fixed_section_diff} == 1 ]] ; then
-    cp ${xmlfile} "${new_dir}/temp/public/${xml_file}"
+    cp ${xmlfile} "${new_dir}/failed/${xml_file}"
+    if [ -n "${report_file}" ] ; then
+      echo "${lrg_id}\tfailed\t\t" >> ${report_file}
+    fi
+    echo_stderr "Failed!"
+    exit 1 #exit shell script
   fi
 }
 
@@ -181,9 +186,9 @@ if [[ ${skip_hc} ]] ; then
         echo_log "The script is ended for this LRG."
         echo_stderr "Failed!"
         if [ -n "${report_file}" ] ; then
-    echo -e "${lrg_id}\tfailed\t(wrong HealthChecks skip option used)" >> ${report_file}
-  fi
-  exit 1
+          echo -e "${lrg_id}\tfailed\t(wrong HealthChecks skip option used)" >> ${report_file}
+        fi
+        exit 1
       fi
     done
   fi
@@ -269,10 +274,10 @@ fi
 
 # Public LRG with different fixed annotations: store the file in a separate directory
 # before the step of storing the XML data in the LRG database
-if [[ ${status} == 'public' && ${fixed_section_diff} == 1 ]] ; then
+if [[ ${status} == 'public' && ${fixed_section_diff} == 1 && ! ${skip_hc} =~ 'fixed' ]] ; then
   move_file_to_directory ${xml_dir}/${xml_file}.new
-  end_of_script ${xml_dir}/${xml_file}.new 1
-  exit 0
+  #end_of_script ${xml_dir}/${xml_file}.new 1
+  #exit 0
 fi
 
 ## STEP 4: Store the XML data into the LRG database

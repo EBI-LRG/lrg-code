@@ -18,7 +18,6 @@ GetOptions(
 );
 
 $date ||= LRG::LRG::date();
-$reports_dir .= "/$date";
 $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
 die("Reports directory (-reports_dir) needs to be specified!")    unless (defined($reports_dir));
@@ -51,7 +50,7 @@ my $stopped_colour = '#ffa500.hide_button_x:before {
 }';
 my $failed_colour  = '#B00';
 
-my $abs_xml_dir = abs_path("$xml_dir/$date");
+my $abs_xml_dir = abs_path("$xml_dir");
 
 my $html_content = '';
 my $html_log_content = '';
@@ -416,7 +415,7 @@ sub find_lrg_xml_file {
   my $lrg_id = shift;
   
   foreach my $dir (@lrg_xml_dirs) {
-    my $lrg_file = "$xml_dir/$date/$dir/$lrg_id.xml";
+    my $lrg_file = "$xml_dir/$dir/$lrg_id.xml";
     return "$dir/$lrg_id.xml" if (-e $lrg_file);
   }
   return '-';

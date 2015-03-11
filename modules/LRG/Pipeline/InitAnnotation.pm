@@ -13,15 +13,16 @@ sub run {
 sub write_output {
   my $self = shift;
     
-  my $run_dir      = $self->param('run_dir');
-  my $ncbi_xml_dir = $self->param('ncbi_xml_dir');
-  my $new_xml_dir  = $self->param('new_xml_dir');
-  my $reports_dir  = $self->param('reports_dir');
-  my $ftp_root_dir = $self->param('ftp_dir');
-  my $assembly     = $self->param('assembly');
-  my $is_test      = $self->param('is_test');
-  my $skip_hc      = $self->param('skip_hc');
-  my $date         = $self->param('date');  
+  my $run_dir             = $self->param('run_dir');
+  my $ncbi_xml_dir        = $self->param('ncbi_xml_dir');
+  my $new_xml_dir         = $self->param('new_xml_dir');
+  my $reports_dir         = $self->param('reports_dir');
+  my $ftp_root_dir        = $self->param('ftp_dir');
+  my $assembly            = $self->param('assembly');
+  my $is_test             = $self->param('is_test');
+  my $skip_hc             = $self->param('skip_hc');
+  my $skip_public_lrgs_hc = $self->param('skip_public_lrgs_hc');
+  my $date                = $self->param('date');  
     
   die("LRG directory (-run_dir) needs to be specified!") unless (defined($run_dir));
   die("NCBI XML directory (-ncbi_xml_dir) needs to be specified!") unless (defined($ncbi_xml_dir));
@@ -31,10 +32,16 @@ sub write_output {
 
   die("LRG directory '$run_dir' doesn't exist!") unless (-d $run_dir);
   die("NCBI XML directory '$ncbi_xml_dir' doesn't exist!") unless (-d $ncbi_xml_dir);
-  die("New XML directory '$new_xml_dir' doesn't exist!") unless (-d $new_xml_dir);
-  die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
   die("FTP directory '$ftp_root_dir' doesn't exist!") unless (-d $ftp_root_dir);
-    
+  
+  make_path $new_xml_dir or die "New XML directory '$new_xml_dir' doesn't exist!" unless (-d $new_xml_dir);
+  die("New XML directory '$new_xml_dir' doesn't exist!") unless (-d $new_xml_dir);
+  make_path $reports_dir or die "Reports directory '$reports_dir' doesn't exist!" unless (-d $reports_dir);
+  die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
+  
+
+  my %skip_lrg_hc = map{ $_ => 1 } @$skip_public_lrgs_hc;
+
   my $dh;
 
   opendir($dh,$ncbi_xml_dir);
@@ -67,7 +74,7 @@ sub write_output {
     make_path $new_xml_dir or die "Failed to create directory: $new_xml_dir";
   }
   
-  foreach my $dir ('public','pending','stalled','temp','temp/new','temp/public','temp/pending','temp/stalled','failed','index', 'tmp') {
+  foreach my $dir ('public','pending','stalled','temp','temp/new','temp/public','temp/pending','temp/stalled','failed','index','tmp') {
     my $sub_dir = "$new_xml_dir/$dir";
     if (!-d $sub_dir) {
       make_path $sub_dir or die "Failed to create directory: $sub_dir";
@@ -121,6 +128,8 @@ sub write_output {
         last;
       }
     }
+
+    $skip_hc = 'fixed' if ($skip_lrg_hc{$lrg_id}); 
     $status ||= 'new'; 
     $hgnc   ||= '';
     

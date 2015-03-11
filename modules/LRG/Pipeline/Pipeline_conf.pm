@@ -20,7 +20,7 @@ sub default_options {
         hive_no_init            => 0,
         hive_use_param_stack    => 0,
         hive_use_triggers       => 0,
-        hive_root_dir           => $ENV{'HOME'} . '/ensembl_branch/git/ensembl-hive',
+        hive_root_dir           => $ENV{'HOME'} . '/ensembl_branch/git/ensembl-hive', # To update in order to match the location of your own hive copy
         hive_db_host            => $ENV{'LRGDBHOST'},
         hive_db_port            => $ENV{'LRGDBPORT'},
         hive_db_user            => $ENV{'LRGDBADMUSER'},
@@ -28,7 +28,6 @@ sub default_options {
         debug                   => 0,
         is_test                 => 1, # other values: 'is_hc' (only HealthChecks), or '1' (Test mode)
         skip_hc                 => '',
-#        mode                    => 'remap_db_table', # options: remap_db_table (default), remap_multi_map, remap_alt_loci, remap_read_coverage
 
         pipeline_name           => 'lrg_automated_pipeline',
         
@@ -37,11 +36,19 @@ sub default_options {
         reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/test',
         reports_html            => '/homes/lgil/public_html/LRG/test',
 
+        skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
+
         assembly                => 'GRCh38',
-        tmp_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/tmp',
-        xml_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_native_xml',
+        date                    => LRG::LRG::date(),
+        pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
+
+        tmp_dir                 => $self->o('root_dir').'/log',
+        xml_dir                 => $self->o('root_dir').'/ncbi_xml',
+#        tmp_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/tmp',
+#        xml_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_native_xml',
         xml_dir_sub             => 'xml',
-        new_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_processed_xml',
+        new_dir                 => $self->o('root_dir').'/results',
+#        new_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_processed_xml',
         #ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
         ftp_dir                 => '/homes/lgil/projets/LRG/fake_lrgex', # TEST
         date                    => LRG::LRG::date(),
@@ -103,22 +110,22 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::InitAnnotation',
             -rc_name           => 'small',
             -parameters        => {
-               ncbi_xml_dir => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
-               new_xml_dir  => $self->o('new_dir'),
-               reports_dir  => $self->o('tmp_dir'),
-               ftp_dir      => $self->o('ftp_dir'),
-               run_dir      => $self->o('run_dir'),
-               date         => $self->o('date'),
-               assembly     => $self->o('assembly'),
-               is_test      => 0, #$self->o('is_test'),
-               skip_hc      => $self->o('skip_hc'),
+               ncbi_xml_dir        => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
+               new_xml_dir         => $self->o('new_dir'),
+               reports_dir         => $self->o('tmp_dir'),
+               ftp_dir             => $self->o('ftp_dir'),
+               run_dir             => $self->o('run_dir'),
+               date                => $self->o('date'),
+               assembly            => $self->o('assembly'),
+               is_test             => 0, #$self->o('is_test'),
+               skip_hc             => $self->o('skip_hc'),
+               skip_public_lrgs_hc => $self->o('skip_public_lrgs_hc'),
             },
-            -input_ids     => [],
+            -input_ids     => ($self->o('run_extract_xml_files')) ? [] : [{}],
             -wait_for      => ($self->o('run_extract_xml_files')) ? [ 'extract_xml_files' ] : [],
             -flow_into     => { 
                '2->A' => ['annotate_xml_files'],
                'A->1' => ['move_xml_files']
-#               'A->1' => ['generate_reports'] TEST MODE 'short'
             },		
         },
         {   
@@ -162,7 +169,6 @@ sub pipeline_analyses {
             -wait_for          => [ 'move_xml_files' ],
             -flow_into         => {
                1 => ['update_relnotes_file']
-               #1 => ['generate_reports'] # TEST MODE
             },
         },        
         {   
@@ -205,8 +211,6 @@ sub pipeline_analyses {
             },
             -input_ids  => [],
             -wait_for   => [ 'update_relnotes_file' ],
-            #-wait_for   => [ 'create_indexes' ], # TEST MODE 'long'
-            #-wait_for   => [ 'annotate_xml_files' ], # TEST MODE 'short'
             -flow_into  => {},
         },
        

@@ -21,7 +21,7 @@ sub run {
   my $dh;
 
   # Open a directory handle to get the list of reports files
-  my $reports_subdir = "$reports_dir/$date/reports";
+  my $reports_subdir = "$reports_dir/reports";
   opendir($dh,$reports_subdir);
   die("Could not process directory $reports_subdir") unless (defined($dh));
   my @reports_files = readdir($dh);
@@ -30,7 +30,7 @@ sub run {
 
   my %list_files =  map { $_ =~ m/^pipeline_reports_(\d+)\.txt/ => $_ } grep {$_ =~ m/^pipeline_reports_\d+\.txt$/} @reports_files;
   
-  open OUT, "> $reports_dir/$date/$global_reports" or die $!;
+  open OUT, "> $reports_dir/$global_reports" or die $!;
   foreach my $id (sort {$a <=> $b} keys(%list_files)) {
     my $r_file = $list_files{$id};
     print OUT `cat $reports_subdir/$r_file`;
@@ -41,11 +41,11 @@ sub run {
 
   # Copy HTMl reports to a website
   my $html_reports_file = (split(/\./,$global_reports))[0].'.html';
-  if (-e "$reports_dir/$date/$html_reports_file") {
-    $self->run_cmd("cp $reports_dir/$date/$html_reports_file $reports_html/");
+  if (-e "$reports_dir/$html_reports_file") {
+    $self->run_cmd("cp $reports_dir/$html_reports_file $reports_html/");
   }
   else {
-    die("Unable to find the HTML reports file '$html_reports_file' in $reports_dir/$date")
+    die("Unable to find the HTML reports file '$html_reports_file' in $reports_dir")
   }
 
   # Send email
@@ -72,13 +72,13 @@ sub send_email {
   my $test = ($is_test) ? ' - TEST' : '';
 
   my $email_sender      = 'automated_pipeline@lrg-sequence.org';
-  my $email_recipient   = 'lrg-internal@ebi.ac.uk';#'jmorales@ebi.ac.uk,jalm@ebi.ac.uk,fiona@ebi.ac.uk,lgil@ebi.ac.uk';
+  my $email_recipient   = 'lgil@ebi.ac.uk,jmorales@ebi.ac.uk';#'lrg-internal@ebi.ac.uk';#'jmorales@ebi.ac.uk,jalm@ebi.ac.uk,fiona@ebi.ac.uk,lgil@ebi.ac.uk';
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG pipeline$test] Automated pipeline ran the $formatted_date";
 
   my $summary = '';
-  if (-e "$reports_dir/$date/$reports_sum") {
-    open (my $file, '<', "$reports_dir/$date/$reports_sum") or die $!;
+  if (-e "$reports_dir/$reports_sum") {
+    open (my $file, '<', "$reports_dir/$reports_sum") or die $!;
     {
         local $/;
         $summary .= "<br />";

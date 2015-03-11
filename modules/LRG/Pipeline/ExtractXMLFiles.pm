@@ -2,6 +2,7 @@ package LRG::Pipeline::ExtractXMLFiles;
 
 use strict;
 use warnings;
+use File::Path qw(make_path);
 
 use base ('Bio::EnsEMBL::Hive::Process');
 
@@ -19,8 +20,7 @@ sub run {
   die ("Can't find the file $data_dir/$data_file") unless (-e "$data_dir/$data_file" && defined($data_file));
 
   if (! -d $xml_tmp_dir) {
-    `mkdir $xml_tmp_dir`;
-    die("Temporary XML directory '$xml_tmp_dir' can't be created'!") unless (-d $xml_tmp_dir);
+    make_path $xml_tmp_dir or die "Temporary XML directory '$xml_tmp_dir' can't be created'!";
   }
   $self->run_cmd("rm -rf $xml_tmp_dir/*");
   $self->run_cmd("cp $data_dir/$data_file $xml_tmp_dir/");
