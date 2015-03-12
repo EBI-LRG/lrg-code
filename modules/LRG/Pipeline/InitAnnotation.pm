@@ -123,7 +123,7 @@ sub write_output {
       }
     }
 
-    $skip_hc = 'fixed' if ($skip_lrg_hc{$lrg_id}); 
+    my $lrg_skip_hc = ($skip_lrg_hc{$lrg_id}) ? 'main' : $skip_hc;
     $status ||= 'new'; 
     $hgnc   ||= '';
     
@@ -138,7 +138,7 @@ sub write_output {
         'new_xml_dir'     => $new_xml_dir,
         'reports_dir'     => $reports_dir,
         'run_dir'         => $run_dir,
-        'skip_hc'         => $skip_hc,
+        'skip_hc'         => $lrg_skip_hc,
         'annotation_test' => $annotation_test
     };              
   }  
