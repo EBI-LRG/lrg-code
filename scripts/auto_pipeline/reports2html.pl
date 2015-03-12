@@ -185,7 +185,6 @@ while (<F>) {
     else {
       $html_comments = $com_list[0];
     }
-    $html_comments .= get_log_reports($lrg_id,'error');
   }
   else {
     $html_comments = '<span style="color:#888">none</span>';
@@ -210,7 +209,7 @@ while (<F>) {
   my $lrg_path = find_lrg_xml_file($lrg_id);
   
   my $log_content = get_log_reports($lrg_id);
-  $html_log_content .= $log_content;
+  $html_log_content .= "$log_content\n";
   
   $lrgs_list{$status}{$id} = {'lrg_id'    => $lrg_id,
                               'comments'  => $html_comments,
@@ -331,7 +330,7 @@ open OUT, "> $reports_dir/$reports_html_file" or die $!;
 print OUT $html_header;
 print OUT $html_summary;
 print OUT $html_content;
-print OUT qq{<div id="logs" class="hidden">$html_log_content</div>};
+print OUT qq{<div id="logs" class="hidden">$html_log_content</div>\n};
 print OUT $html_footer;
 close(OUT);
 
