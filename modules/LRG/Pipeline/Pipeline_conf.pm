@@ -42,13 +42,15 @@ sub default_options {
         date                    => LRG::LRG::date(),
         pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
 
-        tmp_dir                 => $self->o('root_dir').'/log',
-        xml_dir                 => $self->o('root_dir').'/ncbi_xml',
+        tmp_dir                 => $self->o('pipeline_dir').'/log',
+        xml_dir                 => $self->o('pipeline_dir').'/ncbi_xml',
+        xml_dir_sub             => 'xml',
+        new_dir                 => $self->o('pipeline_dir').'/results',
+
 #        tmp_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/tmp',
 #        xml_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_native_xml',
-        xml_dir_sub             => 'xml',
-        new_dir                 => $self->o('root_dir').'/results',
 #        new_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_processed_xml',
+
         #ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
         ftp_dir                 => '/homes/lgil/projets/LRG/fake_lrgex', # TEST
         date                    => LRG::LRG::date(),

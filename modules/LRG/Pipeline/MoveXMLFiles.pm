@@ -29,7 +29,7 @@ sub run {
     my @copied_files;
 
     # Open a directory handle to get the list of reports files
-    my $sub_dir = "$new_xml_dir/$date/$type_dir";
+    my $sub_dir = "$new_xml_dir/$type_dir";
     
     opendir($dh,$sub_dir);
     my @files = readdir($dh);
@@ -56,7 +56,7 @@ sub run {
     my $dh;
 
     # Open a directory handle to get the list of reports files
-    my $sub_dir = "$new_xml_dir/$date/$type_dir";
+    my $sub_dir = "$new_xml_dir/$type_dir";
     
     opendir($dh,$sub_dir);
     my @files = readdir($dh);

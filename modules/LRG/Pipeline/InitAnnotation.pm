@@ -59,7 +59,6 @@ sub write_output {
   ## Create new directories ##
 
   # Reports directory
-  $reports_dir .= "/$date";
   if (! -d $reports_dir) {
     make_path $reports_dir or die "Failed to create directory: $reports_dir";
     # Log, error, warning
@@ -69,7 +68,6 @@ sub write_output {
   }
 
   # Processed LRG XML directory
-  $new_xml_dir .= "/$date";
   if (! -d $new_xml_dir) {
     make_path $new_xml_dir or die "Failed to create directory: $new_xml_dir";
   }
