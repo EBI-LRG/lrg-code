@@ -3318,9 +3318,39 @@
          coordinates[@coord_system=$lrg_id and @start &lt;= $diff_end and @end &gt;= $diff_end]"><xsl:value-of select="@label"/></xsl:if>
        </xsl:for-each>
      </xsl:variable>
+
+
      <xsl:choose>
        <xsl:when test="$exon_number != ''">
          exon <xsl:value-of select="$exon_number"/>
+
+
+         <!-- Check wether the diff is falling into a UTR or in a non coding exon -->
+         <xsl:variable name="cds_start" select="coding_region/coordinates/@start" />
+         <xsl:variable name="cds_end" select="coding_region/coordinates/@end" />
+         <xsl:variable name="lrg_coord_system" select="$lrg_id" />
+         <xsl:variable name="cdna_coord_system" select="concat($lrg_id,$transname)" />
+         <xsl:variable name="peptide_coord_system" select="translate($cdna_coord_system,'t','p')" />
+         <xsl:for-each select="exon[@label=$exon_number]">
+           <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+           <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+           <xsl:variable name="peptide_start" select="coordinates[@coord_system = $peptide_coord_system]/@start"/>
+
+           <xsl:choose>
+             <!-- Coding exon -->
+             <xsl:when test="$peptide_start">
+               <xsl:choose>
+                 <xsl:when test="$diff_start &gt;= $lrg_start and $diff_start &lt;= $cds_start"> (UTR)</xsl:when>
+                 <xsl:when test="$diff_end &gt;= $lrg_start and $diff_end &lt;= $cds_start"> (UTR)</xsl:when>
+                 <xsl:when test="$diff_start &lt;= $lrg_end and $diff_start &gt;= $cds_end"> (UTR)</xsl:when>
+                 <xsl:when test="$diff_end &lt;= $lrg_end and $diff_end &gt;= $cds_end"> (UTR)</xsl:when>
+               </xsl:choose>
+             </xsl:when>
+             <!-- Non coding exon -->
+             <xsl:otherwise> (non coding)</xsl:otherwise>
+           </xsl:choose>        
+ 
+         </xsl:for-each>
        </xsl:when>
        <xsl:otherwise>no</xsl:otherwise>
      </xsl:choose>
