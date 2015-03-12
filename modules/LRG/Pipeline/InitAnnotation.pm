@@ -59,19 +59,15 @@ sub write_output {
   ## Create new directories ##
 
   # Reports directory
-  if (! -d $reports_dir) {
-    make_path $reports_dir or die "Failed to create directory: $reports_dir";
-    # Log, error, warning
-    foreach my $rdir ('log','error','warning','reports') {
-      make_path "$reports_dir/$rdir" or die "Failed to create directory: $reports_dir/$rdir";
+  # Log, error, warning sub directories
+  foreach my $rdir ('log','error','warning','reports') {
+    my $sub_dir = "$reports_dir/$rdir";
+    if (!-d $sub_dir) {
+      make_path "$sub_dir" or die "Failed to create directory: $sub_dir";
     }
   }
 
   # Processed LRG XML directory
-  if (! -d $new_xml_dir) {
-    make_path $new_xml_dir or die "Failed to create directory: $new_xml_dir";
-  }
-  
   foreach my $dir ('public','pending','stalled','temp','temp/new','temp/public','temp/pending','temp/stalled','failed','index','tmp') {
     my $sub_dir = "$new_xml_dir/$dir";
     if (!-d $sub_dir) {
