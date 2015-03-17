@@ -25,13 +25,13 @@ my @filter_list_lsdb;
 my @filter_list_url;
 
 GetOptions(
-  'host=s'		         => \$host,
-  'port=i'		         => \$port,
-  'dbname=s'	         => \$dbname,
-  'user=s'		         => \$user,
-  'pass=s'		         => \$pass,
-  'xmlfile=s'		       => \$xmlfile,
-  'verbose!'		       => \$verbose,
+  'host=s'             => \$host,
+  'port=i'             => \$port,
+  'dbname=s'           => \$dbname,
+  'user=s'             => \$user,
+  'pass=s'             => \$pass,
+  'xmlfile=s'          => \$xmlfile,
+  'verbose!'           => \$verbose,
   'hgnc_symbol=s'      => \$hgnc_symbol,
   'lrg_id=s'           => \$lrg_id,
   'include_external!'  => \$include_external,
@@ -171,7 +171,7 @@ $stmt = qq{
         ld.taxon_id,
         ld.moltype,
         ld.creation_date,
-				g.refseq,
+        g.refseq,
         lc.comment,
         lr.gene_id
     FROM
@@ -204,11 +204,11 @@ my $fixed = $lrg->addNode('fixed_annotation');
 $fixed->addNode('id')->content($lrg_id);
 
 if (defined($hgnc_id)) {
-	$fixed->addNode('hgnc_id')->content($hgnc_id);
+  $fixed->addNode('hgnc_id')->content($hgnc_id);
 }
 
 if (defined($sequence_source)) {
-	$fixed->addNode('sequence_source')->content($sequence_source);
+  $fixed->addNode('sequence_source')->content($sequence_source);
 }
 $fixed->addNode('organism',{'taxon' => $taxon_id})->content($organism);
 
@@ -243,7 +243,7 @@ while ($sth->fetch()) {
 $fixed->addNode('mol_type')->content($moltype);
 $fixed->addNode('creation_date')->content($creation_date);
 if (defined($fcomment)) {
-	$fixed->addNode('comment')->content($fcomment);
+  $fixed->addNode('comment')->content($fcomment);
 }
 
 my $sequence = get_sequence($gene_id,'genomic',$db_adaptor);
@@ -256,7 +256,7 @@ my $ce_stmt = qq{
         ls.sequence
     FROM
         lrg_cds_exception lce LEFT JOIN
-				lrg_sequence ls ON lce.sequence_id=ls.sequence_id
+        lrg_sequence ls ON lce.sequence_id=ls.sequence_id
     WHERE
         lce.cds_id = ?
     ORDER BY
@@ -269,13 +269,13 @@ my $cfs_stmt = qq{
     FROM
         lrg_cds_frameshift
     WHERE
-				cds_id = ?
+        cds_id = ?
     ORDER BY
         cdna_pos ASC
 };
 my $e_stmt = qq{
     SELECT
-				e.exon_id,
+        e.exon_id,
         e.exon_label,
         e.lrg_start,
         e.lrg_end,
@@ -292,9 +292,9 @@ my $e_stmt = qq{
 };
 my $ep_stmt = qq{
     SELECT
-				peptide_name,
-				peptide_start,
-				peptide_end
+        peptide_name,
+        peptide_start,
+        peptide_end
     FROM
         lrg_exon_peptide
     WHERE
@@ -303,13 +303,13 @@ my $ep_stmt = qq{
         peptide_start ASC
 };
 my $p_stmt = qq{
-		SELECT
-			peptide_id,
-			peptide_name
-		FROM
-			lrg_peptide
-		WHERE 
-			cds_id = ?
+    SELECT
+      peptide_id,
+      peptide_name
+    FROM
+      lrg_peptide
+    WHERE 
+      cds_id = ?
 };
 my $cds_stmt = qq{
     SELECT
@@ -387,43 +387,43 @@ while ($sth->fetch()) {
     my $cdna_seq = get_sequence($cdna_id,'cdna',$db_adaptor);
     $transcript->addNode('cdna/sequence')->content($cdna_seq);
 
-		$cds_sth->bind_param(1,$t_id,SQL_INTEGER);
-		$cds_sth->execute();
-		$cds_sth->bind_columns(\$cds_id,\$cds_lrg_start,\$cds_lrg_end,\$codon_start);
-		while ($cds_sth->fetch()) {
-    	my $cds = $transcript->addNode('coding_region',(defined($codon_start) ? {'codon_start' => $codon_start} : undef));
-    	$coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end,1);
-    	$cds->addExisting($coords);
+    $cds_sth->bind_param(1,$t_id,SQL_INTEGER);
+    $cds_sth->execute();
+    $cds_sth->bind_columns(\$cds_id,\$cds_lrg_start,\$cds_lrg_end,\$codon_start);
+    while ($cds_sth->fetch()) {
+      my $cds = $transcript->addNode('coding_region',(defined($codon_start) ? {'codon_start' => $codon_start} : undef));
+      $coords = coords_node($lrg_id,$cds_lrg_start,$cds_lrg_end,1);
+      $cds->addExisting($coords);
 
-			# Check for translation exception
-    	$ce_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    	$ce_sth->execute();
-    	my ($ce_codon,$ce_seq);
-    	$ce_sth->bind_columns(\$ce_codon,\$ce_seq);
-    	while ($ce_sth->fetch()) {
-    	  my $te = $cds->addNode('translation_exception',{'codon' => $ce_codon});
-				$te->addNode('sequence')->content($ce_seq);
-    	}
+      # Check for translation exception
+      $ce_sth->bind_param(1,$cds_id,SQL_INTEGER);
+      $ce_sth->execute();
+      my ($ce_codon,$ce_seq);
+      $ce_sth->bind_columns(\$ce_codon,\$ce_seq);
+      while ($ce_sth->fetch()) {
+        my $te = $cds->addNode('translation_exception',{'codon' => $ce_codon});
+        $te->addNode('sequence')->content($ce_seq);
+      }
 
-			# Check for translation frameshift (ribosomal slippage)
-    	$cfs_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    	$cfs_sth->execute();
-    	my ($cfs_cdna_pos,$cfs_frameshift);
-    	$cfs_sth->bind_columns(\$cfs_cdna_pos,\$cfs_frameshift);
-    	while ($cfs_sth->fetch()) {
-    	  $cds->addEmptyNode('translation_frameshift',{'cdna_position' => $cfs_cdna_pos, 'shift' => $cfs_frameshift});
-    	}
+      # Check for translation frameshift (ribosomal slippage)
+      $cfs_sth->bind_param(1,$cds_id,SQL_INTEGER);
+      $cfs_sth->execute();
+      my ($cfs_cdna_pos,$cfs_frameshift);
+      $cfs_sth->bind_columns(\$cfs_cdna_pos,\$cfs_frameshift);
+      while ($cfs_sth->fetch()) {
+        $cds->addEmptyNode('translation_frameshift',{'cdna_position' => $cfs_cdna_pos, 'shift' => $cfs_frameshift});
+      }
     
-    	# Add translation element
-			my ($pep_id,$pep_name);
-			$p_sth->bind_param(1,$cds_id,SQL_INTEGER);
-    	$p_sth->execute();
-			$p_sth->bind_columns(\$pep_id,\$pep_name);
-			while ($p_sth->fetch()) {
-				my $pep = $cds->addNode('translation',{'name' => $pep_name});
-    		my $pep_seq = get_sequence($pep_id,'peptide',$db_adaptor);
-    		$pep->addNode('sequence')->content($pep_seq);
-			}
+      # Add translation element
+      my ($pep_id,$pep_name);
+      $p_sth->bind_param(1,$cds_id,SQL_INTEGER);
+      $p_sth->execute();
+      $p_sth->bind_columns(\$pep_id,\$pep_name);
+      while ($p_sth->fetch()) {
+        my $pep = $cds->addNode('translation',{'name' => $pep_name});
+        my $pep_seq = get_sequence($pep_id,'peptide',$db_adaptor);
+        $pep->addNode('sequence')->content($pep_seq);
+      }
     }
  
     $e_sth->bind_param(1,$t_id,SQL_INTEGER);
@@ -431,22 +431,22 @@ while ($sth->fetch()) {
     my ($e_id,$e_label,$e_lrg_start,$e_lrg_end,$e_cdna_start,$e_cdna_end,$e_peptide_name,$e_peptide_start,$e_peptide_end,$phase);
     $e_sth->bind_columns(\$e_id,\$e_label,\$e_lrg_start,\$e_lrg_end,\$e_cdna_start,\$e_cdna_end,\$phase);
     while ($e_sth->fetch()) {
-				my $exon = $transcript->addNode('exon',{'label' => $e_label});
+        my $exon = $transcript->addNode('exon',{'label' => $e_label});
 
-				# Add LRG coordinates
+        # Add LRG coordinates
         $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
         $exon->addExisting($coords);
 
-				# Add cDNA coordinates if defined
+        # Add cDNA coordinates if defined
         if (defined($e_cdna_start) && defined($e_cdna_end)) {
           $coords = coords_node("${lrg_id}${t_name}",$e_cdna_start,$e_cdna_end);
           $exon->addExisting($coords);
         }
 
-				# Add peptide coordinates if defined
-				$ep_sth->execute($e_id);
-				$ep_sth->bind_columns(\$e_peptide_name,\$e_peptide_start,\$e_peptide_end);
-				while ($ep_sth->fetch()) {
+        # Add peptide coordinates if defined
+        $ep_sth->execute($e_id);
+        $ep_sth->bind_columns(\$e_peptide_name,\$e_peptide_start,\$e_peptide_end);
+        while ($ep_sth->fetch()) {
           $coords = coords_node("${lrg_id}${e_peptide_name}",$e_peptide_start,$e_peptide_end);
           $exon->addExisting($coords);
         }
@@ -462,14 +462,18 @@ while ($sth->fetch()) {
 # Create the updatable section
 my $updatable = $lrg->addNode('updatable_annotation');
 
-# Add the "requester" annotation set
-my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
-foreach my $requester_source (@requester_sources_list) {
-  $requester_annotation_set->addExisting($requester_source);
+# Add the "requester" annotation set (if we have requester data)
+if (scalar(@requester_sources_list)) {
+  my $requester_annotation_set = $updatable->addNode('annotation_set', {'type' => $requester_type});
+  foreach my $requester_source (@requester_sources_list) {
+    $requester_annotation_set->addExisting($requester_source);
+  }
+  $requester_annotation_set->addNode('modification_date')->content(LRG::LRG::date());
+  get_note($requester_annotation_set, $requester_type);
 }
-$requester_annotation_set->addNode('modification_date')->content(LRG::LRG::date());
-get_note($requester_annotation_set, $requester_type);
-
+else {
+  warn("No requester data found for this LRG");
+}
 
 # Get the annotation sets
 $stmt = qq{
@@ -742,9 +746,9 @@ sub get_mapping {
         ORDER BY
             lrg_start ASC
     };
-		 my $mdc_stmt = qq{
+     my $mdc_stmt = qq{
         SELECT
-					count(mapping_diff_id)
+          count(mapping_diff_id)
         FROM
             lrg_mapping_diff
         WHERE
@@ -752,7 +756,7 @@ sub get_mapping {
     };
     my $ms_sth  = $db_adaptor->dbc->prepare($ms_stmt);
     my $md_sth  = $db_adaptor->dbc->prepare($md_stmt);
-		my $mdc_sth = $db_adaptor->dbc->prepare($mdc_stmt);
+    my $mdc_sth = $db_adaptor->dbc->prepare($mdc_stmt);
     
     my ($assembly,$chr_name,$chr_id,$chr_start,$chr_end,$chr_syn,$m_type) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($m_stmt)->[0]};
     my $mapping = LRG::Node::new('mapping');
@@ -766,22 +770,22 @@ sub get_mapping {
     while ($ms_sth->fetch()) {
         my $span;
         
-				$mdc_sth->bind_param(1,$mapping_span_id,SQL_INTEGER);
+        $mdc_sth->bind_param(1,$mapping_span_id,SQL_INTEGER);
         $mdc_sth->execute();
-				# No diff for this mapping_span
-				if (!$mdc_sth->fetchrow_array()) {
-					$span = $mapping->addEmptyNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
-					next;
-				}
+        # No diff for this mapping_span
+        if (!$mdc_sth->fetchrow_array()) {
+          $span = $mapping->addEmptyNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
+          next;
+        }
 
-				$span = $mapping->addNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
+        $span = $mapping->addNode('mapping_span',{'lrg_start' => $lrg_start, 'lrg_end' => $lrg_end, 'other_start' => $chr_start, 'other_end' => $chr_end, 'strand' => $strand});
 
         $md_sth->bind_param(1,$mapping_span_id,SQL_INTEGER);
         $md_sth->execute();
         my ($md_type,$md_chr_start,$md_chr_end,$md_lrg_start,$md_lrg_end,$md_lrg_sequence,$md_chr_sequence);
         $md_sth->bind_columns(\$md_type,\$md_chr_start,\$md_chr_end,\$md_lrg_start,\$md_lrg_end,\$md_lrg_sequence,\$md_chr_sequence);
 
-				
+        
 
         while ($md_sth->fetch()) {
             my $diff = $span->addEmptyNode('diff',{'type' => $md_type, 'lrg_start' => $md_lrg_start, 'lrg_end' => $md_lrg_end, 'other_start' => $md_chr_start, 'other_end' => $md_chr_end});
