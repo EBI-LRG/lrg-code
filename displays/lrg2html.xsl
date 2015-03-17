@@ -776,9 +776,10 @@
 
       <xsl:choose>
         <xsl:when test="position()=1">
+           <xsl:variable name="upstream_end"><xsl:value-of select="$lrg_start - 1"/></xsl:variable>
               <span class="upstream">
-                <xsl:attribute name="title">Upstream sequence 1-<xsl:value-of select="$lrg_start - 1"/></xsl:attribute>
-                <xsl:value-of select="substring($genseq,1,$lrg_start)"/>
+                <xsl:attribute name="title">Upstream sequence 1-<xsl:value-of select="upstream_end"/></xsl:attribute>
+                <xsl:value-of select="substring($genseq,1,$upstream_end)"/>
               </span>
              
         </xsl:when>
@@ -814,9 +815,11 @@
               
       <xsl:if test="position()=last()">
         <xsl:if test="$lrg_end &lt; string-length($genseq)">
+          <xsl:variable name="downstream_start"><xsl:value-of select="$lrg_end + 1"/></xsl:variable>
+          <xsl:variable name="downstream_end"><xsl:value-of select="string-length($genseq)"/></xsl:variable>
               <span class="downstream">
-                <xsl:attribute name="title">Downstream sequence <xsl:value-of select="$lrg_end + 1"/>-<xsl:value-of select="string-length($genseq)"/></xsl:attribute>
-                <xsl:value-of select="substring($genseq,$lrg_end + 1, string-length($genseq) - $lrg_end + 1)"/>
+                <xsl:attribute name="title">Downstream sequence <xsl:value-of select="$downstream_start"/>-<xsl:value-of select="$downstream_end"/></xsl:attribute>
+                <xsl:value-of select="substring($genseq, $downstream_start, $downstream_end - $downstream_start)"/>
               </span>
         </xsl:if>
       </xsl:if>
