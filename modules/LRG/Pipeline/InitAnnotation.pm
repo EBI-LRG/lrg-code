@@ -107,7 +107,7 @@ sub write_output {
     
     # Rename the LRG XML file
     if ($lrg_id) {
-      `cp $ncbi_xml_dir/$file $ncbi_xml_dir/$lrg_id.xml`;
+      `mv $ncbi_xml_dir/$file $ncbi_xml_dir/$lrg_id.xml`;
       die "Can't create the file $ncbi_xml_dir/$lrg_id.xml" if (! -e "$ncbi_xml_dir/$lrg_id.xml");
       $file = "$lrg_id.xml";
     }
