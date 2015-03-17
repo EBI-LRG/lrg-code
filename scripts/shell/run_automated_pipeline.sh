@@ -72,7 +72,7 @@ function check_empty_file {
   else  
     echo_log  "ERROR: the script failed!"
     if [ -n "${report_file}" ] ; then
-      echo "${lrg_id}\tfailed\t\t" >> ${report_file}
+      echo -e "${lrg_id}\tfailed\t\t" >> ${report_file}
     fi
     echo_stderr "Failed!"
     exit 1 #exit shell script
@@ -143,7 +143,7 @@ function move_file_to_directory {
   if [[ ${status} == 'public' && ${fixed_section_diff} == 1 ]] ; then
     cp ${xmlfile} "${new_dir}/failed/${xml_file}"
     if [ -n "${report_file}" ] ; then
-      echo "${lrg_id}\tfailed\t\t" >> ${report_file}
+      echo -e "${lrg_id}\tfailed\t\t" >> ${report_file}
     fi
     echo_stderr "Failed!"
     exit 1 #exit shell script
