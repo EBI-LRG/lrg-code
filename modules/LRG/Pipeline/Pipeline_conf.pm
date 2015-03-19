@@ -26,7 +26,7 @@ sub default_options {
         hive_db_user            => $ENV{'LRGDBADMUSER'},
         hive_db_password        => $ENV{'LRGDBPASS'},
         debug                   => 0,
-        is_test                 => 1, # other values: 'is_hc' (only HealthChecks), or '1' (Test mode)
+        is_test                 => 0, # other values: 'is_hc' (only HealthChecks), or '1' (Test mode)
         skip_hc                 => '',
 
         pipeline_name           => 'lrg_automated_pipeline',
@@ -47,12 +47,7 @@ sub default_options {
         xml_dir_sub             => 'xml',
         new_dir                 => $self->o('pipeline_dir').'/results',
 
-#        tmp_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/tmp',
-#        xml_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_native_xml',
-#        new_dir                 => $ENV{'HOME'} . '/projets/LRG/lrg_head/weekly_processed_xml',
-
-        #ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
-        ftp_dir                 => '/homes/lgil/projets/LRG/fake_lrgex', # TEST
+        ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
         date                    => LRG::LRG::date(),
         run_dir                 => $ENV{'CVSROOTDIR'},
         
@@ -119,7 +114,7 @@ sub pipeline_analyses {
                run_dir             => $self->o('run_dir'),
                date                => $self->o('date'),
                assembly            => $self->o('assembly'),
-               is_test             => 0, #$self->o('is_test'),
+               is_test             => $self->o('is_test'),
                skip_hc             => $self->o('skip_hc'),
                skip_public_lrgs_hc => $self->o('skip_public_lrgs_hc'),
             },
