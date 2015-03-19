@@ -39,14 +39,14 @@ sub run {
     @files = grep {$_ =~ m/^LRG_\d+\.xml$/} @files;
 
     if ($is_test != 1) {
-#    foreach my $file (@files) {
-#      # Copy to CVS xml
-#      $self->run_cmd("cp $sub_dir/$file $cvs_xml_dir/");
-#      push(@copied_files, $file);
-#    }
+      foreach my $file (@files) {
+        # Copy to CVS xml
+        $self->run_cmd("cp $sub_dir/$file $cvs_xml_dir/");
+        push(@copied_files, $file);
+      }
     
-#    my $files_list = join(' ', @files);
-#    `cvs ci -m "Automatic updates of $type_dir LRG - $date" $files_list`;
+      my $files_list = join(' ', @files);
+      `cvs ci -m "Automatic updates of $type_dir LRG - $date" $files_list`;
     }
   }
 
@@ -67,8 +67,14 @@ sub run {
 
     my $ftp_subdir = ($type_dir eq 'public') ? $ftp_dir : "$ftp_dir/$type_dir";
     foreach my $file (@files) {
-      # Copy to FTP site
+      $file =~ /^(LRG_\d+)\.xml$/i;
+      my $lrg_id = $1;
+      # Copy XML to FTP site
       $self->run_cmd("cp $sub_dir/$file $ftp_subdir/");
+      # Copy FASTA to FTP site
+      $self->run_cmd("cp $new_xml_dir/fasta/$lrg_id.fasta $ftp_dir/fasta/");
+      # Copy GFF to FTP site
+      $self->run_cmd("cp $new_xml_dir/gff/$lrg_id\_*.gff $ftp_dir/.ensembl_internal/");
     }
   }
   chdir($current_dir);
