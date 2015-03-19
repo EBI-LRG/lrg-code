@@ -15,6 +15,7 @@ LRGDBPORT=
 LRGDBADMUSER=
 LRGDBROUSER=
 LRGDBNAME=
+LRGDBNAMETEST=
 
 # The registry configuration file used for mappings and annotations
 REGISTRYFILE=
