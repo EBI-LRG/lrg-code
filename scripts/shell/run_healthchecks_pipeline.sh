@@ -20,7 +20,7 @@ warning='none'
 
 #### METHODS ##########################################################################
 
-function check_script_result () {
+function check_script_result {
   script_msg=$1
 	if [[ -s ${tmp_error_log} ]] ; then
 		echo_stderr  " ${script_msg}!"

@@ -19,6 +19,10 @@ if [ -z ${tmp_dir} ] ; then
   tmp_dir='.'
 fi
 
+if [[ -z ${annotation_test} ]] ; then
+  annotation_test=0
+fi
+
 skip_hc_options="fixed mapping polya main" # all: all of these options
 
 report_file=${tmp_dir}/pipeline_reports.txt
@@ -117,7 +121,7 @@ echo_stderr  $comment >&2
 if [[ ${skip_hc} ]] ; then
   skip_hc=`echo $skip_hc | tr -d [[:space:]]`
   
-  if [[ -n ${skip_hc} ]] ; then
+  if [[ -n ${skip_hc} && ${skip_hc} != 0 ]] ; then
     if [[ ${skip_hc} = 'all' ]] ; then
       skip_hc=$skip_hc_options
     fi
@@ -166,7 +170,7 @@ if [[ ! ${skip_hc} =~ 'polya' ]] ; then
   echo_stderr  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... " >&2
   rm -f ${error_log}
   rm -f ${warning_log}
-  bash ${perldir}/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${error_log}
+  bash ${perldir}/shell/compare_sequence_tail.sh ${xml_dir}/${lrg_id}.xml ${annotation_test} ${error_log}
   check_script_result
   check_script_warning
   echo_stderr  "> checking polyA done" 
@@ -203,7 +207,7 @@ fi
 
 
 # End the script if in test mode (only want to test the Ensembl annotations)
-if [[ ${annotation_test} == 1 ]] ; then
+if [[ ${annotation_test} == 2 ]] ; then
   end_of_script ${xml_dir}/${lrg_id}.xml.new
   echo_stderr "TEST done."
   exit 0
@@ -212,7 +216,7 @@ fi
 
 # STEP4: Store the XML data into the LRG database
 echo_stderr  "# Store ${lrg_id} into the database ... "
-bash ${perldir}/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${hgnc} ${error_log} ${warning}
+bash ${perldir}/shell/import_into_db.sh ${xml_dir}/${lrg_id}.xml.new ${hgnc} ${annotation_test} ${error_log} ${warning}
 check_script_result
 echo_stderr  "> Storage done"
 echo_stderr  ""
@@ -220,7 +224,7 @@ echo_stderr  ""
 
 # STEP5: Export the LRG data from the database to an XML file (new requester/lsdb/contact data)
 echo_stderr  "# Extract ${lrg_id} from the database ... "
-bash ${perldir}/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp
+bash ${perldir}/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${lrg_id}.xml.exp ${annotation_test}
 check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 
 

@@ -3,19 +3,26 @@
 . ~/.lrgpaths
 . ~/.lrgpass
 
-host=${LRGDBHOST}
-port=${LRGDBPORT}
-user=${LRGDBADMUSER}
-#dbname=${LRGDBNAME}
-dbname='lrg'
-pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 output=$1
 private=$2
+is_test=$3
+
+host=${LRGDBHOST}
+port=${LRGDBPORT}
+user=${LRGDBADMUSER}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
+pass=${LRGDBPASS}
+perldir=${CVSROOTDIR}/lrg-code/scripts/
+
+
+
 tmpdir=${CVSROOTDIR}
 
-if [[ -n "${private}" ]]; then
+if [[ -n "${private}" && ${private} != 0 ]]; then
 	private="-private"
 else
   private=""

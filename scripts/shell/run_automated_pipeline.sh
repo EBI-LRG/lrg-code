@@ -22,6 +22,10 @@ if [ -z ${tmp_dir} ] ; then
   tmp_dir='.'
 fi
 
+if [[ -z ${annotation_test} ]] ; then
+  annotation_test=0
+fi
+
 skip_hc_options="fixed mapping polya main" # all: all of these options
 
 log_file=${tmp_dir}/log/log_${lrg_id}.txt
@@ -171,7 +175,7 @@ rm -f ${warning_log}
 if [[ ${skip_hc} ]] ; then
   skip_hc=`echo $skip_hc | tr -d [[:space:]]`
   
-  if [[ -n ${skip_hc} ]] ; then
+  if [[ -n ${skip_hc} && ${skip_hc} != 0 ]] ; then
     if [[ ${skip_hc} = 'all' ]] ; then
       skip_hc=$skip_hc_options
     fi
@@ -228,7 +232,7 @@ fi
 if [[ ! ${skip_hc} =~ 'polya' ]] ; then
   echo_log  "# PolyA check: compare LRG genomic sequence with RefSeqGene (checks if there is a polyA) ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/compare_sequence_tail.sh ${xml_dir}/${xml_file} ${error_log} ${warning_log}
+  bash ${perldir}/shell/compare_sequence_tail.sh ${xml_dir}/${xml_file} ${annotation_test} ${error_log} ${warning_log}
   check_script_result
   check_script_warning 'polyA'
   echo_log  "> checking polyA done" 
@@ -265,7 +269,7 @@ fi
 
 
 # End the script if in test mode (only want to test the Ensembl annotations)
-if [[ ${annotation_test} == 1 ]] ; then
+if [[ ${annotation_test} == 2 ]] ; then
   end_of_script ${xml_dir}/${xml_file}.new
   echo_log "TEST done."
   exit 0
@@ -284,9 +288,9 @@ fi
 echo_log  "# Store ${lrg_id} into the database ... "
 if [[ ${status} == 'public' ]] ; then
   echo_log  "> Only store the updatable annotations for this LRG"
-  bash ${perldir}/shell/import_upd_into_db.sh ${xml_dir}/${xml_file}.new ${hgnc} ${error_log} ${warning}
+  bash ${perldir}/shell/import_upd_into_db.sh ${xml_dir}/${xml_file}.new ${hgnc} ${annotation_test} ${error_log} ${warning}
 else
-  bash ${perldir}/shell/import_all_into_db.sh ${xml_dir}/${xml_file}.new ${hgnc} ${error_log} ${warning}
+  bash ${perldir}/shell/import_all_into_db.sh ${xml_dir}/${xml_file}.new ${hgnc} ${annotation_test} ${error_log} ${warning}
 fi
 check_script_result
 echo_log  "> Storage done"
@@ -295,7 +299,7 @@ echo_log  ""
 
 ## STEP 5: Export the LRG data from the database to an XML file (new requester/lsdb/contact data)
 echo_log  "# Extract ${lrg_id} from the database ... "
-bash ${perldir}/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${xml_file}.exp
+bash ${perldir}/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${xml_file}.exp ${annotation_test}
 check_empty_file ${xml_dir}/${xml_file}.exp "Extracting done"
 
 

@@ -3,17 +3,23 @@
 . ~/.lrgpaths
 . ~/.lrgpass
 
+xmlfile=$1
+is_test=$2
+error_log=$3
+warning_log=$4
+silent=$5
+
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
-dbname=${LRGDBNAME}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
 pass=${LRGDBPASS}
 perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline/
 
-xmlfile=$1
-error_log=$2
-warning_log=$3
-silent=$4
+
 
 if [[ -n ${warning_log} && ${warning_log} != 0 ]] ; then
   warning_log="-warning_log ${warning_log}"

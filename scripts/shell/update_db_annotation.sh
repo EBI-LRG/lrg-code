@@ -2,16 +2,22 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-host=${LRGDBHOST}
-port=${LRGDBPORT}
-user=${LRGDBADMUSER}
-dbname=${LRGDBNAME}
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
-
 pass=$1
 xmlfile=$2
 annotation=$3
-quiet=$4
+is_test=$4
+quiet=$5
+
+host=${LRGDBHOST}
+port=${LRGDBPORT}
+user=${LRGDBADMUSER}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
+perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
+
+
 
 hgnc=`lrg_gene_name ${xmlfile}`
 

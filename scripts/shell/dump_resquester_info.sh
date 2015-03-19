@@ -2,13 +2,18 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
+output_file=$1
+is_test=$2
+
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
-dbname='lrg' #dbname=${LRGDBNAME}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
 perldir=${CVSROOTDIR}/lrg-code/scripts/
 
-output_file=$1
 
 echo "Dumping request data from the LRG database ..."
 perl ${perldir}/dump_request_info.pl -host ${host} -user ${user} -port ${port} -dbname ${dbname} -output_file ${output_file} -verbose

@@ -14,13 +14,6 @@ cvsftp=${CVSROOTDIR}/ftp/public/
 cvsxml=${CVSROOTDIR}/xml/
 lrgindex=${PUBFTP}/.lrg_index/
 
-# Database settings
-host=${LRGDBHOST}
-port=${LRGDBPORT}
-user=${LRGDBADMUSER}
-dbname=${LRGDBNAME}
-pass=${LRGDBPASS}
-
 tmpdir=''
 default_assembly='GRCh37'
 
@@ -54,6 +47,17 @@ else
   tmp=${cvsftp}
   tmpdir="-tmp_dir ${tmp}"
 fi
+
+
+# Database settings
+host=${LRGDBHOST}
+port=${LRGDBPORT}
+user=${LRGDBADMUSER}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
+pass=${LRGDBPASS}
 
 
 # Set the file names & their paths.

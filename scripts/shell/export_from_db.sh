@@ -1,13 +1,19 @@
 #! /bin/bash
 . ~/.lrgpaths
 
+lrgid=$1
+outfile=$2
+is_test=$3
+
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
-dbname=${LRGDBNAME}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
 perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
-lrgid=$1
-outfile=$2
+
 spec="-lrg_id ${lrgid}"
 
 if [ -z ${outfile} ]

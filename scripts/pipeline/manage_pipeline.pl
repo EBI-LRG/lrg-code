@@ -19,7 +19,7 @@ usage() if (!defined($data_file) || !defined($xml_dir) || !defined($new_dir) || 
 
 my $report_file = "$tmp_dir/pipeline_reports.txt";
 
-my $annotation_test = ($is_test) ? ' 1' : '';
+my $annotation_test = ($is_test) ? ' 2' : '';
 my $report_type = ($is_test) ? 'test' : '';
 
 `rm -f $report_file`;
@@ -38,7 +38,7 @@ while (<F>) {
   }  
   
   # Flag to skip the HealthChecks
-  $skip_hc = (defined($skip_hc)) ? $skip_hc : '';
+  $skip_hc = (defined($skip_hc)) ? $skip_hc : 0;
   
   # HealthChecks pipeline
   if ($is_hc) {

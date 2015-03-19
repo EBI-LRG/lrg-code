@@ -1,11 +1,16 @@
 #! /bin/bash
 . ~/.lrgpaths
 
+input=$1
+is_test=$2
+
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
-dbname=${LRGDBNAME}
-input=$1
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
 
 symbols=""
 # If the input is a file, parse it (expecting one HGNC symbol per line)

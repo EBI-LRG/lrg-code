@@ -3,15 +3,19 @@
 . ~/.lrgpaths
 . ~/.lrgpass
 
+inputfile=$1
+lrgid=$2
+is_test=$3
+
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
-dbname=${LRGDBNAME}
+dbname=${LRGDBNAMETEST}
+if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+  dbname=${LRGDBNAME}
+fi
 pass=${LRGDBPASS}
 perldir=${CVSROOTDIR}/lrg-code/scripts/
-
-inputfile=$1
-lrgid=$2
 
 
 echo "Importing ${lrgid} other exon naming into db..."
