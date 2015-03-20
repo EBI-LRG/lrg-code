@@ -49,7 +49,7 @@ sub run {
       `cvs ci -m "Automatic updates of $type_dir LRG - $date" $files_list`;
     }
   }
-
+  chdir($current_dir);
 
   ## FTP updates (keeps both processes separated for safety)
   foreach my $type_dir ('public','pending','stalled') {
@@ -77,7 +77,6 @@ sub run {
       $self->run_cmd("cp $new_xml_dir/gff/$lrg_id\_*.gff $ftp_dir/.ensembl_internal/");
     }
   }
-  chdir($current_dir);
 }
 
 sub run_cmd {
