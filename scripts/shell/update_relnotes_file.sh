@@ -268,8 +268,8 @@ declare -a directories=("" "pending" "stalled" "fasta" "stalled/fasta" ".ensembl
 
 for directory in "${directories[@]}"
 do
-  path=${pubpath}/${directory}
-  find . -iname 'LRG_*' -user $USER -exec chmod g+w {} \;
+  dirpath=${pubpath}/${directory}
+  find ${dirpath} -iname 'LRG_*' -user $USER -exec chmod g+w {} \;
 done
 
 
