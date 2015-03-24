@@ -295,20 +295,27 @@ my $hgnc_id = $fixed->findNode('hgnc_id')->content;
 # RefSeqGene ID
 my $refseq = $fixed->findNode('sequence_source')->content;
 
+# Check HGNC symbol
+if (defined($gene_id)) { 
+
+  $stmt = qq{ SELECT symbol FROM gene WHERE gene_id=$gene_id };
+  my ($db_symbol) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+ 
+  # Update the HGNC symbol
+  if (defined($hgnc_symbol)) {
+    $db_adaptor->dbc->do("UPDATE gene SET symbol='$hgnc_symbol' WHERE gene_id=$gene_id;")if ((!defined($db_symbol)) || (defined($db_symbol) && $db_symbol ne $hgnc_symbol));
+  }
+}
 
 # Fixed section annotations
 if (!$only_updatable_data) {
 
-  ## Check HGNC symbol and ID ##
+  ## Check HGNC & RefSeqGene IDs ##
   if (defined($gene_id)) { 
 
     $stmt = qq{ SELECT symbol,hgnc_id,status,refseq FROM gene WHERE gene_id=$gene_id };
-    my ($db_symbol,$db_hgnc_id,$db_status,$db_refseq) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
-  
-    # Update the HGNC symbol
-    if (defined($hgnc_symbol)) {
-      $db_adaptor->dbc->do("UPDATE gene SET symbol='$hgnc_symbol' WHERE gene_id=$gene_id;")if ((!defined($db_symbol)) || (defined($db_symbol) && $db_symbol ne $hgnc_symbol));
-    }
+    my ($db_hgnc_id,$db_status,$db_refseq) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+
     # Update the HGNC ID
     if (defined($hgnc_id)) {
       $db_adaptor->dbc->do("UPDATE gene SET hgnc_id=$hgnc_id WHERE gene_id=$gene_id;") if ((!defined($db_hgnc_id)) || (defined($db_hgnc_id) && $db_hgnc_id ne $hgnc_id));
