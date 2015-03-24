@@ -263,6 +263,16 @@ else
 fi
 
 
+# Add write access on the FTP site
+declare -a directories=("" "pending" "stalled" "fasta" "stalled/fasta" ".ensembl_internal")
+
+for directory in "${directories[@]}"
+do
+  path=${pubpath}/${directory}
+  find . -iname 'LRG_*' -user $USER -exec chmod g+w {} \;
+done
+
+
 # BED file
 echo "#==========#"
 echo "# BED FILE #"
