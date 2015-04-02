@@ -80,9 +80,13 @@ sub gene {
   # Loop over the genes and create objects and attach transcripts, exons and translations as we go along
   foreach my $gene (@{$genes}) {
   
+    # Accession / stable_id
+    my $accession  = $gene->stable_id();
+       $accession .= '.'.$gene->version if ($accession !~ /\.\d+$/);
+
     # Transfer the gene to the chromosomal slice instead so that all genomic coordinates routines actually behaves like expected
     $gene = $gene->transfer($slice->seq_region_Slice());
-    
+
     # Create a coordinates object
     my $coords = $self->coords($gene,$slice);
     
@@ -107,7 +111,7 @@ sub gene {
     # Transcripts
     my $transcript = $self->transcript($slice,$gene);
 
-    push(@objs,LRG::API::GeneUp->new('Ensembl',$gene->stable_id(),$coords,$xrefs,$meta,$symbol,$transcript));
+    push(@objs,LRG::API::GeneUp->new('Ensembl',$accession,$coords,$xrefs,$meta,$symbol,$transcript));
     
   }
 
@@ -127,7 +131,11 @@ sub transcript {
     
     # Skip if this feature falls entirely outside of the slice
     next if ($transcript->seq_region_start() > $slice->end() || $transcript->seq_region_end() < $slice->start());
-    
+
+    # Accession / stable_id
+    my $accession  = $transcript->stable_id();
+       $accession .= '.'.$transcript->version if ($accession !~ /\.\d+$/);
+
     # Coords
     my $coords = $self->coords($transcript,$slice);
     
@@ -152,7 +160,7 @@ sub transcript {
     # Translation
     my $translation = $self->translation($slice,$transcript);
     
-    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$transcript->stable_id(),$coords,$xrefs,$meta,$exon,$translation));
+    push(@objs,LRG::API::TranscriptUp->new('Ensembl',$accession,$coords,$xrefs,$meta,$exon,$translation));
   }
 
   return \@objs;
@@ -199,7 +207,11 @@ sub translation {
   
   # Skip if this feature falls entirely outside of the slice
   return if (!$translation || $translation->genomic_start() > $slice->end() || $translation->genomic_end() < $slice->start());
-    
+
+  # Accession / stable_id
+  my $accession  = $translation->stable_id();
+     $accession .= '.'.$translation->version if ($accession !~ /\.\d+$/);
+
   # Coords. Since the translation object is not an Ensembl Feature, get the coords for the transcript and update the start and end
   my $coords = $self->coords($transcript);
   $coords->start(List::Util::max($translation->genomic_start(),$slice->start()));
@@ -223,7 +235,7 @@ sub translation {
   # DB xrefs
   my $xrefs = $self->xref($translation);
     
-  my $obj = LRG::API::TranslationUp->new('Ensembl',$translation->stable_id(),$coords,$xrefs,$meta,$codon_start);
+  my $obj = LRG::API::TranslationUp->new('Ensembl',$accession,$coords,$xrefs,$meta,$codon_start);
   
   return $obj;
 }
