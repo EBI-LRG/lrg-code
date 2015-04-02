@@ -76,6 +76,7 @@ my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
 my $lrg = $lrg_adaptor->fetch();
 my $asets = $lrg->updatable_annotation->annotation_set();
 
+my $lrg_tr_coords = get_lrg_transcript_coords($lrg);
 
 # Loop over the annotation sets and get any pre-existing Ensembl annotations
 my $ensembl_aset;
@@ -158,9 +159,6 @@ map {$_->remap($mapping,$option{lrg_id})} @{$feature};
 
 my $ens_mapping;
 my @ens_feature = @{$feature};
-my $tr_adaptor = $registry->get_adaptor('human','core','transcript');
-my $ex_adaptor = $registry->get_adaptor('human','core','exon');
-
 
 my $lrg_aset;
 my $lrg_locus;
@@ -182,17 +180,20 @@ foreach my $f (@ens_feature) {
     # Check gene name
     my $gene_flag = 0;
     my $symbol = $g->symbol();  
-
+    my $ens_match_lrg = {};
     $gene_flag = 1 if ($symbol->name eq $lrg_locus && $symbol->source eq $option{locus_source});
 
     # Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
     if ($gene_flag) {
       my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
       $ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
+      $ens_match_lrg = compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords);
     }
     
     remove_grc_coordinates($g);
     foreach my $t (@{$g->transcript}) {
+      my $enst_name = $t->accession;
+      $t->fixed_id($ens_match_lrg->{$enst_name}) if ($ens_match_lrg->{$enst_name});
       remove_grc_coordinates($t);
       foreach my $e (@{$t->exon}) {
         remove_grc_coordinates($e);
@@ -250,5 +251,56 @@ sub remove_grc_coordinates {
     push (@coord,$c) if ($c->coordinate_system =~ /^$lrg_label/);
   }
   $obj->coordinates(\@coord);
+}
+
+sub get_lrg_transcript_coords {
+  my $lrg_obj = shift;
+
+  my $fixed = $lrg_obj->fixed_annotation;
+  my $lrg_id = $fixed->name;
+
+  my %tr_coord;
+  foreach my $tr (@{$fixed->transcript}) {
+    my $tr_name = $tr->name;
+    foreach my $e (@{$tr->exons}) {
+      foreach my $coord (@{$e->coordinates}) {
+        if ($coord->coordinate_system eq $lrg_id) {
+          $tr_coord{$tr_name}{$coord->start.'-'.$coord->end} = 1;
+        }
+      }
+    }
+  }
+  return \%tr_coord;
+}
+
+sub compare_ens_transcripts_with_lrg_transcripts {
+  my $mappings     = shift;
+  my $lrg_tr_coord = shift;
+
+  my %ens_list;
+  foreach my $mapping (@$mappings) {
+    my $trans_name = $mapping->other_coordinates->coordinate_system;
+    my %tr_coord_match;
+    my @mapping_spans = @{$mapping->mapping_span};
+    my $ms_count = @mapping_spans;
+    foreach my $mapping_span (@mapping_spans) {
+      my $coord = $mapping_span->lrg_coordinates->start.'-'.$mapping_span->lrg_coordinates->end;
+      foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
+        $tr_coord_match{$lrg_tr}{$trans_name}++ if ($lrg_tr_coord->{$lrg_tr}{$coord});
+      }
+    }
+
+    foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
+      if ($tr_coord_match{$lrg_tr}) {
+        my $lrg_tr_count = scalar(keys(%{$lrg_tr_coord->{$lrg_tr}}));
+        foreach my $t_name (keys(%{$tr_coord_match{$lrg_tr}})) {
+          if ($tr_coord_match{$lrg_tr}{$t_name} == $lrg_tr_count && $ms_count == $lrg_tr_count){
+            $ens_list{$t_name} = $lrg_tr;
+          }
+        }
+      }
+    }
+  }
+  return \%ens_list;
 }
 
