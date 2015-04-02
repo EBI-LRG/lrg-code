@@ -6,18 +6,14 @@
 
 output=$1
 private=$2
-is_test=$3
 
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
-if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
-  dbname=${LRGDBNAME}
-fi
+
 pass=${LRGDBPASS}
 perldir=${CVSROOTDIR}/lrg-code/scripts/
-
 
 
 tmpdir=${CVSROOTDIR}
