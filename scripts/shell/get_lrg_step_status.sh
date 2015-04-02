@@ -11,7 +11,7 @@ is_test=$3
 host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
-dbname=${LRGDBNAMETEST}
+dbname=${LRGDBNAME}
 if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
