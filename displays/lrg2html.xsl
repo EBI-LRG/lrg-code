@@ -2900,7 +2900,11 @@
     </xsl:if>
   </xsl:for-each>
   <xsl:if test="@fixed_id">
-      <strong>Comment: </strong>This transcript was used for 
+     <strong>Comment: </strong>
+     <xsl:choose>
+       <xsl:when test="@source='Ensembl'">This transcript is identical to </xsl:when>
+       <xsl:otherwise>This transcript was used for </xsl:otherwise>
+     </xsl:choose>
       <a>
     <xsl:attribute name="href">#transcript_<xsl:value-of select="@fixed_id"/></xsl:attribute>
         LRG transcript <xsl:value-of select="@fixed_id"/>
