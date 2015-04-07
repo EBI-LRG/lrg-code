@@ -4,15 +4,15 @@ var max_tr_id = 18;
 
 // function to add to element content
 function append(id,content,clear) {
-	var e = document.getElementById(id);
-	if (!e) {
-		return;
-	}
-	var curr = '';
-	if (!clear) {
-		curr = e.innerHTML;
-	}
-	e.innerHTML = curr + content;
+  var e = document.getElementById(id);
+  if (!e) {
+    return;
+  }
+  var curr = '';
+  if (!clear) {
+    curr = e.innerHTML;
+  }
+  e.innerHTML = curr + content;
 }
 
 // function to show/hide layers
@@ -21,20 +21,20 @@ function showhide(lyr) {
   var button = document.getElementById(lyr+'_button');
   
   if(lyrobj.className == "hidden") {
-	  fadeIn(lyrobj);
-	  lyrobj.className = "unhidden";
-	  rotate90('img_'+lyr);
-	  if (button) {
-	    button.className='show_hide selected';
-	  }
+    fadeIn(lyrobj);
+    lyrobj.className = "unhidden";
+    rotate90('img_'+lyr);
+    if (button) {
+      button.className='show_hide selected';
+    }
   }
   else {
     fadeOut(lyrobj);
-	  lyrobj.className = "hidden";
-	  rotate90('img_'+lyr, 1);
-	  if (button) {
-	    button.className='show_hide';
-	  }
+    lyrobj.className = "hidden";
+    rotate90('img_'+lyr, 1);
+    if (button) {
+      button.className='show_hide';
+    }
   }
 }
 
@@ -60,17 +60,17 @@ function showhide_anno(lyr) {
 function show_content(lyr,lyr_anchor) {
   var lyrobj = document.getElementById(lyr);
   if(lyrobj.className == "hidden") {
-	  fadeIn(lyrobj);
-	  lyrobj.className = "unhidden";
-	  rotate90('img_'+lyr);
+    fadeIn(lyrobj);
+    lyrobj.className = "unhidden";
+    rotate90('img_'+lyr);
   }
   if (lyr_anchor) {
     var anchor_obj = document.getElementById(lyr_anchor);
     anchor_obj.scrollIntoView(true);
   }
   else {
-	  lyrobj.scrollIntoView(true);
-	}
+    lyrobj.scrollIntoView(true);
+  }
 }
 
 function fadeIn(element) {
@@ -116,29 +116,29 @@ function rotate90(img,reset) {
           clearInterval(timer);
         }
         rotate_obj(imgobj,angle);
-	      angle -= 10;
-	    }, interval);
-	  }
-	  else {
+        angle -= 10;
+      }, interval);
+    }
+    else {
       var angle = angle_start;
       var timer = setInterval(function () {
         if (angle >= 90){
           clearInterval(timer);
         }
        rotate_obj(imgobj,angle);
-	      angle += 10;
-	    }, interval);
-	  }
-	}
+        angle += 10;
+      }, interval);
+    }
+  }
 }
 
 // Rotate an object
 function rotate_obj(obj,angle){
   obj.style.webkitTransform = "rotate("+angle+"deg)";
-	obj.style.MozTransform = "rotate("+angle+"deg)";
-	obj.style.msTransform = "rotate("+angle+"deg)";
-	obj.style.OTransform = "rotate("+angle+"deg)";
-	obj.style.transform = "rotate("+angle+"deg)";
+  obj.style.MozTransform = "rotate("+angle+"deg)";
+  obj.style.msTransform = "rotate("+angle+"deg)";
+  obj.style.OTransform = "rotate("+angle+"deg)";
+  obj.style.transform = "rotate("+angle+"deg)";
 }
 
 
@@ -206,7 +206,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   // we only want to get the genomic exon if this is transcript t1
   var genob, exon_select;
   if(tname == 't1') {
-	  genobj = document.getElementById('genomic_exon_'+num);
+    genobj = document.getElementById('genomic_exon_'+num);
   }
   
   var cdnaobj = document.getElementById('cdna_exon_'+num);
@@ -217,41 +217,41 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   }
 
   if(tableobj) {
-	  if(tableobj.className.length > 11) {
-	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	    if(tname == 't1' && !no_gene_tr_highlight) {
-		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
-	    }
+    if(tableobj.className.length > 11) {
+      tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      if(tname == 't1' && !no_gene_tr_highlight) {
+        genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+      }
      
       if (cdnaobj && !no_gene_tr_highlight) {
-	      cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+        cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
       }
       if (pepobj) { 
-	      pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+        pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
       }
-	  }
-	  else {
-	    tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-	    if(tname == 't1' && !no_gene_tr_highlight) {
-		    genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
-	    }
+    }
+    else {
+      tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      if(tname == 't1' && !no_gene_tr_highlight) {
+        genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
+      }
 
       if (cdnaobj && !no_gene_tr_highlight) {
         cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
       }
       if (pepobj) { 
-	      pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+        pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
       }
     }
   }
   
   if(othertableobj) {
-	  if(othertableobj.className.length > 11) {
-	    othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	  }
-	  else {
-	    othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-	  }
+    if(othertableobj.className.length > 11) {
+      othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+    }
+    else {
+      othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+    }
   }
 }
 
@@ -262,42 +262,42 @@ function clear_highlight(trans,pep) {
   // clear genomic
   i = 1;
   while(document.getElementById('genomic_exon_'+trans+'_'+i)) {
-	  obj = document.getElementById('genomic_exon_'+trans+'_'+i);
-	  obj.className = (obj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
-	  i++;
+    obj = document.getElementById('genomic_exon_'+trans+'_'+i);
+    obj.className = (obj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+    i++;
   }
   
   // clear cdna
   i = 1;
   while(document.getElementById('cdna_exon_'+trans+'_'+i)) {
-	  obj = document.getElementById('cdna_exon_'+trans+'_'+i);
+    obj = document.getElementById('cdna_exon_'+trans+'_'+i);
     exon_select = clear_exon_highlight(obj);
-	  obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
-	  i++;
+    obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+    i++;
   }
   
   if (pep) {
     // clear exons
     i = 1;
     while(document.getElementById('table_exon_'+trans+'_'+pep+'_'+i)) {
-	    obj = document.getElementById('table_exon_'+trans+'_'+pep+'_'+i);
-	    obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	    i++;
+      obj = document.getElementById('table_exon_'+trans+'_'+pep+'_'+i);
+      obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      i++;
     }
     i = 1;
     while(document.getElementById('table_exon_'+trans+'_other_naming_'+pep+'_'+i)) {
-	    obj = document.getElementById('table_exon_'+trans+'_other_naming_'+pep+'_'+i);
-	    obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-	    i++;
+      obj = document.getElementById('table_exon_'+trans+'_other_naming_'+pep+'_'+i);
+      obj.className = (obj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      i++;
     }
 
     // clear peptide
     i = 1;
     while(document.getElementById('peptide_exon_'+trans+'_'+pep+'_'+i)) {
-	    obj = document.getElementById('peptide_exon_'+trans+'_'+pep+'_'+i);
+      obj = document.getElementById('peptide_exon_'+trans+'_'+pep+'_'+i);
       exon_select = clear_exon_highlight(obj);
-	    obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
-	    i++;
+      obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+      i++;
     }
   }
   else {
@@ -313,7 +313,7 @@ function clear_highlight(trans,pep) {
     for (j = 0; j < peptide_exon_list.length; j++) {
       obj = peptide_exon_list[j];
       exon_select = clear_exon_highlight(obj);
-	    obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+      obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
     }
   }
 }
@@ -346,8 +346,13 @@ function create_external_link (lrg_status) {
   // Links to NCBI
   elements = document.getElementsByClassName('external_link');
   for (var i=0;i<elements.length;i++) {
-    var exp = /(N[A-Z]_[0-9]+\.?[0-9]?)/g;
+    var exp = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
     elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1"+external_icon+"</a>");
+  }
+  // Links to Ensembl
+  for (var i=0;i<elements.length;i++) {
+    var exp = /(ENST[0-9]+\.?[0-9]*)/g;
+    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1"+external_icon+"</a>");
   }
 }
 
