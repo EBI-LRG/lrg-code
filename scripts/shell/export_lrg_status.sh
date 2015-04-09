@@ -1,4 +1,5 @@
 #! /bin/bash
+. ~/.bashrc
 . ~/.lrgpaths
 
 host=${LRGDBHOST}
@@ -17,6 +18,5 @@ else
   tmpdir="-tmp_dir ${CVSROOTDIR}"
 fi
 
-export PERL5LIB
 perl ${perldir}/get_status_from_db.pl -host ${host} -port ${port} -user ${user} -pass "" -dbname ${dbname} -dir ${dir} ${tmpdir}
 
