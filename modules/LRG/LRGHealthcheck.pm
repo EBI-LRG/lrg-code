@@ -317,6 +317,7 @@ sub compare_main_mapping {
     }
 
     my %assemblies = map {$_ => 1} (keys(%$new_data),keys(%$arch_data));
+    my $compared_to = "compared to the file $existing_archive_file";
 
     foreach my $assembly (sort(keys(%assemblies))) {
 
@@ -349,18 +350,18 @@ sub compare_main_mapping {
     
         if ($is_diff == 1) {  
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates on $assembly//";
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping coordinates on $assembly $compared_to//";
         }
   
         if (scalar keys(%{$new_data->{$assembly}{$chr}{'diffs'}}) != scalar keys(%{$arch_data->{$assembly}{$chr}{'diffs'}})) {
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions on $assembly//";
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: has a different number of mapping exceptions on $assembly $compared_to//";
         }
 
         foreach my $diff (keys (%{$new_data->{$assembly}{$chr}{'diffs'}})) {
           if (!$arch_data->{$assembly}{$chr}{'diffs'}{$diff}) {
             $passed = 0;
-            $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates on $assembly ( Type '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'lrg_start'}."')//";
+            $self->{'check'}{$name}{'message'} .= "$lrg_id: has different mapping diff coordinates on $assembly $compared_to ( Type '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'type'}."' | LRG start '".$new_data->{$assembly}{$chr}{'diffs'}{$diff}{'lrg_start'}."')//";
           }
           else {
             foreach my $diff_attr (@diff_attr_list) {
