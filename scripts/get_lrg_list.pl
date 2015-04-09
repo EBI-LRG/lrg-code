@@ -8,7 +8,7 @@ use Getopt::Long;
 my ($assembly,$xml_dir,$tmp_dir);
 GetOptions(
   'assembly=s' => \$assembly,
-  'xml_dir=s'	 => \$xml_dir,
+  'xml_dir=s'  => \$xml_dir,
   'tmp_dir=s'  => \$tmp_dir,
 );
 
