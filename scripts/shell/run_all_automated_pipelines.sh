@@ -1,6 +1,7 @@
 #! /bin/bash
 . ~/.bashrc
 . ~/.lrgpaths
+. ~/.lrgpass
 
 
 # Init the pipeline
