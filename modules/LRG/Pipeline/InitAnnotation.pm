@@ -13,16 +13,17 @@ sub run {
 sub write_output {
   my $self = shift;
     
-  my $run_dir             = $self->param('run_dir');
-  my $ncbi_xml_dir        = $self->param('ncbi_xml_dir');
-  my $new_xml_dir         = $self->param('new_xml_dir');
-  my $reports_dir         = $self->param('reports_dir');
-  my $ftp_root_dir        = $self->param('ftp_dir');
-  my $assembly            = $self->param('assembly');
-  my $is_test             = $self->param('is_test');
-  my $skip_hc             = $self->param('skip_hc');
-  my $skip_public_lrgs_hc = $self->param('skip_public_lrgs_hc');
-  my $date                = $self->param('date');  
+  my $run_dir              = $self->param('run_dir');
+  my $ncbi_xml_dir         = $self->param('ncbi_xml_dir');
+  my $new_xml_dir          = $self->param('new_xml_dir');
+  my $reports_dir          = $self->param('reports_dir');
+  my $ftp_root_dir         = $self->param('ftp_dir');
+  my $assembly             = $self->param('assembly');
+  my $is_test              = $self->param('is_test');
+  my $skip_hc              = $self->param('skip_hc');
+  my $skip_public_lrgs_hc  = $self->param('skip_public_lrgs_hc');
+  my $skip_partial_lrgs_hc = $self->param('skip_partial_lrgs_hc');
+  my $date                 = $self->param('date');
     
   die("LRG directory (-run_dir) needs to be specified!") unless (defined($run_dir));
   die("NCBI XML directory (-ncbi_xml_dir) needs to be specified!") unless (defined($ncbi_xml_dir));
@@ -40,7 +41,8 @@ sub write_output {
   die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
   
 
-  my %skip_lrg_hc = map{ $_ => 1 } @$skip_public_lrgs_hc;
+  my %skip_lrg_hc       = map{ $_ => 1 } @$skip_public_lrgs_hc;
+  my %skip_lrg_extra_hc = map{ $_ => 1 } @$skip_partial_lrgs_hc;
 
   my $dh;
 
@@ -124,7 +126,8 @@ sub write_output {
       }
     }
 
-    my $lrg_skip_hc = ($skip_lrg_hc{$lrg_id}) ? 'main' : $skip_hc;
+    my $lrg_skip_hc       = ($skip_lrg_hc{$lrg_id}) ? 'main' : $skip_hc;
+    my $lrg_skip_extra_hc = ($skip_lrg_extra_hc{$lrg_id}) ? 'partial,partial_gene' : 0;
     $status ||= 'new'; 
     $hgnc   ||= '';
     
@@ -140,6 +143,7 @@ sub write_output {
         'reports_dir'     => $reports_dir,
         'run_dir'         => $run_dir,
         'skip_hc'         => $lrg_skip_hc,
+        'skip_extra_hc'   => $lrg_skip_extra_hc,
         'annotation_test' => $annotation_test
     };              
   }  

@@ -16,7 +16,8 @@ new_dir=$7
 tmp_dir=$8
 report_file=$9
 skip_hc=${10}
-annotation_test=${11}
+skip_extra_hc=${11}
+annotation_test=${12}
 
 if [ -z ${tmp_dir} ] ; then
   tmp_dir='.'
@@ -24,6 +25,10 @@ fi
 
 if [[ -z ${annotation_test} ]] ; then
   annotation_test=0
+fi
+
+if [[ -z ${skip_extra_hc} ]] ; then
+  skip_extra_hc=0
 fi
 
 skip_hc_options="fixed mapping polya main" # all: all of these options
@@ -244,7 +249,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-skip_check ${skip_extra_hc}" 2> ${error_log}
   check_script_result
   echo_log  "> checking #1 done" 
   echo_log  ""
@@ -261,7 +266,7 @@ check_empty_file ${xml_dir}/${xml_file}.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} ${status} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} ${status} "-skip_check ${skip_extra_hc}" 2> ${error_log}
   check_script_result
   echo_log  "> checking #2 done"
   echo_log  ""
@@ -307,7 +312,7 @@ check_empty_file ${xml_dir}/${xml_file}.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.exp ${assembly} ${status} 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.exp ${assembly} ${status} "-skip_check ${skip_extra_hc}" 2> ${error_log}
   check_script_result
   echo_log  "> checking #3 done"
   echo_log  ""

@@ -20,11 +20,12 @@ sub run {
   my $reports_dir     = $self->param('reports_dir');
   my $run_dir         = $self->param('run_dir');
   my $skip_hc         = $self->param('skip_hc');
+  my $skip_extra_hc   = $self->param('skip_extra_hc');
   my $annotation_test = $self->param('annotation_test');
  
   my $reports = $reports_dir."/reports/pipeline_reports_$id.txt";
   
-  `bash $run_dir/lrg-code/scripts/shell/run_automated_pipeline.sh $lrg_id $hgnc $assembly $status $ncbi_xml_dir $lrg_file $new_xml_dir $reports_dir $reports $skip_hc $annotation_test`;
+  `bash $run_dir/lrg-code/scripts/shell/run_automated_pipeline.sh $lrg_id $hgnc $assembly $status $ncbi_xml_dir $lrg_file $new_xml_dir $reports_dir $reports $skip_hc $skip_extra_hc $annotation_test`;
   
   return;
 }
