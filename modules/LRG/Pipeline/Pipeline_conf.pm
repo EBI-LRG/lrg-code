@@ -27,7 +27,7 @@ sub default_options {
         hive_db_password        => $ENV{'LRGDBPASS'},
         debug                   => 0,
         is_test                 => 0, # other values: 'is_hc' (only HealthChecks), or '1' (Test mode)
-        skip_hc                 => '',
+        skip_hc                 => 0,
 
         pipeline_name           => 'lrg_automated_pipeline',
         
