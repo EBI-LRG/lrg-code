@@ -20,7 +20,7 @@ sub default_options {
         hive_no_init            => 0,
         hive_use_param_stack    => 0,
         hive_use_triggers       => 0,
-        hive_root_dir           => $ENV{'HOME'} . '/ensembl_branch/git/ensembl-hive', # To update in order to match the location of your own hive copy
+        hive_root_dir           => $ENV{'HOME'} . '/ensembl_branch/git/ensembl-hive', # To update in order to match the location of your own hive copy!
         hive_db_host            => $ENV{'LRGDBHOST'},
         hive_db_port            => $ENV{'LRGDBPORT'},
         hive_db_user            => $ENV{'LRGDBADMUSER'},
@@ -33,11 +33,11 @@ sub default_options {
         
         reports_file_name       => 'pipeline_reports.txt',
         reports_sum_file_name   => 'pipeline_summary_reports.txt',
-        reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/test',
-        reports_html            => '/homes/lgil/public_html/LRG/test',
+        reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/test', # To update!
+        reports_html            => '/homes/lgil/public_html/LRG/test',    # To update!
 
         skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
-        skip_partial_lrgs_hc    => ['LRG_835','LRG_855'],
+        skip_partial_lrgs_hc    => ['LRG_603','LRG_835','LRG_855'],
 
         assembly                => 'GRCh38',
         date                    => LRG::LRG::date(),
