@@ -137,7 +137,7 @@ function end_of_script {
       echo -e "${lrg_id}\tstopped\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Stopped!"
     elif [[ ${status} != 'public' && ${fixed_section_diff} == 1 ]] ; then
-      echo -e ${lrg_id}\t"waiting\t${comment}\t${comment_warning}" >> ${report_file}
+      echo -e "${lrg_id}\twaiting\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Waiting to manually check and copy the XML file to the FTP site!"
     else
       echo -e "${lrg_id}\tsucceed\t${comment}\t${comment_warning}" >> ${report_file}
