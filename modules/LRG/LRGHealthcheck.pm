@@ -111,13 +111,10 @@ sub existing_entry {
     }
 
     my $existing_lrg = LRG::LRG::newFromFile($existing_file) or die("Could not create LRG object from XML file $existing_file");
-      
+
     ## Compare "sequence_source", "organism", "mol_type", # "creation_date"
     foreach my $tag ('hgnc_id','sequence_source','organism','mol_type') { #'creation_date'
-   
-      # Temporary check (during the transition between schema 1.7 and schema 1.8)
-      next if (!$existing_lrg->findNode("fixed_annotation/".$tag));
-      
+
       my $new_content = $self->{'lrg'}->findNode("fixed_annotation/".$tag)->content;
       my $existing_content = $existing_lrg->findNode("fixed_annotation/".$tag)->content;
       if ($new_content ne $existing_content) {
@@ -238,29 +235,29 @@ sub existing_entry {
     }
 
     # Compare coordinates
-    my $new_mappings_list = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
-    foreach my $mapping (@$new_mappings_list) {
-      my $assembly   = $mapping->data()->{'coord_system'};
-      my $other_attr = ($mapping->data()->{'other_name'}) ? 'other_id' : 'other_name';
-      my $chr = $mapping->data()->{$other_attr};
-
-      next if ($assembly !~ /^(GRCh\d+)/);
-      $assembly = $1;   
-      my $existing_mappings_list = $existing_lrg->findNodeArray('updatable_annotation/annotation_set/mapping');
-      my $has_same_assembly = 0;
-      foreach my $existing_mapping (@$existing_mappings_list) {
-        next if ($existing_mapping->data()->{'coord_system'} !~ /$assembly/ || $existing_mapping->data()->{$other_attr} ne $chr);
-        $has_same_assembly = 1;
-        if ($mapping->data()->{'other_start'} != $existing_mapping->data()->{'other_start'} || $mapping->data()->{'other_end'} != $existing_mapping->data()->{'other_end'}) {
-          $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "- The mappings to the assembly $assembly are different between $existing_file and the new XML file!//";
-        }
-      }
-      if ($has_same_assembly == 0) {
-        $passed = 0;
-        $self->{'check'}{$name}{'message'} .= "- The mapping to the assembly $assembly can't be found in the existing LRG in $existing_file!//";
-      }
-    }
+    #my $new_mappings_list = $self->{'lrg'}->findNodeArray('updatable_annotation/annotation_set/mapping');
+    #foreach my $mapping (@$new_mappings_list) {
+    #  my $assembly   = $mapping->data()->{'coord_system'};
+    #  my $other_attr = ($mapping->data()->{'other_name'}) ? 'other_id' : 'other_name';
+    #  my $chr = $mapping->data()->{$other_attr};
+    #
+    #  next if ($assembly !~ /^(GRCh\d+)/);
+    #  $assembly = $1;
+    #  my $existing_mappings_list = $existing_lrg->findNodeArray('updatable_annotation/annotation_set/mapping');
+    #  my $has_same_assembly = 0;
+    #  foreach my $existing_mapping (@$existing_mappings_list) {
+    #    next if ($existing_mapping->data()->{'coord_system'} !~ /$assembly/ || $existing_mapping->data()->{$other_attr} ne $chr);
+    #    $has_same_assembly = 1;
+    #    if ($mapping->data()->{'other_start'} != $existing_mapping->data()->{'other_start'} || $mapping->data()->{'other_end'} != $existing_mapping->data()->{'other_end'}) {
+    #      $passed = 0;
+    #      $self->{'check'}{$name}{'message'} .= "- The mappings to the assembly $assembly are different between $existing_file and the new XML file!//";
+    #    }
+    #  }
+    #  if ($has_same_assembly == 0) {
+    #    $passed = 0;
+    #    $self->{'check'}{$name}{'message'} .= "- The mapping to the assembly $assembly can't be found in the existing LRG in $existing_file!//";
+    #  }
+    #}
     
     if ( $self->{'check'}{$name}{'message'}) {
       $self->{'check'}{$name}{'message'} = $exist.$self->{'check'}{$name}{'message'};
