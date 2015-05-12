@@ -30,6 +30,8 @@ sub default_options {
         skip_hc                 => 0,
 
         pipeline_name           => 'lrg_automated_pipeline',
+
+        lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
         
         reports_file_name       => 'pipeline_reports.txt',
         reports_sum_file_name   => 'pipeline_summary_reports.txt',
@@ -40,6 +42,9 @@ sub default_options {
         skip_partial_lrgs_hc    => ['LRG_603','LRG_835','LRG_855'],
 
         assembly                => 'GRCh38',
+        index_assembly          => 'GRCh37',
+        index_suffix            => '_index.xml',     
+
         date                    => LRG::LRG::date(),
         pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
 
@@ -151,25 +156,51 @@ sub pipeline_analyses {
             -input_ids         => [],
             -wait_for          => [ 'annotate_xml_files' ],
             -flow_into         => {
-               1 => ['create_indexes']
+               1 => ['init_indexes']
             },
+        },
+        {   
+            -logic_name        => 'init_indexes', 
+            -module            => 'LRG::Pipeline::InitIndexes',
+            -rc_name           => 'small',
+            -parameters        => {
+               new_xml_dir       => $self->o('new_dir'),
+               ftp_dir           => $self->o('ftp_dir'),
+               run_dir           => $self->o('run_dir'),
+               index_assembly    => $self->o('index_assembly'),
+               lrg_in_ensembl    => $self->o('lrg_in_ensembl'),
+               index_suffix      => $self->o('index_suffix'),
+            },
+            -input_ids     => [],
+            -wait_for      => ['move_xml_files'],
+            -flow_into     => { 
+               '2->A' => ['create_indexes'],
+               'A->1' => ['finish_indexes']
+            },		
         },
         {   
             -logic_name        => 'create_indexes', 
             -module            => 'LRG::Pipeline::CreateIndexes',
             -rc_name           => 'small',
+            -input_ids         => [],
+            -wait_for          => [ 'init_indexes' ],
+            -flow_into         => {},
+        },
+        {   
+            -logic_name        => 'finish_indexes', 
+            -module            => 'LRG::Pipeline::FinishIndexes',
+            -rc_name           => 'small',
             -parameters        => {
-               run_dir     => $self->o('run_dir'),
-               new_xml_dir => $self->o('new_dir'),
-               ftp_dir     => $self->o('ftp_dir'),
-               date        => $self->o('date'),
+               new_xml_dir  => $self->o('new_dir'),
+               ftp_dir      => $self->o('ftp_dir'),
+               index_suffix => $self->o('index_suffix'),
             },
             -input_ids         => [],
-            -wait_for          => [ 'move_xml_files' ],
+            -wait_for          => [ 'create_indexes' ],
             -flow_into         => {
                1 => ['update_relnotes_file']
             },
-        },        
+        },
         {   
             -logic_name        => 'update_relnotes_file', 
             -module            => 'LRG::Pipeline::UpdateRelnotesFile',
@@ -182,7 +213,7 @@ sub pipeline_analyses {
                date        => $self->o('date'),
             },
             -input_ids         => [],
-            -wait_for          => [ 'create_indexes' ],
+            -wait_for          => [ 'finish_indexes' ],
             -flow_into         => {
                1 => ['generate_reports']
             },
