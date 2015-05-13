@@ -20,6 +20,10 @@ GetOptions(
 $date ||= LRG::LRG::date();
 $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
+my $ensg_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=';
+my $enst_url = 'http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=';
+
+
 die("Reports directory (-reports_dir) needs to be specified!")    unless (defined($reports_dir));
 die("Reports file (-reports_file) needs to be specified!")        unless (defined($reports_file));
 die("Reports summary file (-reports_sum) needs to be specified!") unless (defined($reports_sum));
@@ -392,6 +396,18 @@ sub get_detailled_log_info {
     my $content = `cat $log_file`;
        $content =~ s/\n$//;
        $content =~ s/\n/<br \/>/g;
+
+    # Convert Ensembl Gene stable IDs into URLs to Ensembl
+    my %ensg_list = map { $_ => 1 } ($content =~ m/(ENSG\d+\.\d+)/g);
+    foreach my $ensg (keys(%ensg_list)) {
+      $content =~ s/$ensg/<a href="$ensg_url$ensg" target="_blank">$ensg<\/a>/;
+    } 
+    # Convert Ensembl Transcript stable IDs into URLs to Ensembl  
+    my %enst_list = map { $_ => 1 } ($content =~ m/(ENST\d+\.\d+)/g);
+    foreach my $enst (keys(%enst_list)) {
+      $content =~ s/$enst/<a href="$enst_url$enst" target="_blank">$enst<\/a>/;
+    }   
+
     $html = qq{
     <div style="background-color:#DDD;margin-top:2px;padding:1px 2px;cursor:pointer" onclick="javascript:showhide('$id')">
       <div class="show_hide_box" style="margin-left:0px">
