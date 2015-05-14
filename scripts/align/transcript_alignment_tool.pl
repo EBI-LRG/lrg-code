@@ -326,6 +326,10 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
   my $tr_name   = $tr_object->external_name;
+  if ($tr_name) {
+    $tr_name  =~ s/-/-<b>/;
+    $tr_name .= '</b>';
+  }
   my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($tr_object);
   $html .= qq{</td><td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
