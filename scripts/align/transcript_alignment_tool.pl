@@ -141,7 +141,7 @@ foreach my $tr (@$ens_tr) {
 my $cdna_dna = $cdna_dna_a->fetch_all_by_Slice($gene_slice);
 
 foreach my $cdna_tr (@$cdna_dna) {
-  next if ($cdna_tr->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+  next if ($cdna_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
   my $cdna_name = '';
   my $cdna_exons = $cdna_tr->get_all_Exons;
@@ -172,7 +172,7 @@ foreach my $cdna_tr (@$cdna_dna) {
 my $refseq = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
 
 foreach my $refseq_tr (@$refseq) {
-  next if ($refseq_tr->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+  next if ($refseq_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
 
@@ -437,7 +437,8 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
   my $cdna_name   = ($cdna_object->external_name) ? $cdna_object->external_name : '-';
-  my $cdna_orientation = ($cdna_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
+  my $cdna_strand = $cdna_object->slice->strand;
+  my $cdna_orientation = ($cdna_strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($cdna_object);
   $html .= qq{</td><td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
   
@@ -456,7 +457,7 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
     }
   }
   
-  my $exon_number = ($cdna_object->strand == 1) ? 1 : $e_count;
+  my $exon_number = ($cdna_strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
@@ -487,7 +488,7 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
       $html .= qq{<div class="$has_exon$is_coding$identity" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number$identity_score</div>};
-      if ($cdna_object->strand == 1) { $exon_number++; }
+      if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
@@ -517,7 +518,8 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
   my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
-  my $refseq_orientation = ($refseq_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
+  my $refseq_strand = $refseq_object->slice->strand;
+  my $refseq_orientation = ($refseq_strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($refseq_object);
   $html .= qq{</td><td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
   
@@ -536,7 +538,7 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
     }
   }
   
-  my $exon_number = ($refseq_object->strand == 1) ? 1 : $e_count;
+  my $exon_number = ($refseq_strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
@@ -574,7 +576,7 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
       }
       
       $html .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
-      if ($refseq_object->strand == 1) { $exon_number++; }
+      if ($refseq_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
