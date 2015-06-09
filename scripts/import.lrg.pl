@@ -406,7 +406,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
         foreach my $cs_node (@cs_nodes) {
           $cs = $cs_node->assembly();
           if ($cs =~ /$db_assembly/){
-            if ($cs_node->name ne 'unlocalized') {
+            if ($cs_node->name ne 'unlocalized' && $cs_node->type eq 'main_assembly') {
               $mapping_node = $cs_node;
               last;
             }
