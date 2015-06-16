@@ -583,6 +583,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
           # Ensembl transcript has a RefSeq xref, RefSeq entry has an associated fixed_id corresponding to an LRG
           $fixed_id = $refseq_annotation->fixed_id() if defined($refseq_annotation->fixed_id());
 	  $transcript_core_accession = $ensembl_core_transcript->accession();
+          $transcript_core_accession =~ s/\.[0-9]*//;
 	  next unless(defined($fixed_id) && defined($transcript_core_accession));
           $lrg_stable_id = $lrg_name . $fixed_id;
           $ensembl_lrg_transcripts = $transcript_adaptor->fetch_all_by_external_name($lrg_stable_id);
