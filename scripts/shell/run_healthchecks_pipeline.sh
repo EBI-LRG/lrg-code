@@ -108,7 +108,7 @@ check_script_warning
 # HealthChecks
 echo_stderr  '4) HEALTHCHECKS: Run full HealthChecks ... ' '-n' 
 rm -f ${tmp_error_log}
-bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 2> ${tmp_error_log}
+bash lrg-code/scripts/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} 'unknown' 2> ${tmp_error_log}
 check_script_result 'The main healthchecks returned at least one error'
 
 
