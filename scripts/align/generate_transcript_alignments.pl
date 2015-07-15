@@ -48,7 +48,7 @@ foreach my $dir (keys(%files)) {
     my $gene;
     my $lrg_locus = `grep -m1 'lrg_locus' $dir/$file`;
   
-    if ($lrg_locus =~ /lrg_locus source="\w+">(\w+)</) {
+    if ($lrg_locus =~ /lrg_locus source="\w+">([A-Za-z0-9\-]+)</) {
       $gene = $1;
     }
     if ($gene) {
