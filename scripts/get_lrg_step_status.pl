@@ -78,10 +78,8 @@ $sth_cleanup->execute();
 $sth_cleanup->finish();
 
 # Remove space characters
-my $stmt_cleanup2 = qq{ UPDATE $lrg_status_table SET 
-                        lrg_id = TRIM(Replace(Replace(Replace(lrg_id,'\t',''),'\n',''),'\r','')),
-                        lrg_step_id = TRIM(Replace(Replace(Replace(lrg_step_id,'\t',''),'\n',''),'\r',''))
-                      };
+my $stmt_cleanup2 = qq{ UPDATE $lrg_status_table SET lrg_id = TRIM(Replace(Replace(Replace(lrg_id,'\t',''),'\n',''),'\r','')) };
+# lrg_step_id = TRIM(Replace(Replace(Replace(lrg_step_id,'\t',''),'\n',''),'\r','')) }; # Old trim
 my $sth_cleanup2 = $db_adaptor->dbc->prepare($stmt_cleanup2);
 $sth_cleanup2->execute();
 $sth_cleanup2->finish();
