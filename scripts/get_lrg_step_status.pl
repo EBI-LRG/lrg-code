@@ -22,11 +22,11 @@ my $dbname;
 my $is_private;
 
 GetOptions(
-  'host=s'	 => \$host,
-  'port=i'	 => \$port,
+  'host=s'   => \$host,
+  'port=i'   => \$port,
   'dbname=s' => \$dbname,
-  'user=s'	 => \$user,
-  'pass=s'	 => \$pass,
+  'user=s'   => \$user,
+  'pass=s'   => \$pass,
   'output=s' => \$outputfile,
   'tmpdir=s' => \$tmpdir,
   'private!' => \$is_private
@@ -912,6 +912,9 @@ if ($is_private) {
 if (-e $tmpfile) {
   `cp $tmpfile $outputfile`;
   `rm -f $tmpfile`;
+}
+else {
+  print "ERROR: $tmpfile doesn't exist\n";
 }
 
 sub format_date {
