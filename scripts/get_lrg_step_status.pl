@@ -13,7 +13,7 @@ use POSIX;
 
 
 my $outputfile;
-my $tmpdir;
+#my $tmpdir;
 my $host;
 my $port;
 my $user;
@@ -28,15 +28,16 @@ GetOptions(
   'user=s'   => \$user,
   'pass=s'   => \$pass,
   'output=s' => \$outputfile,
-  'tmpdir=s' => \$tmpdir,
+#  'tmpdir=s' => \$tmpdir,
   'private!' => \$is_private
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
 die("An output HTML file (-output) must be specified") unless (defined($outputfile));
-die("An temporary directory (-tmpdir) must be specified") unless (defined($tmpdir));
+#die("An temporary directory (-tmpdir) must be specified") unless (defined($tmpdir));
 
-my $tmpfile = "$tmpdir/tmp_lrg_step_status.html";
+#my $tmpfile = "$tmpdir/tmp_lrg_step_status.html";
+my $tmpfile = "tmp_lrg_step_status.html";
 
 # Get a database connection
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
@@ -891,6 +892,14 @@ print OUT $html;
 print OUT $html_footer;
 close(OUT);
 
+if (-e $tmpfile) {
+  `cp $tmpfile $outputfile`;
+  `rm -f $tmpfile`;
+}
+else {
+  print "ERROR: $tmpfile doesn't exist\n";
+}
+
 # Export files (private)
 if ($is_private) {
   my $outputdir = (fileparse($outputfile))[1];
@@ -909,13 +918,6 @@ if ($is_private) {
   }
 }
 
-if (-e $tmpfile) {
-  `cp $tmpfile $outputfile`;
-  `rm -f $tmpfile`;
-}
-else {
-  print "ERROR: $tmpfile doesn't exist\n";
-}
 
 sub format_date {
   my $date = shift;
