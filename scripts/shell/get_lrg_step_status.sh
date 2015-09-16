@@ -16,12 +16,10 @@ pass=${LRGDBPASS}
 perldir=${CVSROOTDIR}/lrg-code/scripts/
 
 
-tmpdir=${CVSROOTDIR}
-
 if [[ -n "${private}" && ${private} != 0 ]]; then
 	private="-private"
 else
   private=""
 fi
 
-perl ${perldir}/get_lrg_step_status.pl -host ${host} -user ${user} -pass ${pass} -port ${port} -dbname ${dbname} -output ${output} -tmpdir ${tmpdir} ${private}
+perl ${perldir}/get_lrg_step_status.pl -host ${host} -user ${user} -pass ${pass} -port ${port} -dbname ${dbname} -output ${output} ${private}
