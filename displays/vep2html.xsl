@@ -13,7 +13,6 @@
 <xsl:variable name="strand" select="/opt/data/@strand"/>
 <xsl:variable name="assembly" select="/opt/data/@assembly_name"/>
 <xsl:variable name="most_severe_consequence" select="/opt/data/@most_severe_consequence"/>
-<xsl:variable name="ftp_url">ftp://ftp.ebi.ac.uk/pub/databases/lrgex</xsl:variable>
 
 <!-- Ensembl variables -->
 <xsl:variable name="ensembl">http://www.ensembl.org</xsl:variable>
@@ -21,8 +20,10 @@
 <xsl:variable name="ens_trans"><xsl:value-of select="$ensembl"/>/Homo_sapiens/Transcript/Summary?t=</xsl:variable>
 <xsl:variable name="ens_var"><xsl:value-of select="$ensembl"/>/Homo_sapiens/Variation/Explore?v=</xsl:variable>
 <xsl:variable name="consequence_info"><xsl:value-of select="$ensembl"/>/info/genome/variation/predicted_data.html#</xsl:variable>
-<xsl:variable name="vep_img"><xsl:value-of select="$ftp_url"/>/img/vep_logo.png</xsl:variable>
-<xsl:variable name="info_img"><xsl:value-of select="$ftp_url"/>/img/info.png</xsl:variable>
+
+<xsl:variable name="lrg_url">http://ftp.ebi.ac.uk/pub/databases/lrgex</xsl:variable>
+<xsl:variable name="vep_img"><xsl:value-of select="$lrg_url"/>/img/vep_logo.png</xsl:variable>
+<xsl:variable name="info_img"><xsl:value-of select="$lrg_url"/>/img/info.png</xsl:variable>
 
 
 <!-- # MAIN TEMPLATE - Begin # -->
@@ -34,13 +35,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=9" />
     <!-- Load the stylesheet and javascript functions -->	 
     <link type="text/css" rel="stylesheet" media="all">
-      <xsl:attribute name="href"><xsl:value-of select="$ftp_url"/>/lrg2html.css</xsl:attribute>
+      <xsl:attribute name="href"><xsl:value-of select="$lrg_url"/>/lrg2html.css</xsl:attribute>
     </link>
-    <script type="text/javascript">
-      <xsl:attribute name="src"><xsl:value-of select="$ftp_url"/>/lrg2html.js</xsl:attribute>
+    <script type="text/javascript" />
+      <xsl:attribute name="src"><xsl:value-of select="$lrg_url"/>/lrg2html.js</xsl:attribute>
     </script>
-    <link rel="icon" type="image/ico">
-      <xsl:attribute name="href"><xsl:value-of select="$ftp_url"/>/img/favicon_public.ico</xsl:attribute>
+    <link rel="icon" type="image/ico" />
+      <xsl:attribute name="href"><xsl:value-of select="$lrg_url"/>/img/favicon_public.ico</xsl:attribute>
     </link>
     <style type="text/css">
       .request_title { margin-left:8px }
@@ -62,8 +63,10 @@
     <div class="menu_title" style="height:10px"></div>
     <div class="menu">
 
-      <!-- Most severe consequence -->
+      <!-- Left column -->
       <div style="float:left;max-width:500px">
+
+        <!-- Most severe consequence -->
         <div class="download_box gradient_color1" style="margin-top:0px">
           <span style="padding-left:2px;margin-right:5px;color:#FFF;font-weight:bold">Most severe consequence 
             <xsl:call-template name="consequences_link">
@@ -71,19 +74,19 @@
             </xsl:call-template>: </span> <span class="light_green"><xsl:value-of select="$most_severe_consequence"/></span>
         </div>
        
+        <!-- Alleles -->
         <div class="download_box gradient_color1">
-          <span id="allele_title" class="help" style="padding-left:2px;color:#FFF;font-weight:bold">
-            <xsl:attribute name="data-info">
-              <xsl:choose>
-                <xsl:when test="contains($hgvs,'LRG')">LRG/Ref</xsl:when>
-                <xsl:otherwise>Ref/LRG</xsl:otherwise>
-              </xsl:choose>
-            </xsl:attribute>
-            <xsl:attribute name="onmouseover">show_info('allele_title')</xsl:attribute>
-            <xsl:attribute name="onmouseout">hide_info('allele_title')</xsl:attribute>
-            Alleles</span><span style="color:#FFF;font-weight:bold;margin-right:5px">:</span> <span class="light_green"><xsl:value-of select="$allele_string"/></span>
+          <span id="allele_title" class="help" style="padding-left:2px;color:#FFF;font-weight:bold">Alleles</span>
+          <span style="color:#FFF;font-size:0.8em">(
+            <xsl:choose>
+              <xsl:when test="contains($hgvs,'LRG')">LRG/Ref</xsl:when>
+              <xsl:otherwise>Ref/LRG</xsl:otherwise>
+            </xsl:choose>
+          )</span>
+          <span style="color:#FFF;font-weight:bold;margin-right:5px">:</span> <span class="light_green"><xsl:value-of select="$allele_string"/></span>
         </div>
 
+        <!-- Assembly / Strand -->
         <div class="download_box gradient_color1">
           <span style="padding-left:2px;margin-right:5px;color:#FFF;font-weight:bold">Assembly: </span> <span class="light_green"><xsl:value-of select="$assembly"/></span>
           <span style="margin-right:8px;margin-left:8px;color:#FFF;font-weight:bold">|</span>
@@ -95,7 +98,7 @@
         </div>
       </div>
 
-      <!-- Co-located variants -->
+      <!-- Co-located variants (Right column) -->
       <div style="float:left;max-width:700px;margin-left:50px">
         <div class="summary gradient_color1">
           <div class="summary_header">Co-located variant(s)</div>
@@ -120,9 +123,7 @@
 
     <!-- Transcripts -->
     <div class="section" style="background-color:#F0F0F0;margin-top:40px">
-      <img alt="right_arrow">
-        <xsl:attribute name="src"><xsl:value-of select="$ftp_url"/>/img/lrg_right_arrow_green_large.png</xsl:attribute>
-      </img>
+      <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"/>
       <h2 class="section">Transcript consequences</h2>
     </div>
     <div style="margin-bottom:20px">
