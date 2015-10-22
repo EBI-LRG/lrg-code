@@ -103,8 +103,8 @@ EOF;
             name            : 'RefSeq Transcript',
             url             : 'http://rest.ensembl.org/overlap/region/human/__CHR__:__START__-__END__?feature=transcript;db_type=otherfeatures;logic_name=refseq_import;content-type=application/json',
             resizable       : 'auto',
-            model           : Genoverse.Track.Model.extend({ dataRequestLimit : 5000000 }),
-            view            : Genoverse.Track.View.Gene.Ensembl,
+            model           : Genoverse.Track.Model.Transcript.Ensembl,
+            view            : Genoverse.Track.View.Transcript.Ensembl,
             setFeatureColor : function (f) { f.color = '#00A'; }
           }),
           Genoverse.Track.extend({
