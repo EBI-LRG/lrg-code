@@ -230,7 +230,9 @@ my %tsl_colour = ( '1'   => '#090',
                  );
 
 my $coord_span = scalar(keys(%exons_list));
-my $gene_coord = "chr$chr:".$ens_gene->start.'-'.$ens_gene->end;
+my $gene_start = $ens_gene->start;
+my $gene_end   = $ens_gene->end;
+my $gene_coord = "chr$chr:".$gene_start.'-'.$gene_end;
 $gene_coord .= ($gene_strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 
 $html .= qq{
@@ -244,7 +246,13 @@ $html .= qq{
   <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">($gene_coord on <span class="blue">$assembly</span>)</span></h1>
   <h2>> Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
   <div id="exon_popup" class="hidden exon_popup"></div>
+
+   <!-- Compact/expand button -->
   <a class="green_button" href="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</a>
+
+   <!--Genoverse -->
+  <a class="green_button" target="_blank" href="genoverse.php?gene=$gene_name&chr=$chr&start=$gene_start&end=$gene_end">> Show in Genoverse</a>
+
   <div style="border:1px solid #000;width:100%;margin:15px 0px 20px">
     <table id="align_table">
 };
