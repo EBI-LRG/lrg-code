@@ -12,7 +12,6 @@ sub run {
   my $assembly   = $self->param('assembly');
   my $tmp_dir    = $self->param('new_dir');
   my $is_test    = ($self->param('is_test') == 1) ? ' 1' : '';
-  my $date       = $self->param('date');
  
   `bash $run_dir/lrg-code/scripts/shell/update_relnotes_file.sh $assembly $tmp_dir/tmp$is_test`;
 }

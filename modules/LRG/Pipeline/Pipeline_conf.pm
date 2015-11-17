@@ -210,7 +210,6 @@ sub pipeline_analyses {
                assembly    => $self->o('assembly'),
                new_xml_dir => $self->o('new_dir'),
                is_test     => $self->o('is_test'),
-               date        => $self->o('date'),
             },
             -input_ids         => [],
             -wait_for          => [ 'finish_indexes' ],
