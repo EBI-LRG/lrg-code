@@ -19,24 +19,28 @@ default_assembly='GRCh37'
 
 assembly=$1
 tmp=$2
-is_test=$3
+status=$3
 
 # Test the assembly
 is_assembly=`echo ${assembly} | grep -P '^GRCh'`
 if [[ -z ${is_assembly} ]]; then
   assembly=${default_assembly}
   tmp=$2
-  is_test=$3
+  status=$3
 fi
 
-
-if [[ -n "${is_test}" ]]; then
-  is_test=1
+# Status of the script
+# Value "1" or "test" => test mode
+# Value "2" => script run within the automated pipeline
+if [[ -n "${status}" ]]; then
+  if [[ ${status} != 2 ]]; then
+    status=1
+  fi
 fi
 
 if [[ -n "${tmp}" ]]; then
   if [[ ${tmp} == 'test' ]] ; then
-    is_test=1
+    status=1
   elif [[ -d ${tmp} ]] ; then
     tmpdir="-tmp_dir ${tmp}"
   else 
@@ -54,7 +58,7 @@ host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAMETEST}
-if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
+if [[ -z ${status} || ${status} != 1 ]] ; then
   dbname=${LRGDBNAME}
 fi
 pass=${LRGDBPASS}
@@ -97,7 +101,7 @@ fi
 
 
 #### IF on TEST MODE ####
-if [[ ${is_test} == 1 ]]; then
+if [[ ${status} == 1 ]]; then
   echo ""
   echo ">>>>> TEST MODE <<<<<"
   echo ""
@@ -125,76 +129,91 @@ fi
 
 #### Security verification if there are new public LRG(s) before creating the LRG relnotes file.
 
+# Update the LRG status and update the creation date
+function update_lrg_status {
+
+  while read line           
+    do
+      read -a lrg_info <<< $line
+      lrg_id=${lrg_info[0]}
+      lrg_status=${lrg_info[1]}
+          
+      # Update the LRG status in the LRG database
+      mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
+      
+      pending_fasta="${pubpath}/fasta/${lrg_id}.fasta"
+      stalled_fasta="${pubpath}/stalled/fasta/${lrg_id}.fasta"
+      
+      # If the LRG has been moved to the "Stalled" status
+      if [[ ${lrg_status} == 'stalled' ]]; then
+        # Remove entry from lrg_index
+        rm -f "${lrgindex}${lrg_id}_index.xml"
+             
+        # Move the fasta file
+        if [[ -e ${pending_fasta} ]]; then
+          mv ${pending_fasta} ${stalled_fasta}
+        fi
+            
+      # If the LRG has been moved to the "Pending" status  
+      elif [[ ${lrg_status} == 'pending' ]] ; then
+        # Move the fasta file from the "Stalled" directory to the main fasta directory
+        if [[ ! -e ${pending_fasta} && -e ${stalled_fasta} ]]; then
+          mv ${stalled_fasta} ${pending_fasta}
+        # Remove the fasta file from the "Stalled" directory  
+        elif [[ -e ${stalled_fasta} ]]; then
+          rm -f ${stalled_fasta}
+        fi
+             
+      # If the LRG has been moved to the "Public" status
+      elif [[ ${lrg_status} == 'public' ]] ; then
+        # Update the creation date
+        lrg_updated=`perl ${perldir}/update_public_creation_date.pl -xml_dir ${pubpath} ${tmpdir} -host ${host} -dbname ${dbname} -port ${port} -user ${user} -pass ${pass} -lrgs_list ${lrg_id}`
+        lrg_xml="${lrg_id}.xml"
+        # Update CVS for the updated file
+        if [[ ${lrg_updated} =~ ${lrg_id} && -e "${tmp}/${lrg_xml}" ]] ; then
+          cd ${cvsxml}
+          cvs update ${lrg_xml}
+          cp "${tmp}/${lrg_xml}" ${cvsxml}
+          cvs ci -m "Creation date updated" ${lrg_xml}
+        fi
+      fi
+    done < ${tmp_lrg_list}
+}
+
 # List of the LRGs made public
 if [[ -s ${tmp_lrg_list} ]]; then
   echo "The LRGs listed below had their status changed (i.e. they moved to different location in the FTP directory):"
   cat ${tmp_lrg_list}
   
-  while true
-  do
-    echo -n "Are you sure you want to validate these status changes in the relnotes.txt file and the LRG database ? (yes or no) : "
-    read CONFIRM
-    case $CONFIRM in
-      YES|yes|Yes) 
-        echo -e "Proceed to generate and commit the relnotes file.\nThe script will generate the LRG XML zip, LRG FASTA zip and LRG BED files as well."
-        
-        # Write the LRG status changes in the database
-        while read line           
-        do
-          read -a lrg_info <<< $line
-          lrg_id=${lrg_info[0]}
-          lrg_status=${lrg_info[1]}
+  # Automated pipeline
+  if [[ ${status} == 2 ]]; then
+
+    # Write the LRG status changes in the database
+    update_lrg_status
+
+  # Manual pipeline
+  else
+    while true
+    do
+      echo -n "Are you sure you want to validate these status changes in the relnotes.txt file and the LRG database ? (yes or no) : "
+      read CONFIRM
+      case $CONFIRM in
+        YES|yes|Yes) 
+          echo -e "Proceed to generate and commit the relnotes file.\nThe script will generate the LRG XML zip, LRG FASTA zip and LRG BED files as well."
           
-          # Update the LRG status in the LRG database
-          mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
+          # Write the LRG status changes in the database
+          update_lrg_status
           
-          pending_fasta="${pubpath}/fasta/${lrg_id}.fasta"
-          stalled_fasta="${pubpath}/stalled/fasta/${lrg_id}.fasta"
-          
-          # If the LRG has been moved to the "Stalled" status
-          if [[ ${lrg_status} == 'stalled' ]]; then
-            # Remove entry from lrg_index
-            rm -f "${lrgindex}${lrg_id}_index.xml"
-            
-            # Move the fasta file
-            if [[ -e ${pending_fasta} ]]; then
-              mv ${pending_fasta} ${stalled_fasta}
-            fi
-          
-          # If the LRG has been moved to the "Pending" status  
-          elif [[ ${lrg_status} == 'pending' ]] ; then
-            # Move the fasta file from the "Stalled" directory to the main fasta directory
-            if [[ ! -e ${pending_fasta} && -e ${stalled_fasta} ]]; then
-              mv ${stalled_fasta} ${pending_fasta}
-            # Remove the fasta file from the "Stalled" directory  
-            elif [[ -e ${stalled_fasta} ]]; then
-              rm -f ${stalled_fasta}
-            fi
-           
-           # If the LRG has been moved to the "Public" status
-          elif [[ ${lrg_status} == 'public' ]] ; then
-            # Update the creation date
-            lrg_updated=`perl ${perldir}/update_public_creation_date.pl -xml_dir ${pubpath} ${tmpdir} -host ${host} -dbname ${dbname} -port ${port} -user ${user} -pass ${pass} -lrgs_list ${lrg_id}`
-            lrg_xml="${lrg_id}.xml"
-            # Update CVS for the updated file
-            if [[ ${lrg_updated} =~ ${lrg_id} && -e "${tmp}/${lrg_xml}" ]] ; then
-              cd ${cvsxml}
-              cvs update ${lrg_xml}
-              cp "${tmp}/${lrg_xml}" ${cvsxml}
-              cvs ci -m "Creation date updated" ${lrg_xml}
-            fi
-          fi
-        done < ${tmp_lrg_list} 
-        
-        break
-      ;;  
-      no|NO|No)
-        echo "Aborting the creation of the relnotes.txt, LRG XML zip, LRG FASTA zip and LRG BED files: You entered $CONFIRM"
-        exit
-      ;;
-      *) echo "Please enter only 'yes' or 'no'"
-    esac
-  done
+          break
+        ;;  
+        no|NO|No)
+          echo "Aborting the creation of the relnotes.txt, LRG XML zip, LRG FASTA zip and LRG BED files: You entered $CONFIRM"
+          exit
+        ;;
+        *) echo "Please enter only 'yes' or 'no'"
+      esac
+    done
+  fi
 else
   echo "No LRG status changes found. The script continues the pipeline."
 fi
