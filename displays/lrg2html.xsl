@@ -1669,14 +1669,23 @@
   </xsl:if>
 
     <p class="external_link" style="padding-left:5px">
-      <span class="line_header">Modification date:</span>
-      <xsl:call-template name="format_date">
-        <xsl:with-param name="date2format"><xsl:value-of select="modification_date"/></xsl:with-param>
-      </xsl:call-template>
-    
+      <xsl:if test="modification_date">
+        <span class="line_header">Modification date:</span>
+        <xsl:call-template name="format_date">
+          <xsl:with-param name="date2format"><xsl:value-of select="modification_date"/></xsl:with-param>
+        </xsl:call-template>
+      </xsl:if>
       <xsl:if test="comment">
         <br/>
         <span class="line_header">Comment:</span><xsl:value-of select="comment" />
+      </xsl:if>
+      <xsl:if test="note">
+        <br/>
+        <span class="line_header">Note:</span>
+        <span>
+          <xsl:value-of select="note"/>
+          <xsl:if test="note/@author"> (<xsl:value-of select="note/@author"/>)</xsl:if>
+        </span>
       </xsl:if>
     </p>
    
