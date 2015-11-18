@@ -672,7 +672,7 @@ foreach my $tr (@{$fixed->findNodeArraySingle('transcript')}) {
 
   $community_aset->addExisting($fixed_transcript_annotation);
 }
-get_note($community_aset, $community_type);
+$community_flag = get_note($community_aset, $community_type);
 $updatable->addExisting($community_aset) if ($community_flag == 1);
 
 
@@ -918,6 +918,8 @@ sub get_note {
   my $aset = shift;
   my $type = shift;
 
+  my $has_note = 0;
+
   my $asn_stmt = qq{
     SELECT
         author,
@@ -943,8 +945,12 @@ sub get_note {
     else {
       $aset->addNode('note')->content($note_content);
     }
+    $has_note = 1;
   }
   $asn_sth->finish;
+  
+  return $has_note if ($type eq $community_type);
+  
 }
 
 sub coords_node {
