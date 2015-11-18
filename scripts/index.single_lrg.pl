@@ -26,6 +26,8 @@ $taxo_id ||= 9606;
 $default_assembly ||= 'GRCh37';
 $index_suffix ||= '_index.xml';
 
+my %data;
+
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
 
 # Load the LRG XML file
@@ -46,18 +48,17 @@ $database->addNode('entry_count')->content('1');
 my $entries = $database->addNode('entries');
 my $entry = $entries->addNode('entry',{'id' => $lrg_id});
 
-# Get information by source
-my ($desc, $assembly, $chr_name, $chr_start, $chr_end, $chr_strand, $last_modified, $hgnc, $locus);
 
+# Get information by source
 my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set')  ;
 
 # HGNC symbol (lrg_locus)
 foreach my $set (@$asets) {
   next if ($set->data()->{'type'} ne 'lrg');
-  $locus = $set->findNode('lrg_locus');
-  if ($locus) {
-    $hgnc = $locus->content;
-    $entry->addNode('name')->content($hgnc);
+  $data{'locus'} = $set->findNode('lrg_locus');
+  if ($data{'locus'}) {
+    $data{'hgnc'} = $data{'locus'}->content;
+    $entry->addNode('name')->content($data{'hgnc'});
   }
 }
 
@@ -74,8 +75,8 @@ foreach my $set (@$asets) {
     my $genes = $set->findNodeArraySingle('features/gene');
     foreach my $gene (@{$genes}) {
       my $symbol = $gene->findNodeSingle('symbol');
-      if ($symbol->data->{name} eq $hgnc && $hgnc) {
-        $desc = ($gene->findNodeArraySingle('long_name'))->[0]->content;
+      if ($symbol->data->{name} eq $data{'hgnc'} && $data{'hgnc'}) {
+        $data{'desc'} = ($gene->findNodeArraySingle('long_name'))->[0]->content;
         last;
       }
     }
@@ -84,23 +85,36 @@ foreach my $set (@$asets) {
   # LRG data
   elsif ($s_name =~ /LRG/) {
     # Last modification date (dates)
-    $last_modified = $set->findNodeSingle('modification_date')->content;
+    $data{'last_modified'} = $set->findNodeSingle('modification_date')->content;
     # Coordinates (addditional_fields)
     my $coords  = $set->findNodeArraySingle('mapping');
     foreach my $coord (@{$coords}) {
-      next if ($coord->data->{coord_system} !~ /^$default_assembly/i || $coord->data->{other_name} !~ /^([0-9]+|[XY])$/i);
-      $assembly  = $coord->data->{coord_system};
-      $chr_name  = $coord->data->{other_name}; 
-      $chr_start = $coord->data->{other_start};
-      $chr_end   = $coord->data->{other_end};
-      my $mapping_span = $coord->findNode('mapping_span');
-      $chr_strand = $mapping_span->data->{strand};
+      next if ($coord->data->{other_name} !~ /^([0-9]+|[XY])$/i);
+      if ($coord->data->{coord_system} =~ /^$default_assembly/i) {
+        $data{'assembly'}  = $coord->data->{coord_system};
+        $data{'chr_name'}  = $coord->data->{other_name};
+        $data{'chr_start'} = $coord->data->{other_start};
+        $data{'chr_end'}   = $coord->data->{other_end};
+        my $mapping_span = $coord->findNode('mapping_span');
+        $data{'chr_strand'} = $mapping_span->data->{strand};
+      }
+      # Assemblies coords
+      my $assembly = $coord->data->{coord_system};
+      if ($assembly =~ /^(GRCh\d+)/i) {
+        my $a_version = lc($1);
+        $data{'assemblies'}{$a_version}{'assembly'}  = $coord->data->{coord_system};
+        $data{'assemblies'}{$a_version}{'chr_name'}  = $coord->data->{other_name};
+        $data{'assemblies'}{$a_version}{'chr_start'} = $coord->data->{other_start};
+        $data{'assemblies'}{$a_version}{'chr_end'}   = $coord->data->{other_end};
+        my $mapping_span = $coord->findNode('mapping_span');
+        $data{'assemblies'}{$a_version}{'chr_strand'} = $mapping_span->data->{strand};
+      }
     }
   }
 }
   
-$entry->addNode('description')->content($desc);
-print "Gene symbol not found for $lrg_id!\n" if (!defined($desc));
+$entry->addNode('description')->content($data{'desc'});
+print "Gene symbol not found for $lrg_id!\n" if (!defined($data{'desc'}));
 
 
 ## Additional fields ##
@@ -108,11 +122,23 @@ print "Gene symbol not found for $lrg_id!\n" if (!defined($desc));
 my $add_fields = $entry->addNode('additional_fields');
 
 # Coordinates
-$add_fields->addNode('field',{'name' => 'assembly'})->content($assembly);
-$add_fields->addNode('field',{'name' => 'chr_name'})->content($chr_name);
-$add_fields->addNode('field',{'name' => 'chr_start'})->content($chr_start);
-$add_fields->addNode('field',{'name' => 'chr_end'})->content($chr_end);
-$add_fields->addNode('field',{'name' => 'chr_strand'})->content($chr_strand);
+
+# Default assembly
+$add_fields->addNode('field',{'name' => 'assembly'})->content($data{'assembly'});
+$add_fields->addNode('field',{'name' => 'chr_name'})->content($data{'chr_name'});
+$add_fields->addNode('field',{'name' => 'chr_start'})->content($data{'chr_start'});
+$add_fields->addNode('field',{'name' => 'chr_end'})->content($data{'chr_end'});
+$add_fields->addNode('field',{'name' => 'chr_strand'})->content($data{'chr_strand'});
+
+# All assemblies
+foreach my $version (keys(%{$data{'assemblies'}})) {
+  $add_fields->addNode('field',{'name' => "assembly_$version"})->content($data{'assemblies'}{$version}{'assembly'});
+  $add_fields->addNode('field',{'name' => "chr_name_$version"})->content($data{'assemblies'}{$version}{'chr_name'});
+  $add_fields->addNode('field',{'name' => "chr_start_$version"})->content($data{'assemblies'}{$version}{'chr_start'});
+  $add_fields->addNode('field',{'name' => "chr_end_$version"})->content($data{'assemblies'}{$version}{'chr_end'});
+  $add_fields->addNode('field',{'name' => "chr_strand_$version"})->content($data{'assemblies'}{$version}{'chr_strand'});
+}
+
 
 ## In ensembl
 $add_fields->addNode('field',{'name' => 'in_ensembl'})->content($in_ensembl);
@@ -124,20 +150,20 @@ $add_fields->addNode('field',{'name' => 'status'})->content($status) if (defined
 # Synonym
 # > Locus
 my %synonyms;
-if ($locus) {
-  my $l_content = $locus->content;
-  $synonyms{$l_content} = 1 if ($l_content ne $hgnc);
+if ($data{'locus'}) {
+  my $l_content = $data{'locus'}->content;
+  $synonyms{$l_content} = 1 if ($l_content ne $data{'hgnc'});
 }
 # > Symbol
 my $symbols = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/symbol');
 foreach my $symbol (@{$symbols}) {
   my $s_content = $symbol->data->{name};
-  $synonyms{$s_content} = 1 if ($s_content ne $hgnc);
+  $synonyms{$s_content} = 1 if ($s_content ne $data{'hgnc'});
   # > Symbol synonym(s)
   my $symbol_syn = $symbol->findNodeArraySingle('synonym');
   foreach my $synonym (@{$symbol_syn}) {
     my $syn_content = $synonym->content;
-    $synonyms{$syn_content} = 1 if ($syn_content ne $hgnc);
+    $synonyms{$syn_content} = 1 if ($syn_content ne $data{'hgnc'});
   }
 }
 
@@ -189,8 +215,8 @@ foreach my $set (@$asets) {
     my $source_name_node = $set->findNode('source/name');
     next if (!$source_name_node->content);
     if ($source_name_node->content =~ /LRG/) {
-      my $last_modified = $set->findNodeSingle('modification_date')->content;
-      $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $last_modified});
+      $data{'last_modified'} = $set->findNodeSingle('modification_date')->content;
+      $dates->addEmptyNode('date',{'type' => 'last_modification', 'value' =>  $data{'last_modified'}});
       last;
     }
   }
