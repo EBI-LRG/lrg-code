@@ -612,7 +612,6 @@ my $community_aset = LRG::Node::new('annotation_set');
    $community_aset->addNode('modification_date')->content(LRG::LRG::date());
 my $community_flag = 0;
 
-my $fixed_transcript_annotation= LRG::Node::new('fixed_transcript_annotation');
 foreach my $tr (@{$fixed->findNodeArraySingle('transcript')}) {
   my $tr_name = $tr->data()->{'name'};
   
@@ -670,9 +669,9 @@ foreach my $tr (@{$fixed->findNodeArraySingle('transcript')}) {
     $fixed_transcript_annotation->addExisting($other_aa_numbering);
   }
 
-  $community_aset->addExisting($fixed_transcript_annotation);
+  $community_aset->addExisting($fixed_transcript_annotation) if ($community_flag == 1);
 }
-$community_flag = get_note($community_aset, $community_type);
+$community_flag = get_note($community_aset, $community_type, $community_flag);
 $updatable->addExisting($community_aset) if ($community_flag == 1);
 
 
@@ -915,10 +914,10 @@ sub get_sequence {
 }
 
 sub get_note {
-  my $aset = shift;
-  my $type = shift;
-
-  my $has_note = 0;
+  my $aset    = shift;
+  my $type    = shift;
+  my $as_flag = shift;
+     $as_flag ||= 0;
 
   my $asn_stmt = qq{
     SELECT
@@ -927,7 +926,7 @@ sub get_note {
     FROM
         lrg_note
     WHERE
-        gene_id = '$gene_id' AND
+        gene_id = $gene_id AND
         annotation_set = ?
     ORDER BY note_id ASC
   };
@@ -935,7 +934,7 @@ sub get_note {
 
   # Add note if exist
   my ($author,$note_content);
-  $asn_sth->bind_param(1,$as_type,SQL_VARCHAR);
+  $asn_sth->bind_param(1,$type,SQL_VARCHAR);
   $asn_sth->execute();
   $asn_sth->bind_columns(\$author,\$note_content);
   while ($asn_sth->fetch()) {
@@ -945,11 +944,11 @@ sub get_note {
     else {
       $aset->addNode('note')->content($note_content);
     }
-    $has_note = 1;
+    $as_flag = 1;
   }
   $asn_sth->finish;
   
-  return $has_note if ($type eq $community_type);
+  return $as_flag if ($type eq $community_type);
   
 }
 
