@@ -365,6 +365,15 @@ function get_external_icon (lrg_status) {
   return '<img src="'+src+'" class="external_link" alt="External link" title="External link" />';
 }
 
+// function to replace the end of sentence by a return to a new line
+function format_note (){
+  p_elements = document.getElementsByClassName('note_content');
+  for (var i=0;i<p_elements.length;i++) {
+    var exp = /(\.\s+)/g;
+    p_elements[i].innerHTML= p_elements[i].innerHTML.replace(exp,"$1<br />");
+  }
+}
+
 // function to retrieve the LRG name into a text file listing the LRG entries which are also stored in Ensembl
 function search_in_ensembl(lrg_id, lrg_status) {
 

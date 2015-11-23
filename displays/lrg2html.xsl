@@ -78,10 +78,10 @@
   <body>
   <xsl:choose>
     <xsl:when test="$lrg_status=0">
-      <xsl:attribute name="onload">javascript:search_in_ensembl('<xsl:value-of select="$lrg_id"/>','<xsl:value-of select="$lrg_status"/>');create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
+      <xsl:attribute name="onload">javascript:search_in_ensembl('<xsl:value-of select="$lrg_id"/>','<xsl:value-of select="$lrg_status"/>');create_external_link('<xsl:value-of select="$lrg_status" />');format_note();</xsl:attribute >
     </xsl:when>
     <xsl:when test="$lrg_status=1">
-      <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$lrg_status" />');</xsl:attribute >
+      <xsl:attribute name="onload">javascript:create_external_link('<xsl:value-of select="$lrg_status" />');format_note();</xsl:attribute >
       
       <!-- Add a banner indicating that the record is pending if the pending flag is set -->
       <div class="status_banner pending">
@@ -1680,12 +1680,16 @@
         <span class="line_header">Comment:</span><xsl:value-of select="comment" />
       </xsl:if>
       <xsl:if test="note">
-        <br/>
-        <span class="line_header">Note:</span>
-        <span>
-          <xsl:value-of select="note"/>
-          <xsl:if test="note/@author"> (<xsl:value-of select="note/@author"/>)</xsl:if>
-        </span>
+        <div>
+          <div class="float_left">
+            <span class="line_header">Note:</span>
+          </div>
+          <div class="float_left note_content">
+            <xsl:value-of select="note"/>
+            <xsl:if test="note/@author"> (<xsl:value-of select="note/@author"/>)</xsl:if>
+          </div>
+          <div style="clear:both"></div>
+        </div>
       </xsl:if>
     </p>
    
