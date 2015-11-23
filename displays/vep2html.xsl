@@ -37,10 +37,10 @@
     <link type="text/css" rel="stylesheet" media="all">
       <xsl:attribute name="href"><xsl:value-of select="$lrg_url"/>/lrg2html.css</xsl:attribute>
     </link>
-    <script type="text/javascript" />
+    <script type="text/javascript">
       <xsl:attribute name="src"><xsl:value-of select="$lrg_url"/>/lrg2html.js</xsl:attribute>
     </script>
-    <link rel="icon" type="image/ico" />
+    <link rel="icon" type="image/ico">
       <xsl:attribute name="href"><xsl:value-of select="$lrg_url"/>/img/favicon_public.ico</xsl:attribute>
     </link>
     <style type="text/css">
@@ -300,3 +300,4 @@
 
 
 </xsl:stylesheet>
+
