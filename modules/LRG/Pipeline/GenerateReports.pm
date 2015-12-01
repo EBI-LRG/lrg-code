@@ -2,7 +2,7 @@ package LRG::Pipeline::GenerateReports;
 
 use strict;
 use warnings;
-use MIME::Lite;
+use LRG::LRGEmail;
 use base ('Bio::EnsEMBL::Hive::Process');
 
 sub run {
@@ -71,7 +71,6 @@ sub send_email {
 
   my $test = ($is_test) ? ' - TEST' : '';
 
-  my $email_sender      = 'automated_pipeline@lrg-sequence.org';
   my $email_recipient   = ($is_test) ? 'lgil@ebi.ac.uk' : 'lgil@ebi.ac.uk,jmorales@ebi.ac.uk';#'lrg-internal@ebi.ac.uk';
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG pipeline$test] Automated pipeline ran the $formatted_date";
@@ -115,16 +114,8 @@ The LRG automated pipeline.
 <small>Please do not reply to this message: this email is an automated notification, which is unable to receive replies.</small>
 };
 
-  my $msg = MIME::Lite->new(
-    From     => $email_sender,
-    To       => $email_recipient,
-    Subject  => $subject,
-    Data     => $message
-  );
-                 
-  $msg->attr("content-type" => "text/html");         
-  $msg->send;
-
+  my $email = LRG::LRGEmail->new($email_recipient,$subject,$message);
+  $email->send;
 }
 
 sub run_cmd {
