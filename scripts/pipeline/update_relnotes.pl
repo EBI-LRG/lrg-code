@@ -42,7 +42,7 @@ my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 $year+=1900;
 
 foreach my $item ($hour,$min,$sec,$mday) {
-	$item = complete_with_2_numbers($item);
+  $item = complete_with_2_numbers($item);
 }
 
 my $day = "$mday-$abbr[$mon]-$year";
@@ -109,14 +109,14 @@ foreach my $old_lrg (sort(keys(%old_data))) {
 
 
 if (scalar(keys(%changes)) == 0) {
-	print "No difference found";
-	exit(0);
+  print "No difference found";
+  exit(0);
 }
 
 if ($only_ftp_snapshot) {
-	#### Update file status ####
-	ftp_snapshot();
-	exit(0);
+  #### Update file status ####
+  ftp_snapshot();
+  exit(0);
 }
 
 #### Update relnotes ####
@@ -160,14 +160,14 @@ foreach my $lrg (sort(keys(%changes))) {
   }
   
   if ($changes{$lrg} eq 'new_status') {
-		print NEW "# Pending LRG record $lrg$hgnc is now public\n";
-		print TMP "$lrg\tpublic\n";
-	} elsif ($changes{$lrg} eq 'new_file') {
-		print NEW "#$pending LRG record $lrg$hgnc added\n";
-		print TMP "$lrg\tpending\n";
-	} elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
-		print NEW "#$pending LRG record $lrg$hgnc updated\n";
- 	}
+    print NEW "# Pending LRG record $lrg$hgnc is now public\n";
+    print TMP "$lrg\tpublic\n";
+  } elsif ($changes{$lrg} eq 'new_file') {
+    print NEW "#$pending LRG record $lrg$hgnc added\n";
+    print TMP "$lrg\tpending\n";
+  } elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
+    print NEW "#$pending LRG record $lrg$hgnc updated\n";
+   }
 
 }
 close(NEW);
@@ -183,11 +183,11 @@ print get_tag_version($version,$year,$mon,$mday);
 #### Methods ####
 
 sub ftp_snapshot {
-	open F, "> $new_file_record" or die $!;
-	foreach my $lrg (sort {$a cmp $b} keys(%new_data)) {
-  	print F "$lrg\t".$new_data{$lrg}{'date'}."\t".$new_data{$lrg}{'status'}."\n";
-	}
-	close(F);
+  open F, "> $new_file_record" or die $!;
+  foreach my $lrg (sort {$a cmp $b} keys(%new_data)) {
+    print F "$lrg\t".$new_data{$lrg}{'date'}."\t".$new_data{$lrg}{'status'}."\n";
+  }
+  close(F);
 }
 
 sub get_date {
@@ -196,9 +196,9 @@ sub get_date {
   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($stats->mtime);
   $mon++;
   $year+=1900;
-	foreach my $item ($hour,$min,$sec,$mday,$mon) {
-		$item = complete_with_2_numbers($item);
-	}
+  foreach my $item ($hour,$min,$sec,$mday,$mon) {
+    $item = complete_with_2_numbers($item);
+  }
   return "$hour:$min:$sec|$mday-$mon-$year";
 }
 
@@ -212,7 +212,7 @@ sub get_tag_version {
   my ($version,$year,$month,$day) = @_;
   $month++;
   $day = complete_with_2_numbers($mday);
-	$month = complete_with_2_numbers($month);
+  $month = complete_with_2_numbers($month);
   return "release_$version\_$year$month$day";
 }
 
