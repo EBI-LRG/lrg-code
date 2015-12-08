@@ -7,21 +7,25 @@ use Getopt::Long;
 my $lrg_id;
 my $xml_dir;
 my $ftp_dir;
+my $lrg_email;
+my $no_lrg_email;
 my $status;
 my $debug;
 
 GetOptions(
-  'lrg_id=s'  => \$lrg_id, # Separated by a ','
-  'xml_dir=s' => \$xml_dir,
-  'ftp_dir=s' => \$ftp_dir,
-  'status=s'  => \$status,
-  'debug!'    => \$debug,
+  'lrg_id=s'      => \$lrg_id,
+  'xml_dir=s'     => \$xml_dir,
+  'ftp_dir=s'     => \$ftp_dir,
+  'status=s'      => \$status,
+  'no_lrg_email!' => \$no_lrg_email,
+  'debug!'        => \$debug,
 );
 die("You need to specify a LRG ID (-lrg_id)") unless ($lrg_id);
 die("You need to specify a LRG status (-status)") unless ($status);
 
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
 $ftp_dir ||= 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
+$lrg_email = 'lrg-internal@ebi.ac.uk';
 
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
@@ -133,6 +137,14 @@ sub send_lrg_email {
   else {
     #my $email_obj = LRG::LRGEmail->new($email,$subject,$message);
     #$email_obj->send;
+
+    # Copy of the email sent to the LRG internal mailing list
+    unless ($no_lrg_email) {
+      my $lrg_subject = "Test - $subject";#"Copy - $subject";
+      my $lrg_message = "Copy of the automatic email sent to $name about $lrg_id:<br /><br />$message";
+      my $lrg_email_obj = LRG::LRGEmail->new($lrg_email,$lrg_subject,$lrg_message);
+      $lrg_email_obj->send;
+    }
   }
 }
 
