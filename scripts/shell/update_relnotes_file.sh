@@ -163,6 +163,8 @@ function update_lrg_status {
         elif [[ -e ${stalled_fasta} ]]; then
           rm -f ${stalled_fasta}
         fi
+        # Send automatic email(s) to the requester(s)
+        `perl ${perldir}/send_email.pl -lrg_id ${lrg_id} -xml_dir ${pubpath} -status ${lrg_status}`
              
       # If the LRG has been moved to the "Public" status
       elif [[ ${lrg_status} == 'public' ]] ; then
@@ -176,6 +178,8 @@ function update_lrg_status {
           cp "${tmp}/${lrg_xml}" ${cvsxml}
           cvs ci -m "Creation date updated" ${lrg_xml}
         fi
+        # Send automatic email(s) to the requester(s)
+        `perl ${perldir}/send_email.pl -lrg_id ${lrg_id} -xml_dir ${pubpath} -status ${lrg_status}`
       fi
     done < ${tmp_lrg_list}
 }
