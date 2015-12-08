@@ -17,20 +17,22 @@ GetOptions(
   'xml_dir=s'     => \$xml_dir,
   'ftp_dir=s'     => \$ftp_dir,
   'status=s'      => \$status,
+  'lrg_email=s'   => \$lrg_email,
   'no_lrg_email!' => \$no_lrg_email,
   'debug!'        => \$debug,
 );
 die("You need to specify a LRG ID (-lrg_id)") unless ($lrg_id);
 die("You need to specify a LRG status (-status)") unless ($status);
 
-$xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
-$ftp_dir ||= 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
-$lrg_email = 'lrg-internal@ebi.ac.uk';
+$xml_dir   ||= '/ebi/ftp/pub/databases/lrgex/';
+$ftp_dir   ||= 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
+$lrg_email ||= 'lrg-internal@ebi.ac.uk';
 
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
 my $title          = 'Dear %s,';
 my $lrg_signature  = 'The LRG team';
+my $lrg_ps         = '<small>Please do not reply to this message: this email is an automated notification, which is unable to receive replies.</small>';
 
 
 my %email_subject = (
@@ -44,7 +46,8 @@ my %email_message = (
                                   'The record is available at <a href="%s">%s</a>'.
                                   '</p>'.
                                   'Best regards,<br />'.
-                                  '%s',
+                                  '%s<br />'.
+                                  $lrg_ps,
                       'pending' => $title.'<br />'.
                                   '<p>'.
                                   'We are please to announce that the LRG for %s (%s) has been created.<br />'.
@@ -52,7 +55,8 @@ my %email_message = (
                                   'This LRG record is pending approval and subject to change. Please do not use until it has passed final approval'.
                                   '</p>'.
                                   'Best regards,<br />'.
-                                  '%s',
+                                  '%s<br />'.
+                                  $lrg_ps,
                     );
 
 
