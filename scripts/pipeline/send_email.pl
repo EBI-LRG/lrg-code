@@ -31,9 +31,9 @@ $lrg_email ||= 'lrg-internal@ebi.ac.uk';
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
 my $title          = 'Dear %s,';
+my $lrg_contact    = 'If you have any question or comment, please send an email at <a href="mailto:help@lrg-sequence.org?Subject='.$lrg_id.'">help@lrg-sequence.org</a>';
 my $lrg_signature  = 'The LRG team';
 my $lrg_ps         = '<small>Please do not reply to this message: this email is an automated notification, which is unable to receive replies.</small>';
-
 
 my %email_subject = (
                       'public'  => 'The LRG entry for %s (%s) has been made public',
@@ -42,17 +42,20 @@ my %email_subject = (
 my %email_message = (
                       'public' => $title.'<br />'.
                                   '<p>'.
-                                  'We are please to announce that the LRG for %s (%s) has been made public.<br />'.
-                                  'The record is available at <a href="%s">%s</a>'.
+                                  'We are pleased to let you know that the LRG for %s (%s) has now been made public.<br />'.
+                                  'Many thanks for your help in creating this LRG.<br />'.
+                                  'The public record is available at <a href="%s">%s</a><br /><br />'.
+                                  $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
                                   '%s<br />'.
                                   $lrg_ps,
                       'pending' => $title.'<br />'.
                                   '<p>'.
-                                  'We are please to announce that the LRG for %s (%s) has been created.<br />'.
-                                  'The record is available at <a href="%s">%s</a><br />'.
-                                  'This LRG record is pending approval and subject to change. Please do not use until it has passed final approval'.
+                                  'We have now created an LRG for %s (%s).<br />'.
+                                  'We would be grateful if you could review the record and let us know if any changes are required.'.
+                                  'The record is available at <a href="%s">%s</a><br /><br />'.
+                                  $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
                                   '%s<br />'.
