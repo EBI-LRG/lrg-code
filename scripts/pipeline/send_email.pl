@@ -31,7 +31,7 @@ $lrg_email ||= 'lrg-internal@ebi.ac.uk';
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
 my $title          = 'Dear %s,';
-my $lrg_contact    = 'If you have any question or comment, please send an email at <a href="mailto:help@lrg-sequence.org?Subject='.$lrg_id.'">help@lrg-sequence.org</a>';
+my $lrg_contact    = 'If you have any questions or comments, please send an email at <a href="mailto:help@lrg-sequence.org?Subject='.$lrg_id.'">help@lrg-sequence.org</a>';
 my $lrg_signature  = 'The LRG team';
 my $lrg_ps         = '<small>Please do not reply to this message: this email is an automated notification, which is unable to receive replies.</small>';
 
