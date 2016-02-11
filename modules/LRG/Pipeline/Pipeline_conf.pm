@@ -47,6 +47,8 @@ sub default_options {
 
         date                    => LRG::LRG::date(),
         pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
+        
+        git_branch              => $ENV{'GITBRANCH'},
 
         tmp_dir                 => $self->o('pipeline_dir').'/log',
         xml_dir                 => $self->o('pipeline_dir').'/ncbi_xml',
@@ -152,6 +154,7 @@ sub pipeline_analyses {
                ftp_dir     => $self->o('ftp_dir'),
                date        => $self->o('date'),
                is_test     => $self->o('is_test'),
+               git_branch  => $self->o('git_branch'),
             },
             -input_ids         => [],
             -wait_for          => [ 'annotate_xml_files' ],

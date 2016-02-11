@@ -13,17 +13,19 @@ sub run {
   my $ftp_dir        = $self->param('ftp_dir');
   my $date           = $self->param('date');
   my $is_test        = $self->param('is_test');
+  my $git_branch     = $self->param('git_branch');
+     $git_branch   ||= 'master';
  
-  my $cvs_xml_dir    = "$run_dir/xml";
+  my $git_xml_dir    = "$run_dir/ftp-xml";
 
-  die ("Can't find the directory $cvs_xml_dir") unless (-d $cvs_xml_dir);
+  die ("Can't find the directory $git_xml_dir") unless (-d $git_xml_dir);
   
   my $current_dir = `pwd`;
 
-  chdir($cvs_xml_dir);
-  `cvs update ./`;
+  chdir($git_xml_dir);
+  `git pull origin $git_branch`;
 
-  ## CVS updates
+  ## Git updates
   foreach my $type_dir ('public','pending','stalled') {
     my $dh;
     my @copied_files;
@@ -40,13 +42,15 @@ sub run {
 
     if ($is_test != 1) {
       foreach my $file (@files) {
-        # Copy to CVS xml
-        $self->run_cmd("cp $sub_dir/$file $cvs_xml_dir/");
+        # Copy to Git lrg-xml
+        $self->run_cmd("cp $sub_dir/$file $git_xml_dir/");
         push(@copied_files, $file);
       }
     
       my $files_list = join(' ', @files);
-      `cvs ci -m "Automatic updates of $type_dir LRG - $date" $files_list`;
+      `git add $files_list`;
+      `git commit -m "Automatic updates of $type_dir LRG - $date"`;
+      `git push origin $master`;
     }
   }
   chdir($current_dir);
