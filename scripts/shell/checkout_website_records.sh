@@ -3,20 +3,19 @@
 . ~/.lrgpaths
 
 ########
-### Check out only the LRG XML records that are public and/or pending on the website from the CVS repository
+### Check out only the LRG XML records that are public and/or pending on the website from the Git repository
 ###
 
 #ÊRelevant paths
-cvsroot=${CVSROOTDIR}
-cvspath=${cvsroot}/xml/
+root=${LRGROOTDIR}
+xmlpath=${root}/lrg-xml/
 pubpath=${PUBFTP}
 
-echo -n "This will check out the latest version from CVS for LRG records avaialble on the website. Note that any pre-existing duplicate files in ${cvspath} will be overwritten. Do you wish to check out records that are published (1), pending (2) or both (3) (1/2/3/q)? "
+echo -n "This will check out the latest version from GitHub for LRG records avaialble on the website. Note that any pre-existing duplicate files in ${xmlpath} will be overwritten. Do you wish to check out records that are published (1), pending (2) or both (3) (1/2/3/q)? "
 read -e mode
 [ $mode == "1" ] || [ $mode == "2" ] || [ $mode == "3" ] || exit
 
-cd ${cvsroot}
-relpath=${cvspath/${cvsroot}/}
+cd ${xmlpath}
 
 if [ $mode -eq 1 -o $mode -eq 3 ]
 then
@@ -27,13 +26,13 @@ then
     
     echo "${filename/.xml/}"
     
-    destfile=${cvspath}/${filename}
+    destfile=${xmlpath}/${filename}
     if [ -e ${destfile} ]
     then
-      echo "Replacing existing file ${destfile} with latest version from CVS"
+      echo "Replacing existing file ${destfile} with latest version from Git"
       rm ${destfile}
     fi
-    cvs checkout -A ${relpath}/${filename}
+    git checkout -- ${filename}
   done
 fi
 
@@ -46,13 +45,13 @@ then
     
     echo "${filename/.xml/}"
     
-    destfile=${cvspath}/${filename}
+    destfile=${xmlpath}/${filename}
     if [ -e ${destfile} ]
     then
       echo "Replacing existing file ${destfile} with latest version from CVS"
       rm ${destfile}
     fi
-    cvs checkout -A ${relpath}/${filename}
+    git checkout -- ${filename}
   done
 fi
 

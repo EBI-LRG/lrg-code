@@ -3,16 +3,16 @@
 . ~/.lrgpaths
 
 ########
-### Copy the LRG records from the CVS repository to the public and private ftps
+### Copy the LRG records from the Git repository to the public and private ftps
 ### Will also add lines to the end of a release notes file
 
 #ÊRelevant paths
-cvspath=${CVSROOTDIR}/xml/
+rootpath=${LRGROOTDIR}/lrg-xml/
 pubpath=${PUBFTP}
 pvtpath=${PVTFTP}
-relnotes=${CVSROOTDIR}/ftp/public/relnotes.txt
+relnotes=${LRGROOTDIR}/lrg-ftp/public/relnotes.txt
 
-echo -n "Do you have all the required xml files checked out and present in ${cvspath} (y/n)? "
+echo -n "Do you have all the required xml files checked out and present in ${rootpath} (y/n)? "
 read -e go
 [ "$go" == "y" ] || exit
 
@@ -24,11 +24,11 @@ do
   hgnc=`lrg_gene_name ${path}`
   echo "Updating published record ${lrgid} (${hgnc}) on public ftp"
   dest=${pubpath}/${name}
-  cp ${cvspath}/${name} ${dest}
+  cp ${rootpath}/${name} ${dest}
   chmod 644 ${dest}
   echo "Updating published record ${lrgid} (${hgnc}) on private ftp"
   dest=${pvtpath}/Published/${name}
-  cp ${cvspath}/${name} ${dest}
+  cp ${rootpath}/${name} ${dest}
   chmod 644 ${dest}
   echo "# LRG record ${lrgid} (${hgnc}) annotation updated" >> ${relnotes}
 done
@@ -41,11 +41,11 @@ do
   hgnc=`lrg_gene_name ${path}`
   echo "Updating pending record ${lrgid} (${hgnc}) on public ftp"
   dest=${pubpath}/pending/${name}
-  cp ${cvspath}/${name} ${dest}
+  cp ${rootpath}/${name} ${dest}
   chmod 644 ${dest}
   echo "Updating pending record ${lrgid} (${hgnc}) on private ftp"
   dest=${pvtpath}/Pending/${name}
-  cp ${cvspath}/${name} ${dest}
+  cp ${rootpath}/${name} ${dest}
   chmod 644 ${dest}
   echo "# Pending LRG record ${lrgid} (${hgnc}) annotation updated" >> ${relnotes}
 done

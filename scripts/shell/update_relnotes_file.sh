@@ -4,15 +4,16 @@
 . ~/.lrgpass
 
 ########
-### Update the relnotes.txt file in the CVS repository and the public FTP server
+### Update the relnotes.txt file in the Git repository and the public FTP server
 
 # Relevant paths
-cvspath=${CVSROOTDIR}
+gitpath=${LRGROOTDIR}
 pubpath=${PUBFTP}
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
-cvsftp=${CVSROOTDIR}/ftp/public/
-cvsxml=${CVSROOTDIR}/xml/
+perldir=${gitpath}/lrg-code/scripts/pipeline
+gitftp=${gitpath}/lrg-ftp/public/
+gitxml=${gitpath}/lrg-xml/
 lrgindex=${PUBFTP}/.lrg_index/
+branch=${GITBRANCH}
 
 tmpdir=''
 default_assembly='GRCh37'
@@ -44,11 +45,11 @@ if [[ -n "${tmp}" ]]; then
   elif [[ -d ${tmp} ]] ; then
     tmpdir="-tmp_dir ${tmp}"
   else 
-    tmp=${cvsftp}
+    tmp=${gitftp}
     tmpdir="-tmp_dir ${tmp}"
   fi
 else
-  tmp=${cvsftp}
+  tmp=${gitftp}
   tmpdir="-tmp_dir ${tmp}"
 fi
 
@@ -80,13 +81,14 @@ tmp_lrg_list="${tmp}/${tmp_lrg_list_fname}"
 
 # Update the ftp_record.txt file
 current_path=`pwd`
-cd ${cvsftp}
-cvs update ${record_fname}
+cd ${gitftp}
+git checkout ${branch}
+git pull origin ${branch}
 cd ${current_path}
 
 
 # Generate the new relnotes.txt and ftp_record.txt files
-tag_release=`perl ${perldir}/update_relnotes.pl -cvs_dir ${cvspath} -xml_dir ${pubpath} ${tmpdir}`
+tag_release=`perl ${perldir}/update_relnotes.pl -root_dir ${gitpath} -xml_dir ${pubpath} ${tmpdir}`
 
 
 # Check the new tag release
@@ -171,12 +173,14 @@ function update_lrg_status {
         # Update the creation date
         lrg_updated=`perl ${perldir}/update_public_creation_date.pl -xml_dir ${pubpath} ${tmpdir} -host ${host} -dbname ${dbname} -port ${port} -user ${user} -pass ${pass} -lrgs_list ${lrg_id}`
         lrg_xml="${lrg_id}.xml"
-        # Update CVS for the updated file
+        # Update Git for the updated file
         if [[ ${lrg_updated} =~ ${lrg_id} && -e "${tmp}/${lrg_xml}" ]] ; then
-          cd ${cvsxml}
-          cvs update ${lrg_xml}
-          cp "${tmp}/${lrg_xml}" ${cvsxml}
-          cvs ci -m "Creation date updated" ${lrg_xml}
+          cd ${gitxml}
+          git pull origin ${branch}
+          cp "${tmp}/${lrg_xml}" ${gitxml}
+          git add ${lrg_xml}
+          git commit -m "Creation date updated"
+          git push origin ${branch}
         fi
         # Send automatic email(s) to the requester(s)
         `perl ${perldir}/send_email.pl -lrg_id ${lrg_id} -xml_dir ${pubpath} -status ${lrg_status}`
@@ -228,51 +232,40 @@ if [[ -e ${tmp_lrg_list} ]]; then
 fi
 
 
-#### Update and commit CVS ####
+#### Update, commit and push to GitHub ####
 
-# 1 - If OK, copy the new relnotes.txt to the CVS ftp/ and commit it.
+# 1 - If OK, copy the new relnotes.txt to the Git lrg-ftp and push it.
 if [[ -e ${new_relnotes} ]] ; then
   if [[ -s ${new_relnotes} ]] ; then
-    cd ${cvsftp}
+    cd ${gitftp}
 
-    echo "Update relnotes.txt on CVS"
-    cvs update ${relnotes_fname}
+    echo "Update relnotes.txt and ftp_record.txt on GitHub"
+    git pull origin ${branch}
     
-    echo "Copy, commit & tag the new relnotes.txt on CVS"
+    echo "Copy, commit & push the new relnotes.txt on GitHub"
     cp ${new_relnotes} "./${relnotes_fname}"
-    cvs ci -m "New relnote file ${tag_release}" ${relnotes_fname}
-    cvs tag ${tag_release} ${relnotes_fname}
+    git add ${relnotes_fname}
+    git commit -m "New relnote file ${tag_release}"
+    git push origin ${branch}
+    git tag -a ${tag_release}
 
     # 2 - Copy the committed relnotes.txt to the EBI FTP.
     echo "Copy the new relnotes.txt to the EBI FTP"
     cp ${relnotes_fname} ${pubpath}
 
-    # 3 - Copy the new ftp_record.txt to the CVS ftp/public/ and commit it.
-    echo "Update ftp_record.txt on CVS"
-    cvs update ${record_fname}
-    
-    echo "Copy, commit & tag the new ftp_record.txt on CVS"
+    # 3 - Copy the new ftp_record.txt to the GitHub lrg-ftp/public/ and push it.
+    echo "Copy, commit & push the new ftp_record.txt on GitHub"
     cp ${new_record}  "./${record_fname}"
-    cvs ci -m "FTP record of the release ${tag_release}" ${record_fname}
-    cvs tag ${tag_release} ${record_fname}
+    
+    echo "Tag lrg-ftp on GitHub"
+    git tag -a ${tag_release}
+    git push origin --tags
 
     # 4 - Tag the LRG XML files
-    
-    cd ${cvspath}/xml
-    cvs update ./*
-    echo "Tagging LRG public records"
-    for path in ${pubpath}/LRG_*.xml
-    do
-      filename=`basename ${path}`
-      cvs tag ${tag_release} ${filename}
-    done
-
-    echo "Tagging LRG pending records"
-    for path in ${pubpath}/pending/LRG_*.xml
-    do
-      filename=`basename ${path}`
-      cvs tag ${tag_release} ${filename}
-    done    
+    cd ${gitxml}
+    git pull origin ${branch}
+    git tag -a ${tag_release}
+    git push origin --tags   
 
   else
     echo "ERROR: the relnotes file '${new_relnotes}' is empty! It can't be copied and committed!"
@@ -360,7 +353,7 @@ do
   echo "# XML ${type} - Create a ZIP file containing the LRG xml files ..."
   xml_zip_file="LRG_${type}_xml_files.zip"
   xml_zip_path="${tmp}/${xml_zip_file}"
-  xml_dir="${cvspath}/xml"
+  xml_dir="${gitpath}/xml"
 
   if [[ ${type} == 'public' ]]; then
     xml_file_dir=${pubpath}

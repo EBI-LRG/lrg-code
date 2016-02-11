@@ -1,13 +1,16 @@
 # .lrgpaths
 
 # The path to the user's LRG CVS checkout top directory
-CVSROOTDIR=
+LRGROOTDIR=
 
 # The absolute path to the EBI public FTP on the filesystem
 PUBFTP=
 
 # The absolute path to the EBI private FTP on the filesystem
 PVTFTP=
+
+# The GitHub default branch
+GITBRANCH=master
 
 # The database credentials for the LRG database
 LRGDBHOST=
@@ -29,7 +32,7 @@ TMPDIR=
 JINGPATH=
 
 # Export the variables
-export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH REGISTRYFILE
+export CVSROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH REGISTRYFILE GITBRANCH
 
 # Define a shell function for grabbing the HGNC symbol from a LRG XML record
 function lrg_gene_name() { 

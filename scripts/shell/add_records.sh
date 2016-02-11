@@ -3,16 +3,16 @@
 . ~/.lrgpaths
 
 ########
-### Add new pending LRG records from the CVS repository to the public and private ftps
+### Add new pending LRG records from the Git repository to the public and private ftps
 ### Will also add lines to the end of a release notes file
 
 # Relevant paths
-cvspath=${CVSROOTDIR}/xml/
+rootpath=${LRGROOTDIR}/lrg-xml/
 pubpath=${PUBFTP}
 pvtpath=${PVTFTP}
-relnotes=${CVSROOTDIR}/ftp/public/relnotes.txt.new
+relnotes=${LRGROOTDIR}/lrg-ftp/public/relnotes.txt.new
 
-echo -n "Do you have all the required xml files checked out and present in ${cvspath} (y/n)? "
+echo -n "Do you have all the required xml files checked out and present in ${rootpath} (y/n)? "
 read -e go
 [ "$go" == "y" ] || exit
 
@@ -26,8 +26,8 @@ There are PENDING pending LRG entries
 ### Notes
 " > ${relnotes}
 
-# Loop over the LRG records in the CVS path. Skip them in case they exist in the published or pending directories
-for path in ${cvspath}/LRG_*.xml
+# Loop over the LRG records in the Git path. Skip them in case they exist in the published or pending directories
+for path in ${rootpath}/LRG_*.xml
 do
   name=`basename ${path}`
   lrgid=${name/.xml/}

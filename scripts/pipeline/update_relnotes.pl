@@ -3,32 +3,32 @@ use File::stat;
 use LRG::LRG;
 use Getopt::Long;
 
-my ($only_ftp_snapshot, $xml_dir, $tmp_dir, $cvs_dir);
+my ($only_ftp_snapshot, $xml_dir, $tmp_dir, $root_dir);
 GetOptions(
   'only_ftp_snapshot!' => \$only_ftp_snapshot,
   'xml_dir=s'          => \$xml_dir,
   'tmp_dir=s'          => \$tmp_dir,
-  'cvs_dir=s'          => \$cvs_dir,
+  'root_dir=s'         => \$root_dir,
 );
 
-if (!$cvs_dir) {
+if (!$root_dir) {
 
-  my $cvs_path = `grep "^CVSROOTDIR" ~/.lrgpaths`;
-  chomp $cvs_path;
-  if ($cvs_path =~ /CVSROOTDIR=(.+)$/) {
-    $cvs_dir = $1;
+  my $root_path = `grep "^LRGROOTDIR" ~/.lrgpaths`;
+  chomp $root_path;
+  if ($root_path =~ /LRGROOTDIR=(.+)$/) {
+    $root_dir = $1;
   }
-  die("You need to specify the CVS directory (-cvs_dir)") unless ($cvs_dir);
+  die("You need to specify the LRG root directory (-root_dir)") unless ($root_dir);
 }
-my $cvs_ftp = "$cvs_dir/ftp/public";
+my $git_ftp = "$root_dir/lrg-ftp/public";
 my $stalled = 'stalled';
 
-$tmp_dir = $cvs_ftp if (!$tmp_dir || !-d $tmp_dir);
+$tmp_dir = $git_ftp if (!$tmp_dir || !-d $tmp_dir);
 $xml_dir ||= '/ebi/ftp/pub/databases/lrgex/';
 
 # FTP record settings
 my $record = 'ftp_record.txt';
-my $file_record =  $cvs_ftp.'/'.$record;
+my $file_record =  $git_ftp.'/'.$record;
 my $new_file_record = $tmp_dir."/new_$record";
 
 # Relnotes settings

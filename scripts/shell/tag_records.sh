@@ -6,33 +6,23 @@
 ### Tag only the LRG XML records that are public and/or pending on the website
 ###
 
-#ÊRelevant paths
-cvspath=${CVSROOTDIR}/xml/
-pubpath=${PUBFTP}
+# Relevant paths
+xmlpath=${LRGROOTDIR}/lrg-xml/
+branch=${GITBRANCH}
 
 tag=$1
-cvspath2=$2
+xmlpath2=$2
 
-if [[ ! -z ${cvspath2} ]] ; then
- cvspath=${cvspath2}
+if [[ ! -z ${xmlpath2} ]] ; then
+ xmlpath=${xmlpath2}
 fi
 
 echo -n "This will tag records on the public ftp (published and pending) with the tag "${tag}". Do you wish to continue (y/n)? "
 read -e go
 [ $go == "y" ] || exit
 
-cd ${cvspath}
+cd ${xmlpath}
+git pull origin ${branch}
+git tag -a ${tag}
+git push origin --tags 
 
-echo "Tagging published records"
-for path in ${pubpath}/LRG_*.xml
-do
-  filename=`basename ${path}`
-  cvs tag ${tag} ${filename}
-done
-
-echo "Tagging pending records"
-for path in ${pubpath}/pending/LRG_*.xml
-do
-  filename=`basename ${path}`
-  cvs tag ${tag} ${filename}
-done
