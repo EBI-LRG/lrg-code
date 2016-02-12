@@ -16,7 +16,7 @@ sub run {
   my $git_branch     = $self->param('git_branch');
      $git_branch   ||= 'master';
  
-  my $git_xml_dir    = "$run_dir/ftp-xml";
+  my $git_xml_dir    = "$run_dir/lrg-xml";
 
   die ("Can't find the directory $git_xml_dir") unless (-d $git_xml_dir);
   
