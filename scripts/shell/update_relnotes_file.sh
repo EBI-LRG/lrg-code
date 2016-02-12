@@ -234,7 +234,7 @@ fi
 
 #### Update, commit and push to GitHub ####
 
-# 1 - If OK, copy the new relnotes.txt to the Git lrg-ftp and push it.
+# 1 - If OK, copy the new relnotes.txt to the GitHub lrg-ftp/public/repository.
 if [[ -e ${new_relnotes} ]] ; then
   if [[ -s ${new_relnotes} ]] ; then
     cd ${gitftp}
@@ -242,29 +242,35 @@ if [[ -e ${new_relnotes} ]] ; then
     echo "Update relnotes.txt and ftp_record.txt on GitHub"
     git pull origin ${branch}
     
-    echo "Copy, commit & push the new relnotes.txt on GitHub"
+    echo "Copy and commit the new relnotes.txt on GitHub"
     cp ${new_relnotes} "./${relnotes_fname}"
     git add ${relnotes_fname}
     git commit -m "New relnote file ${tag_release}"
-    git push origin ${branch}
-    git tag -a ${tag_release}
 
     # 2 - Copy the committed relnotes.txt to the EBI FTP.
     echo "Copy the new relnotes.txt to the EBI FTP"
     cp ${relnotes_fname} ${pubpath}
 
-    # 3 - Copy the new ftp_record.txt to the GitHub lrg-ftp/public/ and push it.
-    echo "Copy, commit & push the new ftp_record.txt on GitHub"
+    # 3 - Copy the new ftp_record.txt to the GitHub lrg-ftp/public/repository.
+    echo "Copy and commit the new ftp_record.txt on GitHub"
     cp ${new_record}  "./${record_fname}"
+    git add ${record_fname}
+    git commit -m "New ftp_record file ${tag_release}"
+
+    # 4 - Push the new files the GitHub lrg-ftp/public/ repository
+    echo "Push the new relnotes.txt and ftp_record.txt on GitHub"
+    git push origin ${branch}
     
+    # 5 - Tag the lrg-ftp repository
     echo "Tag lrg-ftp on GitHub"
-    git tag -a ${tag_release}
+    git tag ${tag_release}
     git push origin --tags
 
-    # 4 - Tag the LRG XML files
+    # 6 - Tag the lrg-xml repository
+    echo "Tag lrg-xml on GitHub"
     cd ${gitxml}
     git pull origin ${branch}
-    git tag -a ${tag_release}
+    git tag ${tag_release}
     git push origin --tags   
 
   else
