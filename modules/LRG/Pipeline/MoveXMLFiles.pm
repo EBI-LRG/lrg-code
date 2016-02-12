@@ -50,7 +50,7 @@ sub run {
       my $files_list = join(' ', @files);
       `git add $files_list`;
       `git commit -m "Automatic updates of $type_dir LRG - $date"`;
-      `git push origin $master`;
+      `git push origin $git_branch`;
     }
   }
   chdir($current_dir);
