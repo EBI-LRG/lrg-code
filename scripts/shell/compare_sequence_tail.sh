@@ -17,7 +17,7 @@ if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline/
+perldir=${LRGROOTDIR}/lrg-code/scripts/pipeline/
 
 
 

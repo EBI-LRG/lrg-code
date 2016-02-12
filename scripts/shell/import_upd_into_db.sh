@@ -19,7 +19,7 @@ if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
+perldir=${LRGROOTDIR}/lrg-code/scripts/pipeline
 
 
 # Use the value "none" for warning, if you want to skip the check of the polyA between the RefSeq transcript sequences and the LRG transcript sequences

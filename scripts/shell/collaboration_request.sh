@@ -5,7 +5,7 @@ host=${LRGDBHOST}
 port=${LRGDBPORT}
 user=${LRGDBROUSER}
 dbname=${LRGDBNAME}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 addressee=""
 lrg_id=""

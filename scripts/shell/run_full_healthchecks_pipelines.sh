@@ -12,7 +12,6 @@ data_file=$1
 xml_dir=$2
 tmp_dir=$3
 
-
-bashdir=${CVSROOTDIR}/lrg-code/scripts/shell
+bashdir=${LRGROOTDIR}/lrg-code/scripts/shell
 
 bash ${bashdir}/run_full_pipelines.sh ${data_file} ${xml_dir} 'none' ${tmp_dir} 'is_hc'

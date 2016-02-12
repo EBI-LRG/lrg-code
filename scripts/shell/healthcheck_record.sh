@@ -8,9 +8,9 @@
 
 #ÊRelevant paths
 jing=${JINGPATH}
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
+perldir=${LRGROOTDIR}/lrg-code/scripts/pipeline
 java=`which java`
-rnc=${CVSROOTDIR}/lrg-code/LRG.rnc
+rnc=${LRGROOTDIR}/lrg-code/LRG.rnc
 
 xmlfile=$1
 assembly=$2

@@ -13,7 +13,6 @@ xml_dir=$2
 new_dir=$3
 tmp_dir=$4
 
-
-bashdir=${CVSROOTDIR}/lrg-code/scripts/shell
+bashdir=${LRGROOTDIR}/lrg-code/scripts/shell
 
 bash ${bashdir}/run_full_pipelines.sh ${data_file} ${xml_dir} ${new_dir} ${tmp_dir} 'is_test'

@@ -18,7 +18,7 @@ if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 
 perl ${perldir}/create_db_lsdb_gene_contact_links.pl -host ${host} -user ${user} -pass ${pass} -port ${port} -dbname ${dbname} -inputfile ${inputfile} ${verbose}

@@ -15,7 +15,7 @@ if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 
 echo "Importing ${lrgid} other exon naming into db..."

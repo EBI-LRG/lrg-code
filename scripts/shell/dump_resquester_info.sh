@@ -12,7 +12,7 @@ dbname=${LRGDBNAMETEST}
 if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 
 echo "Dumping request data from the LRG database ..."

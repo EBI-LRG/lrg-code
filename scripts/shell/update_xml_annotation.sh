@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
+perldir=${LRGROOTDIR}/lrg-code/scripts/pipeline
 
 xmlfile=$1
 locus=$2

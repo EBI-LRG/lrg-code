@@ -57,7 +57,7 @@ sub default_options {
 
         ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
         date                    => LRG::LRG::date(),
-        run_dir                 => $ENV{'CVSROOTDIR'},
+        run_dir                 => $ENV{'LRGROOTDIR'},
         
         output_dir              => $self->o('tmp_dir').'/hive_output',
         

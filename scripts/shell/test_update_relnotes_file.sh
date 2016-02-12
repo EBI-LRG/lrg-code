@@ -6,7 +6,7 @@
 ### Update the relnotes.txt file in the CVS repository and the public FTP server
 
 # Relevant paths
-shelldir=${CVSROOTDIR}/lrg-code/scripts/shell
+shelldir=${LRGROOTDIR}/lrg-code/scripts/shell
 
 param='test'
 tmp=$1

@@ -13,7 +13,7 @@ user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
 
 pass=${LRGDBPASS}
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 
 if [[ -n "${private}" && ${private} != 0 ]]; then

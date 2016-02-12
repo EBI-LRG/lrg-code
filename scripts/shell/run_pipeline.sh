@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-perldir=${CVSROOTDIR}/lrg-code/scripts
+perldir=${LRGROOTDIR}/lrg-code/scripts
 
 #e.g. ./run_pipeline.sh LRG_5 LEPRE1 GRCh37 xml_test new_xml xml_dir xml_dir/pipeline_reports.txt
 

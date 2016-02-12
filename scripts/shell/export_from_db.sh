@@ -12,7 +12,7 @@ dbname=${LRGDBNAMETEST}
 if [[ -z ${is_test} || ${is_test} == 0 ]] ; then
   dbname=${LRGDBNAME}
 fi
-perldir=${CVSROOTDIR}/lrg-code/scripts/pipeline
+perldir=${LRGROOTDIR}/lrg-code/scripts/pipeline
 
 spec="-lrg_id ${lrgid}"
 

@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-perldir=${CVSROOTDIR}/lrg-code/scripts/
+perldir=${LRGROOTDIR}/lrg-code/scripts/
 
 
 xmldir=$1
