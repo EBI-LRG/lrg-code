@@ -71,7 +71,7 @@ sub send_email {
 
   my $test = ($is_test) ? ' - TEST' : '';
 
-  my $email_recipient   = ($is_test) ? 'lgil@ebi.ac.uk' : 'lgil@ebi.ac.uk,jmorales@ebi.ac.uk';#'lrg-internal@ebi.ac.uk';
+  my $email_recipient   = ($is_test) ? 'lgil@ebi.ac.uk' : 'lrg-internal@ebi.ac.uk';
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG pipeline$test] Automated pipeline ran the $formatted_date";
 
