@@ -18,13 +18,13 @@ EXAMPLE
     perl import.lrg.pl -help
     
   Import a LRG and add xrefs, will download XML record from website:
-    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -import
+    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_84_38 -lrg_id LRG_1 -import
     
   Add gene_attribs for Ensembl genes overlapping a LRG:
-    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -overlap
+    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_84_38 -lrg_id LRG_1 -overlap
     
   Clean a LRG from the Core database:
-    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_58_37c -lrg_id LRG_1 -clean
+    perl import.lrg.pl -host ens-genomics1 -port 3306 -user ******** -pass ********** -dbname homo_sapiens_core_84_38 -lrg_id LRG_1 -clean
     
 =cut
 
