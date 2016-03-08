@@ -600,6 +600,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
               # If there is a translation, we add the LRG protein as an xref
               foreach my $ensembl_core_protein (@$ensembl_core_proteins) {
                 $translation_core_accession = $ensembl_core_protein->accession();
+                $translation_core_accession =~ s/\.[0-9]*//;
                 LRG::LRGImport::add_xref('Ens_Hs_translation', $translation_core_accession, $translation_core_accession, $ensembl_lrg_translation, 'translation');
               }
             }
