@@ -140,7 +140,7 @@ CREATE table `lrg_comment` (
 --
 CREATE TABLE `lrg_curator` (
   `lrg_id` varchar(64) NOT NULL,
-  `curator` enum('Jackie','Joannella') NOT NULL,
+  `curator` enum('Jackie','Joannella','Aoife','John') NOT NULL,
   PRIMARY KEY  (`lrg_id`,`curator`)
 );
 
