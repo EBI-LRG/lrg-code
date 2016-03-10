@@ -64,6 +64,10 @@ h1.separator{
   font-weight: bold;
 }
 
+.bold_font{
+  font-weight: bold;
+}
+
 .float_left {
   float:left;
 }
@@ -559,7 +563,7 @@ span.source_name{
 
 div.other_source{
   padding:10px 0px;
-  background-color:#E0E0E0;
+  background-color:#F9F9F9;
 }
 
 span.other_source{
@@ -669,35 +673,42 @@ h3.mapping {
 .upstream {
   text-transform: lowercase;
   font-family: monospace;
-  color: #000000;
+  color: #888;
 }
 .downstream {
   text-transform: lowercase;
   font-family: monospace;
-  color: #000000;
+  color: #888;
 }
 .intron {
   font-family: monospace;
   text-transform: lowercase;
-  color: #000000;
+  color: #888;
 }
 
 .intronselect {
   font-family: monospace;
-  color: #000000;
+  color: #888;
   background: #68C746;
+}
+
+.exon_genomic {
+  font-family: monospace;
+  font-weight: bold;
+  color: #003399;
+  background: #FFF;
 }
 
 .exon_odd {
   font-family: monospace;
   color: #003399;
-	background: #FFF;
+  background: #FFF;
 }
 
 .exon_even {
   font-family: monospace;
-  color: #000000;
-	background: #FFF;
+  color: #009933;
+  background: #FFF;
 }
 
 .exon_odd_select {
@@ -849,8 +860,8 @@ table.requester_table {
 }
 
 div.external_source {
-	background-color: #E0E0E0; 
-	border: 1px dashed #0E4C87;
+	background-color: #F9F9F9; 
+	border: 1px dotted #0E4C87;
 	padding-bottom: 10px;
 }
 
@@ -862,15 +873,28 @@ div.lrg_source {
 
 div.lrg_transcript {
 	padding: 10px 0px 4px 5px;
-  text-decoration:underline;
   font-weight:bold;
   font-size:1.1em;
   margin-bottom:4px;
 }
 
-div.lrg_transcript_content {
-  padding-left: 5px;
+span.lrg_transcript {
+  padding:2px 6px;
+  background-color: #E0E0E0;
+  border: 1px dotted #0E4C87;
 }
+
+
+table.lrg_transcript_content {
+  margin-left: 4px;
+}
+
+.lrg_transcript_content td {
+  padding : 2px 4px;
+  vertical-align: top;
+  border: none;
+}
+
 
 div.lrg_transcript_separator {
   margin:6px 0px 2px;
@@ -882,37 +906,42 @@ div.fixed_transcript_annotation {
   clear: both;
 }
 
-div.key_left {
-  float:left;
-  font-weight:bold;
-  margin-top:5px;
-  margin-right:5px;
-}
-
-div.key_right {
+div.seq_info_box {
   margin-bottom:20px;
   background-color:#FFF;
   border:1px solid #E0E0E0;
   border-radius:10px;
 }
 
-.key_header {
-  text-align:center;
+.seq_info_header {
+  text-align:left;
   font-weight:bold;
-  padding:2px 0px;
-  background-color:#E0E0E0;
+  padding:2px 0px 2px 25px;
   border-top-left-radius:10px;
   border-top-right-radius:10px;
-  color:#005;
+  color:#003399;
+  background:url(img/info.png) no-repeat 5px 50%;
+  background-color:#E0E0E0;
+}
+.seq_info_header:before{
+  content:'';
+  float:left;
+  width: 2px;
+  height:16px;
 }
 
-ul.key{
-  margin-left:15px;
+ul.seq_info{
+  margin-left:20px;
   margin-bottom:0px;
   padding:2px 5px;
 }
-li.key {
+
+ul.seq_info > li {
   margin-bottom:5px;
+}
+
+.sequence_padding {
+  padding: 1px 2px;
 }
 
 .legend {

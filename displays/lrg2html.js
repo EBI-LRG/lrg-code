@@ -21,7 +21,7 @@ function showhide(lyr) {
   var button = document.getElementById(lyr+'_button');
   
   if(lyrobj.className == "hidden") {
-    fadeIn(lyrobj);
+    //fadeIn(lyrobj);
     lyrobj.className = "unhidden";
     rotate90('img_'+lyr);
     if (button) {
@@ -29,7 +29,7 @@ function showhide(lyr) {
     }
   }
   else {
-    fadeOut(lyrobj);
+    //fadeOut(lyrobj);
     lyrobj.className = "hidden";
     rotate90('img_'+lyr, 1);
     if (button) {
@@ -60,7 +60,7 @@ function showhide_anno(lyr) {
 function show_content(lyr,lyr_anchor) {
   var lyrobj = document.getElementById(lyr);
   if(lyrobj.className == "hidden") {
-    fadeIn(lyrobj);
+    //fadeIn(lyrobj);
     lyrobj.className = "unhidden";
     rotate90('img_'+lyr);
   }
@@ -79,6 +79,7 @@ function fadeIn(element) {
     var timer = setInterval(function () {
         if (op >= 0.95){
           clearInterval(timer);
+          op = 1;
         }
         element.style.opacity = op;
         element.style.filter = 'alpha(opacity=' + op * 100 + ")";
@@ -92,6 +93,7 @@ function fadeOut(element) {
         if (op <= 0.05){
           clearInterval(timer);
           element.style.display = "none";
+          op = 0;
         }
         element.style.opacity = op;
         element.style.filter = 'alpha(opacity=' + op * 100 + ")";
@@ -220,7 +222,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     if(tableobj.className.length > 11) {
       tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       if(tname == 't1' && !no_gene_tr_highlight) {
-        genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+        genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
      
       if (cdnaobj && !no_gene_tr_highlight) {
@@ -263,7 +265,7 @@ function clear_highlight(trans,pep) {
   i = 1;
   while(document.getElementById('genomic_exon_'+trans+'_'+i)) {
     obj = document.getElementById('genomic_exon_'+trans+'_'+i);
-    obj.className = (obj.className.substr(0,1) == 'e' ? 'exon_odd' : 'intron');
+    obj.className = (obj.className.substr(0,1) == 'e' ? 'genomic_exon' : 'intron');
     i++;
   }
   
