@@ -1,6 +1,7 @@
 var TR_ID_PREFIX='tr_';
+var TR_RIGHT_SUFFIX='_right';
 
-function showhide(row_id,param) {
+function showhide(row_id) {
   var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
   
   if(row_obj.className == "hidden") {
@@ -33,24 +34,41 @@ function showall(row_id) {
 }
 
 function show_row(row_id) {
-  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
+  var tr_id = TR_ID_PREFIX+row_id;
+  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
+  
+  var row_obj = document.getElementById(tr_id);
+  var right_obj = document.getElementById(tr_id_right);
   var button_obj = document.getElementById("button_"+row_id);
   var button_color = "button "+document.getElementById("button_color_"+row_id).value;
 
+  // Odd vs Even background
+  var bg = "bg2";
   if (isOdd(row_id)) {
-    row_obj.className = "unhidden bg1";
-  } else {
-    row_obj.className = "unhidden bg2";
+    bg = "bg1";
   }
+  
+  // Checked => highlighted
+  if (document.getElementById('highlight_'+row_id).checked) {
+    bg += "_hl";
+  }
+  
+  row_obj.className   = "unhidden "+bg;
+  right_obj.className = "unhidden "+bg;
   button_obj.className = button_color;
 }
 
 function hide_row(row_id) {
-  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
+  var tr_id = TR_ID_PREFIX+row_id;
+  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
+  
+  var row_obj = document.getElementById(tr_id);
+  var right_obj = document.getElementById(tr_id_right);
   var button_obj = document.getElementById("button_"+row_id);
   var button_color = "button "+document.getElementById("button_color_"+row_id).value;
-
+  
   row_obj.className = "hidden";
+  right_obj.className = "hidden";
   button_obj.className = "button off";
 }
 
@@ -118,6 +136,26 @@ function show_hide_in_between_rows(row_id,tr_names) {
   }
 }
 
+
+function highlight_row(row_id) {
+  
+  var row_obj   = document.getElementById(TR_ID_PREFIX + row_id);
+  var right_obj = document.getElementById(TR_ID_PREFIX + row_id + TR_RIGHT_SUFFIX);
+  
+  // Odd vs Even background
+  var bg = "bg2";
+  if (isOdd(row_id)) {
+    bg = "bg1";
+  }
+  
+  // Checked => highlighted
+  if (document.getElementById('highlight_' + row_id).checked) {
+    bg += "_hl";
+  }
+  
+  row_obj.className   = "unhidden " + bg;
+  right_obj.className = "unhidden " + bg;
+}
 
 
 function highlight_exons(param,hide) {

@@ -69,8 +69,7 @@ my %nm_data;
 
 my $lovd_url = 'http://####.lovd.nl';
 my $ucsc_url = 'https://genome-euro.ucsc.edu/cgi-bin/hgTracks?clade=mammal&org=Human&db=hg38&position=####&hgt.positionInput=####&hgt.suggestTrack=knownGene&Submit=submit';
-my $rsg_url  = 'http://www.ncbi.nlm.nih.gov/gene?term=####[sym]%20AND%20Human[Organism]';
-
+my $rsg_url  = 'http://www.ncbi.nlm.nih.gov/gene?term=####[sym]%20AND%20Human[Organism]'; 
 
 my $ens_gene;
 if ($gene_name =~ /^ENSG\d+$/) {
@@ -253,32 +252,41 @@ $html .= qq{
    <!--Genoverse -->
   <a class="green_button" target="_blank" href="genoverse.php?gene=$gene_name&chr=$chr&start=$gene_start&end=$gene_end">> Show in Genoverse</a>
 
-  <div style="border:1px solid #000;width:100%;margin:15px 0px 20px">
-    <table id="align_table">
+  <div class="tables_container">
 };
 
 my $exon_number = 1;
 my $bigger_exon_coord = 1;
 my %exon_list_number;
 # Header
-my $exon_tab_list = qq{
-   <tr>
-     <th rowspan="2" title="Hide rows">-</th>
-     <th rowspan="2">Transcript</th>
-     <th rowspan="2">Name</th>
-     <th rowspan="2">Biotype</th>
-     <th rowspan="2" title="Strand">Str.</th>
-     <th colspan="$coord_span">Coordinates</th>
-     <th rowspan="2">CCDS
-     <th rowspan="2">RefSeq transcript</th>
-   </tr>
-   <tr>
+my $exon_tab_list_left = qq{
+  <table id="align_table_left">
+    <tr>
+      <th class="rowspan2" title="Hide rows">-</th>
+      <th class="rowspan2" title="Highlight rows">hl</th>
+      <th class="rowspan2">Transcript</th>
+    </tr>
 };
+
+my $exon_tab_list_right = qq{
+<div class="table_right"> 
+  <table id="align_table_right">
+    <tr>
+      <th class="rowspan2" rowspan="2">Name</th>
+      <th class="rowspan2" rowspan="2">Biotype</th>
+      <th class="rowspan2" rowspan="2" title="Strand">Str.</th>
+      <th class="rowspan1" colspan="$coord_span"><small>Coordinates</small></th>
+      <th class="rowspan2" rowspan="2">CCDS
+      <th class="rowspan2" rowspan="2">RefSeq transcript</th>
+     </tr>
+     <tr>
+};
+
 foreach my $exon_coord (sort(keys(%exons_list))) {
   
-  $exon_tab_list .= qq{</th>} if ($exon_number == 1);
-  $exon_tab_list .= qq{<th class="coord" id="coord_$exon_number" title="$exon_coord" onclick="alert('Genomic coordinate $chr:$exon_coord')">};
-  $exon_tab_list .= $exon_coord;
+  $exon_tab_list_right .= qq{</th>} if ($exon_number == 1);
+  $exon_tab_list_right .= qq{<th class="rowspan1 coord" id="coord_$exon_number" title="$exon_coord" onclick="alert('Genomic coordinate $chr:$exon_coord')">};
+  $exon_tab_list_right .= $exon_coord;
 
   $bigger_exon_coord = $exon_coord if ($exon_coord > $bigger_exon_coord);
 
@@ -287,9 +295,7 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
 }
 
 
-$exon_tab_list .= "</th></tr>\n";
-
-$html .= "\n$exon_tab_list";
+$exon_tab_list_right .= "</th></tr>\n";
 
 my $row_id = 1;
 my $row_id_prefix = 'tr_';
@@ -314,22 +320,31 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
   
   my $tsl_html      = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   
-  my $hide_col = hide_button($row_id,$column_class);
+  my $hide_col      = hide_button($row_id);
+  my $highlight_col = highlight_button($row_id);
   
   # First columns
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$ens_tr">
-  <td>$hide_col</td>
-  <td class="$column_class first_column">
-    <table style="width:100%;text-align:center">
-      <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
-      <tr>
-        <td class="$column_class" style="width:15%">
-          <span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>
-        </td>
-        <td class="$column_class" style="width:70%"><small>($e_count exons)</small></td>
-        <td class="$column_class" style="width:15%">$tsl_html</td>
-      </tr>
-    </table>
+  $exon_tab_list_left .= qq{
+  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$ens_tr">
+    <td>$hide_col</td>
+    <td>$highlight_col</td>
+    <td class="$column_class first_column">
+      <table style="width:100%;text-align:center">
+        <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
+        <tr>
+          <td class="$column_class" style="width:15%">
+            <span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>
+          </td>
+          <td class="$column_class" style="width:70%"><small>($e_count exons)</small></td>
+          <td class="$column_class" style="width:15%">$tsl_html</td>
+        </tr>
+      </table>
+    </td> 
+  </tr> 
+  };
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$ens_tr">
   };
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
@@ -340,7 +355,7 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
   }
   my $tr_orientation = ($tr_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($tr_object);
-  $html .= qq{</td><td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
+  $exon_tab_list_right .= qq{<td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
   
   
 
@@ -396,7 +411,7 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $html .= qq{</td><td$colspan_html>}; 
+    $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       if(! $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object)) {
         $is_coding = ' non_coding';
@@ -410,21 +425,21 @@ foreach my $ens_tr (sort keys(%ens_tr_exons_list)) {
       
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $html .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
+      $exon_tab_list_right .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$chr:$exon_start-$coord','$exon_stable_id')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon"> </div>};
+      $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
     }
   }
   my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
   my $refseq_display = (scalar @refseq) ? join(", ",@refseq).$refseq_button : '-';
-  $html .= qq{</td><td class="extra_column">$ccds_display};
-  $html .= qq{</td><td class="extra_column">$refseq_display};
-  $html .= qq{</td></tr>\n};
+  $exon_tab_list_right .= qq{</td><td class="extra_column">$ccds_display};
+  $exon_tab_list_right .= qq{</td><td class="extra_column">$refseq_display};
+  $exon_tab_list_right .= qq{</td></tr>\n};
 }  
 
 
@@ -437,18 +452,30 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'cdna';
   
-  my $hide_col = hide_button($row_id,$column_class);
+  my $hide_col      = hide_button($row_id);
+  my $highlight_col = highlight_button($row_id);
      
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
-  <td>$hide_col</td>
-  <td class="$column_class first_column"><a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  $exon_tab_list_left .= qq{
+  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
+    <td>$hide_col</td>
+    <td>$highlight_col</td>
+    <td class="$column_class first_column">
+      <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br />
+      <small>($e_count exons)</small>
+    </td>
+  </tr>
+  };
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
+  };
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
   my $cdna_name   = ($cdna_object->external_name) ? $cdna_object->external_name : '-';
   my $cdna_strand = $cdna_object->slice->strand;
   my $cdna_orientation = ($cdna_strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($cdna_object);
-  $html .= qq{</td><td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
+  $exon_tab_list_right .= qq{<td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $cdna_rows_list{$row_id}{'label'} = $nm;
@@ -490,22 +517,22 @@ foreach my $nm (sort keys(%cdna_tr_exons_list)) {
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $html .= qq{</td><td$colspan_html>}; 
+    $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $html .= qq{<div class="$has_exon$is_coding$identity" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number$identity_score</div>};
+      $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$identity" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number$identity_score</div>};
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon"> </div>};
+      $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
     }
   }
-  $html .= $end_of_row;
+  $exon_tab_list_right .= $end_of_row;
 }
 
 
@@ -518,18 +545,30 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
   my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = 'nm';
   
-  my $hide_col = hide_button($row_id,$column_class);
+  my $hide_col      = hide_button($row_id);
+  my $highlight_col = highlight_button($row_id);
   
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
-  <td>$hide_col</td>
-  <td class="$column_class first_column"><a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br /><small>($e_count exons)</small>};
+  $exon_tab_list_left .= qq{
+  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
+    <td>$hide_col</td>
+    <td>$highlight_col</td>
+    <td class="$column_class first_column">
+      <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br />
+      <small>($e_count exons)</small>
+    </td>
+  </tr>
+  };
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
+  };
   
   my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
   my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
   my $refseq_strand = $refseq_object->slice->strand;
   my $refseq_orientation = ($refseq_strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($refseq_object);
-  $html .= qq{</td><td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
+  $exon_tab_list_right .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $refseq_rows_list{$row_id}{'label'} = $nm;
@@ -572,7 +611,7 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $html .= qq{</td><td$colspan_html>}; 
+    $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
       if(! $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object)) {
         $is_coding = ' non_coding_unknown';
@@ -583,17 +622,17 @@ foreach my $nm (sort keys(%refseq_tr_exons_list)) {
         $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
       }
       
-      $html .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
+      $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
       if ($refseq_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
     }
     else {
-      $html .= qq{<div class="$has_exon"> </div>};
+      $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
     }
   }
-  $html .= $end_of_row;
+  $exon_tab_list_right .= $end_of_row;
 }
 
 
@@ -611,15 +650,26 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
   my $column_class = 'gene';
   
-  my $hide_col = hide_button($row_id,$column_class);
+  my $hide_col      = hide_button($row_id);
+  my $highlight_col = highlight_button($row_id);
   
-  $html .= qq{<tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene">
-  <td>$hide_col</td>
-  <td class="$column_class first_column"><a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name};
+  $exon_tab_list_left .= qq{
+  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene">
+    <td>$hide_col</td>
+    <td>$highlight_col</td>
+    <td class="$column_class first_column">
+      <a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name
+    </td>
+  </tr>  
+  };
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$o_ens_gene">
+  };
   
   my $gene_orientation = ($gene_object->strand == 1) ? '<span class="forward_strand" title="forward strand">></span>' : '<span class="reverse_strand" title="reverse strand"><</span>';
   my $biotype = get_biotype($gene_object);
-  $html .= qq{</td><td class="extra_column">$o_gene_name</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
+  $exon_tab_list_right .= qq{<td class="extra_column">$o_gene_name</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $gene_rows_list{$row_id}{'label'} = $o_ens_gene;
@@ -670,8 +720,8 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       $exon_start = $coord;
       # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
-        $html .= qq{</td><td>};
-        $html .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list_right .= qq{</td><td>};
+        $exon_tab_list_right .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       }
       $ended = 1 if ($coord == $last_exon);
       $colspan = 0;
@@ -684,9 +734,9 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     }
     # Gene end partially matches end coordinates
     elsif ($ended == 2) {
-      $html .= qq{</td><td>};
-      $html .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
-      $html .= qq{</td><td>};
+      $exon_tab_list_right .= qq{</td><td>};
+      $exon_tab_list_right .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list_right .= qq{</td><td>};
       $ended = 1;
       next;
     }
@@ -698,8 +748,8 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
         if ($colspan > 0) {
           $colspan ++ if (!$is_first_exon_partial);
           my $html_colspan = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
-          $html .= qq{</td><td$html_colspan>};
-          $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+          $exon_tab_list_right .= qq{</td><td$html_colspan>};
+          $exon_tab_list_right .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
         }
         $ended = 2;
         $colspan = 0;
@@ -707,9 +757,9 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       # Gene end matches coordinates
       else {
         $colspan ++;
-        $html .= ($colspan > 1) ? qq{</td><td colspan="$colspan">} : qq{</td><td>};
-        $html .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
-        $html .= qq{</td><td>} if ($coord != $bigger_exon_coord);
+        $exon_tab_list_right .= ($colspan > 1) ? qq{</td><td colspan="$colspan">} : qq{</td><td>};
+        $exon_tab_list_right .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list_right .= qq{</td><td>} if ($coord != $bigger_exon_coord);
 
         $ended = 1;
         $colspan = 0;
@@ -723,26 +773,33 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     
     # Extra gene display  
     my $colspan_html = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
-    $html .= qq{</td><td$colspan_html>}; 
+    $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene' ) {
-      $html .= qq{<div class="$has_gene" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list_right .= qq{<div class="$has_gene" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$chr:$exon_start-$coord')">$gene_strand</div>};
       $colspan = 1;
     }
     # No data
     else {
-      $html .= qq{<div class="$has_gene"> </div>};
+      $exon_tab_list_right .= qq{<div class="$has_gene"> </div>};
     }
   }  
-  $html .= $end_of_row;
+  $exon_tab_list_right .= $end_of_row;
 }
 
 
 # Selection
 $html .= qq{
+<table><tr><td style="vertical-align:top">
+    $exon_tab_list_left
+      </table>
+</td><td>
+    $exon_tab_list_right
       </table>
     </div>
-    <h3>>Show/hide rows</h3>
-    <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
+</td></tr></table>
+  </div>
+  <h3>>Show/hide rows</h3>
+  <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
     
 my $max_per_line = 5;
 
@@ -919,12 +976,12 @@ $html .= qq{
       <!-- Partially coding -->
       <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
       <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon coding_unknown partial">#</div></td><td style="padding-left:5px">The exon is partially coding.  We don't know whether the sequence is identical or different with the reference</td></tr>
+      <!--<tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
+      <!--<tr class="bg1"><td style="width:50px"><div class="exon coding_unknown partial">#</div></td><td style="padding-left:5px">The exon is partially coding.  We don't know whether the sequence is identical or different with the reference</td></tr>-->
       <!-- Non coding -->
       <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
       <tr class="bg1"><td style="width:50px"><div class="exon non_coding">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>
+      <!--<tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
       <tr class="bg1"><td style="width:50px"><div class="exon non_coding_unknown">#</div></td><td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td></tr>
       <!-- Low evidences -->
       <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences</small></td></tr>
@@ -954,12 +1011,16 @@ close(OUT);
 
 
 sub hide_button {
-  my $id    = shift;
-  my $class = shift;
+  my $id = shift;
   
   return qq{<div id="button_$id\_x" class="hide_button_x" onclick="showhide($id)" title="Hide this row"></div>};
 }
 
+sub highlight_button {
+  my $id = shift;
+  
+  return qq{<input type="checkbox" id="highlight_$id" name="highlight_$id" onclick="highlight_row($id)" title="Highlight this row"/>};
+}
 
 sub get_tsl_html {
   my $transcript = shift;

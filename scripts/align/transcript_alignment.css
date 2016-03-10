@@ -11,7 +11,7 @@ table {
   border-collapse:collapse;
 }
 th {
-  background-color:#008;
+  background-color:#0E4C87;
   color:#FFF;
   font-weight:normal;
   text-align:center;
@@ -19,6 +19,12 @@ th {
   border:1px solid #FFF;
 }
 
+th.rowspan1{
+  height:24px;
+}
+th.rowspan2{
+  height:50px;
+}
 
 a {
   text-decoration:none;
@@ -70,7 +76,7 @@ table.legend td {
   font-size:14px;
   font-weight:bold;
   display:inline-block;
-  line-height:14px
+  line-height:14px;
 }
 
 .tsl {
@@ -85,7 +91,7 @@ table.legend td {
   font-size:14px;
   font-weight:bold;
   display:inline-block;
-  line-height:14px
+  line-height:14px;
 }
 
 th.coord {
@@ -206,13 +212,19 @@ th.coord {
   width:1px;
   background-color:#888;
   padding:0px;
-  margin:0px 1px 0px
+  margin:0px 1px 0px;
 }
 .bg1 {
-  background-color:#FFF
+  background-color:#FFF;
 }
 .bg2 {
-  background-color:#EEE
+  background-color:#EEE;
+}
+.bg1_hl {
+  background-color:#aa8cc5;
+}
+.bg2_hl {
+  background-color:#9975b9;
 }
 .button {
   margin-left:5px;
@@ -268,18 +280,23 @@ th.coord {
 .blue {
   color:#00B;
 }
+
 .hidden {
   height:0px;
-  display:none
+  display:none;
 }
 .unhidden {
-  height:auto;
-  display:table-row
+  height:50px;
+  display:table-row;
 }
 .unhidden_popup {
   height:auto;
-  display:block
+  display:block;
 }
+.hidden_div {
+  height:0px;
+}
+
 .identity{
   font-size:0.7em;
   padding-left:5px
@@ -365,3 +382,28 @@ th.coord {
 .green_button:active {
   box-shadow: 2px 2px 2px #CCC inset;  
 }
+
+.tables_container {
+  border:1px solid #000;
+  margin:15px 0px 20px;
+}
+
+.table_right {
+  width:50%;
+  margin-left: -2px;
+  overflow-x: scroll;
+  white-space: nowrap;
+}
+.table_right::-webkit-scrollbar { 
+  height: 16px;
+}
+.table_right::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px #AAA;
+  border-radius: 10px;
+} 
+.table_right::-webkit-scrollbar-thumb {
+  border-radius: 10px; 
+  background: #0E4C87;
+  box-shadow: inset 0 0 6px #1A4468;
+}
+
