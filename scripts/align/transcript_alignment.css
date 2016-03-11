@@ -221,10 +221,10 @@ th.coord {
   background-color:#EEE;
 }
 .bg1_hl {
-  background-color:#aa8cc5;
+  background-color:#bba3d0;
 }
 .bg2_hl {
-  background-color:#9975b9;
+  background-color:#b297ca;
 }
 .button {
   margin-left:5px;
@@ -301,15 +301,19 @@ th.coord {
   font-size:0.7em;
   padding-left:5px
 }
-.forward_strand {
+
+.forward_strand::before {
+  content: '>';
   font-weight:bold;
-  font-size:1.1em;
+  font-size:1.4em;
   color:#00B
 }
-.reverse_strand {
+
+.reverse_strand::before {
+  content: '<';
   font-weight:bold;
-  font-size:1.1em;
-  color:#B00
+  font-size:1.4em;
+  color:#B00;
 }
 
 .exon_popup {
@@ -389,7 +393,7 @@ th.coord {
 }
 
 .table_right {
-  width:50%;
+  max-width:1800px;
   margin-left: -2px;
   overflow-x: scroll;
   white-space: nowrap;
