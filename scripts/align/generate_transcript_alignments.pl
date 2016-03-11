@@ -45,14 +45,18 @@ foreach my $dir (split(',',$xml_dirs)) {
 foreach my $dir (keys(%files)) {
 
   foreach my $file (@{$files{$dir}}) {
+    $file =~ m/^(LRG\_[0-9]+)\.xml$/;
+    my $lrg_id = $1;
+    
     my $gene;
     my $lrg_locus = `grep -m1 'lrg_locus' $dir/$file`;
   
     if ($lrg_locus =~ /lrg_locus source="\w+">([A-Za-z0-9\-]+)</) {
       $gene = $1;
     }
+    
     if ($gene) {
-      `perl $current_dir/transcript_alignment_tool.pl -g $gene -o $output_dir/$gene.html`
+      `perl $current_dir/transcript_alignment_tool.pl -g $gene -o $output_dir/$gene.html -lrg $lrg_id`
     }
   
     # Count
