@@ -1,32 +1,42 @@
 <?php
 
   $gene_id = '';
-	$title = 'Transcript alignments';
-	
-	if ($_GET['gene']) {
-	  $gene_id = $_GET['gene'];
-	  $title = "Gene $gene_id - $title";
-	}
+  $title = 'Transcript alignments';
   
-	echo <<<EOF
-	<html>
-	  <head>
-	    <title>$title</title>
-	    <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
-      <script type="text/javascript" src="transcript_alignment.js"></script>  
-	  </head>
-	  <body>
+  if ($_GET['gene']) {
+    $gene_id = $_GET['gene'];
+    $title = "Gene $gene_id - $title";
+  }
+  
+  echo <<<EOF
+  <html>
+    <head>
+      <title>$title</title>
+      <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
+      <script type="text/javascript" src="transcript_alignment.js"></script>
+
+      <!--Genoverse -->
+      <link rel="stylesheet" type="text/css" href="genoverse/css/genoverse.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/controlPanel.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/karyotype.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/trackControls.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/resizer.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/fullscreen.css" />
+      <link rel="stylesheet" type="text/css" href="genoverse/css/tooltips.css" />
+
+    </head>
+    <body>
 EOF;
-	
-	$gene_id = '';
-	
-	if ($_GET['gene']) {
-	  $gene_id = $_GET['gene'];
-	}
-	
-	$select_list = array();
-	
-	if ($handle = opendir('./')) {
+  
+  $gene_id = '';
+  
+  if ($_GET['gene']) {
+    $gene_id = $_GET['gene'];
+  }
+  
+  $select_list = array();
+  
+  if ($handle = opendir('./')) {
     while (false !== ($file = readdir($handle))) {
       if (preg_match('/^(\w+)\.html$/',$file,$matches)) {
         $gene = $matches[1];
@@ -65,6 +75,14 @@ EOF;
   
   if ($gene_id != '') {
     include("./$gene_id.html");
+  }
+  else {
+    $array_length = count($select_list);
+    echo "<h3>List of available alignments ($array_length)</h3><ul>";
+    foreach ((array) $select_list as $gname) {
+      echo "<li><a href=\"?gene=$gname\">$gname</a></li>";
+    }
+    echo "</ul>";
   }
 
   echo <<<EOF
