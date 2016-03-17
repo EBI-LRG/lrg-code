@@ -74,6 +74,7 @@ my $lovd_url = 'http://####.lovd.nl';
 my $ucsc_url = 'https://genome-euro.ucsc.edu/cgi-bin/hgTracks?clade=mammal&org=Human&db=hg38&position=####&hgt.positionInput=####&hgt.suggestTrack=knownGene&Submit=submit';
 my $rsg_url  = 'http://www.ncbi.nlm.nih.gov/gene?term=####[sym]%20AND%20Human[Organism]';
 my $genomic_region_url = "http://www.ensembl.org/Homo_sapiens/Location/View?db=core;g=####;r=##CHR##:##START##-##END##;genomic_regions=as_transcript_label;genome_curation=as_transcript_label";
+my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=###ENSG###';
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
 
@@ -84,7 +85,7 @@ my $ncbi_jira_url = "https://ncbijira.ncbi.nlm.nih.gov/issues/?jql=text%20~%20%2
 if ($lrg_id) {
   foreach my $dir ('/pending/','/stalled/','/') {
     my $url = $lrg_url.$dir.$lrg_id.'.xml';
-    if (!head($url)) {
+    if (head($url)) {
       $lrg_url = $url;
       last;
     }
@@ -113,6 +114,8 @@ $genomic_region_url =~ s/##CHR##/$gene_chr/;
 $genomic_region_url =~ s/##START##/$gene_start/;
 $genomic_region_url =~ s/##END##/$gene_end/;
 
+$evidence_url =~ s/###ENSG###/$gene_name/;
+
 foreach my $xref (@{$ens_gene->get_all_DBEntries}) {
   my $dbname = $xref->dbname;
   if ($dbname eq $GI_dbname) {
@@ -127,7 +130,8 @@ my %external_links = (
                       'RefSeqGene' => $rsg_url,
                       'UCSC'       => $ucsc_url,
                       'GRC region' => $genomic_region_url,
-                      'CCDS Gene'  => $ccds_gene_url
+                      'CCDS Gene'  => $ccds_gene_url,
+                      'Evidence'   => $evidence_url
                      );
 if ($lrg_id) {
   $ncbi_jira_url =~ s/###LRG###/$lrg_id/;

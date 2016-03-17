@@ -393,7 +393,7 @@ th.coord {
 }
 
 .table_right {
-  max-width:1800px;
+  max-width:1600px;
   margin-left: -2px;
   overflow-x: scroll;
   white-space: nowrap;
