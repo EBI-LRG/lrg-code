@@ -63,6 +63,7 @@ my $GI_dbname = "EntrezGene";
 my %exons_list;
 my %ens_tr_exons_list;
 my %refseq_tr_exons_list;
+my %refseq_gff3_tr_exons_list;
 my %cdna_tr_exons_list;
 my %overlapping_genes_list;
 my %exons_count;
@@ -238,6 +239,37 @@ foreach my $refseq_tr (@$refseq) {
 }
 
 
+#------------------#
+# RefSeq GFF3 data #
+#------------------#
+my $refseq_gff3 = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
+
+foreach my $refseq_tr (@$refseq_gff3) {
+  next if ($refseq_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+
+  next unless ($refseq_tr->analysis->logic_name eq 'refseq_import');
+
+  my $refseq_name = $refseq_tr->stable_id;
+  next unless ($refseq_name =~ /^N(M|P)_/);
+  
+  my $refseq_exons = $refseq_tr->get_all_Exons;
+  my $refseq_exon_count = scalar(@$refseq_exons);
+  
+  $refseq_gff3_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
+  $refseq_gff3_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
+  
+  # RefSeq exons
+  foreach my $refseq_exon (@{$refseq_exons}) {
+    my $start = $refseq_exon->seq_region_start;
+    my $end   = $refseq_exon->seq_region_end;
+    
+    $exons_list{$start} ++;
+    $exons_list{$end} ++;
+    
+    $refseq_gff3_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
+  }
+}
+
 #---------------------#
 # Overlapping gene(s) #
 #---------------------#
@@ -260,6 +292,7 @@ foreach my $o_gene (@$o_genes) {
 #############
 ## DISPLAY ##
 #############
+
 my $tsl_default_bgcolour = '#002366';
 my %tsl_colour = ( '1'   => '#090',
                    '2'   => $tsl_default_bgcolour,
@@ -355,16 +388,18 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
-  my $tr_ext_name   = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
-  my $manual_class  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-  my $manual_label  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
-  my $manual_border = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  my $tr_ext_name    = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
+  my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  my $tsl_html      = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $manual_html    = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tsl_html       = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $canonical_html = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   
-  my $hide_row      = hide_button($row_id);
-  my $highlight_row = highlight_button($row_id);
-  my $blast_button  = blast_button($ens_tr);
+  my $hide_row       = hide_button($row_id);
+  my $highlight_row  = highlight_button($row_id);
+  my $blast_button   = blast_button($ens_tr);
   
   # First columns
   $exon_tab_list_left .= qq{
@@ -374,13 +409,12 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td>$blast_button</td>
     <td class="$column_class first_column">
       <table style="width:100%;text-align:center">
-        <tr><td class="$column_class" colspan="3"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
+        <tr><td class="$column_class" colspan="4"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
         <tr>
-          <td class="$column_class" style="width:15%">
-            <span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>
-          </td>
-          <td class="$column_class" style="width:70%"><small>($e_count exons)</small></td>
-          <td class="$column_class" style="width:15%">$tsl_html</td>
+          <td class="$column_class small_cell">$manual_html</td>
+          <td class="$column_class small_cell">$tsl_html</td>
+          <td class="$column_class small_cell">$canonical_html</td>
+          <td class="$column_class large_cell exon_number"><b>$e_count</b> exons</td>
         </tr>
       </table>
     </td> 
@@ -506,8 +540,12 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     <td>$highlight_row</td>
     <td>$blast_button</td>
     <td class="$column_class first_column">
-      <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br />
-      <small>($e_count exons)</small>
+      <div>
+        <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
+      </div>
+      <div class="exon_number">
+        <b>$e_count</b> exons
+      </div>
     </td>
   </tr>
   };
@@ -585,103 +623,13 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
 #----------------------------#
 # Display REFSEQ transcripts #
 #----------------------------#
-my %refseq_rows_list;
-foreach my $nm (sort {$refseq_tr_exons_list{$b}{'count'} <=> $refseq_tr_exons_list{$a}{'count'}} keys(%refseq_tr_exons_list)) {
+my %refseq_rows_list = %{display_refseq_data(\%refseq_tr_exons_list,'human')};
 
-  my $e_count = scalar(keys(%{$refseq_tr_exons_list{$nm}{'exon'}})); 
-  my $column_class = 'nm';
-  
-  my $hide_row      = hide_button($row_id);
-  my $highlight_row = highlight_button($row_id);
-  my $blast_button  = blast_button($nm);
-  
-  $exon_tab_list_left .= qq{
-  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
-    <td>$hide_row</td>
-    <td>$highlight_row</td>
-    <td>$blast_button</td>
-    <td class="$column_class first_column">
-      <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a><br />
-      <small>($e_count exons)</small>
-    </td>
-  </tr>
-  };
-  
-  $exon_tab_list_right .= qq{
-    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
-  };
-  
-  my $refseq_object = $refseq_tr_exons_list{$nm}{'object'};
-  my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
-  my $refseq_strand = $refseq_object->slice->strand;
-  my $refseq_orientation = get_strand($refseq_strand);
-  my $biotype = get_biotype($refseq_object);
-  $exon_tab_list_right .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
-  
-  $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-  $refseq_rows_list{$row_id}{'label'} = $nm;
-  $refseq_rows_list{$row_id}{'class'} = $column_class;
-  $row_id++;
-  
-  my %exon_set_match;
-  my $first_exon;
-  my $last_exon;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    if ($refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
-      $first_exon = $coord if (!defined($first_exon));
-      $last_exon  = $coord;
-    }
-  }
-  
-  my $exon_number = ($refseq_strand == 1) ? 1 : $e_count;
-  my $exon_start;
-  my $colspan = 1;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    my $is_coding  = ' coding_unknown';
-    my $is_partial = '';
-    
-    if ($exon_start and !$refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-      next;
-    }
-    # Exon start found
-    elsif (!$exon_start && $refseq_tr_exons_list{$nm}{'exon'}{$coord}) {
-      $exon_start = $coord;
-      next;
-    }
-     # Exon end found
-    elsif ($exon_start and $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-    }
-    
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
-    
-    my $has_exon = ($exon_start) ? 'exon' : $no_match;
-    
-    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
-    if ($exon_start) {
-      if(! $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object)) {
-        $is_coding = ' non_coding_unknown';
-      }
-      elsif ($refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object) > $exon_start) {
-        my $coding_start = $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object);
-        my $coding_end   = $refseq_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_end($refseq_object);
-        $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
-      }
-      
-      $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$gene_chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
-      if ($refseq_strand == 1) { $exon_number++; }
-      else { $exon_number--; }
-      $exon_start = undef;
-      $colspan = 1;
-    }
-    else {
-      $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
-    }
-  }
-  $exon_tab_list_right .= $end_of_row;
-}
+
+#---------------------------------#
+# Display REFSEQ GFF3 transcripts #
+#---------------------------------#
+my %refseq_gff3_rows_list = %{display_refseq_data(\%refseq_gff3_tr_exons_list,'gff3')};
 
 
 #-----------------------------#
@@ -854,104 +802,23 @@ $html .= qq{
 my $max_per_line = 5;
 
 # Ensembl transcripts
-my $ens_count = 0; 
-my @ens_row_ids = (sort {$a <=> $b} keys(%ens_rows_list));
-my $ens_buttons_html = '';
-foreach my $ens_row_id (@ens_row_ids) {
-  if ($ens_count == $max_per_line) {
-    $ens_buttons_html .= qq{</div><div style="margin-bottom:10px">};
-    $ens_count = 0;
-  }
-  my $label = $ens_rows_list{$ens_row_id}{'label'};
-  my $class = $ens_rows_list{$ens_row_id}{'class'};
-  $ens_buttons_html .= qq{<input type="hidden" id="button_color_$ens_row_id" value="$class"/>};
-  $ens_buttons_html .= qq{<span id="button_$ens_row_id" class="button $class" onclick="showhide($ens_row_id)">$label</span>};
-  $ens_count ++;
-}
-
-my $first_ens_row_id = $ens_row_ids[0];
-my $last_ens_row_id  = $ens_row_ids[@ens_row_ids-1];
-$html .= qq{<input type="hidden" value="$first_ens_row_id" id="first_ens_row_id"/>};
-$html .= qq{<input type="hidden" value="$last_ens_row_id" id="last_ens_row_id"/>};
-$html .= get_showhide_buttons('Ensembl', $first_ens_row_id, $last_ens_row_id);
-$html .= $ens_buttons_html;
-
-$html .= qq{</div></div><div style="clear:both"></div></div>};
-
+$html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
+$html .= qq{</div></div><div style="clear:both"></div></div>\n};
 
 # cDNA
-my $cdna_count = 0;
-my @cdna_row_ids = (sort {$a <=> $b} keys(%cdna_rows_list));
-my $cdna_buttons_html = '';
-foreach my $cdna_row_id (@cdna_row_ids) {
-  if ($cdna_count == $max_per_line) {
-    $cdna_buttons_html .= qq{</div><div style="margin-bottom:10px">};
-    $cdna_count = 0;
-  }
-  my $label = $cdna_rows_list{$cdna_row_id}{'label'};
-  my $class = $cdna_rows_list{$cdna_row_id}{'class'};
-  $cdna_buttons_html .= qq{<input type="hidden" id="button_color_$cdna_row_id" value="$class"/>};
-  $cdna_buttons_html .= qq{<span id="button_$cdna_row_id" class="button $class" onclick="showhide($cdna_row_id)">$label</span>};
-  $cdna_count ++;
-}  
-my $first_cdna_row_id = $cdna_row_ids[0];
-my $last_cdna_row_id  = $cdna_row_ids[@cdna_row_ids-1];
-
-$html .= get_showhide_buttons('cDNA', $first_cdna_row_id, $last_cdna_row_id);
-$html .= $cdna_buttons_html;
-
+$html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
 $html .= qq{</div></div><div style="clear:both"></div></div>};
 
-
 # RefSeq
-my $refseq_count = 0;
-my @refseq_row_ids = (sort {$a <=> $b} keys(%refseq_rows_list));
-my $refseq_buttons_html = '';
-foreach my $refseq_row_id (@refseq_row_ids) {
-  if ($refseq_count == $max_per_line) {
-    $refseq_buttons_html .= qq{</div><div style="margin-bottom:10px">};
-    $refseq_count = 0;
-  }
-  my $label = $refseq_rows_list{$refseq_row_id}{'label'};
-  my $class = $refseq_rows_list{$refseq_row_id}{'class'};
-  $refseq_buttons_html .= qq{<input type="hidden" id="button_color_$refseq_row_id" value="$class"/>};
-  $refseq_buttons_html .= qq{<span id="button_$refseq_row_id" class="button $class" onclick="showhide($refseq_row_id)">$label</span>};
-  $refseq_count ++;
-}
-
-my $first_refseq_row_id = $refseq_row_ids[0];
-my $last_refseq_row_id  = $refseq_row_ids[@refseq_row_ids-1];
-
-$html .= get_showhide_buttons('RefSeq', $first_refseq_row_id, $last_refseq_row_id);
-$html .= $refseq_buttons_html;
-
-
+$html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
 $html .= qq{</div></div><div style="clear:both"></div></div>\n};
-  
+
+# RefSeq GFF3
+$html .= display_transcript_buttons(\%refseq_gff3_rows_list, 'RefSeq GFF3');
+$html .= qq{</div></div><div style="clear:both"></div></div>\n};
+
 # Ensembl genes
-if (scalar(keys(%gene_rows_list))) {
-  my $ens_g_count = 0; 
-  my @gene_row_ids = (sort {$a <=> $b} keys(%gene_rows_list));
-  my $gene_buttons_html = '';
-  foreach my $gene_row_id (@gene_row_ids) {
-    if ($ens_g_count == $max_per_line) {
-      $gene_buttons_html .= qq{</div><div style="margin-bottom:10px">};
-      $ens_count = 0;
-    }
-    my $label = $gene_rows_list{$gene_row_id}{'label'};
-    my $class = $gene_rows_list{$gene_row_id}{'class'};
-    $gene_buttons_html .= qq{<input type="hidden" id="button_color_$gene_row_id" value="$class"/>};
-    $gene_buttons_html .= qq{<span id="button_$gene_row_id" class="button $class" onclick="showhide($gene_row_id)">$label</span>};
-    $ens_count ++;
-  }
-  
-  my $first_gene_row_id = $gene_row_ids[0];
-  my $last_gene_row_id  = $gene_row_ids[@gene_row_ids-1];
-
-  $html .= get_showhide_buttons('Gene', $first_gene_row_id, $last_gene_row_id);
-  $html .= $gene_buttons_html;
-
-}
+$html .= display_transcript_buttons(\%gene_rows_list, 'Gene') if (scalar(keys(%gene_rows_list)));
 $html .= qq{ 
     </div></div><div style="clear:both"></div></div>
     <div style="margin:10px 0px 60px">
@@ -995,23 +862,29 @@ $html .= qq{
       <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
       <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
       <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
-      <tr class="bg1"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
-      <tr class="bg2"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
-      <tr class="bg1"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
+      <tr class="bg1"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
+      <tr class="bg2"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
+       <tr class="bg1"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
+      <tr class="bg2"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
       <!-- Other -->
       <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
       <tr class="bg2">
-        <td>
-          <span class="tsl" style="background-color:$tsl1;margin-left:4px" title="Transcript Support Level = 1">1</span>
-          <span class="tsl" style="background-color:$tsl2;margin-left:0px" title="Transcript Support Level = 2">2</span>
+        <td style="padding-left:2px">
+          <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
+          <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
         </td>
         <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td></tr>
         <tr class="bg1">
-        <td>
+        <td style="padding-left:2px">
           <span class="manual">M</span>
           <span class="not_manual">A</span>
         </td>
-        <td style="padding-left:5px">Label for the type of annotation: maual (M) or automated (A)</td></tr>
+        <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td></tr>
+        <tr class="bg2">
+        <td style="padding-left:2px">
+          <span class="canonical">C</span>
+        </td>
+        <td style="padding-left:5px">Label to indicate the canonical transcript</td></tr>
     </table>
     </div>
    
@@ -1080,6 +953,18 @@ sub blast_button {
 
 }
 
+sub get_manual_html {
+  my $transcript   = shift;
+  my $column_class = shift;
+  
+  my $tr_ext_name    = $transcript->external_name;
+  my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+ 
+  return qq{<span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>};
+}  
+
 sub get_tsl_html {
   my $transcript = shift;
   my $tr_type    = shift;
@@ -1115,6 +1000,16 @@ sub get_tsl_html {
   return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" title="Transcript Support Level = $level">$level</span>};
 }
 
+sub get_canonical_html {
+  my $transcript   = shift;
+  my $column_class = shift;
+  
+  return '' unless($transcript->is_canonical);
+  
+  my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  
+  return qq{<span class="canonical"$border_colour title="Canonical transcript">C</span>}
+}
 
 sub get_biotype {
   my $object = shift;
@@ -1133,12 +1028,12 @@ sub get_showhide_buttons {
   $start ||= 1;
   $end   ||= 1;
   return qq{
-       <div style="margin:10px 0px;border-bottom:2px dotted #888;padding:2px">
-         <div style="float:left;font-weight:bold;width:140px;margin-bottom:10px">$type rows:</div>
-         <div style="float:left;margin:0px 2px;padding-top:2px">
+       <div class="buttons_row">
+         <div class="buttons_row_title_left">$type rows:</div>
+         <div class="buttons_row_title_right">
            <a class="green_button" href="javascript:showhide_range($start,$end);"><small>Show/Hide all rows</small></a>
          </div>
-         <div style="float:left;padding-top:2px;padding-left:2px;margin-bottom:10px;border-left:2px dotted #888">
+         <div class="buttons_row_content">
            <div style="margin-bottom:10px">\n};
 }
 
@@ -1148,6 +1043,146 @@ sub get_strand {
   return ($strand == 1) ? '<span class="forward_strand" title="forward strand"></span>' : '<span class="reverse_strand" title="reverse strand"></span>';
 
 }
+
+
+sub display_refseq_data {
+  my $refseq_exons_list = shift;
+  my $refseq_import = shift;
+  my %rows_list;
+
+  foreach my $nm (sort {$refseq_exons_list->{$b}{'count'} <=> $refseq_exons_list->{$a}{'count'}} keys(%{$refseq_exons_list})) {
+
+    my $refseq_exons = $refseq_exons_list->{$nm}{'exon'};
+    my $e_count = scalar(keys(%{$refseq_exons})); 
+    my $column_class = ($refseq_import eq 'gff3') ? 'gff3' : 'nm';
+    
+    my $hide_row      = hide_button($row_id);
+    my $highlight_row = highlight_button($row_id);
+    my $blast_button  = blast_button($nm);
+    
+    $exon_tab_list_left .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
+      <td>$hide_row</td>
+      <td>$highlight_row</td>
+      <td>$blast_button</td>
+      <td class="$column_class first_column">
+        <div>
+          <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
+        </div>
+        <div class="exon_number">
+          <b>$e_count</b> exons
+        </div>
+      </td>
+    </tr>
+    };
+    
+    $exon_tab_list_right .= qq{
+      <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
+    };
+    
+    my $refseq_object = $refseq_exons_list->{$nm}{'object'};
+    my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
+    my $refseq_strand = $refseq_object->slice->strand;
+    my $refseq_orientation = get_strand($refseq_strand);
+    my $biotype = get_biotype($refseq_object);
+    $exon_tab_list_right .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
+  
+    $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
+    $rows_list{$row_id}{'label'} = $nm;
+    $rows_list{$row_id}{'class'} = $column_class;
+    $row_id++;
+  
+    my %exon_set_match;
+    my $first_exon;
+    my $last_exon;
+    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+      if ($refseq_exons->{$coord}) {
+        $first_exon = $coord if (!defined($first_exon));
+        $last_exon  = $coord;
+      }
+    }
+  
+    my $exon_number = ($refseq_strand == 1) ? 1 : $e_count;
+    my $exon_start;
+    my $colspan = 1;
+    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+      my $is_coding  = ' coding_unknown';
+      my $is_partial = '';
+      
+      if ($exon_start and !$refseq_exons->{$exon_start}{$coord}) {
+        $colspan ++;
+        next;
+      }
+      # Exon start found
+      elsif (!$exon_start && $refseq_exons->{$coord}) {
+        $exon_start = $coord;
+        next;
+      }
+       # Exon end found
+      elsif ($exon_start and $refseq_exons->{$exon_start}{$coord}) {
+        $colspan ++;
+      }
+      
+      my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
+      
+      my $has_exon = ($exon_start) ? 'exon' : $no_match;
+      
+      my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
+      $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
+      if ($exon_start) {
+        if(! $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object)) {
+          $is_coding = ' non_coding_unknown';
+        }
+        elsif ($refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object) > $exon_start) {
+          my $coding_start = $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object);
+          my $coding_end   = $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_end($refseq_object);
+          $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+        }
+        
+        $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$gene_chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
+        if ($refseq_strand == 1) { $exon_number++; }
+        else { $exon_number--; }
+        $exon_start = undef;
+        $colspan = 1;
+      }
+      else {
+        $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
+      }
+    }
+    $exon_tab_list_right .= $end_of_row;
+  }
+  return \%rows_list;
+}
+
+
+sub display_transcript_buttons {
+  my $rows_list = shift;
+  my $source    = shift;
+
+  my $tr_count = 0;
+  my @tr_row_ids = (sort {$a <=> $b} keys(%{$rows_list}));
+  my $buttons_html = '';
+  foreach my $row_id (@tr_row_ids) {
+    if ($tr_count == $max_per_line) {
+      $buttons_html .= qq{</div><div style="margin-bottom:10px">};
+      $tr_count = 0;
+    }
+    my $label = $rows_list->{$row_id}{'label'};
+    my $class = $rows_list->{$row_id}{'class'};
+    $buttons_html .= qq{<input type="hidden" id="button_color_$row_id" value="$class"/>};
+    $buttons_html .= qq{<span id="button_$row_id" class="button $class" onclick="showhide($row_id)">$label</span>};
+    $tr_count ++;
+  }
+
+  my $first_row_id = $tr_row_ids[0];
+  my $last_row_id  = $tr_row_ids[@tr_row_ids-1];
+
+  my $html  = get_showhide_buttons($source, $first_row_id, $last_row_id);
+     $html .= $buttons_html;
+
+  return $html
+}
+
 
 sub usage {
   my $msg = shift;
@@ -1160,6 +1195,7 @@ OPTIONS:
   -gene        : gene name (HGNC symbol or ENS) (required)
   -outputfile  : file path to the output HTML file (required)
   -o           : alias of the option "-outputfile"
+  -lrg         : the LRG ID corresponding to the gene, if it exists (optional)
   -tsl         : path to the Transcript Support Level text file (optional)
                  By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
                  The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
