@@ -394,7 +394,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
   my $manual_html    = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $tsl_html       = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tsl_html       = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
+  my $appris_html    = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $canonical_html = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   
   my $hide_row       = hide_button($row_id);
@@ -409,10 +410,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td>$blast_button</td>
     <td class="$column_class first_column">
       <table style="width:100%;text-align:center">
-        <tr><td class="$column_class" colspan="4"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
+        <tr><td class="$column_class" colspan="5"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
         <tr>
           <td class="$column_class small_cell">$manual_html</td>
           <td class="$column_class small_cell">$tsl_html</td>
+          <td class="$column_class small_cell">$appris_html</td>
           <td class="$column_class small_cell">$canonical_html</td>
           <td class="$column_class large_cell exon_number"><b>$e_count</b> exons</td>
         </tr>
@@ -873,18 +875,28 @@ $html .= qq{
           <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
           <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
         </td>
-        <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td></tr>
-        <tr class="bg1">
+        <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
+      </tr>
+      <tr class="bg1">
         <td style="padding-left:2px">
           <span class="manual">M</span>
           <span class="not_manual">A</span>
         </td>
-        <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td></tr>
-        <tr class="bg2">
+        <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td>
+      </tr>
+      <tr class="bg2">
+        <td style="padding-left:2px">
+          <span class="appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
+          <span class="appris" title="APRRIS ALTERNATIVE1">A1</span>
+        </td>
+        <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
+      </tr>
+      <tr class="bg1">
         <td style="padding-left:2px">
           <span class="canonical">C</span>
         </td>
-        <td style="padding-left:5px">Label to indicate the canonical transcript</td></tr>
+        <td style="padding-left:5px">Label to indicate the canonical transcript</td>
+      </tr>  
     </table>
     </div>
    
@@ -1009,6 +1021,23 @@ sub get_canonical_html {
   my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
   return qq{<span class="canonical"$border_colour title="Canonical transcript">C</span>}
+}
+
+sub get_appris_html {
+  my $transcript   = shift;
+  my $column_class = shift;
+  
+  my $appris_attribs = $transcript->get_all_Attributes('appris');
+ 
+  return '' unless(scalar(@{$appris_attribs}) > 0);
+  
+  my $appris = uc($appris_attribs->[0]->value);
+     $appris =~ /^(\w).+(\d+)$/;
+  my $appris_label = $1.$2;
+  
+  my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  
+  return qq{<span class="appris"$border_colour title="APPRIS $appris">$appris_label</span>};
 }
 
 sub get_biotype {

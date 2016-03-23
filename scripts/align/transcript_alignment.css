@@ -54,13 +54,13 @@ table.legend td {
 
 .small_cell {
   text-align:left;
-  padding-right:5px;
-  width:15%;
+  padding-right:4px;
+  width:12%;
 }
 
 .large_cell {
   text-align:right;
-  width:55%;
+  width:52%;
 }
 
 .exon_number {
@@ -118,6 +118,20 @@ table.legend td {
   color: #F00;
   line-height:14px;
   border:1px solid #FFF;
+  background-color:#FFF;
+  border-radius:4px;
+}
+
+.appris {
+  margin-bottom:1px;
+  padding:1px;
+  cursor:help;
+  font-size:14px;
+  font-weight:bold;
+  display:inline-block;
+  color: #00F;
+  line-height:14px;
+  border:1px solid #CCC;
   background-color:#FFF;
   border-radius:4px;
 }
