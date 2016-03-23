@@ -4,18 +4,18 @@ use strict;
 use LRG::LRG;
 use Getopt::Long;
 use Cwd;
+use JSON;
 
-my ($xml_file,$xml_dir,$tmp_dir,$index_dir,$status,$in_ensembl,$default_assembly,$species,$taxo_id,$index_suffix,$help);
+my ($xml_file,$xml_dir,$tmp_dir,$status,$in_ensembl,$default_assembly,$species,$taxo_id,$index_suffix,$help);
 GetOptions(
   'xml_file=s'         => \$xml_file,
   'xml_dir=s'          => \$xml_dir,
   'tmp_dir=s'          => \$tmp_dir,
-  'index_dir=s'        => \$index_dir,
   'status=s'           => \$status,
   'in_ensembl=i'       => \$in_ensembl,
   'default_assembly=s' => \$default_assembly,
   'species=s'          => \$species,
-  'taxo_id=i'          => \$taxo_id ,
+  'taxo_id=i'          => \$taxo_id,
   'index_suffix=s'     => \$index_suffix,
   'help!'              => \$help
 );
@@ -93,10 +93,12 @@ foreach my $set (@$asets) {
       if ($coord->data->{coord_system} =~ /^$default_assembly/i) {
         $data{'assembly'}  = $coord->data->{coord_system};
         $data{'chr_name'}  = $coord->data->{other_name};
-        $data{'chr_start'} = $coord->data->{other_start};
-        $data{'chr_end'}   = $coord->data->{other_end};
+        $data{'chr_start'} = $coord->data->{other_start} + 0; 
+        $data{'chr_end'}   = $coord->data->{other_end} + 0;   # Force number for the JSON data
         my $mapping_span = $coord->findNode('mapping_span');
         $data{'chr_strand'} = $mapping_span->data->{strand};
+        
+        $data{'chr_name'} += 0 if ($data{'chr_name'} =~ /^\d/); # Force number for the JSON data
       }
       # Assemblies coords
       my $assembly = $coord->data->{coord_system};
@@ -158,7 +160,7 @@ if ($data{'locus'}) {
 my $symbols = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/symbol');
 foreach my $symbol (@{$symbols}) {
   my $s_content = $symbol->data->{name};
-  $synonyms{$s_content} = 1 if ($s_content ne $data{'hgnc'});
+  next if ($s_content ne $data{'hgnc'}); # Limit to the synonyms of the corresponding LRG gene
   # > Symbol synonym(s)
   my $symbol_syn = $symbol->findNodeArraySingle('synonym');
   foreach my $synonym (@{$symbol_syn}) {
@@ -175,7 +177,7 @@ foreach my $syn (keys(%synonyms)) {
 
 # Organism
 $add_fields->addNode('field',{'name' => 'organism'})->content($species);
-  
+
 
 ## Cross references / Xref ##
 my $cross_ref = $entry->addNode('cross_references');
@@ -183,22 +185,33 @@ my $cross_refs;
 
 # Gene xref
 my $x_genes = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene');
-$cross_refs = get_cross_refs($x_genes,$cross_refs);
-my $seq_source = $lrg->findNodeSingle('fixed_annotation/sequence_source')->content;
-$cross_refs->{$seq_source} = 'RefSeq' if (defined($seq_source));
+foreach my $x_gene (@{$x_genes}) {
 
-# Transcript xref
-my $x_trans = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/transcript');
-$cross_refs = get_cross_refs($x_trans,$cross_refs);
-
-# Protein xref
-my $x_proteins = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/transcript/protein_product');
-$cross_refs = get_cross_refs($x_proteins,$cross_refs);
+  # Limit the xrefs to the LRG gene
+  my $symbol = $x_gene->findNodeSingle('symbol');
+  next if ($symbol->data->{'name'} ne $data{'hgnc'});
   
+  $cross_refs = get_cross_refs($x_gene, $cross_refs);
+  my $seq_source = $lrg->findNodeSingle('fixed_annotation/sequence_source')->content;
+  $cross_refs->{$seq_source} = 'RefSeq' if (defined($seq_source));
+
+  # Transcript xref
+  my $x_trans = $x_gene->findNodeArraySingle('transcript');
+  foreach my $x_tr (@{$x_trans}) {
+    $cross_refs = get_cross_refs($x_tr, $cross_refs);
+
+    # Protein xref
+    my $x_prots = $x_tr->findNodeArraySingle('protein_product');
+    foreach my $x_prot (@{$x_prots}) {
+      $cross_refs = get_cross_refs($x_prot, $cross_refs);
+    }
+  }
+}
+
 # Cross references + Xref (additional fields)
-foreach my $cr (sort(keys %{$cross_refs})) {
-  my $dbname = $cross_refs->{$cr};
-  my $dbkey = ($dbname =~ /hgnc/i && $cr !~ /^hgnc/i) ? "HGNC:$cr" : $cr;
+foreach my $dbkey (sort(keys %{$cross_refs})) {
+  my $dbname = $cross_refs->{$dbkey};
+  $dbkey = "HGNC:$dbkey" if ($dbname =~ /hgnc/i && $dbkey !~ /^hgnc/i);
   $cross_ref->addEmptyNode('ref',{'dbname' => $dbname, 'dbkey' => $dbkey});
 }
   
@@ -226,23 +239,65 @@ foreach my $set (@$asets) {
 $index_root->printAll(1);
 
 
+## JSON index data ##
+my @json_syn  = keys(%synonyms);
+my @json_xref = grep { $_ =~ /^NM_|NG_|ENST|ENSG/ } keys %{$cross_refs};
+
+my $json_assembly = 'GRCh38';
+my $json_chr_name = $data{'assemblies'}{$json_assembly}{'chr_name'};
+   $json_chr_name += 0 if ($json_chr_name =~ /^\d/); # Force number for the JSON data
+   
+my %json_data = ( "id"        => $lrg_id,  
+                  "symbol"    => $data{'hgnc'},
+                  "status"    => $status,
+                  "chr_name"  => $json_chr_name,
+                  "chr_start" => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
+                  "chr_end"   => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
+                  "synonyms"  => \@json_syn,
+                  "xref"      => \@json_xref,
+                  "last_modification_date" => $data{'last_modified'}
+                );
+my $json = encode_json \%json_data;
+print $json;
+
+
+
+## Methods ##
+
 sub get_cross_refs {
-  my $cross_refs_nodes = shift;
+  my $x_node = shift;
   my $cross_refs = shift;
-  foreach my $x_node (@{$cross_refs_nodes}) {
-    my $dbname = $x_node->data->{'source'};
-    my $dbkey  = $x_node->data->{'accession'};
-    $cross_refs->{$dbkey} = $dbname;
-    my $db_xrefs = $x_node->findNodeArraySingle('db_xref');
-    next if (!scalar $db_xrefs);
-    foreach my $x_ref (@{$db_xrefs}) {
-      my $dbname2 = $x_ref->data->{'source'};
-      my $dbkey2  = $x_ref->data->{'accession'};
-      $cross_refs->{$dbkey2} = $dbname2;
-    }
+    
+  my $dbname = $x_node->data->{'source'};
+  my $dbkey  = $x_node->data->{'accession'};
+  $cross_refs->{$dbkey} = $dbname;
+  my $db_xrefs = $x_node->findNodeArraySingle('db_xref');
+  return $cross_refs if (!scalar $db_xrefs);
+  foreach my $x_ref (@{$db_xrefs}) {
+    my $dbname2 = $x_ref->data->{'source'};
+    my $dbkey2  = $x_ref->data->{'accession'};
+    $cross_refs->{$dbkey2} = $dbname2;
   }
   return $cross_refs;
 }
+
+#sub get_cross_refs {
+#  my $cross_refs_nodes = shift;
+#  my $cross_refs = shift;
+#  foreach my $x_node (@{$cross_refs_nodes}) {
+#    my $dbname = $x_node->data->{'source'};
+#    my $dbkey  = $x_node->data->{'accession'};
+#    $cross_refs->{$dbkey} = $dbname;
+#    my $db_xrefs = $x_node->findNodeArraySingle('db_xref');
+#    next if (!scalar $db_xrefs);
+#    foreach my $x_ref (@{$db_xrefs}) {
+#      my $dbname2 = $x_ref->data->{'source'};
+#      my $dbkey2  = $x_ref->data->{'accession'};
+#      $cross_refs->{$dbkey2} = $dbname2;
+#    }
+#  }
+#  return $cross_refs;
+#}
 
 sub usage {
     

@@ -23,6 +23,7 @@ usage() if (defined($help));
 
 $tmp_dir ||= $index_dir;
 my $lrg_list = 'lrgs_in_ensembl.txt';
+my $lrg_json = 'lrg_index.json';
 
 my $extra_options  = '';
    $extra_options .= " -default_assembly $default_assembly" if (defined($default_assembly));
@@ -80,6 +81,9 @@ my $nb_files = @xmlfiles;
 my $percent = 10;
 my $count_files = 0;
 
+open JSON, "> $tmp_dir/$lrg_json" || die $!;
+print JSON "[\n";
+
 foreach my $xml (@xmlfiles) {
 
   my $xml_file     = $xml->{'filename'};
@@ -94,13 +98,19 @@ foreach my $xml (@xmlfiles) {
   ## Status
   my $status = $xml->{'status'} if (defined($xml->{'status'}));
   
-
-  `perl $script_path/index.single_lrg.pl -xml_file $xml_file -xml_dir $xml_file_dir -tmp_dir $tmp_dir -index_dir $index_dir -status $status -in_ensembl $in_ensembl$extra_options`;
+  my $json_data = `perl $script_path/index.single_lrg.pl -xml_file $xml_file -xml_dir $xml_file_dir -tmp_dir $tmp_dir -status $status -in_ensembl $in_ensembl$extra_options`;
 
   # Count
   $count_files ++;
   get_count();
+  
+  # JSON
+  $json_data .= ',' if ($count_files < $nb_files);
+  print JSON "$json_data\n";
 }
+print JSON "]";
+close(JSON);
+
 
 # Move the indexes from the temporary directory to the new directory
 if ($tmp_dir ne $index_dir) {
