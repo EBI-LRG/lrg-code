@@ -224,15 +224,13 @@ print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
 warn("Done!\n");
 
 
-
-# /!\ Needs to check the assemblies first (TODO) /!\ #
 sub get_diff {
   my $sets = shift;
   my %diffs_list;
   foreach my $set (@{$sets}) {
     next unless ($set->source->name() eq $lrg_label || $set->type eq lc($lrg_label));
-    
     foreach my $m (@{$set->mapping() || []}) {
+      next unless ($m->assembly() =~ /^$assembly/i && $m->other_coordinates->coordinate_system =~ /^([0-9]+|[XY])$/i);
       foreach my $ms (@{$m->mapping_span()}) {
         foreach my $diff (@{$ms->mapping_diff}) {
           $diffs_list{$diff->lrg_coordinates->start} = {'diff' => $diff, 'end' => $diff->lrg_coordinates->end};
