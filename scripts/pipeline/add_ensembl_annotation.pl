@@ -187,7 +187,7 @@ foreach my $f (@ens_feature) {
     if ($gene_flag) {
       my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
       $ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
-      $ens_match_lrg = compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords);
+      $ens_match_lrg = compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords,$diffs_list);
     }
     
     remove_grc_coordinates($g);
@@ -235,7 +235,7 @@ sub get_diff {
     foreach my $m (@{$set->mapping() || []}) {
       foreach my $ms (@{$m->mapping_span()}) {
         foreach my $diff (@{$ms->mapping_diff}) {
-          $diffs_list{$diff->lrg_coordinates->start} = $diff;
+          $diffs_list{$diff->lrg_coordinates->start} = {'diff' => $diff, 'end' => $diff->lrg_coordinates->end};
         }
       }
     }
@@ -276,15 +276,22 @@ sub get_lrg_transcript_coords {
 sub compare_ens_transcripts_with_lrg_transcripts {
   my $mappings     = shift;
   my $lrg_tr_coord = shift;
+  my $diff_list    = shift;
 
   my %ens_list;
-  foreach my $mapping (@$mappings) {
+  MAPPING: foreach my $mapping (@$mappings) {
     my $trans_name = $mapping->other_coordinates->coordinate_system;
     my %tr_coord_match;
     my @mapping_spans = @{$mapping->mapping_span};
     my $ms_count = @mapping_spans;
     foreach my $mapping_span (@mapping_spans) {
-      my $coord = $mapping_span->lrg_coordinates->start.'-'.$mapping_span->lrg_coordinates->end;
+
+      next MAPPING if ($mapping_span->mapping_diff);
+
+      my $mapping_start = $mapping_span->lrg_coordinates->start;
+      my $mapping_end   = $mapping_span->lrg_coordinates->end;
+      my $coord = "$mapping_start-$mapping_end";
+
       foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
         $tr_coord_match{$lrg_tr}{$trans_name}++ if ($lrg_tr_coord->{$lrg_tr}{$coord});
       }

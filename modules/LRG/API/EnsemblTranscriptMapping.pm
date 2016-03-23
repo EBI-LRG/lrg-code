@@ -117,8 +117,10 @@ sub get_transcripts_mappings {
 
       # Diff tag
       foreach my $d_start (@diffs_start) {
-        if ($d_start > $l_coord->start && $d_start < $l_coord->end) {
-            my $mapping_diff = $diffs_list->{$d_start};
+        my $d_end = $diffs_list->{$d_start}{'end'};
+        if (($d_start >= $l_coord->start && $d_start <= $l_coord->end) || 
+            ($d_end >= $l_coord->start && $d_end <= $l_coord->end)) {
+            my $mapping_diff = $diffs_list->{$d_start}{'diff'};
             my $moc = $mapping_diff->other_coordinates;
             my $other_coordinates = LRG::API::Coordinates->new($moc->coordinate_system,
                                                                $moc->start,
