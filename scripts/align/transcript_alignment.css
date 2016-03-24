@@ -108,32 +108,36 @@ table.legend td {
   line-height:14px;
 }
 
-.canonical {
+.flag {
   margin-bottom:1px;
-  padding:1px 2px;
   cursor:help;
   font-size:14px;
-  font-weight:bold;
   display:inline-block;
-  color: #F00;
+  border-radius:4px;
   line-height:14px;
   border:1px solid #FFF;
+}
+
+.canonical {
+  padding:1px 2px;
+  color: #F00;
+  font-weight:bold;
   background-color:#FFF;
-  border-radius:4px;
 }
 
 .appris {
-  margin-bottom:1px;
   padding:1px;
-  cursor:help;
-  font-size:14px;
-  font-weight:bold;
-  display:inline-block;
   color: #00F;
-  line-height:14px;
-  border:1px solid #CCC;
+  font-weight:bold;
   background-color:#FFF;
-  border-radius:4px;
+}
+
+.source_flag {
+  padding:1px;
+  margin-right:4px;
+}
+.source_flag:before {
+  content: "+";
 }
 
 th.coord {
@@ -484,5 +488,18 @@ th.coord {
   margin-bottom:10px;
   border-left:2px dotted #888;
 }
+
+.nm_details {
+  margin-top:1px;
+}
+.nm_details:after {
+  clear:both;
+}
+
+div.left_div {
+  float:left;
+}
+div.right_div {
+  float:right;
 }
 

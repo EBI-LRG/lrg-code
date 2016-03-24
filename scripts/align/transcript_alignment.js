@@ -163,12 +163,14 @@ function highlight_exons(param,hide) {
   var divs = document.getElementsByClassName('exon');
 
   for (var id=0; id<=divs.length; id++) {
-    if (divs[id].getAttribute('data-name') == param) {
-      if (hide) {
-        divs[id].style.color='#FFF';
-      }
-      else {
-        divs[id].style.color='#34DDDD';
+    if (divs[id]) {
+      if (divs[id].getAttribute('data-name') == param) {
+        if (hide) {
+          divs[id].style.color='#FFF';
+        }
+        else {
+          divs[id].style.color='#34DDDD';
+        }
       }
     }
   }

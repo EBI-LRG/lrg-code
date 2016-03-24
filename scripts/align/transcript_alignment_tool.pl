@@ -69,6 +69,11 @@ my %overlapping_genes_list;
 my %exons_count;
 my %unique_exon;
 my %nm_data;
+my %compare_nm_data;
+
+my $ref_seq_attrib = 'human';
+my $gff_attrib     = 'gff3';
+my $cdna_attrib    = 'cdna';
 
 my $MAX_LINK_LENGTH = 60;
 my $lovd_url = 'http://####.lovd.nl';
@@ -176,37 +181,6 @@ foreach my $tr (@$ens_tr) {
 }
 
 
-#------#
-# cDNA #
-#------#
-my $cdna_dna = $cdna_dna_a->fetch_all_by_Slice($gene_slice);
-
-foreach my $cdna_tr (@$cdna_dna) {
-  next if ($cdna_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
-
-  my $cdna_name = '';
-  my $cdna_exons = $cdna_tr->get_all_Exons;
-  my $cdna_exon_count = scalar(@$cdna_exons);
-  foreach my $cdna_exon (@{$cdna_exons}) {
-    foreach my $cdna_exon_evidence (@{$cdna_exon->get_all_supporting_features}) {
-      next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
-      $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
-      my $cdna_evidence_start = $cdna_exon_evidence->seq_region_start;
-      my $cdna_evidence_end = $cdna_exon_evidence->seq_region_end;
-      my $cdna_coord = "$cdna_evidence_start-$cdna_evidence_end";
-      $exons_list{$cdna_evidence_start} ++;
-      $exons_list{$cdna_evidence_end} ++;
-      next if ($cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_coord});
-      $cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_evidence_start}{$cdna_evidence_end}{'exon_obj'} = $cdna_exon;
-      $cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_evidence_start}{$cdna_evidence_end}{'dna_align'} = $cdna_exon_evidence;
-      $cdna_tr_exons_list{$cdna_name}{'count'} ++;
-      
-    }
-  }
-  $cdna_tr_exons_list{$cdna_name}{'object'} = $cdna_tr if ($cdna_name ne '');
-}
-
-
 #-------------#
 # RefSeq data #
 #-------------#
@@ -258,7 +232,7 @@ foreach my $refseq_tr (@$refseq_gff3) {
   $refseq_gff3_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
   $refseq_gff3_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
   
-  # RefSeq exons
+  # RefSeq GFF3 exons
   foreach my $refseq_exon (@{$refseq_exons}) {
     my $start = $refseq_exon->seq_region_start;
     my $end   = $refseq_exon->seq_region_end;
@@ -269,6 +243,38 @@ foreach my $refseq_tr (@$refseq_gff3) {
     $refseq_gff3_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
   }
 }
+
+
+#------#
+# cDNA #
+#------#
+my $cdna_dna = $cdna_dna_a->fetch_all_by_Slice($gene_slice);
+
+foreach my $cdna_tr (@$cdna_dna) {
+  next if ($cdna_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+
+  my $cdna_name = '';
+  my $cdna_exons = $cdna_tr->get_all_Exons;
+  my $cdna_exon_count = scalar(@$cdna_exons);
+  foreach my $cdna_exon (@{$cdna_exons}) {
+    foreach my $cdna_exon_evidence (@{$cdna_exon->get_all_supporting_features}) {
+      next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
+      $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
+      next if ($cdna_name !~ /^\w+/);
+      my $cdna_evidence_start = $cdna_exon_evidence->seq_region_start;
+      my $cdna_evidence_end = $cdna_exon_evidence->seq_region_end;
+      $exons_list{$cdna_evidence_start} ++;
+      $exons_list{$cdna_evidence_end} ++;
+      next if ($cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_evidence_start}{$cdna_evidence_end});
+      $cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_evidence_start}{$cdna_evidence_end}{'exon_obj'} = $cdna_exon;
+      $cdna_tr_exons_list{$cdna_name}{'exon'}{$cdna_evidence_start}{$cdna_evidence_end}{'dna_align'} = $cdna_exon_evidence;
+      $cdna_tr_exons_list{$cdna_name}{'count'} ++; 
+    }
+  }
+  $cdna_tr_exons_list{$cdna_name}{'object'} = $cdna_tr if ($cdna_name ne '');
+}
+
+compare_nm_data(\%refseq_tr_exons_list ,\%refseq_gff3_tr_exons_list, \%cdna_tr_exons_list);
 
 #---------------------#
 # Overlapping gene(s) #
@@ -377,6 +383,7 @@ my $row_id_prefix = 'tr_';
 my $bg = 'bg1';
 my $min_exon_evidence = 1;
 my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column"></td></tr>\n};
+
 
 #----------------------------#
 # Display ENSEMBL transcript #
@@ -523,14 +530,28 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 }  
 
 
+#----------------------------#
+# Display REFSEQ transcripts #
+#----------------------------#
+my %refseq_rows_list = %{display_refseq_data(\%refseq_tr_exons_list, $ref_seq_attrib)};
+
+
+#---------------------------------#
+# Display REFSEQ GFF3 transcripts #
+#---------------------------------#
+my %refseq_gff3_rows_list = %{display_refseq_data(\%refseq_gff3_tr_exons_list, $gff_attrib)};
+
+
 #--------------------------#
 # Display cDNA transcripts #
 #--------------------------#
 my %cdna_rows_list;
 foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$a}{'count'}} keys(%cdna_tr_exons_list)) {
 
+  next if ($compare_nm_data{$nm}{$cdna_attrib});
+
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
-  my $column_class = 'cdna';
+  my $column_class = $cdna_attrib;
   
   my $hide_row      = hide_button($row_id);
   my $highlight_row = highlight_button($row_id);
@@ -583,7 +604,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
     my $is_coding  = ' coding';
-    
+
     if ($exon_start and !$cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
       next;
@@ -604,6 +625,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $exon_tab_list_right .= qq{</td><td$colspan_html>}; 
+    
     if ($exon_start) {
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
@@ -620,18 +642,6 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   }
   $exon_tab_list_right .= $end_of_row;
 }
-
-
-#----------------------------#
-# Display REFSEQ transcripts #
-#----------------------------#
-my %refseq_rows_list = %{display_refseq_data(\%refseq_tr_exons_list,'human')};
-
-
-#---------------------------------#
-# Display REFSEQ GFF3 transcripts #
-#---------------------------------#
-my %refseq_gff3_rows_list = %{display_refseq_data(\%refseq_gff3_tr_exons_list,'gff3')};
 
 
 #-----------------------------#
@@ -805,24 +815,20 @@ my $max_per_line = 5;
 
 # Ensembl transcripts
 $html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
-$html .= qq{</div></div><div style="clear:both"></div></div>\n};
-
-# cDNA
-$html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
-$html .= qq{</div></div><div style="clear:both"></div></div>};
 
 # RefSeq
 $html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
-$html .= qq{</div></div><div style="clear:both"></div></div>\n};
 
 # RefSeq GFF3
 $html .= display_transcript_buttons(\%refseq_gff3_rows_list, 'RefSeq GFF3');
-$html .= qq{</div></div><div style="clear:both"></div></div>\n};
+
+# cDNA
+$html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
 
 # Ensembl genes
-$html .= display_transcript_buttons(\%gene_rows_list, 'Gene') if (scalar(keys(%gene_rows_list)));
+$html .= display_transcript_buttons(\%gene_rows_list, 'Gene');
+
 $html .= qq{ 
-    </div></div><div style="clear:both"></div></div>
     <div style="margin:10px 0px 60px">
       <div style="float:left;font-weight:bold">All rows:</div>
       <div style="float:left;margin-left:10px;padding-top:4px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
@@ -886,17 +892,30 @@ $html .= qq{
       </tr>
       <tr class="bg2">
         <td style="padding-left:2px">
-          <span class="appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
-          <span class="appris" title="APRRIS ALTERNATIVE1">A1</span>
+          <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
+          <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
         </td>
         <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
       </tr>
       <tr class="bg1">
         <td style="padding-left:2px">
-          <span class="canonical">C</span>
+          <span class="flag canonical">C</span>
         </td>
         <td style="padding-left:5px">Label to indicate the canonical transcript</td>
-      </tr>  
+      </tr>
+      <tr class="bg1">
+        <td style="padding-left:2px">
+          <span class="flag source_flag cdna">cdna</span>
+        </td>
+        <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
+      </tr>
+      <tr class="bg1">
+        <td style="padding-left:2px">
+          <span class="flag source_flag gff3">gff3</span>
+        </td>
+        <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
+      </tr>
+      
     </table>
     </div>
    
@@ -1020,7 +1039,7 @@ sub get_canonical_html {
   
   my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  return qq{<span class="canonical"$border_colour title="Canonical transcript">C</span>}
+  return qq{<span class="flag canonical"$border_colour title="Canonical transcript">C</span>}
 }
 
 sub get_appris_html {
@@ -1037,7 +1056,13 @@ sub get_appris_html {
   
   my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  return qq{<span class="appris"$border_colour title="APPRIS $appris">$appris_label</span>};
+  return qq{<span class="flag appris"$border_colour title="APPRIS $appris">$appris_label</span>};
+}
+
+sub get_source_html {
+  my $source   = shift;
+  
+  return qq{<span class="flag source_flag $source" title="Same coordinates in the RefSeq $source import">$source</span>};
 }
 
 sub get_biotype {
@@ -1056,11 +1081,21 @@ sub get_showhide_buttons {
   my $end   = shift;
   $start ||= 1;
   $end   ||= 1;
+  
+  my $hidden_ids = '';
+  if ($type =~ /ensembl/i) {
+    $hidden_ids = qq{
+      <input type="hidden" id="first_ens_row_id" value="$start"/>
+      <input type="hidden" id="last_ens_row_id" value="$end"/>
+    };
+  }
+  
   return qq{
        <div class="buttons_row">
          <div class="buttons_row_title_left">$type rows:</div>
          <div class="buttons_row_title_right">
            <a class="green_button" href="javascript:showhide_range($start,$end);"><small>Show/Hide all rows</small></a>
+           $hidden_ids
          </div>
          <div class="buttons_row_content">
            <div style="margin-bottom:10px">\n};
@@ -1076,18 +1111,27 @@ sub get_strand {
 
 sub display_refseq_data {
   my $refseq_exons_list = shift;
-  my $refseq_import = shift;
+  my $refseq_import     = shift;
   my %rows_list;
 
   foreach my $nm (sort {$refseq_exons_list->{$b}{'count'} <=> $refseq_exons_list->{$a}{'count'}} keys(%{$refseq_exons_list})) {
 
+    next if ($refseq_import eq $gff_attrib && $compare_nm_data{$nm}{$gff_attrib});
+
     my $refseq_exons = $refseq_exons_list->{$nm}{'exon'};
     my $e_count = scalar(keys(%{$refseq_exons})); 
-    my $column_class = ($refseq_import eq 'gff3') ? 'gff3' : 'nm';
+    my $column_class = ($refseq_import eq $gff_attrib) ? $gff_attrib : 'nm';
     
     my $hide_row      = hide_button($row_id);
     my $highlight_row = highlight_button($row_id);
     my $blast_button  = blast_button($nm);
+    
+    my $labels = '';
+    if ($refseq_import eq $ref_seq_attrib && $compare_nm_data{$nm}) {
+      foreach my $source (sort(keys(%{$compare_nm_data{$nm}}))) {
+        $labels .= get_source_html($source);
+      }
+    }
     
     $exon_tab_list_left .= qq{
     <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
@@ -1098,8 +1142,11 @@ sub display_refseq_data {
         <div>
           <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
         </div>
-        <div class="exon_number">
-          <b>$e_count</b> exons
+        <div class="nm_details">
+          <div class="left_div">$labels</div>
+          <div class="right_div exon_number">
+            <b>$e_count</b> exons
+          </div>
         </div>
       </td>
     </tr>
@@ -1190,6 +1237,9 @@ sub display_transcript_buttons {
 
   my $tr_count = 0;
   my @tr_row_ids = (sort {$a <=> $b} keys(%{$rows_list}));
+  
+  return '' if (scalar(@tr_row_ids) == 0);
+  
   my $buttons_html = '';
   foreach my $row_id (@tr_row_ids) {
     if ($tr_count == $max_per_line) {
@@ -1208,8 +1258,55 @@ sub display_transcript_buttons {
 
   my $html  = get_showhide_buttons($source, $first_row_id, $last_row_id);
      $html .= $buttons_html;
+     $html .= qq{</div></div><div style="clear:both"></div></div>};
 
-  return $html
+  return $html;
+}
+
+
+sub compare_nm_data {
+  my $ref_seq = shift;
+  my $gff3    = shift;
+  my $cdna    = shift;
+  
+  foreach my $nm (keys(%{$ref_seq})) {
+    
+    my $ref_seq_exon_count = $ref_seq->{$nm}{'count'};
+    
+    # GFF3
+    if ($gff3->{$nm} && $gff3->{$nm}{'count'} == $ref_seq_exon_count) {
+      my $same_gff3_exon_count = 0;
+      GFF3: foreach my $exon_start (keys(%{$ref_seq->{$nm}{'exon'}})) {
+        my $exon_end = (keys(%{$ref_seq->{$nm}{'exon'}{$exon_start}}))[0];
+        if ($gff3->{$nm}{'exon'}{$exon_start} && $gff3->{$nm}{'exon'}{$exon_start}{$exon_end}) {
+          $same_gff3_exon_count++;
+        }
+        else {
+          last GFF3;
+        }
+      }
+      if ($same_gff3_exon_count == $ref_seq_exon_count) {
+        $compare_nm_data{$nm}{$gff_attrib} = 1;
+      }
+    }
+  
+    # cDNA
+    if ($cdna->{$nm} && $cdna->{$nm}{'count'} == $ref_seq_exon_count) {
+      my $same_cdna_exon_count = 0;
+      CDNA: foreach my $exon_start (keys(%{$ref_seq->{$nm}{'exon'}})) {
+        my $exon_end = (keys(%{$ref_seq->{$nm}{'exon'}{$exon_start}}))[0];
+        if ($cdna->{$nm}{'exon'}{$exon_start} && $cdna->{$nm}{'exon'}{$exon_start}{$exon_end}) {
+          $same_cdna_exon_count++;
+        }
+        else {
+          last CDNA;
+        }
+      }
+      if ($same_cdna_exon_count == $ref_seq_exon_count) {
+        $compare_nm_data{$nm}{$cdna_attrib} = 1;
+      }
+    } 
+  }
 }
 
 
