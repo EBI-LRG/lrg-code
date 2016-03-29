@@ -204,7 +204,7 @@ function compact_expand(column_count) {
 function isEven(n) { return (n % 2 == 0); }
 function isOdd(n)  { return (n % 2 == 1); }
 
-function show_hide_info (e,ens_id,exon_id,content,ens_exon_id) {
+function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
   var exon_popup = '';
   var exon_popup_id = "exon_popup_"+ens_id+"_"+exon_id;
   if (document.getElementById(exon_popup_id)) {
@@ -227,7 +227,7 @@ function show_hide_info (e,ens_id,exon_id,content,ens_exon_id) {
     exon_popup_header_right = document.createElement('div');
     exon_popup_header_right.className = "hide_popup_button";
     exon_popup_header_right.title="Hide this popup";
-    exon_popup_header_right.onclick = function() { show_hide_info(e,ens_id,exon_id,content); };
+    exon_popup_header_right.onclick = function() { show_hide_info(e,ens_id,exon_id,content,exon_length); };
     exon_popup_header.appendChild(exon_popup_header_right);
     
     exon_popup_header_clear = document.createElement('div');
@@ -246,7 +246,8 @@ function show_hide_info (e,ens_id,exon_id,content,ens_exon_id) {
     if (ens_exon_id) {
       popup_content = popup_content+'<b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a><br />';
     }
-    popup_content = popup_content+'<b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a>';
+    popup_content = popup_content+'<b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a><br />';
+    popup_content = popup_content+'<b>Size:</b> '+exon_length;
     
     exon_popup_body.innerHTML = popup_content;
     exon_popup.appendChild(exon_popup_body);

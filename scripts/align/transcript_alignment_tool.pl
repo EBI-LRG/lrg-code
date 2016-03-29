@@ -365,9 +365,11 @@ my $exon_tab_list_right = qq{
 
 foreach my $exon_coord (sort(keys(%exons_list))) {
   
+  my $exon_coord_label = thousandify($exon_coord);
+  
   $exon_tab_list_right .= qq{</th>} if ($exon_number == 1);
-  $exon_tab_list_right .= qq{<th class="rowspan1 coord" id="coord_$exon_number" title="$exon_coord" onclick="alert('Genomic coordinate $gene_chr:$exon_coord')">};
-  $exon_tab_list_right .= $exon_coord;
+  $exon_tab_list_right .= qq{<th class="rowspan1 coord" id="coord_$exon_number" title="$exon_coord_label" onclick="alert('Genomic coordinate $gene_chr:$exon_coord')">};
+  $exon_tab_list_right .= $exon_coord_label;
 
   $bigger_exon_coord = $exon_coord if ($exon_coord > $bigger_exon_coord);
 
@@ -512,7 +514,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $exon_tab_list_right .= qq{ <div class="$has_exon$is_coding$few_evidence$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$ens_tr','$exon_number','$gene_chr:$exon_start-$coord','$exon_stable_id')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
+      $exon_tab_list_right .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr);
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -630,7 +632,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$identity" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$gene_chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number$identity_score</div>};
+      $exon_tab_list_right .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,$identity_score);
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -1214,8 +1216,8 @@ sub display_refseq_data {
           my $coding_end   = $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_end($refseq_object);
           $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
         }
-        
-        $exon_tab_list_right .= qq{<div class="$has_exon$is_coding$is_partial" data-name="$exon_start\_$coord" onclick="javascript:show_hide_info(event,'$nm','$exon_number','$gene_chr:$exon_start-$coord')" onmouseover="javascript:highlight_exons('$exon_start\_$coord')" onmouseout="javascript:highlight_exons('$exon_start\_$coord',1)">$exon_number</div>};
+
+        $exon_tab_list_right .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$nm);
         if ($refseq_strand == 1) { $exon_number++; }
         else { $exon_number--; }
         $exon_start = undef;
@@ -1261,6 +1263,37 @@ sub display_transcript_buttons {
      $html .= qq{</div></div><div style="clear:both"></div></div>};
 
   return $html;
+}
+
+
+sub display_exon {
+  my $classes     = shift;
+  my $e_chr       = shift;
+  my $e_start     = shift;
+  my $e_end       = shift;
+  my $e_number    = shift;
+  my $e_stable_id = shift;
+  my $e_tr        = shift;
+  my $e_extra     = shift;
+  
+  $e_extra ||= '';
+
+  my $e_length  = ($e_start <= $e_end) ? ($e_end - $e_start + 1) : ($e_start - $e_end + 1);
+     $e_length  = thousandify($e_length);
+     $e_length .= 'bp';
+
+  my $show_hide_info_params  = "event,'$e_tr','$e_number','$e_chr:$e_start-$e_end','$e_length'";
+     $show_hide_info_params .= ",'$e_stable_id'" if ($e_stable_id && $e_stable_id ne '');
+
+  return qq{ <div class="$classes" data-name="$e_start\_$e_end" title="$e_length" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">$e_number$e_extra</div>};
+}
+
+
+sub thousandify {
+  my $value = shift;
+  local $_ = reverse $value;
+  s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+  return scalar reverse $_;
 }
 
 
