@@ -219,9 +219,9 @@ th.coord {
 .few_evidence {
   border-radius:15px
 }
-.few_evidence::after {
+/*.few_evidence::after {
   content: "*"
-}
+}*/
 
 .non_coding   {
   height:18px;
