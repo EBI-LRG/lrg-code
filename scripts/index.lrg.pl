@@ -111,6 +111,9 @@ foreach my $xml (@xmlfiles) {
 print JSON "]";
 close(JSON);
 
+if (-s "$tmp_dir/$lrg_json") {
+  `cp $tmp_dir/$lrg_json $index_dir/`;
+}
 
 # Move the indexes from the temporary directory to the new directory
 if ($tmp_dir ne $index_dir) {
