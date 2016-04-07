@@ -32,6 +32,7 @@ sub default_options {
         pipeline_name           => 'lrg_automated_pipeline',
 
         lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
+        lrg_index_json          => 'lrg_index.json',
         
         reports_file_name       => 'pipeline_reports.txt',
         reports_sum_file_name   => 'pipeline_summary_reports.txt',
@@ -43,7 +44,7 @@ sub default_options {
 
         assembly                => 'GRCh38',
         index_assembly          => 'GRCh37',
-        index_suffix            => '_index.xml',     
+        index_suffix            => '_index',     
 
         date                    => LRG::LRG::date(),
         pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
@@ -194,9 +195,10 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::FinishIndexes',
             -rc_name           => 'small',
             -parameters        => {
-               new_xml_dir  => $self->o('new_dir'),
-               ftp_dir      => $self->o('ftp_dir'),
-               index_suffix => $self->o('index_suffix'),
+               new_xml_dir    => $self->o('new_dir'),
+               ftp_dir        => $self->o('ftp_dir'),
+               index_suffix   => $self->o('index_suffix'),
+               lrg_index_json => $self->o('lrg_index_json'),
             },
             -input_ids         => [],
             -wait_for          => [ 'create_indexes' ],

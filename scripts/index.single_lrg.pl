@@ -24,7 +24,7 @@ GetOptions(
 $species ||= 'Homo sapiens';
 $taxo_id ||= 9606;
 $default_assembly ||= 'GRCh37';
-$index_suffix ||= '_index.xml';
+$index_suffix ||= '_index';
 
 my %data;
 
@@ -35,8 +35,8 @@ my $lrg = LRG::LRG::newFromFile("$xml_dir/$xml_file") or die("ERROR: Could not c
 my $lrg_id  = $lrg->findNode('fixed_annotation/id')->content;
 
 # Create Index file root element
-my $index_root = LRG::LRG::new("$tmp_dir/$lrg_id$index_suffix");
-my $database = $index_root->addNode('database');
+my $index_root_xml = LRG::LRG::new("$tmp_dir/$lrg_id$index_suffix.xml");
+my $database = $index_root_xml->addNode('database');
 $database->addNode('name')->content('LRG');
 # description
 $database->addNode('description')->content($general_desc);
@@ -236,7 +236,7 @@ foreach my $set (@$asets) {
 }      
 
 # Dump XML to output_file
-$index_root->printAll(1);
+$index_root_xml->printAll(1);
 
 
 ## JSON index data ##
@@ -258,7 +258,9 @@ my %json_data = ( "id"        => $lrg_id,
                   "last_modification_date" => $data{'last_modified'}
                 );
 my $json = encode_json \%json_data;
-print $json;
+open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
+print JSON $json;
+close(JSON);
 
 
 
@@ -317,7 +319,7 @@ sub usage {
         -default_assembly  Assembly - default 'GRCh37' (optional)
         -species           Species - default 'Homo sapiens' (optional)
         -taxo_id           Taxonomy ID - default '9606' (optional)
-        -index_suffix      Suffix of the index file name - default '_index.xml' (optional)
+        -index_suffix      Suffix of the index file name - default '_index' (optional)
         -help              Print this message
         
   };

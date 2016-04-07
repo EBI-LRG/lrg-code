@@ -76,13 +76,13 @@ print " done\n";
 
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
 
+
+print "Generating the index files ...";
+
 # Count variables
 my $nb_files = @xmlfiles;
 my $percent = 10;
 my $count_files = 0;
-
-open JSON, "> $tmp_dir/$lrg_json" || die $!;
-print JSON "[\n";
 
 foreach my $xml (@xmlfiles) {
 
@@ -98,26 +98,51 @@ foreach my $xml (@xmlfiles) {
   ## Status
   my $status = $xml->{'status'} if (defined($xml->{'status'}));
   
-  my $json_data = `perl $script_path/index.single_lrg.pl -xml_file $xml_file -xml_dir $xml_file_dir -tmp_dir $tmp_dir -status $status -in_ensembl $in_ensembl$extra_options`;
+  `perl $script_path/index.single_lrg.pl -xml_file $xml_file -xml_dir $xml_file_dir -tmp_dir $tmp_dir -status $status -in_ensembl $in_ensembl$extra_options`;
 
   # Count
   $count_files ++;
   get_count();
-  
-  # JSON
-  $json_data .= ',' if ($count_files < $nb_files);
-  print JSON "$json_data\n";
 }
+print " done\n";
+
+
+# JSON index file
+print "Generating the JSON file ...";
+
+open JSON, "> $tmp_dir/$lrg_json" || die $!;
+print JSON "[\n";
+my $count_json_files = 0;
+opendir($dh,$tmp_dir);
+warn("Could not process directory $tmp_dir") unless (defined($dh));
+# Loop over the files in the directory and open the JSON files
+while (my $file = readdir($dh)) {
+  next unless ($file =~ m/\.json$/);
+  $count_json_files ++;
+  open F, "< $tmp_dir/$file" || die $!;
+  while (<F>) {
+    chomp $_;
+    my $json_data  = $_;
+       $json_data .= ',' if ($count_json_files < $nb_files);
+    print JSON "$json_data\n";   
+  }
+  close(F);
+}
+closedir($dh);
+
 print JSON "]";
 close(JSON);
 
-if (-s "$tmp_dir/$lrg_json") {
-  `cp $tmp_dir/$lrg_json $index_dir/`;
-}
+print " done\n";
+
 
 # Move the indexes from the temporary directory to the new directory
 if ($tmp_dir ne $index_dir) {
-  `mv $tmp_dir/LRG_*$index_suffix $index_dir`;
+  if (-s "$tmp_dir/$lrg_json") {
+    `cp $tmp_dir/$lrg_json $index_dir/`;
+  }
+  `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
+  `rm -f $tmp_dir/LRG_*$index_suffix.json`;
 }
 
 sub get_count {
