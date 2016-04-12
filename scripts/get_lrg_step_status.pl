@@ -507,8 +507,10 @@ my $html_header = qq{
       </div>
       <div style="clear:both"></div>
     </div>
-    <div class="menu_title" style="height:30px">Page generated the $day</div>
+    <div class="menu_title" style="padding:15px 10px">
+      <div style="float:right">Page generated the <b>$day</b></div>
 };
+
 
 # HTML FOOTER
 my $html_footer = qq{
@@ -777,9 +779,24 @@ if ($is_private) {
 }
 
 
+## HTML TABLE OF CONTENT ##
+my $html_table_of_content = qq{<div style="float:left">};
+foreach my $status ('pending', 'public', 'stalled') {
+  next if ($status eq 'stalled' and !$is_private);
+  my $section_id = $status.'_section';
+  my $section_label = ucfirst($status).' LRGs';
+  my $section_count = '['.$count_lrgs{$status}.' entries]';
+  $html_table_of_content .= qq{
+  <div class="submenu_section" style="border-bottom:none">
+    <img src="img/lrg_right_arrow_green.png" alt="right_arrow"><a href="#$section_id">$section_label</a> $section_count
+  </div>};
+}
+$html_table_of_content .= qq{</div><div style="clear:both"></div></div>};
+
+
 ## HEADERS ##
 my $html_pending_header = sprintf( qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+  <div id="pending_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Pending LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
@@ -809,14 +826,14 @@ my $html_pending_header = sprintf( qq{
 );
 
 my $html_public_header = sprintf( qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+  <div id="public_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Public LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
     <a class="show_hide_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Show table</a>
     %s
   </div>
-  <div class="hidden" id="public_lrg">
+  <div id="public_lrg">
     <div style="margin-bottom:4px">%s</div>
     <table class="sortable" style="width:100%%;margin-bottom:5px">
       <tr class="gradient_color2">
@@ -837,7 +854,7 @@ my $html_public_header = sprintf( qq{
 );
 
 my $html_stalled_header = sprintf( qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:10px">
+  <div id="stalled_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
     <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
     <h2 class="section">Stalled LRGs</h2>
     <span class="header_count">(%i LRGs)</span>
@@ -888,6 +905,7 @@ if (%discrepancy) {
 
 open  OUT, "> $tmpfile" or die $!;
 print OUT $html_header;
+print OUT $html_table_of_content;
 print OUT $html;
 print OUT $html_footer;
 close(OUT);
