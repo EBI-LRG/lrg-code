@@ -44,7 +44,7 @@ my %email_message = (
                                   '<p>'.
                                   'We are pleased to let you know that the LRG for %s (%s) has now been made public.<br />'.
                                   'Many thanks for your help in creating this LRG.<br />'.
-                                  'The public record is available at <a href="%s">%s</a><br /><br />'.
+                                  'The public record is available at <a href="%s">%s</a>.<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
@@ -52,9 +52,14 @@ my %email_message = (
                                   $lrg_ps,
                       'pending' => $title.'<br />'.
                                   '<p>'.
-                                  'We have now created an LRG for %s (%s).<br />'.
-                                  'We would be grateful if you could review the record and let us know if any changes are required.'.
-                                  'The record is available at <a href="%s">%s</a><br /><br />'.
+                                  'We have now created a pending LRG record for %s (%s) following your specifications.'.
+                                  '<br /><br />'.
+                                  'We would be grateful if you could review the record and let us know if any changes are required. '.
+                                  'The record is available for review at <a href="%s">%s</a>.'.
+                                  '<br /><br />'.
+                                  'Please note that this record is not finalised and will undergo manual curation in the near future. '.
+                                  'Curation will establish if the record contains the most suitable reference sequences for reporting variants at the %s locus. '.
+                                  'A member of the LRG team will contact you if any questions arise during the curation process<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
@@ -132,7 +137,13 @@ sub send_lrg_email {
 
   # Build message content
   my $tmp_message = $email_message{$status};
-  my $message = sprintf($tmp_message, $name, $hgnc, $lrg_id, $ftp_path, $ftp_path, $lrg_signature);
+  my $message;
+  if ($status eq 'public') {
+    $message = sprintf($tmp_message, $name, $hgnc, $lrg_id, $ftp_path, $ftp_path, $lrg_signature);
+  }
+  else {
+    $message = sprintf($tmp_message, $name, $hgnc, $lrg_id, $ftp_path, $ftp_path, $hgnc, $lrg_signature);
+  }
 
 
   # Send email
