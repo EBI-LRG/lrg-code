@@ -42,7 +42,8 @@ my %email_subject = (
 my %email_message = (
                       'public' => $title.'<br />'.
                                   '<p>'.
-                                  'We are pleased to let you know that the LRG for %s (%s) has now been made public.<br />'.
+                                  'We are pleased to let you know that the LRG for %s (%s) has now been made public. '.
+                                  'The fixed section will now remain stable and we can recommend the use of this LRG for variant reporting.<br />'.
                                   'Many thanks for your help in creating this LRG.<br />'.
                                   'The public record is available at <a href="%s">%s</a>.<br /><br />'.
                                   $lrg_contact.
