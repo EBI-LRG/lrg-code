@@ -165,6 +165,10 @@ function update_lrg_status {
         elif [[ -e ${stalled_fasta} ]]; then
           rm -f ${stalled_fasta}
         fi
+
+        # Create the steps in the table lrg_status, if needed
+        `perl ${perldir}/update_pending_creation_status.pl -host ${host} -dbname ${dbname} -port ${port} -user ${user} -pass ${pass} -lrgs_list ${lrg_id}`
+
         # Send automatic email(s) to the requester(s)
         `perl ${perldir}/send_email.pl -lrg_id ${lrg_id} -xml_dir ${pubpath} -status ${lrg_status}`
              
@@ -188,7 +192,7 @@ function update_lrg_status {
     done < ${tmp_lrg_list}
 }
 
-# List of the LRGs made public
+# List of the LRGs with a status change
 if [[ -s ${tmp_lrg_list} ]]; then
   echo "The LRGs listed below had their status changed (i.e. they moved to different location in the FTP directory):"
   cat ${tmp_lrg_list}
