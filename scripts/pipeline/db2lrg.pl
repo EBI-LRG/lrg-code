@@ -939,7 +939,7 @@ sub get_note {
   $asn_sth->bind_columns(\$author,\$note_content);
   while ($asn_sth->fetch()) {
     if ($author) {
-      $aset->addNode('note', {'author' => $author})->content($note_content);
+      $aset->addNode('note', {'name' => $author})->content($note_content);
     }
     else {
       $aset->addNode('note')->content($note_content);
