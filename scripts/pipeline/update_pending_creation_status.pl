@@ -27,7 +27,8 @@ GetOptions(
   'verbose!'    => \$verbose,
 );
 
-die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
+die("Database credentials (-host, -port, -dbname, -user, -pass) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user) && defined($pass));
+die("A list of lrg IDs needs to be specified (-lrgs_list)!") unless (defined($lrgs_list));
 
 print STDOUT localtime() . "\tConnecting to database $dbname\n" if ($verbose);
 my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
