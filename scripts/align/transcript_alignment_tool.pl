@@ -883,7 +883,7 @@ $html .= qq{
           <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
           <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
         </td>
-        <td style="padding-left:5px">Label for the <a class="external" href="https://genome-euro.ucsc.edu/cgi-bin/hgc?g=wgEncodeGencodeBasicV19&i=ENST00000225964.5#tsl" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
+        <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
       </tr>
       <tr class="bg1">
         <td style="padding-left:2px">
