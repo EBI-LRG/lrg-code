@@ -245,7 +245,9 @@ my @json_xref = grep { $_ =~ /^NM_|NG_|ENST|ENSG/ } keys %{$cross_refs};
 
 my $json_assembly = 'GRCh38';
 my $json_chr_name = $data{'assemblies'}{$json_assembly}{'chr_name'};
-   $json_chr_name += 0 if ($json_chr_name =~ /^\d/); # Force number for the JSON data
+if ($json_chr_name) {
+  $json_chr_name += 0 if ($json_chr_name =~ /^\d/); # Force number for the JSON data
+}
    
 my %json_data = ( "id"        => $lrg_id,  
                   "symbol"    => $data{'hgnc'},
