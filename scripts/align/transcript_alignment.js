@@ -164,12 +164,13 @@ function highlight_exons(param,hide) {
 
   for (var id=0; id<=divs.length; id++) {
     if (divs[id]) {
+      var td = divs[id].parentNode;
       if (divs[id].getAttribute('data-name') == param) {
         if (hide) {
-          divs[id].style.color='#FFF';
+          td.style.backgroundColor = 'transparent';
         }
         else {
-          divs[id].style.color='#34DDDD';
+          td.style.backgroundColor = '#BAF4F4';
         }
       }
     }
