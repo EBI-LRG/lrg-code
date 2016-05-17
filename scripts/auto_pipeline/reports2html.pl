@@ -54,9 +54,15 @@ my $stopped_colour = '#ffa500.hide_button_x:before {
 }';
 my $failed_colour  = '#B00';
 
+my %report_types = ( 'succeed' => 'icon-approve',
+                     'waiting' => 'icon-help',
+                     'stopped' => 'icon-stop',
+                     'failed'  => 'icon-close'
+                   );
+
 my $abs_xml_dir = abs_path("$xml_dir");
 
-my $html_content = '';
+my $html_content = qq{<div class="clearfix">\n  <div class="col-lg-11 col-md-11 col-sm-11 col-xs-11" style="padding-left:0px">};
 my $html_log_content = '';
 
 my %new_lrgs;
@@ -68,22 +74,27 @@ my $html_header = qq{
 <html>
   <head>
     <title>LRG pipeline reports</title>
-    <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css">
-    <script src="lrg2html.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
     <style type="text/css">
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
-      table {border:1px solid #000;border-collapse:collapse}
-      th {
-         color:#FFF;
-         font-weight:bold;
-         text-align:center;
-         padding:4px 6px;
-         border: 1px solid #000
-      }
-      td {
-        padding:4px 6px;
-        border: 1px solid #000;
-      }
+      
+      .report_header  { padding: 5px 15px }
+      .summary_box    { border:1px solid #1A4468 }
+      .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
+      
+      table {border-collapse:collapse; }
+      table > thead > tr {background-color:#1A4468}
+      
+      table.table_small { margin-bottom:2px}
+      table.table_small > thead > tr > th {padding:2px 4px}
+      table.table_small > tbody > tr > td {padding:2px 4px}
+      
+      tr.row_separator > td {border-bottom:2px dotted #1A4468}
+      
+      th {border-left:1px solid #DDD}
+      
       ul {
         padding-left:15px;
         margin-bottom:0px;
@@ -91,13 +102,12 @@ my $html_header = qq{
       table.count {border:none}
       table.count td {border:none;text-align:right;padding:0px 0px 2px 0px}
       .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px }
-      .header_count  {position:absolute;left:240px;padding-top:5px;color:#0E4C87}
+      .header_count { padding-top:10px;color:#0E4C87 }
       
       .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
-      .succeed {background:url(img/succeed.png) no-repeat 50% 0%}
-      .waiting {background:url(img/waiting.png) no-repeat 50% 0%}
-      .stopped {background:url(img/stopped.png) no-repeat 50% 0%}
-      .failed  {background:url(img/failed.png) no-repeat 50% 0%}
+      
+      .log_header { background-color:#DDD;padding:1px 2px;cursor:pointer;color:#1A4468 }
+      .log_header:hover, .log_header:active { color:#48a726 }
       
       .succeed_font {color:$succed_colour}
       .waiting_font {color:$waiting_colour}
@@ -106,6 +116,7 @@ my $html_header = qq{
       
       .popup { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
     </style>
+    <script src="lrg2html.js"></script>
     <script type="text/javascript">
       var popup;
       function show_log_info(lrg) {
@@ -124,28 +135,27 @@ my $html_header = qq{
         if(div_obj.className == "hidden") {
           div_obj.className = "unhidden";
           if (button_obj) {
-            button_obj.className = "show_hide_anno selected_anno";
-            button_obj.innerHTML = "Hide table";
+            button_obj.innerHTML = '<span class="glyphicon glyphicon-minus-sign"></span> Hide table';
           }
         }
         else {
           div_obj.className = "hidden";
           if (button_obj) {
-            button_obj.className = "show_hide_anno";
-            button_obj.innerHTML = "Show table";
+            button_obj.innerHTML = '<span class="glyphicon glyphicon-plus-sign"></span> Show table';
           }
         }
       }
       </script>
   </head>
   <body>
-    <h1>Summary reports of the LRG automated pipeline - <span class="blue">$formatted_date</span></h1>
-    <br />
-    <div style="margin:15px 0px">
-      <span class="round_border">
-        <span style="font-weight:bold">XML files location:</span> $abs_xml_dir/
-      </span>
-    </div>
+    <div">
+      <div class="report_header">
+        <h1>Summary reports of the LRG automated pipeline - <span class="blue">$formatted_date</span></h1>
+        <div style="margin:20px 0px 15px">
+          <span class="round_border">
+            <span style="font-weight:bold">XML files location:</span> $abs_xml_dir/
+          </span>
+        </div>
 };
 
 
@@ -156,15 +166,17 @@ my $html_footer = qq{
 };
 
 my $html_table_header = qq{
-    <table style="margin-bottom:20px">
-      <tr class="gradient_color2">
-        <th>LRG</th>
-        <th title="FTP status">Status</th>
-        <th>Comment(s)</th>
-        <th>Warning(s)</th>
-        <th title="File location in the temporary directory 'XML files location'">File location</th>
-        <th title="Link to a popup containing the main log reports">Log</th>
-      </tr>
+    <table class="table table-hover" style="margin-bottom:20px">
+      <thead>
+        <tr>
+          <th>LRG</th>
+          <th title="FTP status">Status</th>
+          <th>Comment(s)</th>
+          <th>Warning(s)</th>
+          <th title="File location in the temporary directory 'XML files location'">File location</th>
+          <th title="Link to a popup containing the main log reports">Log</th>
+        </tr>
+      </thead>
 };
 
 my @pipeline_status_list = ('failed','stopped','waiting','succeed');
@@ -228,18 +240,18 @@ foreach my $status (@pipeline_status_list) {
   next if (!$lrgs_list{$status});
   
   my $lrg_count = scalar(keys(%{$lrgs_list{$status}}));
+  my $status_icon = $report_types{$status};
   my $status_label = ucfirst($status);
   $html_content .= qq{
-  <div class="section" style="background-color:#F0F0F0;margin-top:40px;margin-bottom:15px">
-    <div class="status $status" title="Pipeline $status"></div>
-    <div style="float:left;margin-left:15px">
-      <h2 class="section $status\_font">$status_label LRGs</h2> 
+  <div class="section clearfix" style="background-color:#F0F0F0;margin-top:40px;margin-bottom:15px">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" style="padding: 0px 5px">
+      <h2 class="section $status_icon smaller-icon $status\_font">$status_label LRGs</h2> 
     </div>
-    <div style="float:left">
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2" style="padding: 0px 5px">
       <span class="header_count">($lrg_count LRGs)</span>
     </div>
-    <div style="float:left">
-      <a class="show_hide_anno selected_anno" style="left:380px;margin-top:2px" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');">Hide table</a>
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-xs-offset-1" style="padding: 0px 5px">
+      <a class="btn btn-lrg" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');"><span class="glyphicon glyphicon-minus-sign"></span> Hide table</a>
     </div>
     <div style="clear:both"></div>
   </div>
@@ -265,7 +277,7 @@ foreach my $status (@pipeline_status_list) {
     my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
   
     if ($lrgs_list{$status}{$id}{'log_found'}) {
-      $log_link = qq{<a class="green_button" href="javascript:show_log_info('$lrg_id');">Show log</a>};
+      $log_link = qq{<a class="btn btn-lrg" href="javascript:show_log_info('$lrg_id');">Show log</a>};
     }
     
     my $error_log_column = ($status eq 'failed') ? '<td>'.get_detailled_log_info($lrg_id,'error').'</td>' : '';
@@ -290,15 +302,18 @@ foreach my $status (@pipeline_status_list) {
   }
   $html_content .= qq{</table>\n</div>};
 }
+$html_content .= qq{\n</div>\n</div>};
+
 
 # Summary table
 my $html_summary = qq{
-<div>
-  <div class="summary gradient_color1" style="float:left;max-width:260px">
-    <div class="summary_header">Summary information</div>
-    <div>
-      <table class="table_bottom_radius" style="width:100%">
-      <tr><td class="left_col">Total number of LRGs</td><td class="right_col" style="text-align:right">$total_lrg_count</td></tr> 
+<div class="clearfix">
+  <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4" style="padding-left:0px">
+    <div class="summary_box">
+      <div class="summary_header">Summary information</div>
+      <div>
+        <table class="table table-hover table_small" style="width:100%">
+        <tr class="row_separator"><td class="left_col">Total number of LRGs</td><td class="right_col" style="text-align:right">$total_lrg_count</td></tr> 
 };
 my $first_row = 1;
 foreach my $l_status (@lrg_status) {
@@ -306,29 +321,30 @@ foreach my $l_status (@lrg_status) {
   my $count = $lrg_counts{$l_status};
   my $separator = ($first_row == 1) ? ' line_separator' : '';
   $first_row = 0;
-  $html_summary .= qq{      <tr><td class="left_col$separator">$l_status</td><td class="right_col$separator" style="text-align:right">$count</td></tr>};
+  $html_summary .= qq{        <tr><td class="left_col$separator">$l_status</td><td class="right_col$separator" style="text-align:right">$count</td></tr>};
 }
-$html_summary .= qq{      </table>\n    </div>\n  </div>};
+$html_summary .= qq{        </table>\n      </div>\n    </div>\n  </div>};
 
 # New LRGs
 if (scalar(%new_lrgs)) {
   $html_summary .= qq{
-  <div class="summary gradient_color1" style="float:left;max-width:260px;margin-left:100px">
-    <div class="summary_header">New LRG(s)</div>
-    <div>
-      <table class="table_bottom_radius" style="width:100%">
+  <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
+    <div class="summary_box">
+      <div class="summary_header">New LRG(s)</div>
+      <div>
+        <table class="table table-hover table_small" style="width:100%">
 };
   foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
     my $lrg_id = $new_lrgs{$id}{'lrg_id'};
     my $pipeline_status = $new_lrgs{$id}{'status'};
 
-    $html_summary .= qq{        <tr><td class="left_col"><a href="#$lrg_id">$lrg_id</a></td><td class="right_col">$pipeline_status</td></tr>};
+    $html_summary .= qq{          <tr><td class="left_col"><a href="#$lrg_id">$lrg_id</a></td><td class="right_col">$pipeline_status</td></tr>};
   }
-  $html_summary .= qq{      </table>\n    </div>\n  </div>};
+  $html_summary .= qq{        </table>\n      </div>\n    </div>\n </div>};
 }
 
 
-$html_summary .= qq{  <div style="clear:both"/>\n</div>};
+$html_summary .= qq{\n</div>};
 
 open OUT, "> $reports_dir/$reports_html_file" or die $!;
 print OUT $html_header;
@@ -345,11 +361,13 @@ my $span_style = 'margin-left:5px;padding:2px 6px;color:#FFF';
 open S, "> $reports_dir/$reports_sum" or die $!;
 print S qq{  <div style="$div_style;margin:0px 2px 8px">Total number of LRGs: <span style="$span_style;background-color:#48A726">$total_lrg_count</span></div>\n};
 print S qq{
-  <table style="border:1px solid #1A4468;margin:10px 5px 15px 25px">
-    <tr>
-      <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Status</th>
-      <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Count</th>
-    </tr>\n};
+  <table class="table table-hover" style="border:1px solid #1A4468;margin:10px 5px 15px 25px">
+    <thead>
+      <tr>
+        <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Status</th>
+        <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Count</th>
+      </tr>
+     </thead>\n};
 
 my $is_first_line = 1;
 foreach my $l_status (@lrg_status) {
@@ -409,13 +427,8 @@ sub get_detailled_log_info {
     }   
 
     $html = qq{
-    <div style="background-color:#DDD;margin-top:2px;padding:1px 2px;cursor:pointer" onclick="javascript:showhide('$id')">
-      <div class="show_hide_box" style="margin-left:0px">
-        <!--<a class="show_hide" id="$id\_button" href="javascript:showhide('$id')" title="Show/Hide detail"></a>-->
-        <div class="show_hide" id="$id\_button" title="Show/Hide detail"></div>
-      </div>
-      <div class="show_hide_box_text">$label details</div>
-      <div style="clear:both"></div>
+    <div class="clearfix log_header" onclick="javascript:showhide('$id')">
+      <span id="$id\_button" class="glyphicon glyphicon-plus-sign"></span> $label details
     </div>
     <div id="$id" class="hidden">
       <div style="border:1px solid #DDD;padding:4px 4px 2px">
@@ -450,10 +463,10 @@ sub find_lrg_on_ftp {
         $status_html = qq{<span style="color:#090">public</span>};
       }
       elsif ($dir eq 'pending') {
-        $status_html = qq{<span style="color:#900">$dir</span>};
+        $status_html = qq{<span style="color:#E69400">$dir</span>};
       }
       elsif ($dir eq 'stalled') {
-        $status_html = qq{<span style="color:#E69400">$dir</span>};
+        $status_html = qq{<span style="color:#900">$dir</span>};
       }
       return ($status, $status_html);
     }
