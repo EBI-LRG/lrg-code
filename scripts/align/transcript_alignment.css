@@ -160,7 +160,11 @@ th.coord {
   text-align:center;
   border:1px solid #FFF;
   padding:1px 4px;
-  font-size:0.8em
+  font-size:0.8em;
+}
+
+.extra_td {
+  font-size:0.8em;
 }
 
 .gold {

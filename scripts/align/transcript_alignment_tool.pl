@@ -524,8 +524,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       $exon_tab_list_right .= qq{<div class="$has_exon"> </div>};
     }
   }
-  my $ccds_display   = (scalar @ccds)   ? join(", ",@ccds) : '-';
-  my $refseq_display = (scalar @refseq) ? join(", ",@refseq).$refseq_button : '-';
+  my $ccds_display   = (scalar @ccds)   ? display_extra_ids(\@ccds) : '-';
+  my $refseq_display = (scalar @refseq) ? display_extra_ids(\@refseq).$refseq_button : '-';
   $exon_tab_list_right .= qq{</td><td class="extra_column">$ccds_display};
   $exon_tab_list_right .= qq{</td><td class="extra_column">$refseq_display};
   $exon_tab_list_right .= qq{</td></tr>\n};
@@ -1340,6 +1340,21 @@ sub compare_nm_data {
       }
     } 
   }
+}
+
+sub display_extra_ids {
+  my $ids = shift;
+  
+  return $ids->[0] if (scalar @$ids == 1);
+  
+  my $html = qq{<table><tr>\n};
+  my $last_id = $ids->[-1];
+  foreach my $id (@$ids) {
+    my $id_label = ($id eq $last_id) ? $id : $id.', ';
+    $html .= qq{  <td class="extra_td">$id_label</td>\n};
+  }
+  $html .= qq{</tr></table>};
+  return $html;
 }
 
 
