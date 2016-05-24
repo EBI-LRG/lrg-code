@@ -81,6 +81,7 @@ my $html_header = qq{
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
       
       .report_header  { padding: 5px 15px }
+      .report_date    { background-color:#FFF;color:#48a726; padding: 0px 4px;font-weight:bold;border: 1px solid #333 }
       .summary_box    { border:1px solid #1A4468 }
       .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
       
@@ -101,7 +102,7 @@ my $html_header = qq{
       }
       table.count {border:none}
       table.count td {border:none;text-align:right;padding:0px 0px 2px 0px}
-      .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px }
+      .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px 4px }
       .header_count { padding-top:10px;color:#0E4C87 }
       
       .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
@@ -148,14 +149,22 @@ my $html_header = qq{
       </script>
   </head>
   <body>
-    <div">
-      <div class="report_header">
-        <h1>Summary reports of the LRG automated pipeline - <span class="blue">$formatted_date</span></h1>
-        <div style="margin:20px 0px 15px">
-          <span class="round_border">
-            <span style="font-weight:bold">XML files location:</span> $abs_xml_dir/
-          </span>
-        </div>
+    <div class="banner clearfix" id="top">
+      <div class="banner_left">
+        <h1>Summary reports of the LRG automated pipeline</h1>
+      </div>
+      <div class="banner_right" style="padding:10px">
+        <h1 class="report_date">$formatted_date</h1>
+      </div>
+    </div>
+    <div class="menu_title"></div>
+    <div class="report_header">
+      <div style="margin-bottom:20px">
+        <span class="round_border">
+          <span style="font-weight:bold">XML files location:</span> $abs_xml_dir/
+        </span>
+      </div>
+    
 };
 
 
@@ -241,7 +250,7 @@ foreach my $status (@pipeline_status_list) {
   
   my $lrg_count = scalar(keys(%{$lrgs_list{$status}}));
   my $status_icon = $report_types{$status};
-  my $status_label = ucfirst($status);
+  my $status_label = ($status eq 'waiting') ? "Tmp (waiting)" : ucfirst($status);
   $html_content .= qq{
   <div class="section clearfix" style="background-color:#F0F0F0;margin-top:40px;margin-bottom:15px">
     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" style="padding: 0px 5px">
