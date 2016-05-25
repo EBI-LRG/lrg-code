@@ -136,6 +136,7 @@ close(JSON);
 print " done\n";
 
 
+print "Moving the generated files ...";
 # Move the indexes from the temporary directory to the new directory
 if ($tmp_dir ne $index_dir) {
   if (-s "$tmp_dir/$lrg_json") {
@@ -144,6 +145,9 @@ if ($tmp_dir ne $index_dir) {
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
   `rm -f $tmp_dir/LRG_*$index_suffix.json`;
 }
+print " done\n";
+
+print "Script finished\n";
 
 sub get_count {
   my $c_percent = ($count_files/$nb_files)*100;
