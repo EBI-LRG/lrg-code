@@ -226,7 +226,7 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     exon_popup_header.appendChild(exon_popup_header_left);
     
     exon_popup_header_right = document.createElement('div');
-    exon_popup_header_right.className = "hide_popup_button";
+    exon_popup_header_right.className = "icon-close smaller-icon close-icon-0 hide_popup_button";
     exon_popup_header_right.title="Hide this popup";
     exon_popup_header_right.onclick = function() { show_hide_info(e,ens_id,exon_id,content,exon_length); };
     exon_popup_header.appendChild(exon_popup_header_right);
@@ -242,7 +242,7 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     exon_popup_body.className = "exon_popup_body";
     var popup_content = "";
     if (ens_id.substr(0,4) != 'ENSG') {
-      popup_content = "<b>Exon:</b> "+exon_id+"<br />";
+      popup_content = "<b>Exon</b> #"+exon_id+"<br />";
     }
     if (ens_exon_id) {
       popup_content = popup_content+'<b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a><br />';

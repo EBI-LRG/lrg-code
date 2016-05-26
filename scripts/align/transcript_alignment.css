@@ -7,6 +7,10 @@ body {
   padding-left:10px;
 }
 
+.clearfix:after {
+  clear: both;
+}
+
 table {
   border-collapse:collapse;
 }
@@ -306,19 +310,14 @@ th.coord {
 .hide_button_x {
   cursor:pointer;
   color:#555;
-  font-size:16px;
+  font-size:14px;
   font-weight:bold;
   display:inline-block;
-  line-height:14px;
-  padding:1px 2px 2px
+  padding:2px 2px;
 }
-.hide_button_x:before {
-  content: "×"
-}
+
 .hide_button_x:hover {
-  color:#FFF;
-  background-color:#D22;
-  border-radius:20px
+  color:#D22;
 }
 .on {
   background-color:#090;
@@ -356,17 +355,13 @@ th.coord {
   padding-left:5px
 }
 
-.forward_strand::before {
-  content: '>';
-  font-weight:bold;
-  font-size:1.4em;
+.forward_strand {
+  font-size:1.2em;
   color:#00B
 }
 
-.reverse_strand::before {
-  content: '<';
-  font-weight:bold;
-  font-size:1.4em;
+.reverse_strand {
+  font-size:1.2em;
   color:#B00;
 }
 
@@ -388,25 +383,21 @@ th.coord {
 .exon_popup_header_title {
   float:left;
   text-align:center;
-  padding:1px
+  padding:1px;
 }
 .hide_popup_button {
   float:right;
-  padding:1px 2px 2px;
+  padding:2px;
   cursor:pointer;
   color:#FFF;
-  border-radius:20px;
-  background-color:#48a726;
-  font-size:16px;
+  font-size:12px;
   font-weight:bold;
   display:inline-block;
-  line-height:14px
+  line-height:14px;
 }
-.hide_popup_button:before {
-  content: "×";
-}
+
 .hide_popup_button:hover {
-  background-color:#D22
+  color:#D22
 }
 .exon_popup_header_clear {
   clear:both
@@ -421,9 +412,8 @@ th.coord {
   color: #FFF;
   font-weight:bold;
   font-size: 0.8em;
-  border-radius:5px;
+  border-radius:4px;
   border: 1px solid #EEE;
-  box-shadow: 2px 2px 2px #CCC;
   margin-right:5px;
   margin-bottom:5px;
   padding:1px 3px;

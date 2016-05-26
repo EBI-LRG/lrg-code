@@ -319,18 +319,19 @@ $html .= qq{
   <head>
     <title>Gene $gene_name</title>
     <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
+    <link href="ebi-visual-custom.css" media="all" rel="stylesheet" type="text/css">
     <script type="text/javascript" src="transcript_alignment.js"></script>
   </head>
   <body onload="hide_all_but_one()">
   <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">($gene_coord on <span class="blue">$assembly</span>)</span></h1>
-  <h2>> Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
+  <h2 class="icon-next-page smaller-icon">Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
   <div id="exon_popup" class="hidden exon_popup"></div>
 
    <!-- Compact/expand button -->
   <a class="green_button" href="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</a>
 
    <!--Genoverse -->
-  <a class="green_button" target="_blank" href="genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end">> Show in Genoverse</a>
+  <a class="icon-next-page smaller-icon close-icon-5  green_button" target="_blank" href="genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end">Show in Genoverse</a>
 
   <div class="tables_container">
 };
@@ -345,7 +346,7 @@ my $exon_tab_list_left = qq{
       <th class="rowspan2" title="Hide rows">-</th>
       <th class="rowspan2" title="Highlight rows">hl</th>
       <th class="rowspan2" title="Blast the sequence">Blast</th>
-      <th class="rowspan2">Transcript</th>
+      <th class="rowspan2" style="min-width:170px">Transcript</th>
     </tr>
 };
 
@@ -810,7 +811,7 @@ $html .= qq{
     </div>
 </td></tr></table>
   </div>
-  <h3>>Show/hide rows</h3>
+  <h3 class="icon-next-page smaller-icon">Show/hide rows</h3>
   <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
     
 my $max_per_line = 5;
@@ -843,7 +844,7 @@ $html .= qq{
 # External links #
 #----------------#
 if ($gene_name !~ /^ENS(G|T)\d{11}/) {
-  $html .= qq{<h2>>External links to $gene_name</h2>\n};
+  $html .= qq{<h2 class="icon-next-page smaller-icon">External links to $gene_name</h2>\n};
   $html .= qq{<table>\n};
   
   foreach my $external_db (sort keys(%external_links)) {
@@ -970,7 +971,7 @@ close(OUT);
 sub hide_button {
   my $id = shift;
   
-  return qq{<div id="button_$id\_x" class="hide_button_x" onclick="showhide($id)" title="Hide this row"></div>};
+  return qq{<div id="button_$id\_x" class="icon-close smaller-icon close-icon-0 hide_button_x" onclick="showhide($id)" title="Hide this row"></div>};
 }
 
 sub highlight_button {
@@ -1106,7 +1107,7 @@ sub get_showhide_buttons {
 sub get_strand {
   my $strand = shift;
   
-  return ($strand == 1) ? '<span class="forward_strand" title="forward strand"></span>' : '<span class="reverse_strand" title="reverse strand"></span>';
+  return ($strand == 1) ? '<span class="icon-next-page close-icon-0 forward_strand" title="Forward strand"></span>' : '<span class="icon-previous-page close-icon-0 reverse_strand" title="Reverse strand"></span>';
 
 }
 
@@ -1144,7 +1145,7 @@ sub display_refseq_data {
         <div>
           <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
         </div>
-        <div class="nm_details">
+        <div class="nm_details clearfix">
           <div class="left_div">$labels</div>
           <div class="right_div exon_number">
             <b>$e_count</b> exons
