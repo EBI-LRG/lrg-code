@@ -84,6 +84,7 @@ my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
 
+my $gtex_url = 'http://www.gtexportal.org/home/gene/';
 my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
 my $ncbi_jira_url = "https://ncbijira.ncbi.nlm.nih.gov/issues/?jql=text%20~%20%22###LRG###%22";
 
@@ -132,6 +133,7 @@ foreach my $xref (@{$ens_gene->get_all_DBEntries}) {
 
 
 my %external_links = ( 
+                      'GTEx'       => $gtex_url.$gene_name,
                       'LOVD'       => $lovd_url, 
                       'RefSeqGene' => $rsg_url,
                       'UCSC'       => $ucsc_url,
