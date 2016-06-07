@@ -38,7 +38,7 @@ EOF;
   
   if ($handle = opendir('./')) {
     while (false !== ($file = readdir($handle))) {
-      if (preg_match('/^(\w+)\.html$/',$file,$matches)) {
+      if (preg_match('/^(\w+-?\w*)\.html$/',$file,$matches)) {
         $gene = $matches[1];
         array_push($select_list,$gene);
       }
