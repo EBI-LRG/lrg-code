@@ -3,10 +3,22 @@
 . ~/.lrgpaths
 . ~/.lrgpass
 
+# Check if there are some files
 DATE=`date +%Y-%m-%d`
 
-# Check if there are some files
-if ls ${PVTFTP}/LRG_*.xml.${DATE} 1> /dev/null 2>&1; then
+FILES=$PVTFTP/LRG_*.xml*
+
+has_files=0
+
+for file in $FILES
+do
+  fdate=`date +%Y-%m-%d -r $file`
+  if [ $fdate == $DATE ]; then
+    has_files=1
+  fi
+done
+
+if [ $has_files == 1 ]; then
 
   # Init the sub pipeline
   init_pipeline.pl LRG::Pipeline::Pipeline_conf -run_sub_pipeline 1
