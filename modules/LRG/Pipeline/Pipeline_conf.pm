@@ -36,8 +36,8 @@ sub default_options {
         
         reports_file_name       => 'pipeline_reports.txt',
         reports_sum_file_name   => 'pipeline_summary_reports.txt',
-        reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/test', # To update!
-        reports_html            => '/homes/lgil/public_html/LRG/test',    # To update!
+        reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/reports', # To update!
+        reports_html            => '/homes/lgil/public_html/LRG/reports',    # To update!
 
         skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
         skip_partial_lrgs_hc    => ['LRG_603','LRG_835','LRG_855'],
@@ -57,6 +57,7 @@ sub default_options {
         new_dir                 => $self->o('pipeline_dir').'/results',
 
         ftp_dir                 => '/ebi/ftp/pub/databases/lrgex',
+        data_dir                => $ENV{'PVTFTP'},
         date                    => LRG::LRG::date(),
         run_dir                 => $ENV{'LRGROOTDIR'},
         
@@ -94,14 +95,35 @@ sub pipeline_analyses {
     my ($self) = @_;
     my @analyses;
     
-    if ($self->o('run_extract_xml_files')) {
+    if ($self->o('run_sub_pipeline') {
+      push @analyses, (
+        {
+            -logic_name => 'fetch_xml_files',
+            -module     => 'LRG::Pipeline::FetchXMLFiles',
+            -rc_name    => 'small',
+            -parameters => {
+               pipeline_dir => $self->o('pipeline_dir'),
+               data_dir     => $self->o('data_dir'),
+               xml_tmp_dir  => $self->o('xml_dir'),
+               date         => $self->o('date')
+            },
+            -input_ids  => [{}],
+            -flow_into  => {
+               1 => ['init_annotation'],
+               
+            },
+        }
+      );
+    }
+    elsif ($self->o('run_extract_xml_files')) {
       push @analyses, (
         {
             -logic_name => 'extract_xml_files',
             -module     => 'LRG::Pipeline::ExtractXMLFiles',
             -rc_name    => 'small',
             -parameters => {
-               xml_tmp_dir => $self->o('xml_dir')
+               xml_tmp_dir => $self->o('xml_dir'),
+               data_dir    => $self->o('data_dir')
             },
             -input_ids  => [{}],
             -flow_into  => {

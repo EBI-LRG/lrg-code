@@ -10,8 +10,8 @@ sub run {
   my $self = shift;
 
   my $xml_tmp_dir = $self->param('xml_tmp_dir');
-  
-  my $data_dir = '/ebi/ftp/private/lrgex/upload/Weekly_NCBI_updates';
+  my $data_dir    = $self->param('data_dir');
+     $data_dir   .= '/Weekly_NCBI_updates';
 
   my @data_file_list = `ls -t $data_dir`;
   my $data_file =  (scalar @data_file_list) ? $data_file_list[0] : undef;
