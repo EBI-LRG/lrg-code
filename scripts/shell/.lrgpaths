@@ -3,6 +3,9 @@
 # The path to the user's LRG CVS checkout top directory
 LRGROOTDIR=
 
+# LRG website admin user name
+WEBADMIN=
+
 # The absolute path to the EBI public FTP on the filesystem
 PUBFTP=
 
@@ -27,6 +30,9 @@ REGISTRYFILE=
 SEQDIR=
 # A temporary directory where output from the LRG mapping process can be written
 TMPDIR=
+
+# The path to the dev website directory
+DEVWEBSITE=
 
 # Path to the jing jarfile, used for validating XMLs during healthcheck
 JINGPATH=
