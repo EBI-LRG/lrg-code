@@ -6,7 +6,7 @@ use LRG::LRG qw(date);
 use base ('Bio::EnsEMBL::Hive::PipeConfig::HiveGeneric_conf');
 
 sub default_options {
-    my ($self) = @_;
+  my ($self) = @_;
 
 # The hash returned from this function is used to configure the
 # pipeline, you can supply any of these options on the command
@@ -66,6 +66,7 @@ sub default_options {
         # these flags control which parts of the pipeline are run
 
         run_extract_xml_files   => 1,
+        run_sub_pipeline        => 0, # Run the full pipeline by default
         
         small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
         default_lsf_options => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
@@ -95,7 +96,7 @@ sub pipeline_analyses {
     my ($self) = @_;
     my @analyses;
     
-    if ($self->o('run_sub_pipeline') {
+    if ($self->o('run_sub_pipeline')) {
       push @analyses, (
         {
             -logic_name => 'fetch_xml_files',
