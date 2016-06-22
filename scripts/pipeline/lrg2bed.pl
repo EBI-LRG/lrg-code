@@ -192,14 +192,34 @@ foreach my $status (keys(%lrg_meta)) {
           my $t_name   = $lrg_id.$t_short_name;
           my $t_number = substr($t_short_name,1);
           my $t_coords = $transcript->findNodeSingle('coordinates');
-          my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
-          my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+          my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+          my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+
+          # Coding coords
+          my $coding = $transcript->findNodeSingle('coding_region');
+          my ($c_start,$c_end);
+          if ($coding) {
+            my $c_coords = $coding->findNodeSingle('coordinates');
+            $c_start = lrg2genomic($c_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+            $c_end   = lrg2genomic($c_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+          }
+          else {
+            $c_start = $t_start;
+            $c_end   = $t_end; 
+          }
 
           if ($strand == -1) {
             my $t_tmp = $t_start;
             $t_start = $t_end;
             $t_end = $t_tmp;
+            my $c_tmp = $c_start;
+            $c_start = $c_end;
+            $c_end = $c_tmp;
           }
+          
+          $t_start --; # BED start coordinates starts at 0
+
+
 
           # Exons
           my @exons_sizes; 
@@ -212,8 +232,8 @@ foreach my $status (keys(%lrg_meta)) {
             foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
               next if ($e_coords->data->{coord_system} ne $lrg_id);        
 
-              $e_start = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand)-1;
-              $e_end   = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand)-1;
+              $e_start = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
+              $e_end   = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
             }
             die "Can't get genomic coordinates for an exon of the transcript $t_name" if (!defined($e_start) || !defined($e_end));
         
@@ -236,7 +256,7 @@ foreach my $status (keys(%lrg_meta)) {
           my $exons_sizes_list = join(',',@exons_sizes);
           my $exons_starts_list = join(',',@exons_starts);
       
-          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$t_start\t$t_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
+          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$c_start\t$c_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
           if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
 	          push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
@@ -367,10 +387,10 @@ sub lrg2genomic {
   my $diff    = shift;
   my $strand  = shift;
 
-  my ($tmp_coord, $new_g_start);
+  my $tmp_coord;
   if ($strand == -1) {
     $tmp_coord = $g_end-$coord+$l_start;
-    my $new_g_end = $g_end; 
+    my $new_g_end = $g_end;
     
     foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
       if ($diff_start >= $tmp_coord) {
@@ -378,20 +398,20 @@ sub lrg2genomic {
         my $type = $diff->{$diff_start}{type};
  
         if ($type eq 'lrg_ins') { 
-          $new_g_end -= $size;
-        } else {
           $new_g_end += $size;
+        } else {
+          $new_g_end -= $size;
         }
       }
       else {
         last;
       }
     }
-    return $new_g_end-$coord+$l_start;;
+    return $new_g_end-$coord+$l_start;
   }
   else {
     $tmp_coord = $coord+$g_start-$l_start;
-    $new_g_start = $g_start; 
+    my $new_g_start = $g_start; 
 
     foreach my $diff_start (sort{ $a <=> $b } keys(%$diff)) {
       if ($diff_start <= $tmp_coord) {
