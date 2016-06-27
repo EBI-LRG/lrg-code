@@ -89,6 +89,11 @@ my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
 my $ncbi_jira_url = "https://ncbijira.ncbi.nlm.nih.gov/issues/?jql=text%20~%20%22###LRG###%22";
 
 
+my %biotype_labels = ( 'nonsense_mediated_decay'            => 'NMD',
+                       'transcribed_processed_pseudogene'   => 'TPP',
+                       'transcribed_unprocessed_pseudogene' => 'TUP',
+                     );
+
 if ($lrg_id) {
   foreach my $dir ('/pending/','/stalled/','/') {
     my $url = $lrg_url.$dir.$lrg_id.'.xml';
@@ -320,22 +325,33 @@ $html .= qq{
 <html>
   <head>
     <title>Gene $gene_name</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
     <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
-    <link href="ebi-visual-custom.css" media="all" rel="stylesheet" type="text/css">
+    <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="transcript_alignment.js"></script>
+    <script>
+      \$(document).ready(function(){
+        \$('[data-toggle="tooltip"]').tooltip();
+      });
+    </script>
   </head>
-  <body onload="hide_all_but_one()">
-  <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">($gene_coord on <span class="blue">$assembly</span>)</span></h1>
-  <h2 class="icon-next-page smaller-icon">Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
-  <div id="exon_popup" class="hidden exon_popup"></div>
+  <body onload="hide_all_but_selection()">
+    <div class="content">
+      <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">($gene_coord on <span class="blue">$assembly</span>)</span></h1>
+      <h2 class="icon-next-page smaller-icon">Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
+      <div id="exon_popup" class="hidden exon_popup"></div>
 
-   <!-- Compact/expand button -->
-  <a class="green_button" href="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</a>
+       <!-- Compact/expand button -->
+      <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</button>
 
-   <!--Genoverse -->
-  <a class="icon-next-page smaller-icon close-icon-5  green_button" target="_blank" href="genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end">Show in Genoverse</a>
+       <!--Genoverse -->
+      <button class="btn btn-lrg" onclick="window.open('genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end','_blank')"><span class="icon-next-page smaller-icon close-icon-5"></span>Show in Genoverse</button>
 
-  <div class="tables_container">
+      <div class="tables_container">
 };
 
 my $exon_number = 1;
@@ -349,6 +365,9 @@ my $exon_tab_list_left = qq{
       <th class="rowspan2" title="Highlight rows">hl</th>
       <th class="rowspan2" title="Blast the sequence">Blast</th>
       <th class="rowspan2" style="min-width:170px">Transcript</th>
+      <th class="rowspan2">Name</th>
+      <th class="rowspan2">Biotype</th>
+      <th class="rowspan2" title="Strand">Str.</th>
     </tr>
 };
 
@@ -356,14 +375,11 @@ my $exon_tab_list_right = qq{
 <div class="table_right"> 
   <table id="align_table_right">
     <tr>
-      <th class="rowspan2" rowspan="2">Name</th>
-      <th class="rowspan2" rowspan="2">Biotype</th>
-      <th class="rowspan2" rowspan="2" title="Strand">Str.</th>
       <th class="rowspan1" colspan="$coord_span"><small>Coordinates</small></th>
       <th class="rowspan2" rowspan="2">CCDS
       <th class="rowspan2" rowspan="2">RefSeq transcript</th>
-     </tr>
-     <tr>
+    </tr>
+    <tr>
 };
 
 foreach my $exon_coord (sort(keys(%exons_list))) {
@@ -431,12 +447,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           <td class="$column_class large_cell exon_number"><b>$e_count</b> exons</td>
         </tr>
       </table>
-    </td> 
-  </tr> 
-  };
-  
-  $exon_tab_list_right .= qq{
-    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$ens_tr">
+    </td>
   };
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
@@ -447,9 +458,12 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   }
   my $tr_orientation = get_strand($tr_object->strand);
   my $biotype = get_biotype($tr_object);
-  $exon_tab_list_right .= qq{<td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation};
+  $exon_tab_list_left .= qq{<td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation</td></tr>};
   
   
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$ens_tr">
+  };
 
   my @ccds   = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
   my @refseq = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
@@ -458,7 +472,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   if (scalar(@refseq)) {
     my @nm_list = keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
     my $nm_ids = "['".join("','",@nm_list)."']";
-    $refseq_button = qq{ <a class="green_button" id='button_$row_id\_$nm_list[0]' href="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</a>};
+    $refseq_button = qq{ <button class="btn btn-lrg btn-xs" id='button_$row_id\_$nm_list[0]' inclick="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button>};
   }
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $ens_rows_list{$row_id}{'label'} = $ens_tr;
@@ -575,11 +589,6 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
         <b>$e_count</b> exons
       </div>
     </td>
-  </tr>
-  };
-  
-  $exon_tab_list_right .= qq{
-    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
   };
   
   my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
@@ -587,7 +596,12 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $cdna_strand = $cdna_object->slice->strand;
   my $cdna_orientation = get_strand($cdna_strand);
   my $biotype = get_biotype($cdna_object);
-  $exon_tab_list_right .= qq{<td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation};
+  $exon_tab_list_left .= qq{<td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation</td></tr>};
+  
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
+  };
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $cdna_rows_list{$row_id}{'label'} = $nm;
@@ -675,16 +689,16 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     <td class="$column_class first_column">
       <a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name
     </td>
-  </tr>  
-  };
-  
-  $exon_tab_list_right .= qq{
-    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$o_ens_gene">
   };
   
   my $gene_orientation = get_strand($gene_object->strand);
   my $biotype = get_biotype($gene_object);
-  $exon_tab_list_right .= qq{<td class="extra_column">$o_gene_name</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation};
+  $exon_tab_list_left .= qq{<td class="extra_column">$o_gene_name</td><td class="extra_column">$biotype</td><td class="extra_column">$gene_orientation</td></tr>};
+  
+  
+  $exon_tab_list_right .= qq{
+    <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$o_ens_gene">
+  };
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $gene_rows_list{$row_id}{'label'} = $o_ens_gene;
@@ -816,7 +830,7 @@ $html .= qq{
   <h3 class="icon-next-page smaller-icon">Show/hide rows</h3>
   <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
     
-my $max_per_line = 5;
+my $max_per_line = 6;
 
 # Ensembl transcripts
 $html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
@@ -834,10 +848,11 @@ $html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
 $html .= display_transcript_buttons(\%gene_rows_list, 'Gene');
 
 $html .= qq{ 
-    <div style="margin:10px 0px 60px">
+    <div class="clearfix" style="margin:10px 0px 60px">
       <div style="float:left;font-weight:bold">All rows:</div>
-      <div style="float:left;margin-left:10px;padding-top:4px"><a class="green_button" href="javascript:showall($row_id);">Show all the rows</a></div>
-     <div style="clear:both"></div>
+      <div style="float:left;margin-left:10px;padding-top:4px">
+        <button class="btn btn-lrg" onclick="javascript:showall();">Show all the rows</button>
+      </div>
     </div>
 };
 
@@ -866,99 +881,99 @@ my $nb_exon_evidence = $min_exon_evidence+1;
 my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
 $html .= qq{ 
-    <div style="margin-top:50px;width:920px;border:1px solid #336;border-radius:5px">
-      <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
-    
-    <!-- Transcript -->
-    <div style="float:left;width:450px">
-    <table class="legend">
-      <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
-      <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
-      <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
-      <tr class="bg1"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
-      <tr class="bg2"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
-       <tr class="bg1"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
-      <tr class="bg2"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
-      <!-- Other -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-      <tr class="bg2">
-        <td style="padding-left:2px">
-          <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
-          <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
-        </td>
-        <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
-      </tr>
-      <tr class="bg1">
-        <td style="padding-left:2px">
-          <span class="manual">M</span>
-          <span class="not_manual">A</span>
-        </td>
-        <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td>
-      </tr>
-      <tr class="bg2">
-        <td style="padding-left:2px">
-          <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
-          <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
-        </td>
-        <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
-      </tr>
-      <tr class="bg1">
-        <td style="padding-left:2px">
-          <span class="flag canonical">C</span>
-        </td>
-        <td style="padding-left:5px">Label to indicate the canonical transcript</td>
-      </tr>
-      <tr class="bg1">
-        <td style="padding-left:2px">
-          <span class="flag source_flag cdna">cdna</span>
-        </td>
-        <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
-      </tr>
-      <tr class="bg1">
-        <td style="padding-left:2px">
-          <span class="flag source_flag gff3">gff3</span>
-        </td>
-        <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
-      </tr>
+      <div class="clearfix" style="margin-top:50px;width:920px;border:1px solid #336;border-radius:5px">
+        <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
       
-    </table>
-    </div>
-   
-    <!-- Exons -->
-    <div style="float:left;width:450px;margin-left:10px">
-    <table class="legend">
-      <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
-      <!-- Coding -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon coding">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon coding_unknown">#</div></td><td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td></tr>
-      <!-- Partially coding -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <!--<tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
-      <!--<tr class="bg1"><td style="width:50px"><div class="exon coding_unknown partial">#</div></td><td style="padding-left:5px">The exon is partially coding.  We don't know whether the sequence is identical or different with the reference</td></tr>-->
-      <!-- Non coding -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon non_coding">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
-      <!--<tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
-      <tr class="bg1"><td style="width:50px"><div class="exon non_coding_unknown">#</div></td><td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td></tr>
-      <!-- Low evidences -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences</small></td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon coding few_evidence">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon coding few_evidence partial">#</div></td><td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon non_coding few_evidence">#</div></td><td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-      <!-- Gene -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Gene</small></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="exon gene_exon">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="exon gene_exon partial">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-      <!-- Other -->
-      <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-      <tr class="bg2"><td style="width:50px"><div class="none"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
-      <tr class="bg1"><td style="width:50px"><div class="no_exon"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
-    </table>
-    </div>
-    <div style="clear:both"></div>
+        <!-- Transcript -->
+        <div style="float:left;width:450px">
+        <table class="legend">
+          <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
+          <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
+          <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
+          <tr class="bg1"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
+          <tr class="bg2"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
+           <tr class="bg1"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
+          <tr class="bg2"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
+          <!-- Other -->
+          <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
+          <tr class="bg2">
+            <td style="padding-left:2px">
+              <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
+              <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
+            </td>
+            <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
+          </tr>
+          <tr class="bg1">
+            <td style="padding-left:2px">
+              <span class="manual">M</span>
+              <span class="not_manual">A</span>
+            </td>
+            <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td>
+          </tr>
+          <tr class="bg2">
+            <td style="padding-left:2px">
+              <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
+              <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
+            </td>
+            <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
+          </tr>
+          <tr class="bg1">
+            <td style="padding-left:2px">
+              <span class="flag canonical">C</span>
+            </td>
+            <td style="padding-left:5px">Label to indicate the canonical transcript</td>
+          </tr>
+          <tr class="bg1">
+            <td style="padding-left:2px">
+              <span class="flag source_flag cdna">cdna</span>
+            </td>
+            <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
+          </tr>
+          <tr class="bg1">
+            <td style="padding-left:2px">
+              <span class="flag source_flag gff3">gff3</span>
+            </td>
+            <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
+          </tr>
+          
+        </table>
+        </div>
+       
+        <!-- Exons -->
+        <div style="float:left;width:450px;margin-left:10px">
+          <table class="legend">
+            <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
+            <!-- Coding -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon coding">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon coding_unknown">#</div></td><td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td></tr>
+            <!-- Partially coding -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
+            <!--<tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
+            <!--<tr class="bg1"><td style="width:50px"><div class="exon coding_unknown partial">#</div></td><td style="padding-left:5px">The exon is partially coding.  We don't know whether the sequence is identical or different with the reference</td></tr>-->
+            <!-- Non coding -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon non_coding">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
+            <!--<tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
+            <tr class="bg1"><td style="width:50px"><div class="exon non_coding_unknown">#</div></td><td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td></tr>
+            <!-- Low evidences -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences</small></td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon coding few_evidence">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="exon coding few_evidence partial">#</div></td><td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon non_coding few_evidence">#</div></td><td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+            <!-- Gene -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Gene</small></td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="exon gene_exon">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon gene_exon partial">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+            <!-- Other -->
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="none"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="no_exon"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
+          </table>
+        </div>
+      </div>
     </div>
   </body>
 </html>  
@@ -985,7 +1000,7 @@ sub highlight_button {
 sub blast_button {
   my $id  = shift;
   my $url = $blast_url.$id;
-  return qq{<a class="green_button" href="$url" target="_blank"><small>BLAST</small></a>};
+  return qq{<button class="btn btn-lrg btn-sm" onclick="window.open('$url','_blank')">BLAST</button>};
 
 }
 
@@ -1074,8 +1089,11 @@ sub get_biotype {
   my $object = shift;
   my $biotype = $object->biotype;
   
-  if ($biotype eq 'nonsense_mediated_decay') {
-    $biotype = qq{<span style="border-bottom:1px dotted #555;cursor:default" title="nonsense_mediated_decay">NMD</span>};
+  if ($biotype_labels{$biotype}) {
+    return sprintf(
+      '<span style="border-bottom:1px dotted #555;cursor:default" data-toggle="tooltip" data-placement="bottom" title="%s">%s</span>',
+      $biotype, $biotype_labels{$biotype}
+    );
   }
   return $biotype;
 }
@@ -1099,7 +1117,7 @@ sub get_showhide_buttons {
        <div class="buttons_row">
          <div class="buttons_row_title_left">$type rows:</div>
          <div class="buttons_row_title_right">
-           <a class="green_button" href="javascript:showhide_range($start,$end);"><small>Show/Hide all rows</small></a>
+           <button class="btn btn-lrg btn-sm" onclick="javascript:showhide_range($start,$end);">Show/Hide all rows</button>
            $hidden_ids
          </div>
          <div class="buttons_row_content">
@@ -1154,11 +1172,6 @@ sub display_refseq_data {
           </div>
         </div>
       </td>
-    </tr>
-    };
-    
-    $exon_tab_list_right .= qq{
-      <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
     };
     
     my $refseq_object = $refseq_exons_list->{$nm}{'object'};
@@ -1166,7 +1179,11 @@ sub display_refseq_data {
     my $refseq_strand = $refseq_object->slice->strand;
     my $refseq_orientation = get_strand($refseq_strand);
     my $biotype = get_biotype($refseq_object);
-    $exon_tab_list_right .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation};
+    $exon_tab_list_left .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation</td></tr>};
+  
+    $exon_tab_list_right .= qq{
+      <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
+    };
   
     $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
     $rows_list{$row_id}{'label'} = $nm;
@@ -1254,7 +1271,7 @@ sub display_transcript_buttons {
     my $label = $rows_list->{$row_id}{'label'};
     my $class = $rows_list->{$row_id}{'class'};
     $buttons_html .= qq{<input type="hidden" id="button_color_$row_id" value="$class"/>};
-    $buttons_html .= qq{<span id="button_$row_id" class="button $class" onclick="showhide($row_id)">$label</span>};
+    $buttons_html .= qq{<button id="button_$row_id" class="btn btn-sm btn-non-lrg $class" onclick="showhide($row_id)">$label</button>};
     $tr_count ++;
   }
 

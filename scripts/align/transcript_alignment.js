@@ -2,9 +2,9 @@ var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
 
 function showhide(row_id) {
-  var row_obj = document.getElementById(TR_ID_PREFIX+row_id);
+  var tr_row_id = "#"+TR_ID_PREFIX+row_id;
   
-  if(row_obj.className == "hidden") {
+  if($(tr_row_id).hasClass("hidden")) {
     show_row(row_id);
   }
   else {
@@ -15,22 +15,23 @@ function showhide(row_id) {
 function showhide_range(start_row_id,end_row_id) {
   for (var id=start_row_id; id<=end_row_id; id++) {
     showhide(id);
-  }  
+  }
 }
 
-function showall(row_id) {
+function showall() {
+  $("tr[id^='"+TR_ID_PREFIX+"']").each(function (i, el) {
+     var tr_id = $(this).attr("id");
+     var id = tr_id.split('_')[1];
+     show_row(id);
+  });
+}
 
-  if (!row_id) {
-    var trs = document.getElementById('align_table').tBodies[0].getElementsByTagName('tr');
-    row_id = trs.length - 2; // 2 Rows for the headers
-  }
-
-  for (var id=1; id<=row_id; id++) {
-    var row_obj = document.getElementById(TR_ID_PREFIX+id);
-    if(row_obj.className == "hidden") {
-      show_row(id);
-    }
-  }  
+function hideall() {
+  $("tr[id^='"+TR_ID_PREFIX+"']").each(function (i, el) {
+     var tr_id = $(this).attr("id");
+     var id = tr_id.split('_')[1];
+     hide_row(id);
+  });
 }
 
 function show_row(row_id) {
@@ -39,8 +40,7 @@ function show_row(row_id) {
   
   var row_obj = document.getElementById(tr_id);
   var right_obj = document.getElementById(tr_id_right);
-  var button_obj = document.getElementById("button_"+row_id);
-  var button_color = "button "+document.getElementById("button_color_"+row_id).value;
+  var button_color = $("#button_color_"+row_id).val();
 
   // Odd vs Even background
   var bg = "bg2";
@@ -55,7 +55,12 @@ function show_row(row_id) {
   
   row_obj.className   = "unhidden "+bg;
   right_obj.className = "unhidden "+bg;
-  button_obj.className = button_color;
+  if ($("#button_"+row_id).hasClass('off')) {
+    $("#button_"+row_id).removeClass('off').addClass(button_color);
+  }
+  else {
+    $("#button_"+row_id).addClass(button_color);
+  }
 }
 
 function hide_row(row_id) {
@@ -64,41 +69,63 @@ function hide_row(row_id) {
   
   var row_obj = document.getElementById(tr_id);
   var right_obj = document.getElementById(tr_id_right);
-  var button_obj = document.getElementById("button_"+row_id);
-  var button_color = "button "+document.getElementById("button_color_"+row_id).value;
+  var button_color = $("#button_color_"+row_id).val();
   
   row_obj.className = "hidden";
   right_obj.className = "hidden";
-  button_obj.className = "button off";
+  
+  if ($("#button_"+row_id).hasClass(button_color)) {
+    $("#button_"+row_id).removeClass(button_color).addClass('off');
+  }
+  else {
+    $("#button_"+row_id).addClass('off');
+  }
 }
 
-function hide_all_but_one() {
+function hide_all_but_selection() {
   var url = window.location.toString();
-  var tr_id_param = url.substring(url.indexOf("#")+1);
 
-  if (tr_id_param) {
+  var trans_param = getUrlParameter('trans');
+  
+  if (trans_param) {
     var attr_name = 'data-name';
+    var trans_ids = trans_param.split(";");
+      
+    hideall(); // Default value
+    
     var is_found = 0;
-    var first_row_id = document.getElementById("first_ens_row_id").value;
-    var last_row_id  = document.getElementById("last_ens_row_id").value;
 
-    for (var id=first_row_id; id<=last_row_id; id++) {
-      var row_obj = document.getElementById(TR_ID_PREFIX+id);
-      var tr_name = row_obj.getAttribute(attr_name);
-       
-      if(tr_id_param === tr_name) {
-        show_row(id);
-        is_found = 1;
-      }
-      else {
-        hide_row(id);
-      }
-    }
+    // Search the rows corresponding to the transcript (ENSTs, NMs)
+    $.each( trans_ids, function( index, trans_id ){
+       // Search each occurence of the transcript
+       $("tr["+attr_name+"='"+trans_id+"']").each(function (i, el) {
+         var tr_id = $(this).attr("id");
+         var id = tr_id.split('_')[1];
+         show_row(id);
+         is_found = 1;
+       });
+    });
+    
     if (is_found == 0) {
-      showhide_range(first_row_id,last_row_id);
+      showall();
     }
   }
 }
+
+function getUrlParameter(sParam) {
+  var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+      sURLVariables = sPageURL.split('&'),
+      sParameterName,
+      i;
+
+  for (i = 0; i < sURLVariables.length; i++) {
+    sParameterName = sURLVariables[i].split('=');
+
+    if (sParameterName[0] === sParam) {
+      return sParameterName[1] === undefined ? true : sParameterName[1];
+    }
+  }
+};
 
 function show_hide_in_between_rows(row_id,tr_names) {
  
@@ -116,7 +143,7 @@ function show_hide_in_between_rows(row_id,tr_names) {
       }    
 
       current_row_id = row_obj.id.substr(TR_ID_PREFIX.length);
-      if (row_obj.className == "hidden") {
+      if ($(current_row_id).hasClass("hidden")) {
         show_row(current_row_id);
       }
       else {
