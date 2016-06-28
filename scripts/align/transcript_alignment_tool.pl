@@ -345,11 +345,20 @@ $html .= qq{
       <h2 class="icon-next-page smaller-icon">Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
       <div id="exon_popup" class="hidden exon_popup"></div>
 
-       <!-- Compact/expand button -->
-      <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">Compact/expand the coordinate columns</button>
+      <!-- Compact/expand button -->
+      <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">
+        <span class="icon-menu smaller-icon close-icon-5"></span>Compact/expand the coordinate columns
+      </button>
 
-       <!--Genoverse -->
-      <button class="btn btn-lrg" onclick="window.open('genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end','_blank')"><span class="icon-next-page smaller-icon close-icon-5"></span>Show in Genoverse</button>
+      <!--Genoverse -->
+      <button class="btn btn-lrg" onclick="window.open('genoverse.php?gene=$gene_name&chr=$gene_chr&start=$o_gene_start&end=$o_gene_end','_blank')" title="Show the alignments in the Genoverse genome browser" data-toggle="tooltip" data-placement="right">
+        <span class="icon-next-page smaller-icon close-icon-5"></span>Genoverse
+      </button>
+      
+      <!--Export URL selection -->
+      <button class="btn btn-lrg" onclick="export_transcripts_selection()" title="Export the URL containing the transcripts selection as parameters" data-toggle="tooltip" data-placement="right">
+        <span class="icon-download smaller-icon close-icon-5"></span>URL with transcripts selection
+      </button>
 
       <div class="tables_container">
 };
