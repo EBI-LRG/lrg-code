@@ -103,7 +103,7 @@ my $html_header = qq{
       table.count {border:none}
       table.count td {border:none;text-align:right;padding:0px 0px 2px 0px}
       .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px 4px }
-      .header_count { padding-top:10px;color:#0E4C87 }
+      .header_count { margin-top:5px;font-size:80% }
       
       .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
       
@@ -256,8 +256,8 @@ foreach my $status (@pipeline_status_list) {
     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" style="padding: 0px 5px">
       <h2 class="section $status_icon smaller-icon $status\_font">$status_label LRGs</h2> 
     </div>
-    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2" style="padding: 0px 5px">
-      <span class="header_count">($lrg_count LRGs)</span>
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2" style="padding: 5px 5px 0px">
+      <span class="label label-primary header_count">$lrg_count LRGs</span>
     </div>
     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-xs-offset-1" style="padding: 0px 5px">
       <a class="btn btn-lrg" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');"><span class="glyphicon glyphicon-minus-sign"></span> Hide table</a>
