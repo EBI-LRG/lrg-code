@@ -357,7 +357,7 @@ $html .= qq{
       
       <!--Export URL selection -->
       <button class="btn btn-lrg" onclick="export_transcripts_selection()" title="Export the URL containing the transcripts selection as parameters" data-toggle="tooltip" data-placement="right">
-        <span class="icon-download smaller-icon close-icon-5"></span>URL with transcripts selection
+        <span class="icon-link smaller-icon close-icon-5"></span>URL with transcripts selection
       </button>
 
       <div class="tables_container">
