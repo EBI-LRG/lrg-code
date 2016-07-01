@@ -218,13 +218,24 @@ function getElementsStartsWithId( id, tag ) {
 }
 
 function compact_expand(column_count) {
+  var compact = "Compact";
+  var expand  = "Expand";
+  var button_text = $("#compact_expand_text").html();
+  if (button_text.match(compact)) {
+    button_text = button_text.replace(compact,expand);
+  }
+  else {
+    button_text = button_text.replace(expand,compact);
+  }
+  $("#compact_expand_text").html(button_text);
+  
   for (var id=1; id<=column_count; id++) {
-    var column_obj = document.getElementById("coord_"+id);
-    if (column_obj.innerHTML == column_obj.title) {
-      column_obj.innerHTML = id;
+    var column_id = "#coord_"+id;
+    if ($(column_id).html() == $(column_id).attr("title")) {
+      $(column_id).html(id);
     }
     else {
-      column_obj.innerHTML = column_obj.title;
+      $(column_id).html($(column_id).attr("title"));
     }
   }
 }

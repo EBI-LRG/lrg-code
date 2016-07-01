@@ -347,7 +347,7 @@ $html .= qq{
 
       <!-- Compact/expand button -->
       <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">
-        <span class="icon-menu smaller-icon close-icon-5"></span>Compact/expand the coordinate columns
+        <span class="icon-menu smaller-icon close-icon-5"></span><span id="compact_expand_text">Compact the coordinate columns</span>
       </button>
 
       <!--Genoverse -->
