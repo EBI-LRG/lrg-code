@@ -92,6 +92,7 @@ my $ncbi_jira_url = "https://ncbijira.ncbi.nlm.nih.gov/issues/?jql=text%20~%20%2
 my %biotype_labels = ( 'nonsense_mediated_decay'            => 'NMD',
                        'transcribed_processed_pseudogene'   => 'TPP',
                        'transcribed_unprocessed_pseudogene' => 'TUP',
+                       'processed_pseudogene'               => 'PP'
                      );
 
 if ($lrg_id) {
@@ -374,8 +375,8 @@ my $exon_tab_list_left = qq{
       <th class="rowspan2" title="Highlight rows">hl</th>
       <th class="rowspan2" title="Blast the sequence">Blast</th>
       <th class="rowspan2" style="min-width:170px">Transcript</th>
-      <th class="rowspan2">Name</th>
-      <th class="rowspan2">Biotype</th>
+      <th class="rowspan2">Name<div class="transcript_length_header">(length)</div></th>
+      <th class="rowspan2">Biotype<div class="transcript_length_header">(Coding length)</div></th>
       <th class="rowspan2" title="Strand">Str.</th>
     </tr>
 };
@@ -422,10 +423,18 @@ my %ens_rows_list;
 foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list{$a}{'count'}} keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
-  my $column_class = ($ens_tr_exons_list{$ens_tr}{'object'}->source eq 'ensembl_havana') ? 'gold' : 'ens';
+  my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};;
+  
+  my $column_class = ($tr_object->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
-  my $tr_ext_name    = $ens_tr_exons_list{$ens_tr}{'object'}->external_name;
+  # cDNA lengths
+  my $cdna_coding_start = $tr_object->cdna_coding_start;
+  my $cdna_coding_end   = $tr_object->cdna_coding_end;
+  my $cdna_coding_length = ($cdna_coding_start && $cdna_coding_end) ? thousandify($cdna_coding_end - $cdna_coding_start + 1).' bp' : 'NA';
+  my $cdna_length        = thousandify($tr_object->length).' bp';
+  
+  my $tr_ext_name    = $tr_object->external_name;
   my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
   my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
   my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
@@ -449,25 +458,29 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       <table style="width:100%;text-align:center">
         <tr><td class="$column_class" colspan="5"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
         <tr>
-          <td class="$column_class small_cell">$manual_html</td>
-          <td class="$column_class small_cell">$tsl_html</td>
-          <td class="$column_class small_cell">$appris_html</td>
-          <td class="$column_class small_cell">$canonical_html</td>
+          <td class="small_cell">$manual_html</td>
+          <td class="small_cell">$tsl_html</td>
+          <td class="small_cell">$appris_html</td>
+          <td class="small_cell">$canonical_html</td>
           <td class="$column_class large_cell exon_number"><b>$e_count</b> exons</td>
         </tr>
       </table>
     </td>
   };
   
-  my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
-  my $tr_name   = $tr_object->external_name;
-  if ($tr_name) {
-    $tr_name  =~ s/-/-<b>/;
-    $tr_name .= '</b>';
+  my $tr_name = $tr_object->external_name;
+  my $tr_name_label = $tr_name;
+  if ($tr_name_label) {
+    $tr_name_label  =~ s/-/-<b>/;
+    $tr_name_label .= '</b>';
   }
   my $tr_orientation = get_strand($tr_object->strand);
   my $biotype = get_biotype($tr_object);
-  $exon_tab_list_left .= qq{<td class="extra_column">$tr_name</td><td class="extra_column">$biotype</td><td class="extra_column">$tr_orientation</td></tr>};
+  $exon_tab_list_left .= qq{
+    <td class="extra_column">$tr_name_label<div class="transcript_length">($cdna_length)</div></td>
+    <td class="extra_column">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
+    <td class="extra_column">$tr_orientation</td>
+  </tr>};
   
   
   $exon_tab_list_right .= qq{
@@ -540,7 +553,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $exon_tab_list_right .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr);
+      $exon_tab_list_right .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name);
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -605,7 +618,18 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $cdna_strand = $cdna_object->slice->strand;
   my $cdna_orientation = get_strand($cdna_strand);
   my $biotype = get_biotype($cdna_object);
-  $exon_tab_list_left .= qq{<td class="extra_column">$cdna_name</td><td class="extra_column">$biotype</td><td class="extra_column">$cdna_orientation</td></tr>};
+  
+  # cDNA lengths
+  my $cdna_coding_start = $cdna_object->cdna_coding_start;
+  my $cdna_coding_end   = $cdna_object->cdna_coding_end;
+  my $cdna_coding_length = ($cdna_coding_start && $cdna_coding_end) ? thousandify($cdna_coding_end - $cdna_coding_start + 1).' bp' : 'NA';
+  my $cdna_length        = thousandify($cdna_object->length).' bp';
+  
+  $exon_tab_list_left .= qq{
+    <td class="extra_column">$cdna_name<div class="transcript_length">($cdna_length)</div></td>
+    <td class="extra_column">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
+    <td class="extra_column">$cdna_orientation</td>
+  </tr>};
   
   
   $exon_tab_list_right .= qq{
@@ -658,7 +682,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $exon_tab_list_right .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,$identity_score);
+      $exon_tab_list_right .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$identity_score);
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -1188,7 +1212,18 @@ sub display_refseq_data {
     my $refseq_strand = $refseq_object->slice->strand;
     my $refseq_orientation = get_strand($refseq_strand);
     my $biotype = get_biotype($refseq_object);
-    $exon_tab_list_left .= qq{<td class="extra_column">$refseq_name</td><td class="extra_column">$biotype</td><td class="extra_column">$refseq_orientation</td></tr>};
+    
+    # cDNA lengths
+    my $cdna_coding_start = $refseq_object->cdna_coding_start;
+    my $cdna_coding_end   = $refseq_object->cdna_coding_end;
+    my $cdna_coding_length = ($cdna_coding_start && $cdna_coding_end) ? thousandify($cdna_coding_end - $cdna_coding_start + 1).' bp' : 'NA';
+    my $cdna_length        = thousandify($refseq_object->length).' bp';
+  
+    $exon_tab_list_left .= qq{
+      <td class="extra_column">$refseq_name<div class="transcript_length">($cdna_length)</div></td>
+      <td class="extra_column">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
+      <td class="extra_column">$refseq_orientation</td>
+    </tr>};
   
     $exon_tab_list_right .= qq{
       <tr class="unhidden $bg" id="$row_id_prefix$row_id\_right" data-name="$nm">
@@ -1303,18 +1338,24 @@ sub display_exon {
   my $e_number    = shift;
   my $e_stable_id = shift;
   my $e_tr        = shift;
+  my $e_tr_name   = shift;
   my $e_extra     = shift;
+  
   
   $e_extra ||= '';
 
   my $e_length  = ($e_start <= $e_end) ? ($e_end - $e_start + 1) : ($e_start - $e_end + 1);
      $e_length  = thousandify($e_length);
-     $e_length .= 'bp';
+     $e_length .= ' bp';
 
   my $show_hide_info_params  = "event,'$e_tr','$e_number','$e_chr:$e_start-$e_end','$e_length'";
      $show_hide_info_params .= ",'$e_stable_id'" if ($e_stable_id && $e_stable_id ne '');
 
-  return qq{ <div class="$classes" data-name="$e_start\_$e_end" title="$e_length" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">$e_number$e_extra</div>};
+  my $title = "$e_tr";
+     $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
+     $title .= " | $e_length";
+
+  return qq{ <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">$e_number$e_extra</div>};
 }
 
 

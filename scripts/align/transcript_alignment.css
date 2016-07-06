@@ -512,3 +512,15 @@ div.left_div {
 div.right_div {
   float:right;
 }
+
+.transcript_length_header {
+  padding-top:4px;
+  font-size:75%;
+  color:#AAA;
+}
+.transcript_length {
+  padding-top:4px;
+  font-size:80%;
+  color:#666;
+}
+
