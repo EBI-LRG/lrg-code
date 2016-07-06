@@ -1044,9 +1044,10 @@ sub get_manual_html {
   my $tr_ext_name    = $transcript->external_name;
   my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
   my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_title   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'Manual' : 'Automated';
   my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
  
-  return qq{<span class="$manual_class"$manual_border title="Transcript name: $tr_ext_name">$manual_label</span>};
+  return qq{<span class="$manual_class"$manual_border data-toggle="tooltip" data-placement="bottom" title="$manual_title annotation">$manual_label</span>};
 }  
 
 sub get_tsl_html {
@@ -1081,7 +1082,7 @@ sub get_tsl_html {
  
   my $bg_colour     = ($tsl_colour{$level}) ? $tsl_colour{$level} : $tsl_default_bgcolour;
   my $border_colour = ($tr_type eq 'gold') ? qq{ ;border-color:#555} : '';
-  return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" title="Transcript Support Level = $level">$level</span>};
+  return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">$level</span>};
 }
 
 sub get_canonical_html {
@@ -1092,7 +1093,7 @@ sub get_canonical_html {
   
   my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  return qq{<span class="flag canonical"$border_colour title="Canonical transcript">C</span>}
+  return qq{<span class="flag canonical"$border_colour data-toggle="tooltip" data-placement="bottom" title="Canonical transcript">C</span>}
 }
 
 sub get_appris_html {
@@ -1109,7 +1110,7 @@ sub get_appris_html {
   
   my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  return qq{<span class="flag appris"$border_colour title="APPRIS $appris">$appris_label</span>};
+  return qq{<span class="flag appris"$border_colour data-toggle="tooltip" data-placement="bottom" title="APPRIS $appris">$appris_label</span>};
 }
 
 sub get_source_html {
