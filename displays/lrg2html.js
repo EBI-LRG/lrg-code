@@ -2,6 +2,9 @@
 var interval = 20;
 var max_tr_id = 18;
 
+var tr_img_classes = ["exon_block_coding", "exon_block_non_coding_5_prime", "exon_block_non_coding_3_prime", "exon_block_non_coding"];
+var tr_img_class_prefix = "selected_";
+
 // function to add to element content
 function append(id,content,clear) {
   var e = document.getElementById(id);
@@ -19,42 +22,49 @@ function append(id,content,clear) {
 function showhide(lyr) {
   var lyrobj = document.getElementById(lyr);
   var button = document.getElementById(lyr+'_button');
+  var type   = 'plus';
   
   if(lyrobj.className == "hidden") {
-    //fadeIn(lyrobj);
     lyrobj.className = "unhidden";
-    rotate90('img_'+lyr);
-    if (button) {
-      button.className='show_hide selected';
-    }
+    type='minus';
   }
   else {
-    //fadeOut(lyrobj);
     lyrobj.className = "hidden";
-    rotate90('img_'+lyr, 1);
-    if (button) {
-      button.className='show_hide';
-    }
+  }
+  if (button) {
+    button.className='glyphicon glyphicon-'+type+'-sign show_hide_button';
+  }
+}
+
+function showhide_button(id, button_id, text) {
+
+  var lyrobj = document.getElementById(id);
+  var button = document.getElementById(button_id);
+  
+   if(lyrobj.className == "hidden") {
+    lyrobj.className = "unhidden";
+    button.innerHTML="<span class=\"glyphicon glyphicon-minus-sign\"></span> Hide "+text;
+  }
+  else {
+    lyrobj.className = "hidden";
+    button.innerHTML="<span class=\"glyphicon glyphicon-plus-sign\"></span> Show "+text;
   }
 }
 
 // function to show/hide annotation set
 function showhide_anno(lyr) {
-
-  showhide(lyr);
-
-  var lyrobj = document.getElementById(lyr);
-  var button = document.getElementById('show_hide_anno_'+lyr);
-  
-  if(lyrobj.className == "unhidden") {
-    button.innerHTML='Hide annotations';
-    button.className="show_hide_anno selected_anno";
-  }
-  else {
-    button.innerHTML='Show annotations';
-    button.className="show_hide_anno";
-  }
+  var button_id = "show_hide_anno_"+lyr;
+  var text = "annotations";
+  showhide_button(lyr, button_id, text);
 }
+
+function showhide_genoverse(lyr) {
+  var button_id = "show_hide_"+lyr;
+  var text = "the Genoverse genome browser";
+  showhide_button(lyr, button_id, text);
+}
+
+
 
 // function to show layers
 function show_content(lyr,lyr_anchor) {
@@ -204,6 +214,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var pnum = tname+'_'+pname+'_'+ename;
   var tableobj = document.getElementById('table_exon_'+pnum);
   var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename);
+  var exon_block_id = '#tr_img_exon_'+tname+'_'+ename;
 
   // we only want to get the genomic exon if this is transcript t1
   var genob, exon_select;
@@ -255,6 +266,39 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
       othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
     }
   }
+  
+  // Exon block
+  var exon_block_children = $(exon_block_id).children();
+  // Partial coding exon
+  if(exon_block_children.length) {
+    $.each( exon_block_children, function( index, child ) {
+      $.each( tr_img_classes, function( index, value ) {
+        var selected_class = tr_img_class_prefix + value;
+        if($(child).hasClass(value)) {
+          $(child).removeClass(value).addClass(selected_class);
+          return false;
+        }
+        else if ($(child).hasClass(selected_class)) {
+          $(child).removeClass(selected_class).addClass(value);
+          return false;
+        }
+      });
+    });
+  }
+  // Full coding or non coding exon
+  else {
+    $.each( tr_img_classes, function( index, value ) {
+      var selected_class = tr_img_class_prefix + value;
+      if ($(exon_block_id).hasClass(value)) {
+        $(exon_block_id).removeClass(value).addClass(selected_class);
+        return false;
+      }
+      else if ($(exon_block_id).hasClass(selected_class)) {
+        $(exon_block_id).removeClass(selected_class).addClass(value);
+        return false;
+      }
+    });
+  }
 }
 
 // function to clear exon highlighting
@@ -269,7 +313,7 @@ function clear_highlight(trans,pep) {
     i++;
   }
   
-  // clear cdna
+  //clear cdna
   i = 1;
   while(document.getElementById('cdna_exon_'+trans+'_'+i)) {
     obj = document.getElementById('cdna_exon_'+trans+'_'+i);
@@ -318,6 +362,35 @@ function clear_highlight(trans,pep) {
       obj.className = (obj.className.substr(0,1) == 'e' ? exon_select : 'intron');
     }
   }
+  
+  // clear exon blocks
+  i = 1;
+  while($('#tr_img_exon_'+trans+'_'+i).length) {
+    var exon_block_id = '#tr_img_exon_'+trans+'_'+i;
+    var exon_block_children = $(exon_block_id).children();
+    // Full coding exon
+    if(exon_block_children.length) {
+      $.each( exon_block_children, function( index, child ) {
+        $.each( tr_img_classes, function( index, value ) {
+          var selected_class = tr_img_class_prefix + value;
+          if ($(child).hasClass(selected_class)) {
+            $(child).removeClass(selected_class).addClass(value);
+            return false;
+          }
+        });
+      });
+    }
+    else {
+      $.each( tr_img_classes, function( index, value ) {
+        var selected_class = tr_img_class_prefix + value;
+        if ($(exon_block_id).hasClass(selected_class)) {
+          $(exon_block_id).removeClass(selected_class).addClass(value);
+          return false;
+        }
+      });
+    }
+    i++;
+  }
 }
 
 
@@ -338,23 +411,26 @@ function getElementsByIdStartsWith(selectorTag, prefix) {
 function create_external_link (lrg_status) {
   var external_icon = get_external_icon(lrg_status);
 
+  var external_icon_class = "icon-external-link";
+
   // Links with http
   h_elements = document.getElementsByClassName('http_link');
   for (var i=0;i<h_elements.length;i++) {
     var exp = /((http|ftp)(s)?:\/\/\S+)/g;
-   h_elements[i].innerHTML= h_elements[i].innerHTML.replace(exp,"<a href='$1' target='_blank'>$1"+external_icon+"</a>");
+    var link = h_elements[i].innerHTML;
+    h_elements[i].innerHTML = "<a class=\""+external_icon_class+"\" href=\""+link+"\" target='_blank'>"+link+"</a>";
   }
 
   // Links to NCBI
   elements = document.getElementsByClassName('external_link');
   for (var i=0;i<elements.length;i++) {
     var exp = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
-    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1"+external_icon+"</a>");
+    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a class=\""+external_icon_class+"\" href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1</a>");
   }
   // Links to Ensembl
   for (var i=0;i<elements.length;i++) {
     var exp = /(ENST[0-9]+\.?[0-9]*)/g;
-    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1"+external_icon+"</a>");
+    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
   }
 }
 
@@ -396,10 +472,13 @@ function search_in_ensembl(lrg_id, lrg_status) {
   var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
   var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
   var phe_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
+  
+  var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4" style="padding-left:5px"></span>';
+  var external = 'icon-external-link';
  
-  var ens_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+ens_link+'" target="_blank" style="vertical-align:middle">Link to the LRG page in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
-  var var_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+var_link+'" target="_blank" style="vertical-align:middle">See variants in Ensembl for this LRG<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
-  var phe_html = '<br /><img src="img/right_arrow_green.png" style="vertical-align:middle;padding-left:5px" alt="right_arrow"/> <a href="'+phe_link+'" target="_blank" style="vertical-align:middle">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl<img src="img/external_link_green.png" class="external_link" alt="External link" title="External link" /></a>';
+  var ens_html = '<div>'+icon+'<a href="'+ens_link+'" target="_blank" class="'+external+'">Link to the LRG page in Ensembl</a></div>';
+  var var_html = '<div>'+icon+'<a href="'+var_link+'" target="_blank" class="'+external+'">See variants in Ensembl for this LRG</a></div>';
+  var phe_html = '<div>'+icon+'<a href="'+phe_link+'" target="_blank" class="'+external+'">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl</a></div>';
   
   for (var i = 0; i < fileArray.length; i++) {
     var id = fileArray[i];
@@ -407,75 +486,6 @@ function search_in_ensembl(lrg_id, lrg_status) {
       div.innerHTML = ens_html+var_html+phe_html;
       return 0;
     }
-  }
-}
-
-
-// function to display information about the download of LRG files
-function show_download_help() {
-  var client_browser = navigator.appName;
-  if (client_browser == "Microsoft Internet Explorer" || client_browser == "Safari") {
-    var element = document.getElementById('download_msg');
-    element.className = "unhidden";
-  }
-}
-
-// function to display information about different sections of the LRG page
-function show_help(id) {
-  var element = document.getElementById(id);
-  var help_text = element.getAttribute('data-help'); 
-  var help_div = document.getElementById('help_box');
-  help_div.className = "unhidden help_box";
-  help_div.style.top = element.offsetTop+'px';
-  help_div.innerHTML=help_text;
-}
-
-// function to hide help information
-function hide_help(id) {
-  var element = document.getElementById(id);
-  element.className = "hidden";
-}
-
-// function to display information about different sections of the LRG page
-function show_info(id) {
-  var popup_id = id+"_info";
-  var popup_div = '';
-  var attr_name='data-info';
-  var element = document.getElementById(id);
-
-  if (document.getElementById(popup_id)) {
-    popup_div = document.getElementById(popup_id);
-  }
-  else {
-    popup_div = document.createElement('div');
-    popup_div.id = popup_id;
-    element.appendChild(popup_div);
-  }
-  var info_text = element.getAttribute(attr_name);
-  popup_div.className = "unhidden info_box";
-  popup_div.innerHTML=info_text;
-  
-
-  var el_pos = element.getBoundingClientRect();
-
-  // Y position
-  top_pos = window.pageYOffset+ el_pos.bottom + 6;
-  popup_div.style.top = top_pos+"px";
-
-  // X position
-  var posXcenter = el_pos.left + ((el_pos.right - el_pos.left)/2 - 1);
-  var popup_pos = popup_div.getBoundingClientRect();
-  var popup_length = popup_pos.right - popup_pos.left;
-  var popup_left = window.pageXOffset + posXcenter - (popup_length/2);
-  popup_div.style.left = popup_left+"px";
-}
-
-// function to hide help information
-function hide_info(id) {
-  var popup_id = id+"_info";
-  if (document.getElementById(popup_id)) {
-    var popup_div = document.getElementById(popup_id);
-    popup_div.className = "hidden info_box";
   }
 }
 
