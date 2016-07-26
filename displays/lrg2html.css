@@ -1178,6 +1178,7 @@ div.top_upd_anno_link{
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
   border-radius:5px;
   vertical-align:middle;
+  margin-left:12px;
 }
 .vep_icon:hover {
   border:1px solid #48a726;

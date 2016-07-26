@@ -197,7 +197,7 @@
   </xsl:choose> 
   <div class="menu_title"> </div>
   
-  <!-- Create the menu with within-page navigation  -->
+  <!-- Create the menu with within-page navigation -->
   <div class="data_container">
   <div class="menu clearfix">  
     <div class="right_side submenu">
@@ -3889,7 +3889,7 @@
     <div class="clearfix">
       <div style="float:left">
         <span class="blue" style="vertical-align:middle"><xsl:value-of select="$chr"/></span>
-        <span style="color:#000;vertical-align:middle;padding-right:12px"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
+        <span style="color:#000;vertical-align:middle"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
       </div>
       <div style="float:right">
         <a class="vep_icon" data-toggle="tooltip" data-placement="bottom">
@@ -3948,11 +3948,11 @@
     <div class="clearfix">
       <div style="float:left">
         <span class="green" style="vertical-align:middle"><xsl:value-of select="$lrg_id"/></span>
-        <span style="color:#000;vertical-align:middle;padding-right:12px"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
+        <span style="color:#000;vertical-align:middle"><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
       </div>
     <xsl:if test="$assembly!='none' and $lrg_status=0">
       <div style="float:right">
-        <a class="vep_icon" data-toggle="tooltip" data-placement="bottom">
+        <a class="vep_icon vep_lrg" data-toggle="tooltip" data-placement="bottom">
           <xsl:attribute name="href">
             <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
           </xsl:attribute>

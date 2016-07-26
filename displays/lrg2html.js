@@ -19,22 +19,22 @@ function append(id,content,clear) {
 }
 
 // function to show/hide layers
-function showhide(lyr) {
+function showhide(lyr, only_show) {
   var lyrobj = document.getElementById(lyr);
   var button = document.getElementById(lyr+'_button');
-  var type   = 'plus';
   
   if(lyrobj.className == "hidden") {
     lyrobj.className = "unhidden";
-    type='minus';
+    button.className='glyphicon glyphicon-minus-sign show_hide_button';
   }
   else {
-    lyrobj.className = "hidden";
-  }
-  if (button) {
-    button.className='glyphicon glyphicon-'+type+'-sign show_hide_button';
+    if (!only_show) {
+      lyrobj.className = "hidden";
+      button.className='glyphicon glyphicon-plus-sign show_hide_button'
+    }
   }
 }
+
 
 function showhide_button(id, button_id, text) {
 
@@ -456,7 +456,6 @@ function format_note (){
 function search_in_ensembl(lrg_id, lrg_status) {
 
   var filePath = 'lrgs_in_ensembl.txt';
-  div = document.getElementById('ensembl_links');
   xmlhttp = new XMLHttpRequest();
   xmlhttp.open("GET",filePath,false);
   xmlhttp.send(null);
@@ -464,28 +463,29 @@ function search_in_ensembl(lrg_id, lrg_status) {
   var fileContent = xmlhttp.responseText;
   var fileArray = fileContent.split('\n');
   
-  var lrg_status_path = '';
-  if (lrg_status != 0) {
-    lrg_status_path = '../';
-  }
-
-  var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
-  var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
-  var phe_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
-  
-  var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4" style="padding-left:5px"></span>';
-  var external = 'icon-external-link';
- 
-  var ens_html = '<div>'+icon+'<a href="'+ens_link+'" target="_blank" class="'+external+'">Link to the LRG page in Ensembl</a></div>';
-  var var_html = '<div>'+icon+'<a href="'+var_link+'" target="_blank" class="'+external+'">See variants in Ensembl for this LRG</a></div>';
-  var phe_html = '<div>'+icon+'<a href="'+phe_link+'" target="_blank" class="'+external+'">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl</a></div>';
-  
-  for (var i = 0; i < fileArray.length; i++) {
-    var id = fileArray[i];
-    if (id==lrg_id) {
-      div.innerHTML = ens_html+var_html+phe_html;
-      return 0;
+  if (lrg_status == 0) { // Only for public LRGs
+    
+    var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
+    var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
+    var phe_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
+    
+    var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4" style="padding-left:5px"></span>';
+    var external = 'icon-external-link';
+   
+    var ens_html = '<div>'+icon+'<a href="'+ens_link+'" target="_blank" class="'+external+'">Link to the LRG page in Ensembl</a></div>';
+    var var_html = '<div>'+icon+'<a href="'+var_link+'" target="_blank" class="'+external+'">See variants in Ensembl for this LRG</a></div>';
+    var phe_html = '<div>'+icon+'<a href="'+phe_link+'" target="_blank" class="'+external+'">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl</a></div>';
+    
+    for (var i = 0; i < fileArray.length; i++) {
+      var id = fileArray[i];
+      if (id==lrg_id) {
+        $('#ensembl_links').html(ens_html+var_html+phe_html);
+        return 0;
+      }
     }
   }
+  
+  // Hide/Remove the VEP button if the LRG is not on the list
+  $(".vep_lrg").parent().html("");
 }
 
