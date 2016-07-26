@@ -3347,7 +3347,7 @@
       </div>
     <xsl:if test="$assembly!='none' and $lrg_status=0">
       <div style="float:right">
-        <a class="vep_icon">
+        <a class="vep_icon vep_lrg">
           <xsl:attribute name="href">
             <xsl:value-of select="$vep_parser"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/>
           </xsl:attribute>

@@ -408,6 +408,12 @@ function search_in_ensembl(lrg_id, lrg_status) {
       return 0;
     }
   }
+
+  // Hide the VEP button if the LRG is not on the list
+  hgvs_lrgs = document.getElementsByClassName('vep_lrg');
+  for (var i = 0; i < hgvs_lrgs.length; i++) {
+    hgvs_lrgs[i].className = "vep_lrg hidden";
+  }
 }
 
 
