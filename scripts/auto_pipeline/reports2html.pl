@@ -81,7 +81,7 @@ my $html_header = qq{
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
       
       .report_header  { padding: 5px 15px }
-      .report_date    { background-color:#FFF;color:#48a726; padding: 0px 4px;font-weight:bold;border: 1px solid #333 }
+      .report_date    { background-color:#F0F0F0;color:#0E4C87;padding:0px 4px;font-weight:bold;border:1px solid #333 }
       .summary_box    { border:1px solid #1A4468 }
       .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
       
