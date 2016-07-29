@@ -51,7 +51,7 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 my $lrg_status_table = 'lrg_status';
 my $lrg_step         = 'lrg_step';
 
-my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
+my @month_list = qw( January February March April May June July August September October November December );
 
 my $ftp      = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
 my $xml_dir  = '/ebi/ftp/pub/databases/lrgex';
@@ -223,7 +223,7 @@ if ($is_private) {
 # Date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 $year+=1900;
-my $day = "$mday $abbr[$mon] $year";
+my $day = "$mday $month_list[$mon] $year";
 my @today = ($year, $mon+1, $mday);
 
 
@@ -950,7 +950,7 @@ sub format_date {
   
   $month =~ s/^0//;
   
-  return $day.' '.$abbr[$month-1].' '.$year;
+  return $day.' '.$month_list[$month-1].' '.$year;
 }
 
 sub count_days {
