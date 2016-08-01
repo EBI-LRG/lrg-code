@@ -266,6 +266,7 @@ foreach my $cdna_tr (@$cdna_dna) {
   my $cdna_exon_count = scalar(@$cdna_exons);
   foreach my $cdna_exon (@{$cdna_exons}) {
     foreach my $cdna_exon_evidence (@{$cdna_exon->get_all_supporting_features}) {
+      next unless ($cdna_exon_evidence->db_name);
       next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
       $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
       next if ($cdna_name !~ /^\w+/);
