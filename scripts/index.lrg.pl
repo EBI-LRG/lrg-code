@@ -24,6 +24,7 @@ usage() if (defined($help));
 $tmp_dir ||= $index_dir;
 my $lrg_list = 'lrgs_in_ensembl.txt';
 my $lrg_json = 'lrg_index.json';
+my $lrg_diff = 'lrg_index.diff';
 
 my $extra_options  = '';
    $extra_options .= " -default_assembly $default_assembly" if (defined($default_assembly));
@@ -127,11 +128,35 @@ while (my $file = readdir($dh)) {
     print JSON "$json_data\n";   
   }
   close(F);
+  `rm -f $tmp_dir/$file`;
 }
 closedir($dh);
 
 print JSON "]";
 close(JSON);
+
+print " done\n";
+
+
+# LRG sequence differences file
+print "Generating the LRG sequence differences file ...";
+
+open DIFF, "> $tmp_dir/$lrg_diff" || die $!;
+my $count_diff_files = 0;
+opendir($dh,$tmp_dir);
+warn("Could not process directory $tmp_dir") unless (defined($dh));
+# Loop over the files in the directory and open the DIFF txt files
+while (my $file = readdir($dh)) {
+  next unless ($file =~ m/\.txt$/);
+  $count_diff_files ++;
+  open F, "< $tmp_dir/$file" || die $!;
+  while (<F>) {
+    print DIFF "$_";
+  }
+  close(F);
+}
+closedir($dh);
+close(DIFF);
 
 print " done\n";
 

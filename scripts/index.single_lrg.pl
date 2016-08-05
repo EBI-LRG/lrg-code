@@ -6,7 +6,7 @@ use Getopt::Long;
 use Cwd;
 use JSON;
 
-my ($xml_file,$xml_dir,$tmp_dir,$status,$in_ensembl,$default_assembly,$species,$taxo_id,$index_suffix,$help);
+my ($xml_file,$xml_dir,$tmp_dir,$status,$in_ensembl,$default_assembly,$new_assembly,$species,$taxo_id,$index_suffix,$diff_suffix,$help);
 GetOptions(
   'xml_file=s'         => \$xml_file,
   'xml_dir=s'          => \$xml_dir,
@@ -24,9 +24,13 @@ GetOptions(
 $species ||= 'Homo sapiens';
 $taxo_id ||= 9606;
 $default_assembly ||= 'GRCh37';
+$new_assembly = 'GRCh38';
 $index_suffix ||= '_index';
+$diff_suffix  ||= '_diff';
 
 my %data;
+
+my %type_label = ('lrg_ins' => 'insertion', 'other_ins' => 'deletion');
 
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
 
@@ -103,13 +107,30 @@ foreach my $set (@$asets) {
       # Assemblies coords
       my $assembly = $coord->data->{coord_system};
       if ($assembly =~ /^(GRCh\d+)/i) {
-        my $a_version = lc($1);
+        my $A_version = $1;
+        my $a_version = lc($A_version);
         $data{'assemblies'}{$a_version}{'assembly'}  = $coord->data->{coord_system};
         $data{'assemblies'}{$a_version}{'chr_name'}  = $coord->data->{other_name};
         $data{'assemblies'}{$a_version}{'chr_start'} = $coord->data->{other_start};
         $data{'assemblies'}{$a_version}{'chr_end'}   = $coord->data->{other_end};
         my $mapping_span = $coord->findNode('mapping_span');
         $data{'assemblies'}{$a_version}{'chr_strand'} = $mapping_span->data->{strand};
+
+        if ($assembly =~ /^$new_assembly/i) {
+          my $mapping_span = $coord->findNode('mapping_span');
+          my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
+          foreach my $diff (@{$mapping_diff}) {
+            my $diff_start = $diff->data->{other_start};
+            my $diff_end   = $diff->data->{other_end};
+            $data{'diff'}{"$diff_start-$diff_end"}{'assembly'} = $A_version;
+            $data{'diff'}{"$diff_start-$diff_end"}{'chr'}      = $coord->data->{other_name};
+            $data{'diff'}{"$diff_start-$diff_end"}{'start'}    = $diff_start;
+            $data{'diff'}{"$diff_start-$diff_end"}{'end'}      = $diff_end;
+            $data{'diff'}{"$diff_start-$diff_end"}{'type'}     = $type_label{$diff->data->{type}} ? $type_label{$diff->data->{type}} : $diff->data->{type};
+            $data{'diff'}{"$diff_start-$diff_end"}{'ref'}      = $diff->data->{other_sequence};
+            $data{'diff'}{"$diff_start-$diff_end"}{'alt'}      = $diff->data->{lrg_sequence};
+          }
+        }
       }
     }
   }
@@ -264,6 +285,23 @@ open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
 print JSON $json;
 close(JSON);
 
+## LRG diff data ##
+if ($data{'diff'}) {
+  open DIFF, "> $tmp_dir/$lrg_id$diff_suffix.txt" || die $!;
+  foreach my $diff (sort(keys(%{$data{'diff'}}))) {
+    my $chr   = $data{'diff'}{$diff}{'chr'};
+    my $start = $data{'diff'}{$diff}{'start'};
+    my $end   = $data{'diff'}{$diff}{'end'};
+    my $type  = $data{'diff'}{$diff}{'type'};
+    my $ref   = $data{'diff'}{$diff}{'ref'};
+    my $alt   = $data{'diff'}{$diff}{'alt'};
+    my $asm   = $data{'diff'}{$diff}{'assembly'};
+    my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt);
+
+    print DIFF "$lrg_id\t$chr\t$start\t$end\t$type\t$ref\t$alt\t$asm\t$hgvs\n";
+  }
+  close(DIFF);
+}
 
 
 ## Methods ##
@@ -285,23 +323,21 @@ sub get_cross_refs {
   return $cross_refs;
 }
 
-#sub get_cross_refs {
-#  my $cross_refs_nodes = shift;
-#  my $cross_refs = shift;
-#  foreach my $x_node (@{$cross_refs_nodes}) {
-#    my $dbname = $x_node->data->{'source'};
-#    my $dbkey  = $x_node->data->{'accession'};
-#    $cross_refs->{$dbkey} = $dbname;
-#    my $db_xrefs = $x_node->findNodeArraySingle('db_xref');
-#    next if (!scalar $db_xrefs);
-#    foreach my $x_ref (@{$db_xrefs}) {
-#      my $dbname2 = $x_ref->data->{'source'};
-#      my $dbkey2  = $x_ref->data->{'accession'};
-#      $cross_refs->{$dbkey2} = $dbname2;
-#    }
-#  }
-#  return $cross_refs;
-#}
+sub get_hgvs {
+  my ($chr,$start,$end,$type,$ref_al,$alt_al) = @_;
+  my $hgvs = '';
+
+  if ($type eq 'mismatch') {
+    $hgvs = "$chr:g.$start$ref_al>$alt_al";
+  }
+  elsif ($type eq 'deletion') {
+    $hgvs = "$chr:g.$start\_$end"."del$ref_al";
+  }
+  elsif ($type eq 'insertion') {
+    $hgvs = "$chr:g.$start\_$end"."ins$alt_al";
+  }
+  return $hgvs;
+}
 
 sub usage {
     
