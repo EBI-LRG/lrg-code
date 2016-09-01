@@ -124,9 +124,9 @@ close(LIST);
 # Copy the file generated to the FTP directory
 if (-e $output_file ) {
   my $size = -s $output_file;
-#  if ($size > 150) {
-#    `mv $output_file $xml_dir/$f_name`;
-#  }
+  if ($size > 150) {
+    `mv $output_file $xml_dir/$f_name`;
+  }
 }
 
 
