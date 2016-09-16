@@ -119,6 +119,7 @@ warn("Could not process directory $tmp_dir") unless (defined($dh));
 # Loop over the files in the directory and open the JSON files
 while (my $file = readdir($dh)) {
   next unless ($file =~ m/\.json$/);
+  next if ($file eq $lrg_json);
   $count_json_files ++;
   open F, "< $tmp_dir/$file" || die $!;
   while (<F>) {
