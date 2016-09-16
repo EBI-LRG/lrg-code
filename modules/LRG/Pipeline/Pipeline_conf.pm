@@ -40,7 +40,12 @@ sub default_options {
         reports_html            => '/homes/lgil/public_html/LRG/reports',    # To update!
 
         skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
-        skip_partial_lrgs_hc    => ['LRG_603','LRG_835','LRG_855'],
+        skip_extra_lrgs_hc      => (
+                                     'LRG_603'  => 'partial,partial_gene',
+                                     'LRG_835'  => 'partial,partial_gene',
+                                     'LRG_855'  => 'partial,partial_gene',
+                                     'LRG_1090' => 'mapping'
+                                   ),
 
         assembly                => 'GRCh38',
         index_assembly          => 'GRCh37',
@@ -139,17 +144,17 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::InitAnnotation',
             -rc_name           => 'small',
             -parameters        => {
-               ncbi_xml_dir         => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
-               new_xml_dir          => $self->o('new_dir'),
-               reports_dir          => $self->o('tmp_dir'),
-               ftp_dir              => $self->o('ftp_dir'),
-               run_dir              => $self->o('run_dir'),
-               date                 => $self->o('date'),
-               assembly             => $self->o('assembly'),
-               is_test              => $self->o('is_test'),
-               skip_hc              => $self->o('skip_hc'),
-               skip_public_lrgs_hc  => $self->o('skip_public_lrgs_hc'),
-               skip_partial_lrgs_hc => $self->o('skip_partial_lrgs_hc'),
+               ncbi_xml_dir        => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
+               new_xml_dir         => $self->o('new_dir'),
+               reports_dir         => $self->o('tmp_dir'),
+               ftp_dir             => $self->o('ftp_dir'),
+               run_dir             => $self->o('run_dir'),
+               date                => $self->o('date'),
+               assembly            => $self->o('assembly'),
+               is_test             => $self->o('is_test'),
+               skip_hc             => $self->o('skip_hc'),
+               skip_public_lrgs_hc => $self->o('skip_public_lrgs_hc'),
+               skip_extra_lrgs_hc  => $self->o('skip_extra_lrgs_hc'),
             },
             -input_ids     => ($self->o('run_extract_xml_files')) ? [] : [{}],
             -wait_for      => ($self->o('run_extract_xml_files')) ? [ 'extract_xml_files' ] : [],

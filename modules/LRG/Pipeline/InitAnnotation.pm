@@ -22,7 +22,7 @@ sub write_output {
   my $is_test              = $self->param('is_test');
   my $skip_hc              = $self->param('skip_hc');
   my $skip_public_lrgs_hc  = $self->param('skip_public_lrgs_hc');
-  my $skip_partial_lrgs_hc = $self->param('skip_partial_lrgs_hc');
+  my $skip_extra_lrgs_hc   = $self->param('skip_extra_lrgs_hc');
   my $date                 = $self->param('date');
     
   die("LRG directory (-run_dir) needs to be specified!") unless (defined($run_dir));
@@ -41,8 +41,7 @@ sub write_output {
   die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
   
 
-  my %skip_lrg_hc       = map{ $_ => 1 } @$skip_public_lrgs_hc;
-  my %skip_lrg_extra_hc = map{ $_ => 1 } @$skip_partial_lrgs_hc;
+  my %skip_lrg_hc = map{ $_ => 1 } @$skip_public_lrgs_hc;
 
   my $dh;
 
@@ -127,7 +126,7 @@ sub write_output {
     }
 
     my $lrg_skip_hc       = ($skip_lrg_hc{$lrg_id}) ? 'main' : $skip_hc;
-    my $lrg_skip_extra_hc = ($skip_lrg_extra_hc{$lrg_id}) ? 'partial,partial_gene' : 0;
+    my $lrg_skip_extra_hc = ($skip_extra_lrgs_hc->{$lrg_id}) ? $skip_extra_lrgs_hc->{$lrg_id} : 0;
     $status ||= 'new'; 
     $hgnc   ||= '';
     
