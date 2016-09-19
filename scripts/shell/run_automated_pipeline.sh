@@ -176,6 +176,10 @@ echo_stderr  $comment
 
 echo_log "# ${lrg_id}"
 
+if [[ ${skip_extra_hc} ]]; then
+  echo_log "HealthChecks skipped: ${skip_extra_hc}"
+fi
+
 rm -f ${warning_log}
 
 # Check the correct terms for HealthChecks skip options

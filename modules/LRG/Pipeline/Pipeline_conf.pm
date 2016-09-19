@@ -40,12 +40,12 @@ sub default_options {
         reports_html            => '/homes/lgil/public_html/LRG/reports',    # To update!
 
         skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
-        skip_extra_lrgs_hc      => (
+        skip_extra_lrgs_hc      => {
                                      'LRG_603'  => 'partial,partial_gene',
                                      'LRG_835'  => 'partial,partial_gene',
                                      'LRG_855'  => 'partial,partial_gene',
-                                     'LRG_1090' => 'mapping'
-                                   ),
+                                     'LRG_1090' => 'mappings'
+                                   },
 
         assembly                => 'GRCh38',
         index_assembly          => 'GRCh37',
