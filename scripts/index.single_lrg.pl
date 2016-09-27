@@ -195,6 +195,15 @@ foreach my $syn (keys(%synonyms)) {
   $add_fields->addNode('field',{'name' => 'synonym'})->content($syn);
 }
 
+# > Transcript source
+my $transcripts = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/transcript');
+foreach my $transcript (@{$transcripts}) {
+  next if(!$transcript->data->{fixed_id});
+  my $lrg_transcript = $transcript->data->{fixed_id};
+  my $set_transcript = $transcript->data->{accession};
+  $add_fields->addNode('field',{'name' => 'transcript_source'})->content($lrg_transcript.':'.$set_transcript);
+}
+
 
 # Organism
 $add_fields->addNode('field',{'name' => 'organism'})->content($species);
