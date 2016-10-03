@@ -19,68 +19,59 @@ function append(id,content,clear) {
 }
 
 // function to show/hide layers
-function showhide(lyr, only_show) {
-  var lyrobj = document.getElementById(lyr);
-  var button = document.getElementById(lyr+'_button');
+function showhide(id, only_show) {
+  var div_id = "#"+id;
+  var button_id = "#"+id+"_button";
   
-  if(lyrobj.className == "hidden") {
-    lyrobj.className = "unhidden";
-    button.className='glyphicon glyphicon-minus-sign show_hide_button';
+  if($(button_id).hasClass("icon-collapse-closed")) {
+    $(button_id).removeClass("icon-collapse-closed").addClass("icon-collapse-open");
+    $(div_id).show(150);
   }
   else {
     if (!only_show) {
-      lyrobj.className = "hidden";
-      button.className='glyphicon glyphicon-plus-sign show_hide_button'
+      $(button_id).removeClass("icon-collapse-open").addClass("icon-collapse-closed");
+      $(div_id).hide(150);
     }
   }
 }
 
+// Function "show/hide" using a button with text "Show xxxx" or "Hide xxxx"
+function showhide_button(id, text, only_show) {
 
-function showhide_button(id, button_id, text) {
-
-  var lyrobj = document.getElementById(id);
-  var button = document.getElementById(button_id);
+  var div_id = "#"+id;
+  var button_id = "#"+id+"_button";
   
-   if(lyrobj.className == "hidden") {
-    lyrobj.className = "unhidden";
-    button.innerHTML="<span class=\"glyphicon glyphicon-minus-sign\"></span> Hide "+text;
+  if($(button_id).hasClass("icon-collapse-closed")) {
+    $(button_id).removeClass("icon-collapse-closed").addClass("icon-collapse-open");
+    $(div_id).show(150);
+    $(button_id).html('Hide ' + text);
   }
   else {
-    lyrobj.className = "hidden";
-    button.innerHTML="<span class=\"glyphicon glyphicon-plus-sign\"></span> Show "+text;
+    if (!only_show) {
+      $(button_id).removeClass("icon-collapse-open").addClass("icon-collapse-closed");
+      $(div_id).hide(150);
+      $(button_id).html('Show ' + text);
+    }
   }
 }
 
 // function to show/hide annotation set
 function showhide_anno(lyr) {
-  var button_id = "show_hide_anno_"+lyr;
   var text = "annotations";
-  showhide_button(lyr, button_id, text);
+  showhide_button(lyr, text);
 }
 
 function showhide_genoverse(lyr) {
-  var button_id = "show_hide_"+lyr;
   var text = "the Genoverse genome browser";
-  showhide_button(lyr, button_id, text);
+  showhide_button(lyr, text);
 }
 
 
 
 // function to show layers
 function show_content(lyr,lyr_anchor) {
-  var lyrobj = document.getElementById(lyr);
-  if(lyrobj.className == "hidden") {
-    //fadeIn(lyrobj);
-    lyrobj.className = "unhidden";
-    rotate90('img_'+lyr);
-  }
-  if (lyr_anchor) {
-    var anchor_obj = document.getElementById(lyr_anchor);
-    anchor_obj.scrollIntoView(true);
-  }
-  else {
-    lyrobj.scrollIntoView(true);
-  }
+  $("#"+lyr).show(150);
+  location.hash = "#" + lyr_anchor;
 }
 
 function fadeIn(element) {
@@ -414,24 +405,20 @@ function create_external_link (lrg_status) {
   var external_icon_class = "icon-external-link";
 
   // Links with http
-  h_elements = document.getElementsByClassName('http_link');
-  for (var i=0;i<h_elements.length;i++) {
-    var exp = /((http|ftp)(s)?:\/\/\S+)/g;
-    var link = h_elements[i].innerHTML;
-    h_elements[i].innerHTML = "<a class=\""+external_icon_class+"\" href=\""+link+"\" target='_blank'>"+link+"</a>";
-  }
+  $('.http_link').addClass(external_icon_class);
 
-  // Links to NCBI
-  elements = document.getElementsByClassName('external_link');
-  for (var i=0;i<elements.length;i++) {
-    var exp = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
-    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a class=\""+external_icon_class+"\" href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1</a>");
-  }
-  // Links to Ensembl
-  for (var i=0;i<elements.length;i++) {
-    var exp = /(ENST[0-9]+\.?[0-9]*)/g;
-    elements[i].innerHTML= elements[i].innerHTML.replace(exp,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
-  }
+  // Links to NCBI & Ensembl
+  $('.external_link').each(function(index) {
+    // NCBI
+    var exp_ncbi = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
+    var new_ncbi_link = $(this).html().replace(exp_ncbi,"<a class=\""+external_icon_class+"\" href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1</a>");
+    $(this).html(new_ncbi_link);
+  
+    // Ensembl
+    var exp_ens = /(ENST[0-9]+\.?[0-9]*)/g;
+    var new_ens_link = $(this).html().replace(exp_ens,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
+    $(this).html(new_ens_link);
+  });
 }
 
 // function to build the HTML code to display the external icon
@@ -469,12 +456,12 @@ function search_in_ensembl(lrg_id, lrg_status) {
     var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
     var phe_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
     
-    var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4" style="padding-left:5px"></span>';
+    var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4"></span>';
     var external = 'icon-external-link';
    
-    var ens_html = '<div>'+icon+'<a href="'+ens_link+'" target="_blank" class="'+external+'">Link to the LRG page in Ensembl</a></div>';
-    var var_html = '<div>'+icon+'<a href="'+var_link+'" target="_blank" class="'+external+'">See variants in Ensembl for this LRG</a></div>';
-    var phe_html = '<div>'+icon+'<a href="'+phe_link+'" target="_blank" class="'+external+'">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl</a></div>';
+    var ens_html = '<div class="line_content">'+icon+'<a href="'+ens_link+'" target="_blank" class="'+external+'">Link to the LRG page in Ensembl</a></div>';
+    var var_html = '<div class="line_content">'+icon+'<a href="'+var_link+'" target="_blank" class="'+external+'">See variants in Ensembl for this LRG</a></div>';
+    var phe_html = '<div class="line_content">'+icon+'<a href="'+phe_link+'" target="_blank" class="'+external+'">See the phenotypes/diseases associated with the genomic region covered by this LRG in Ensembl</a></div>';
     
     for (var i = 0; i < fileArray.length; i++) {
       var id = fileArray[i];
@@ -489,3 +476,9 @@ function search_in_ensembl(lrg_id, lrg_status) {
   $(".vep_lrg").parent().html("");
 }
 
+
+function offsetAnchor() {
+  if(location.hash.length !== 0) {
+    window.scrollTo(window.scrollX, window.scrollY - 110);
+  }
+}
