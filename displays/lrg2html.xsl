@@ -46,6 +46,7 @@
 <xsl:variable name="requester_type">requester</xsl:variable>
 <xsl:variable name="new_public_transcript">This transcript was added to the LRG record after it was made public</xsl:variable>
 <xsl:variable name="image_width">1000</xsl:variable>
+<xsl:variable name="scrolltop">300</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -129,7 +130,7 @@
       });
       
       $(window).scroll(function() {
-        if ($(window).scrollTop() > 260) {
+        if ($(window).scrollTop() > <xsl:value-of select="$scrolltop"/>) {
           $('#top_menu_icons').show(500);
         }
         else {
@@ -291,20 +292,20 @@
   <div class="menu clearfix">  
     <div class="right submenu">
       <a class="section-title2" href="#fixed_annotation_anchor">
-        <h5  id="fixed_menu" class="icon-lock" data-toggle="tooltip" data-placement="left">
+        <h4 id="fixed_menu" class="icon-lock" data-toggle="tooltip" data-placement="left">
           <xsl:attribute name="title"><xsl:value-of select="$fixed_set_desc"/></xsl:attribute>
           Fixed Annotation
-        </h5>
+        </h4>
       </a>
       <ul>
         <li><a href="#genomic_sequence_anchor" class="menu_item" id="genomic_menu" data-toggle="tooltip" data-placement="left" title="LRG genomic sequence, with exons highlighted" >LRG genomic sequence</a></li>
         <li><a href="#transcripts_anchor" class="menu_item" id="transcript_menu" data-toggle="tooltip" data-placement="left" title="LRG transcript and protein sequences, with exons highlighted">LRG transcript(s)</a></li>
       </ul>
       <a class="section-title2" href="#updatable_annotation_anchor">
-        <h5 class="icon-unlock" id="updatable_menu" data-toggle="tooltip" data-placement="left">
+        <h4 class="icon-unlock" id="updatable_menu" data-toggle="tooltip" data-placement="left">
           <xsl:attribute name="title"><xsl:value-of select="$updatable_set_desc"/></xsl:attribute>
           Updatable Annotation
-        </h5>
+        </h4>
       </a> 
       <ul>
         <li><a href="#set_1_anchor" class="menu_item" id="lrg_menu" data-toggle="tooltip" data-placement="left" title="LRG mapping to the current reference assembly">LRG mappings</a></li>
@@ -320,16 +321,16 @@
       </xsl:if>
       </ul>
       <a class="section-title2" href="#additional_data_anchor">
-        <h5 class="icon-database-submit" id="additional_menu" data-toggle="tooltip" data-placement="left">
+        <h4 class="icon-database-submit" id="additional_menu" data-toggle="tooltip" data-placement="left">
           <xsl:attribute name="title"><xsl:value-of select="$additional_set_desc"/></xsl:attribute>
           Additional Data Sources
-        </h5>
+        </h4>
       </a>
       <a class="section-title2" href="#requester_anchor">
-        <h5 class="icon-request" id="requester_menu" data-toggle="tooltip" data-placement="left">
+        <h4 class="icon-request" id="requester_menu" data-toggle="tooltip" data-placement="left">
           <xsl:attribute name="title"><xsl:value-of select="$requester_set_desc"/></xsl:attribute>
           Requester Information
-        </h5>
+        </h4>
       </a>
     </div>
     
@@ -653,71 +654,95 @@
         </tr>
   </xsl:for-each>
 
-  <xsl:if test="count(contact)>0">
-     
-      <xsl:variable name="contact_class">
-        <xsl:choose>
-          <xsl:when test='contact/address'>contact_lbl_long</xsl:when> 
-          <xsl:otherwise>contact_lbl</xsl:otherwise>
-        </xsl:choose>
-      </xsl:variable>
-
+  <xsl:choose>
+  
+    <xsl:when test="count(contact)=1">
         <tr>
-          <td class="source_left">
-      <xsl:choose>
-        <xsl:when test="count(contact)=1">Contact:</xsl:when>
-        <xsl:otherwise>Contacts:</xsl:otherwise>
-      </xsl:choose>
-          </td>
+          <td class="source_left">Contact:</td>
           <td class="source_right">
-            <table class="table table-lrg table-hover margin-bottom-5">
-              <tbody>
-      <xsl:for-each select="contact">
-                <tr>
-                  <td>
-                    <xsl:choose>
-                      <xsl:when test="name"><span class="bold_font"><xsl:value-of select="name"/></span></xsl:when>
-                      <xsl:otherwise>-</xsl:otherwise>
-                    </xsl:choose>
-                  </td>
-                  <td>
-                    <xsl:choose>
-                      <xsl:when test="email">
-                        <xsl:call-template name="email">
-                          <xsl:with-param name="c_email"><xsl:value-of select="email"/></xsl:with-param>
-                        </xsl:call-template>
-                      </xsl:when>
-                      <xsl:otherwise>-</xsl:otherwise>
-                    </xsl:choose>
-                  </td>
-                  <td>
-                    <xsl:if test="url">
-                      <xsl:attribute name="colspan">2</xsl:attribute>
-                    </xsl:if>
-                    
-                    <xsl:choose>
-                      <xsl:when test="address"><xsl:value-of select="address"/></xsl:when>
-                      <xsl:otherwise>
-                        <xsl:if test="url">-</xsl:if>
-                      </xsl:otherwise>
-                    </xsl:choose>
-                  </td>
-                  <xsl:if test="url">
-                    <td>
-                      <xsl:for-each select="url">              
-                        <xsl:call-template name="url" >
-                          <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
-                        </xsl:call-template>
-                      </xsl:for-each>
-                    </td>
-                  </xsl:if>
-                </tr>
-      </xsl:for-each>
-              </tbody>
-            </table>
+          <xsl:for-each select="contact[1]">
+            <xsl:if test="name">
+              <span class="bold_font"><xsl:value-of select="name"/></span>
+            </xsl:if>
+            <xsl:if test="email">
+              <xsl:if test="name"><span class="contact_h_separator">-</span></xsl:if>
+              <span class="contact_content">
+                <xsl:call-template name="email">
+                  <xsl:with-param name="c_email"><xsl:value-of select="email"/></xsl:with-param>
+                 </xsl:call-template>
+               </span>
+            </xsl:if>
+            <xsl:if test="address">
+               <xsl:if test="(name) or (email)"><span class="contact_h_separator">-</span></xsl:if>
+              <span><xsl:value-of select="address"/></span>
+            </xsl:if>
+            <xsl:if test="url">
+              <xsl:if test="(name) or (email) or (address)"><span class="contact_h_separator">-</span></xsl:if>
+              <xsl:for-each select="url">              
+                <xsl:call-template name="url" >
+                  <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
+                </xsl:call-template>
+                <xsl:if test="position!=last()"><br /></xsl:if>
+              </xsl:for-each>
+             </xsl:if>
+          </xsl:for-each>
           </td>
         </tr>
-  </xsl:if>
+    </xsl:when>
+    
+    <xsl:when test="count(contact)>1">
+        <tr>
+            <td class="source_left">Contacts:</td>
+            <td class="source_right">
+              <table class="table table-lrg table-hover margin-bottom-5">
+                <tbody>
+        <xsl:for-each select="contact">
+                  <tr>
+                    <td>
+                      <xsl:choose>
+                        <xsl:when test="name"><span class="bold_font"><xsl:value-of select="name"/></span></xsl:when>
+                        <xsl:otherwise>-</xsl:otherwise>
+                      </xsl:choose>
+                    </td>
+                    <td>
+                      <xsl:choose>
+                        <xsl:when test="email">
+                          <xsl:call-template name="email">
+                            <xsl:with-param name="c_email"><xsl:value-of select="email"/></xsl:with-param>
+                          </xsl:call-template>
+                        </xsl:when>
+                        <xsl:otherwise>-</xsl:otherwise>
+                      </xsl:choose>
+                    </td>
+                    <td>
+                      <xsl:if test="url">
+                        <xsl:attribute name="colspan">2</xsl:attribute>
+                      </xsl:if>
+                      
+                      <xsl:choose>
+                        <xsl:when test="address"><xsl:value-of select="address"/></xsl:when>
+                        <xsl:otherwise>
+                          <xsl:if test="url">-</xsl:if>
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </td>
+                    <xsl:if test="url">
+                      <td>
+                        <xsl:for-each select="url">              
+                          <xsl:call-template name="url" >
+                            <xsl:with-param name="url"><xsl:value-of select="." /></xsl:with-param>
+                          </xsl:call-template>
+                        </xsl:for-each>
+                      </td>
+                    </xsl:if>
+                  </tr>
+        </xsl:for-each>
+                </tbody>
+              </table>
+            </td>
+        </tr>
+    </xsl:when>
+  </xsl:choose>
       </table>
     </div>
   </div>
@@ -727,10 +752,13 @@
 <!-- URL --> 
 <xsl:template name="url">
   <xsl:param name="url" />
-  <span class="http_link">
-    <xsl:if test="not(contains($url, 'http'))">http://</xsl:if>
+  <a class="http_link" target="_blank">
+    <xsl:attribute name="href">
+      <xsl:if test="not(contains($url, 'http'))">http://</xsl:if>
+      <xsl:value-of select="$url"/>
+    </xsl:attribute>
     <xsl:value-of select="$url"/>
-  </span>
+  </a>
 </xsl:template>
    
 
@@ -1020,12 +1048,14 @@
   <xsl:variable name="transname"><xsl:value-of select="transcript[position() = 1]/@name"/></xsl:variable>
 
   <a name="genomic_sequence_anchor" />
-  <div class="main_subsection">
-    <xsl:call-template name="show_hide_button">
-      <xsl:with-param name="div_id">sequence</xsl:with-param>
-      <xsl:with-param name="link_text">LRG genomic sequence</xsl:with-param>
-      <xsl:with-param name="add_span">1</xsl:with-param>
-    </xsl:call-template>
+  <div class="main_subsection lrg_blue icon-next-page">
+    <span class="main_subsection">LRG genomic sequence</span>
+    
+    <button type="button" class="btn btn-lrg show_hide_anno icon-collapse-closed close-icon-5">
+      <xsl:attribute name="id">sequence_button</xsl:attribute>
+      <xsl:attribute name="onclick">javascript:showhide_button('sequence','sequence');</xsl:attribute>
+      <xsl:text>Show sequence</xsl:text>
+    </button>
   </div>
 
   <xsl:variable name="fasta_dir">
@@ -1037,9 +1067,9 @@
 
   <div class="clearfix" id="sequence" style="display:none">   
     <div class="left" style="padding:15px 5px 15px"> 
-      <table>
+      <table class="no_border_bottom">
         <tr>
-          <td width="624" class="sequence">
+          <td class="sequence sequence_raw">
             <div class="hardbreak">
     <xsl:variable name="genseq" select="sequence"/>
     <xsl:variable name="cdna_coord_system" select="concat($lrg_id,$transname)" />
@@ -1354,6 +1384,11 @@
     <xsl:with-param name="cdna_coord_system"><xsl:value-of select="$cdna_coord_system" /></xsl:with-param>
   </xsl:call-template>
   
+  <!-- Exon table -->
+  <xsl:call-template name="lrg_exons">
+    <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+    <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
+  </xsl:call-template>
 
   <!-- cDNA sequence -->
   <xsl:call-template name="lrg_cdna">
@@ -1364,12 +1399,6 @@
     <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
     <xsl:with-param name="cdna_coord_system"><xsl:value-of select="$cdna_coord_system" /></xsl:with-param>
     <xsl:with-param name="peptide_coord_system"><xsl:value-of select="$peptide_coord_system" /></xsl:with-param>
-  </xsl:call-template>
-
-  <!-- Exon table -->
-  <xsl:call-template name="lrg_exons">
-    <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-    <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
   </xsl:call-template>
 
   <!-- Translated sequence -->
@@ -1413,7 +1442,7 @@
       <div style="float:left">      
         <table class="no_border">
           <tr>
-            <td width="624" class="sequence">
+            <td class="sequence sequence_raw">
               <div class="hardbreak">
            <xsl:variable name="seq" select="cdna/sequence"/>
            <xsl:variable name="cstart" select="coding_region[position() = 1]/coordinates/@start"/>
@@ -1474,7 +1503,8 @@
               </a>
               <xsl:call-template name="show_hide_button">
                 <xsl:with-param name="div_id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:with-param>
-                <xsl:with-param name="link_text">Display the transcript sequence <xsl:value-of select="$transname"/> in <b>FASTA</b> format </xsl:with-param>
+                <xsl:with-param name="showhide_text">the transcript sequence <xsl:value-of select="$transname"/> in <b>FASTA</b> format </xsl:with-param>
+                <xsl:with-param name="show_as_button">1</xsl:with-param>
               </xsl:call-template>
             </td>
           </tr>
@@ -1515,7 +1545,7 @@
       <div style="display:none">
         <xsl:attribute name="id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:attribute>
         
-        <table border="0" cellpadding="0" cellspacing="0" class="sequence" id="fasta">
+        <table border="0" cellpadding="0" cellspacing="0" class="sequence fasta">
       
           <tr>
             <td class="sequence">
@@ -1606,7 +1636,7 @@
       <div style="float:left"> 
         <table class="no_border">
            <tr>
-             <td width="624" class="sequence">
+             <td class="sequence sequence_raw">
                <div class="hardbreak">
                  <xsl:variable name="trans_seq" select="translation/sequence"/>
                  <xsl:for-each select="../exon">
@@ -1690,7 +1720,7 @@
            </tr>
       
            <tr>
-             <td class="showhide" style="padding-top:10px">
+             <td class="showhide">
                <xsl:call-template name="hide_button">
                  <xsl:with-param name="div_id">translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
                </xsl:call-template>
@@ -1704,7 +1734,8 @@
                
                <xsl:call-template name="show_hide_button">
                  <xsl:with-param name="div_id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
-                 <xsl:with-param name="link_text">Display the translated sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format</xsl:with-param>
+                 <xsl:with-param name="showhide_text">the translated sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format</xsl:with-param>
+                 <xsl:with-param name="show_as_button">1</xsl:with-param>
                </xsl:call-template>
              </td>
            </tr>
@@ -1713,7 +1744,7 @@
         <div style="display:none">
           <xsl:attribute name="id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
           <p></p>
-          <table border="0" cellpadding="0" cellspacing="0" class="sequence" id="fasta">
+          <table border="0" cellpadding="0" cellspacing="0" class="sequence fasta">
              
             <tr>
               <td class="sequence">
@@ -1759,7 +1790,7 @@
       
         <div style="padding-left:5px;margin:10px 0px 15px">
           <a>
-            <xsl:attribute name="href">javascript:show_content('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>');</xsl:attribute>
+            <xsl:attribute name="href">javascript:show_content('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','the translated sequence <xsl:value-of select="$pepname"/> in FASTA format');</xsl:attribute>
             <xsl:call-template name="right_arrow_blue" />
             Jump to sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format
           </a>
@@ -2512,6 +2543,7 @@
         <xsl:with-param name="link_text">Transcript <xsl:value-of select="$transname"/>
           <xsl:if test="$ref_transcript"> (<xsl:value-of select="$ref_transcript/@accession" />)</xsl:if>
         </xsl:with-param>
+        <xsl:with-param name="show_as_button">1</xsl:with-param>
       </xsl:call-template>
     </div>
     <xsl:call-template name="exons">
@@ -4424,6 +4456,7 @@ s
 <xsl:template name="show_hide_button">
   <xsl:param name="div_id" />
   <xsl:param name="link_text" />
+  <xsl:param name="showhide_text"/>
   <xsl:param name="add_span" />
   <xsl:param name="show_as_button"/>
   
@@ -4439,8 +4472,19 @@ s
       </xsl:otherwise>
     </xsl:choose>
     <xsl:attribute name="id"><xsl:value-of select="$div_id"/>_button</xsl:attribute>
-    <xsl:attribute name="onclick">javascript:showhide('<xsl:value-of select="$div_id"/>');</xsl:attribute>
     <xsl:choose>
+      <xsl:when test="$showhide_text">
+        <xsl:attribute name="onclick">javascript:showhide_button('<xsl:value-of select="$div_id"/>','<xsl:value-of select="$showhide_text"/>');</xsl:attribute>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:attribute name="onclick">javascript:showhide('<xsl:value-of select="$div_id"/>');</xsl:attribute>
+      </xsl:otherwise>
+    </xsl:choose>
+    
+    <xsl:choose>
+      <xsl:when test="$showhide_text">
+       <xsl:text>Show </xsl:text><xsl:value-of select="$showhide_text"/>
+      </xsl:when>
       <xsl:when test="$add_span">
         <span><xsl:value-of select="$link_text"/></span>
       </xsl:when>

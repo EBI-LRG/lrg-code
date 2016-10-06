@@ -69,8 +69,13 @@ function showhide_genoverse(lyr) {
 
 
 // function to show layers
-function show_content(lyr,lyr_anchor) {
-  $("#"+lyr).show(150);
+function show_content(lyr,lyr_anchor,text) {
+  if (text) {
+    showhide_button(lyr, text, 1);
+  }
+  else {
+    showhide(lyr, 1);
+  }
   location.hash = "#" + lyr_anchor;
 }
 
