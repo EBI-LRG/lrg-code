@@ -44,7 +44,8 @@ sub default_options {
                                      'LRG_603'  => 'partial,partial_gene',
                                      'LRG_835'  => 'partial,partial_gene',
                                      'LRG_855'  => 'partial,partial_gene',
-                                     'LRG_1090' => 'mappings'
+                                     'LRG_1090' => 'mappings',
+                                     'LRG_1105' => 'mappings'
                                    },
 
         assembly                => 'GRCh38',
