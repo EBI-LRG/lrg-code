@@ -195,7 +195,7 @@ sub newFromString {
 					my $key = shift @split;
 					my $val = shift @split;
 					
-					print "$key $val\n" if !(defined $val);
+					print "$key => missing value\n" if !(defined $val);
 		
 					# remove "s and 's as these are converted to HTML form
 					# by XML::Writer
