@@ -195,15 +195,18 @@ sub newFromString {
 					my $key = shift @split;
 					my $val = shift @split;
 					
-					print "$key => missing value\n" if !(defined $val);
-		
+          if (!defined $val) {
+            print "$key => missing value\n";
+            $val = '';
+          }
+
 					# remove "s and 's as these are converted to HTML form
 					# by XML::Writer
 					$val =~ s/\"|\'//g;
-					
+
 					# remove trailing / if it's an empty tag
 					$val =~ s/\/$//g;
-		
+
 					# add the data to the hash
 					$data{$key} = $val;
 				}
