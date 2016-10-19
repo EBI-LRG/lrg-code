@@ -19,7 +19,7 @@ sub initialize {
   $self->mapping($mapping,'LRG::API::Mapping',1);
   $self->annotation($annotation,'LRG::API::TranscriptAnnotation',1);
   $self->feature($features,'LRG::API::FeatureUp');
-  $self->note($note,'LRG::API:Note',1);
+  $self->note($note,'LRG::API::Note',1);
 }
 
 sub _permitted {
