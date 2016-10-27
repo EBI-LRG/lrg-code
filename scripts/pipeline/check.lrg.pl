@@ -83,7 +83,7 @@ my $hc = LRG::LRGHealthcheck::new($xml_file);
 foreach my $check (@checks) {
 
     # Skip HCs listed in the option "skip_check"
-    if (defined(%skip_checks) && $skip_checks{$check}) {
+    if (%skip_checks && $skip_checks{$check}) {
       $hc->{'check'}{$check}{'passed'} = 1;
       next;
     }
