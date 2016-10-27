@@ -650,6 +650,9 @@ if (!$only_updatable_data) {
       $tr_date_ins_sth->execute();
     }
     
+    # Cleanup comments
+    cleanup_comments($gene_id,$name);
+
     # Insert comment if exists (optional)
     my $tr_com_nodes = $transcript->findNodeArray('comment');
     if (defined($tr_com_nodes)) {
@@ -663,7 +666,7 @@ if (!$only_updatable_data) {
         my $comment_id = check_existing_comment($name,$tr_comment);
         if (defined($comment_id)) {
           $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
-          $tr_com_up_sth->bind_param(2,$comment_id);
+          $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
           $tr_com_up_sth->execute();
         }
         else {
@@ -1534,6 +1537,54 @@ sub check_refseq_has_poly_a {
     }
   }
   return undef;
+}
+
+# Remove old LRG transcript comments (i.e. polyA tail comments)
+sub cleanup_comments {
+  my $gene_id = shift;
+  my $tr_name = shift;
+
+  my %nm_list;
+
+  # Get the latest NM associated with the LRG transcript
+  my $rs_transcripts = $lrg->findNodeArray('updatable_annotation/annotation_set/features/gene/transcript', {'fixed_id' => $tr_name});
+
+  if (scalar(@$rs_transcripts)) {
+    foreach my $rs_tr (@$rs_transcripts) {
+      my $nm = $rs_tr->data()->{'accession'};
+      next if ($rs_tr->data()->{'source'} ne 'RefSeq' || !$nm);
+      $nm_list{$nm} = 1;
+    }
+  }
+
+  # Check the "lrg_comment" table in DB and compare with the NMs retrieved from the LRG file
+  my $stmt = qq{
+      SELECT comment_id, comment
+      FROM lrg_comment
+      WHERE gene_id=$gene_id AND
+      name="$tr_name" AND
+      comment LIKE "\%NM_%"
+  };
+
+  my $stmt_del_com = qq{ DELETE FROM lrg_comment WHERE comment_id=? };
+  my $tr_del_com_sth = $db_adaptor->dbc->prepare($stmt_del_com);
+
+  my $comment_ids_list = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt);
+
+  if ($comment_ids_list && scalar(@{$comment_ids_list}) > 0) {
+
+    foreach my $comment_entry (@{$comment_ids_list}) {
+      my $comment_id =  $comment_entry->[0];
+      my $comment    =  $comment_entry->[1];
+         $comment    =~ /(NM_\d+\.?\d+)/;
+      my $id = $1;
+      # Delete the out of date LRG comment
+      if (!$nm_list{$id}) {
+        $tr_del_com_sth->bind_param(1,$comment_id,SQL_INTEGER);
+        $tr_del_com_sth->execute();
+      }
+    }
+  }
 }
 
 sub check_existing_comment { 
