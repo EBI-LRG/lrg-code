@@ -1657,25 +1657,32 @@
     <br />
 
     <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
-    <xsl:variable name="lsdb_url">http://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
+    <xsl:variable name="lsdb_url">
+      <xsl:text>http://</xsl:text>
+      <xsl:choose>
+        <xsl:when test="$lrg_gene_name = 'LARGE1'">LARGE</xsl:when>
+        <xsl:otherwise><xsl:value-of select="$lrg_gene_name"/></xsl:otherwise>
+      </xsl:choose>
+      <xsl:text>.lovd.nl</xsl:text>
+    </xsl:variable>
 
     <div style="margin-top:10px">
       <xsl:attribute name="class">external_source</xsl:attribute>
       <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
       <span style="font-weight:bold;padding-left:5px">Website: </span>
     <xsl:choose>
-    <xsl:when test="annotation_set[source/name!=$lsdb_list]">
-      <xsl:call-template name="url">
-        <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
-      </xsl:call-template>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:for-each select="annotation_set[source/name=$lsdb_list]">
+      <xsl:when test="annotation_set[source/name!=$lsdb_list]">
         <xsl:call-template name="url">
-          <xsl:with-param name="url"><xsl:value-of select="source/url" /></xsl:with-param>
+          <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
         </xsl:call-template>
-      </xsl:for-each>
-    </xsl:otherwise>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:for-each select="annotation_set[source/name=$lsdb_list]">
+          <xsl:call-template name="url">
+            <xsl:with-param name="url"><xsl:value-of select="source/url" /></xsl:with-param>
+          </xsl:call-template>
+        </xsl:for-each>
+      </xsl:otherwise>
     </xsl:choose>
     </div>
   </div>
