@@ -1657,14 +1657,7 @@
     <br />
 
     <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
-    <xsl:variable name="lsdb_url">
-      <xsl:text>http://</xsl:text>
-      <xsl:choose>
-        <xsl:when test="$lrg_gene_name = 'LARGE1'">LARGE</xsl:when>
-        <xsl:otherwise><xsl:value-of select="$lrg_gene_name"/></xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>.lovd.nl</xsl:text>
-    </xsl:variable>
+    <xsl:variable name="lsdb_url">http://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
 
     <div style="margin-top:10px">
       <xsl:attribute name="class">external_source</xsl:attribute>
