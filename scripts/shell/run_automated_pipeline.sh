@@ -133,12 +133,19 @@ function end_of_script {
       fi
     fi  
     
+    # Failed pipeline
     if [[ ${not_successful} == 1 ]] ; then
       echo -e "${lrg_id}\tstopped\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Stopped!"
+    # New LRG records - success pipeline
+    elif [[ ${status} == 'new' ]] ; then
+      echo -e "${lrg_id}\twaiting\t${comment}\t${comment_warning}" >> ${report_file}
+      echo_stderr "New LRG record - Waiting to manually check and copy the XML file to the FTP site!"
+    # Fixed section changed - pending or stalled LRG records
     elif [[ ${status} != 'public' && ${fixed_section_diff} == 1 ]] ; then
       echo -e "${lrg_id}\twaiting\t${comment}\t${comment_warning}" >> ${report_file}
-      echo_stderr "Waiting to manually check and copy the XML file to the FTP site!"
+      echo_stderr "Fixed section has changed - Waiting to manually check and copy the XML file to the FTP site!"
+    # Success pipeline
     else
       echo -e "${lrg_id}\tsucceed\t${comment}\t${comment_warning}" >> ${report_file}
       echo_stderr "Succeed!"
