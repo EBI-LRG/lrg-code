@@ -39,24 +39,15 @@ sub default_options {
         reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/reports', # To update!
         reports_html            => '/homes/lgil/public_html/LRG/reports',    # To update!
 
-        skip_public_lrgs_hc     => ['LRG_321','LRG_525'],
-        skip_extra_lrgs_hc      => {
-                                     'LRG_603'  => 'partial,partial_gene',
-                                     'LRG_835'  => 'partial,partial_gene',
-                                     'LRG_855'  => 'partial,partial_gene',
-                                     'LRG_1084' => 'mappings', # TMP
-                                     'LRG_1088' => 'mappings', # TMP
-                                     'LRG_1090' => 'mappings',
-                                     'LRG_1096' => 'mappings', # TMP
-                                     'LRG_1105' => 'mappings',
-                                   },
+        pipeline_root_dir       => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/',
+        date                    => LRG::LRG::date(),
+        pipeline_dir            => $self->o('pipeline_root_dir').$self->o('date'),
+
+        skip_lrgs_hc_file       => $self->o('pipeline_root_dir').'lrgs_skip_healthchecks.conf',
 
         assembly                => 'GRCh38',
         index_assembly          => 'GRCh37',
         index_suffix            => '_index',     
-
-        date                    => LRG::LRG::date(),
-        pipeline_dir            => '/nfs/production/panda/production/vertebrate-genomics/lrg/automated_pipeline/'.$self->o('date'),
         
         git_branch              => $ENV{'GITBRANCH'},
 
@@ -157,8 +148,7 @@ sub pipeline_analyses {
                assembly            => $self->o('assembly'),
                is_test             => $self->o('is_test'),
                skip_hc             => $self->o('skip_hc'),
-               skip_public_lrgs_hc => $self->o('skip_public_lrgs_hc'),
-               skip_extra_lrgs_hc  => $self->o('skip_extra_lrgs_hc'),
+               skip_lrgs_hc_file   => $self->o('skip_lrgs_hc_file'),
             },
             -input_ids     => ($self->o('run_extract_xml_files')) ? [] : [{}],
             -wait_for      => ($self->o('run_extract_xml_files')) ? [ 'extract_xml_files' ] : [],

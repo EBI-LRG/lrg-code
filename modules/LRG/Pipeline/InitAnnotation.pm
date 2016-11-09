@@ -21,8 +21,7 @@ sub write_output {
   my $assembly             = $self->param('assembly');
   my $is_test              = $self->param('is_test');
   my $skip_hc              = $self->param('skip_hc');
-  my $skip_public_lrgs_hc  = $self->param('skip_public_lrgs_hc');
-  my $skip_extra_lrgs_hc   = $self->param('skip_extra_lrgs_hc');
+  my $skip_lrgs_hc_file    = $self->param('skip_lrgs_hc_file');
   my $date                 = $self->param('date');
     
   die("LRG directory (-run_dir) needs to be specified!") unless (defined($run_dir));
@@ -40,8 +39,7 @@ sub write_output {
   make_path $reports_dir or die "Reports directory '$reports_dir' doesn't exist!" unless (-d $reports_dir);
   die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
   
-
-  my %skip_lrg_hc = map{ $_ => 1 } @$skip_public_lrgs_hc;
+  my $skip_lrgs_hc = get_lrgs_skip_hc($skip_lrgs_hc_file);
 
   my $dh;
 
@@ -125,8 +123,8 @@ sub write_output {
       }
     }
 
-    my $lrg_skip_hc       = ($skip_lrg_hc{$lrg_id}) ? 'main' : $skip_hc;
-    my $lrg_skip_extra_hc = ($skip_extra_lrgs_hc->{$lrg_id}) ? $skip_extra_lrgs_hc->{$lrg_id} : 0;
+    my $lrg_skip_hc       = ($skip_lrgs_hc->{$lrg_id}{'main'}) ? $skip_lrgs_hc->{$lrg_id}{'main'} : $skip_hc;
+    my $lrg_skip_extra_hc = ($skip_lrgs_hc->{$lrg_id}{'extra'}) ? $skip_lrgs_hc->{$lrg_id}{'extra'} : 0;
     $status ||= 'new'; 
     $hgnc   ||= '';
     
@@ -151,5 +149,24 @@ sub write_output {
   
   return;
 }
+
+sub get_lrgs_skip_hc {
+  my $hc_file = shift;
+  my %lrgs_list;
+  
+  if (-e $hc_file) {
+    open HC, "< $hc_file" or die "Can't open the file '$hc_file'";
+    while(<HC>) {
+      chomp $_;
+      next if ($_ =~ /^#/ || $_ eq '' || $_ =~ /^\s+/);
+      
+      my @line_data = split(/\s+/,$_);
+      my $param = ($line_data[1] eq 'main') ? 'main' : 'extra';
+      $lrgs_list{$line_data[0]}{$param} = $line_data[1];
+    }
+    close(HC);
+  }
+  return \%lrgs_list;
+} 
 
 1;
