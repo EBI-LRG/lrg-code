@@ -57,9 +57,11 @@ sub run {
   print JSON "]";
   close(JSON);
   
-  # Move the indexes from the temporary directory to the new directory
+  # Remove LRG individual json files from the new directory
+  # Move the global json index file to the new directory
   if ($tmp_dir ne $index_dir) {
-    `cp $tmp_dir/$lrg_index_json $index_dir`;
+    `rm -f $index_dir/LRG_*_index.json`; # Double check
+    `mv $tmp_dir/$lrg_index_json $index_dir`;
   }
 }
 1;
