@@ -93,6 +93,10 @@ p {
   float:left;
 }
 
+.dotted_underline {
+  border-bottom: 1px dotted #555;
+}
+
 h3.gene_name{
   padding: 4px 5px;
   margin: 10px 6px 0px;
@@ -648,7 +652,7 @@ div.following_section{
 }
 
 .section_annotation {
-  border-bottom: 3px solid #1C9BCF;
+  border-bottom: 4px solid #1C9BCF;
   background-color: #3C3F45;
   padding: 5px 5px 5px 8px;
   margin-bottom:15px;
@@ -693,7 +697,7 @@ div.main_subsection {
   background-color: #3C3F45;
   vertical-align:baseline;
   font-size:22px;
-  border-bottom: 2px solid #1C9BCF;
+  border-bottom: 3px solid #1C9BCF;
 }
 
 span.main_subsection {
@@ -1019,15 +1023,13 @@ div.lrg_transcript:before {
 }
 div.lrg_transcript h3 {
   padding:4px 6px 4px 0px;
-  color: #3C3F45;
-  margin-right:20px;
-  font-weight:normal;
+  margin-right:25px;
+  font-weight:bold;
   display:inline;
-  font-style: italic;
 }
 
 .lrg_transcript_button{
-  padding:6px;
+  padding:6px 6px 6px 15px;
   color: #0E4C87;
   font-weight: bold;
 }

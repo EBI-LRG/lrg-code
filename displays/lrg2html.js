@@ -209,7 +209,10 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var num = tname+'_'+ename;
   var pnum = tname+'_'+pname+'_'+ename;
   var tableobj = document.getElementById('table_exon_'+pnum);
+  var tableobj_left_test1 = document.getElementById('table_exon_'+pnum+'_test1_left');
+  var tableobj_right_test1 = document.getElementById('table_exon_'+pnum+'_test1_right');  
   var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename);
+  
   var exon_block_id = '#tr_img_exon_'+tname+'_'+ename;
 
   // we only want to get the genomic exon if this is transcript t1
@@ -228,6 +231,8 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   if(tableobj) {
     if(tableobj.className.length > 11) {
       tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      tableobj_left_test1.className  = (tableobj_left_test1.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      tableobj_right_test1.className = (tableobj_right_test1.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
@@ -241,6 +246,8 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     }
     else {
       tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      tableobj_left_test1.className  = (tableobj_left_test1.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      tableobj_right_test1.className = (tableobj_right_test1.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
       }
@@ -262,7 +269,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
       othertableobj.className = (othertableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
     }
   }
-  
+ 
   // Exon block
   var exon_block_children = $(exon_block_id).children();
   // Partial coding exon
