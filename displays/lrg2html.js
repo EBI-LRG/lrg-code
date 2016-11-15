@@ -208,9 +208,9 @@ function clear_exon_highlight(eclass) {
 function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var num = tname+'_'+ename;
   var pnum = tname+'_'+pname+'_'+ename;
-  var tableobj = document.getElementById('table_exon_'+pnum);
-  var tableobj_left_test1 = document.getElementById('table_exon_'+pnum+'_test1_left');
-  var tableobj_right_test1 = document.getElementById('table_exon_'+pnum+'_test1_right');  
+  var tableobj_old = document.getElementById('table_exon_'+pnum+"_old");
+  var tableobj_left = document.getElementById('table_exon_'+pnum+'_left');
+  var tableobj_right = document.getElementById('table_exon_'+pnum+'_right');  
   var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename);
   
   var exon_block_id = '#tr_img_exon_'+tname+'_'+ename;
@@ -228,11 +228,11 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     exon_select = retrieve_exon_class(cdnaobj);
   }
 
-  if(tableobj) {
-    if(tableobj.className.length > 11) {
-      tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-      tableobj_left_test1.className  = (tableobj_left_test1.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-      tableobj_right_test1.className = (tableobj_right_test1.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+  if(tableobj_left) {
+    if(tableobj_left.className.length > 11) {
+      tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
+      tableobj_old.className = (tableobj_old.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
@@ -245,9 +245,9 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
       }
     }
     else {
-      tableobj.className = (tableobj.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-      tableobj_left_test1.className  = (tableobj_left_test1.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-      tableobj_right_test1.className = (tableobj_right_test1.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
+      tableobj_old.className = (tableobj_old.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
       }
