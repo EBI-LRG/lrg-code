@@ -111,6 +111,10 @@ print " done\n";
 # JSON index file
 print "Generating the JSON file ...";
 
+if (-e "$tmp_dir/$lrg_json") {
+  `rm -f $tmp_dir/$lrg_json`;
+}
+
 open JSON, "> $tmp_dir/$lrg_json" || die $!;
 print JSON "[\n";
 my $count_json_files = 0;
@@ -142,6 +146,10 @@ print " done\n";
 # LRG sequence differences file
 print "Generating the LRG sequence differences file ...";
 
+if (-e "$tmp_dir/$lrg_diff") {
+  `rm -f $tmp_dir/$lrg_diff`;
+}
+
 open DIFF, "> $tmp_dir/$lrg_diff" || die $!;
 my $count_diff_files = 0;
 opendir($dh,$tmp_dir);
@@ -169,8 +177,9 @@ if ($tmp_dir ne $index_dir) {
     `cp $tmp_dir/$lrg_json $index_dir/`;
   }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
-  `rm -f $tmp_dir/LRG_*$index_suffix.json`;
 }
+`rm -f $tmp_dir/LRG_*$index_suffix.json`;
+
 print " done\n";
 
 print "Script finished\n";

@@ -293,6 +293,7 @@ my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
 print JSON $json;
 close(JSON);
+`chmod 664 $tmp_dir/$lrg_id$index_suffix.json`;
 
 ## LRG diff data ##
 if ($data{'diff'}) {
