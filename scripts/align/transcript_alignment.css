@@ -78,14 +78,22 @@ table.legend td {
 
 .small_cell {
   text-align:left;
-  padding-right:4px;
-  width:15%;
+  padding: 1px 4px 2px 2px;
+  width:12%;
   font-size:0.9em;
 }
 
 .medium_cell {
+  text-align:left;
+  padding: 1px 4px 2px 2px;
+  width:15%;
+  font-size:0.9em;
+}
+
+.large_cell {
   text-align:right;
-  width:25%;
+  padding: 1px 2px 2px 0px;
+  width:34%;
 }
 
 .large_cell {
@@ -185,7 +193,6 @@ table.legend td {
 .pathogenic {
   padding:1px;
   color: #FFF;
-  font-weight:bold;
   background-color:#555;
   border-radius:0px;
 }
@@ -196,6 +203,16 @@ table.legend td {
 }
 .source_flag:before {
   content: "+";
+}
+
+.pathogenic_exon_label {
+  float:right;
+  /*height:10px;*/
+  max-width:50px;
+  font-size:8px;
+  padding:0px 2px;
+  background-color:#555;
+  color:#FFF;
 }
 
 th.coord {
@@ -209,7 +226,13 @@ th.coord {
 .first_column {
   text-align:center;
   border:1px solid #FFF;
-  padding:1px 2px
+  padding:1px 2px;
+}
+
+.transcript_column {
+  text-align:center;
+  border:1px solid #FFF;
+  padding:0px;
 }
 
 .extra_column {
@@ -254,22 +277,20 @@ th.coord {
   background-color:#FEFEFE;
   text-align:center;
   color:#FFF;
-  cursor:pointer
-}
-.coding   {
   height:20px;
+  cursor:pointer;
+}
+.coding {
   background-color:#090;
   box-shadow:2px 2px 1px #CCC
 }
-.coding_np{
-  height:20px;
+.coding_np {
   background-color:#900;
   padding-left:2px;
   padding-right:2px;
   box-shadow:2px 2px 1px #CCC
 }
 .coding_unknown {
-  height:20px;
   background-color:#009;
   box-shadow:2px 2px 1px #CCC
 }
@@ -318,6 +339,10 @@ th.coord {
   height:20px;
   background-color:#000;
   box-shadow:2px 2px 1px #CCC
+}
+
+.sub_exon {
+  height: 10px;
 }
 
 .separator {
@@ -579,6 +604,24 @@ div.right_div {
   color:#666;
 }
 
+table.transcript {
+  width:100%;
+  text-align:center;
+  height: 50px;
+}
+table.transcript tr {
+  height: 25px;
+}
+table.transcript tr:last-child {
+  height: 25px;
+  background-color: rgba(255,255,255,0.1);
+}
+
+.gold table.transcript tr:last-child {
+  background-color: rgba(255,255,255,0.3);
+}
+
+
 .to_sort { 
   background-image: url('img/sortable.png'); 
   background-repeat: no-repeat;
@@ -635,7 +678,7 @@ div.right_div {
   width:200px; 
   left:90px;
 }
-.col5 { 
+.col5 {
   width:45px; 
   left:290px;
 }

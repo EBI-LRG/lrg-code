@@ -348,6 +348,8 @@ my $o_gene_end   = $ens_gene->end;
 my $gene_coord = "chr$gene_chr:".$o_gene_start.'-'.$o_gene_end;
 $gene_coord .= ($gene_strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 
+
+my $html_pathogenic_label = get_pathogenic_html('#');
 $html .= qq{
 <html>
   <head>
@@ -405,6 +407,11 @@ $html .= qq{
       <!--Export URL selection -->
       <button class="btn btn-lrg" onclick="export_transcripts_selection()" title="Export the URL containing the transcripts selection as parameters" data-toggle="tooltip" data-placement="right">
         <span class="icon-link smaller-icon close-icon-5"></span>URL with transcripts selection
+      </button>
+      
+      <!--Show/Hide pathogenic variants -->
+      <button class="btn btn-lrg" id="button_pathogenic_variants" onclick="showhide_elements('button_pathogenic_variants','pathogenic_exon_label')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
+        Hide pathogenic variant labels $html_pathogenic_label
       </button>
 };
 
@@ -497,20 +504,20 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   
   # First columns
   $exon_tab_list .= qq{
-  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$ens_tr">
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class first_column fixed_col col4" sorttable_customkey="$ens_tr">
-      <table style="width:100%;text-align:center">
+    <td class="$column_class transcript_column fixed_col col4" sorttable_customkey="$ens_tr">
+      <table class="transcript" style="width:100%;text-align:center">
         <tr><td class="$column_class" colspan="6"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
         <tr>
           <td class="small_cell">$manual_html</td>
           <td class="small_cell">$tsl_html</td>
-          <td class="small_cell">$trans_score_html</td>
-          <td class="small_cell">$appris_html</td>
+          <td class="medium_cell">$trans_score_html</td>
+          <td class="medium_cell">$appris_html</td>
           <td class="small_cell">$canonical_html</td>
-          <td class="medium_cell">$pathogenic_html</td>
+          <td class="large_cell">$pathogenic_html</td>
         </tr>
       </table>
     </td>
@@ -586,6 +593,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
     $exon_tab_list .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
+
       if(! $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object)) {
         $is_coding = ' non_coding';
       }
@@ -596,13 +604,17 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
         $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
       }
       
+      
+      
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
       $exon_tab_list .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name);
+
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
+      
     }
     else {
       $exon_tab_list .= qq{<div class="$has_exon"> </div>};
@@ -646,7 +658,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $blast_button  = blast_button($nm);
      
   $exon_tab_list .= qq{
-  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
@@ -755,7 +767,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   my $blast_button  = blast_button($o_ens_gene);
   
   $exon_tab_list .= qq{
-  <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene">
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
@@ -1171,8 +1183,6 @@ sub get_appris_html {
 
 sub get_pathogenic_html {
   my $data = shift;
-  my $column_class = shift;
-  
   
   return qq{<span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">$data</span>};
   
@@ -1217,7 +1227,8 @@ sub get_showhide_buttons {
        <div class="buttons_row">
          <div class="buttons_row_title_left">$type rows:</div>
          <div class="buttons_row_title_right">
-           <button class="btn btn-lrg btn-sm" onclick="javascript:showhide_range($start,$end);">Show/Hide all rows</button>
+           <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,1);">Show all rows</button>
+           <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,0);">Hide all rows</button>
            $hidden_ids
          </div>
          <div class="buttons_row_content">
@@ -1257,7 +1268,7 @@ sub display_refseq_data {
     }
     
     $exon_tab_list .= qq{
-    <tr class="unhidden $bg" id="$row_id_prefix$row_id" data-name="$nm">
+    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
       <td class="fixed_col col1">$hide_row</td>
       <td class="fixed_col col2">$highlight_row</td>
       <td class="fixed_col col3">$blast_button</td>
@@ -1408,13 +1419,29 @@ sub display_exon {
      $e_length .= ' bp';
 
   my $show_hide_info_params  = "event,'$e_tr','$e_number','$e_chr:$e_start-$e_end','$e_length'";
-     $show_hide_info_params .= ",'$e_stable_id'" if ($e_stable_id && $e_stable_id ne '');
+     $show_hide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
 
   my $title = "$e_tr";
      $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
      $title .= " | $e_length";
 
-  return qq{ <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">$e_number$e_extra</div>};
+  my $pathogenic_variants = '';
+  if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}) {
+    my $pathogenic = scalar(keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}}));
+    if ($pathogenic) {
+      $pathogenic_variants = qq{<div class="pathogenic_exon_label icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
+      $title .= " | $pathogenic pathogenic variants";
+      $show_hide_info_params .= ",'$pathogenic'";
+    }
+  }
+
+  return qq{
+    <div class="sub_exon"></div>
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">
+      $e_number$e_extra
+    </div>
+    <div class="sub_exon clearfix">$pathogenic_variants</div>
+  };
 }
 
 
