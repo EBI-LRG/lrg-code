@@ -36,10 +36,8 @@ function hideall() {
 
 function show_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
-  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
   
   var row_obj = document.getElementById(tr_id);
-  var right_obj = document.getElementById(tr_id_right);
   var button_color = $("#button_color_"+row_id).val();
 
   // Odd vs Even background
@@ -49,12 +47,12 @@ function show_row(row_id) {
   }
   
   // Checked => highlighted
-  if (document.getElementById('highlight_'+row_id).checked) {
-    bg += "_hl";
+  if ($('#highlight_'+row_id+'_left').is(':checked') || $('#highlight_'+row_id+'_right').is(':checked')) {
+    bg += "_hl selected";
   }
   
   row_obj.className   = "unhidden "+bg;
-  right_obj.className = "unhidden "+bg;
+  
   if ($("#button_"+row_id).hasClass('off')) {
     $("#button_"+row_id).removeClass('off').addClass(button_color);
   }
@@ -65,14 +63,11 @@ function show_row(row_id) {
 
 function hide_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
-  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
   
   var row_obj = document.getElementById(tr_id);
-  var right_obj = document.getElementById(tr_id_right);
   var button_color = $("#button_color_"+row_id).val();
   
   row_obj.className = "hidden";
-  right_obj.className = "hidden";
   
   if ($("#button_"+row_id).hasClass(button_color)) {
     $("#button_"+row_id).removeClass(button_color).addClass('off');
@@ -163,11 +158,9 @@ function show_hide_in_between_rows(row_id,tr_names) {
   }
 }
 
-
-function highlight_row(row_id) {
-  
-  var row_obj   = document.getElementById(TR_ID_PREFIX + row_id);
-  var right_obj = document.getElementById(TR_ID_PREFIX + row_id + TR_RIGHT_SUFFIX);
+function highlight_row(row_id,type) {
+ 
+  var id_prefix = '#highlight_';
   
   // Odd vs Even background
   var bg = "bg2";
@@ -175,13 +168,15 @@ function highlight_row(row_id) {
     bg = "bg1";
   }
   
-  // Checked => highlighted
-  if (document.getElementById('highlight_' + row_id).checked) {
-    bg += "_hl";
+  var status = false;
+  if ($(id_prefix+row_id+'_'+type).is(':checked')) {
+    status = true;
+    bg += "_hl selected";
   }
-  
-  row_obj.className   = "unhidden " + bg;
-  right_obj.className = "unhidden " + bg;
+  $(id_prefix+row_id+'_left').prop( "checked", status );
+  $(id_prefix+row_id+'_right').prop( "checked", status );
+
+  $("#" + TR_ID_PREFIX + row_id).removeClass().addClass( "unhidden " + bg);
 }
 
 
