@@ -60,9 +60,22 @@ my %report_types = ( 'succeed' => 'icon-approve',
                      'failed'  => 'icon-close'
                    );
 
+my %main_error_types = ( 'partial_gene'         => 'Partial gene', 
+                         'schema'               => 'XML schema',
+                         'mappings'             => 'Global mappings',
+                         'compare_main_mapping' => 'Mapping comparisons with FTP',
+                         'coordinates'          => 'Coordinates discrepancy',
+                         'translation'          => 'Translation discrepancy',
+                         'other_exon_labels'    => 'Community exon labelling issue',
+                         'requester'            => 'Missing requester',
+                         'exons'                => 'Exon coordinates discrepancy',
+                         'gene_name'            => 'Gene symbol inconsistent'
+                         
+                       );
+
 my $abs_xml_dir = abs_path("$xml_dir");
 
-my $html_content = qq{<div class="clearfix">\n  <div class="col-lg-11 col-md-11 col-sm-11 col-xs-11" style="padding-left:0px">};
+my $html_content = qq{<div style="padding-left:0px;padding-right:20px">};
 my $html_log_content = '';
 
 my %new_lrgs;
@@ -311,7 +324,7 @@ foreach my $status (@pipeline_status_list) {
   }
   $html_content .= qq{</table>\n</div>};
 }
-$html_content .= qq{\n</div>\n</div>};
+$html_content .= qq{\n</div>};
 
 
 # Summary table
@@ -433,16 +446,31 @@ sub get_detailled_log_info {
     my %enst_list = map { $_ => 1 } ($content =~ m/(ENST\d+\.\d+)/g);
     foreach my $enst (keys(%enst_list)) {
       $content =~ s/$enst/<a href="$enst_url$enst" target="_blank">$enst<\/a>/;
-    }   
-
+    }
+    
+    
+    my $error_type = '';
+    if ($type eq 'error') {
+      foreach my $e_type (keys(%main_error_types)) {
+        if ($content =~ /$e_type\s+FAILED\!/) {
+          
+          my $e_type_label = ($main_error_types{$e_type}) ? $main_error_types{$e_type} : $e_type;
+             $e_type_label =~ s/_/ /g;
+          $error_type .= ($error_type eq '') ? $e_type_label : ' | '.$e_type_label;
+        }
+      }
+      $error_type = "<div>$error_type</div>" if ($error_type ne '');
+    }
+    
     $html = qq{
-    <div class="clearfix log_header" onclick="javascript:showhide('$id')">
-      <span id="$id\_button" class="glyphicon glyphicon-plus-sign"></span> $label details
-    </div>
-    <div id="$id" class="hidden">
-      <div style="border:1px solid #DDD;padding:4px 4px 2px">
-      $content
-    </div>
+      $error_type
+      <div class="clearfix log_header" onclick="javascript:showhide('$id')">
+        <span id="$id\_button" class="glyphicon glyphicon-plus-sign"></span> $label details
+      </div>
+      <div id="$id" class="hidden">
+        <div style="border:1px solid #DDD;padding:4px 4px 2px">
+        $content
+      </div>
     };
   }
   return $html;
