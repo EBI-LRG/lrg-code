@@ -34,6 +34,7 @@ sub default_options {
         lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
         lrg_index_json          => 'lrg_index.json',
         
+        missing_file_name       => 'missing_files.txt',
         reports_file_name       => 'pipeline_reports.txt',
         reports_sum_file_name   => 'pipeline_summary_reports.txt',
         reports_url             => 'http://www.ebi.ac.uk/~lgil/LRG/reports', # To update!
@@ -123,8 +124,12 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::ExtractXMLFiles',
             -rc_name    => 'small',
             -parameters => {
-               xml_tmp_dir => $self->o('xml_dir'),
-               data_dir    => $self->o('data_dir')
+               xml_tmp_dir  => $self->o('xml_dir'),
+               ncbi_xml_dir => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
+               ftp_dir      => $self->o('ftp_dir'),
+               data_dir     => $self->o('data_dir'),
+               reports_dir  => $self->o('tmp_dir'),
+               missing_file => $self->o('missing_file_name'),
             },
             -input_ids  => [{}],
             -flow_into  => {
@@ -255,6 +260,7 @@ sub pipeline_analyses {
                reports_url  => $self->o('reports_url'),
                reports_html => $self->o('reports_html'),
                reports_sum  => $self->o('reports_sum_file_name'),
+               missing_file => $self->o('missing_file_name'),
                ftp_dir      => $self->o('ftp_dir'),
                run_dir      => $self->o('run_dir'),
                date         => $self->o('date'),

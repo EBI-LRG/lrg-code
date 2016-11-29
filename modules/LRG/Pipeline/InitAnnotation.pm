@@ -47,12 +47,12 @@ sub write_output {
   
   die("Could not process directory $ncbi_xml_dir") unless (defined($dh));
   my @ncbi_xml_files = readdir($dh);
-  @ncbi_xml_files = grep {$_ =~ m/^LRG\_[0-9]+\.?\w*\.xml$/} @ncbi_xml_files;
+  @ncbi_xml_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @ncbi_xml_files;
   # Close the dir handle
   closedir($dh);
 
 
-  @ncbi_xml_files = sort { (split /_|\./, $a)[1] <=> (split /_|\./, $b)[1] } @ncbi_xml_files; 
+  @ncbi_xml_files = sort { (split /\./, $a)[1] <=> (split /\./, $b)[1] } @ncbi_xml_files; 
    
 
   ## Create new directories ##
@@ -96,20 +96,13 @@ sub write_output {
     
   my @jobs = ();
     
-  # Loop over the files in the directory and store the file names of LRG XML files
+  # Loop over the files in the NCBI XML directory
   foreach my $file (@ncbi_xml_files) {
     my ($id, $lrg_id, $hgnc, $status);
   
     $file =~ m/^(LRG\_([0-9]+))\./;
     $lrg_id = $1;
     $id = $2;
-    
-    # Rename the LRG XML file
-    if ($lrg_id) {
-      `mv $ncbi_xml_dir/$file $ncbi_xml_dir/$lrg_id.xml`;
-      die "Can't create the file $ncbi_xml_dir/$lrg_id.xml" if (! -e "$ncbi_xml_dir/$lrg_id.xml");
-      $file = "$lrg_id.xml";
-    }
   
     my $lrg_locus = `grep -m1 'lrg_locus' $ncbi_xml_dir/$file`;
     if ($lrg_locus =~ /lrg_locus source="\w+">([A-Z0-9_-]+)</i) {

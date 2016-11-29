@@ -6,12 +6,13 @@ use LRG::LRG qw(date);
 use Getopt::Long;
 use Cwd 'abs_path';
 
-my ($reports_dir,$reports_file,$reports_sum,$xml_dir,$ftp_dir,$date);
+my ($reports_dir,$reports_file,$reports_sum,$missing_file,$xml_dir,$ftp_dir,$date);
 
 GetOptions(
   'reports_dir=s'  => \$reports_dir,
   'reports_file=s' => \$reports_file,
   'reports_sum=s'  => \$reports_sum,
+  'missing_file=s' => \$missing_file,
   'xml_dir=s'      => \$xml_dir,
   'ftp_dir=s'      => \$ftp_dir,
   'date=s'         => \$date
@@ -24,10 +25,11 @@ my $ensg_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=';
 my $enst_url = 'http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=';
 
 
-die("Reports directory (-reports_dir) needs to be specified!")    unless (defined($reports_dir));
-die("Reports file (-reports_file) needs to be specified!")        unless (defined($reports_file));
-die("Reports summary file (-reports_sum) needs to be specified!") unless (defined($reports_sum));
-die("XML directory (-xml_dir) needs to be specified!")            unless (defined($xml_dir));
+die("Reports directory (-reports_dir) needs to be specified!")     unless (defined($reports_dir));
+die("Reports file (-reports_file) needs to be specified!")         unless (defined($reports_file));
+die("Reports summary file (-reports_sum) needs to be specified!")  unless (defined($reports_sum));
+die("Reports missing file (-missing_file) needs to be specified!") unless (defined($missing_file));
+die("XML directory (-xml_dir) needs to be specified!")             unless (defined($xml_dir));
 
 die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
 die("Reports file '$reports_file' doesn't exist in '$reports_dir'!") unless (-e "$reports_dir/$reports_file");
@@ -97,6 +99,7 @@ my $html_header = qq{
       .report_date    { background-color:#F0F0F0;color:#0E4C87;padding:0px 4px;font-weight:bold;border:1px solid #333 }
       .summary_box    { border:1px solid #1A4468 }
       .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
+      .missing_header { background-color:#D00;color:#FFF;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
       
       table {border-collapse:collapse; }
       table > thead > tr {background-color:#1A4468}
@@ -350,12 +353,12 @@ $html_summary .= qq{        </table>\n      </div>\n    </div>\n  </div>};
 # New LRGs
 if (scalar(%new_lrgs)) {
   $html_summary .= qq{
-  <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
-    <div class="summary_box">
-      <div class="summary_header">New LRG(s)</div>
-      <div>
-        <table class="table table-hover table_small" style="width:100%">
-};
+    <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
+      <div class="summary_box">
+        <div class="summary_header">New LRG(s)</div>
+        <div>
+          <table class="table table-hover table_small" style="width:100%">
+  };
   foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
     my $lrg_id = $new_lrgs{$id}{'lrg_id'};
     my $pipeline_status = $new_lrgs{$id}{'status'};
@@ -365,6 +368,26 @@ if (scalar(%new_lrgs)) {
   $html_summary .= qq{        </table>\n      </div>\n    </div>\n </div>};
 }
 
+# Missing file(s)
+if (-e "$reports_dir/$missing_file") {
+  if (-s "$reports_dir/$missing_file")  {
+    my $content = `cat $reports_dir/$missing_file`;
+     
+    my @entries = sort(split("\n",$content));
+    $html_summary .= qq{
+      <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
+        <div class="summary_box">
+          <div class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site">Missing LRG file(s)</div>
+          <div>
+            <table class="table table-hover table_small" style="width:100%">
+    };
+    foreach my $entry (@entries) {
+      $entry =~ s/\.xml//g;
+      $html_summary .= qq{<tr><td><b>$entry</b></td></tr>};
+    }
+    $html_summary .= qq{</table></div></div></div>};
+  }
+}
 
 $html_summary .= qq{\n</div>};
 

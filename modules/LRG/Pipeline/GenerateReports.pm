@@ -17,6 +17,7 @@ sub run {
   my $global_reports = $self->param('reports_file');
   my $date           = $self->param('date');
   my $is_test        = $self->param('is_test');
+  my $missing_file   = $self->param('missing_file');
  
   my $dh;
 
@@ -37,7 +38,7 @@ sub run {
   }
   close(OUT);
   
-  $self->run_cmd("perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -reports_sum $reports_sum -xml_dir $new_xml_dir -ftp_dir $ftp_dir -date $date");
+  $self->run_cmd("perl $run_dir/lrg-code/scripts/auto_pipeline/reports2html.pl -reports_dir $reports_dir -reports_file $global_reports -reports_sum $reports_sum -missing_file $missing_file -xml_dir $new_xml_dir -ftp_dir $ftp_dir -date $date");
 
   # Copy HTMl reports to a website
   my $html_reports_file = (split(/\./,$global_reports))[0].'.html';
