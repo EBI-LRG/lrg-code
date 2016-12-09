@@ -1,10 +1,14 @@
 # .lrgpaths
 
-# The path to the user's LRG CVS checkout top directory
+#############
+## GENERAL ##
+#############
+
+# The path to the user's LRG GIT checkout top directory
 LRGROOTDIR=
 
-# LRG website admin user name
-WEBADMIN=
+# The GitHub default branch
+GITBRANCH=master
 
 # The absolute path to the EBI public FTP on the filesystem
 PUBFTP=
@@ -12,8 +16,13 @@ PUBFTP=
 # The absolute path to the EBI private FTP on the filesystem
 PVTFTP=
 
-# The GitHub default branch
-GITBRANCH=master
+# Path to the jing jarfile, used for validating XMLs during healthcheck
+JINGPATH=
+
+
+##############
+## DATABASE ##
+##############
 
 # The database credentials for the LRG database
 LRGDBHOST=
@@ -23,25 +32,37 @@ LRGDBROUSER=
 LRGDBNAME=
 LRGDBNAMETEST=
 
-# The registry configuration file used for mappings and annotations
-REGISTRYFILE=
 
-# The path to where the genome sequences required for mapping are located
-SEQDIR=
-# A temporary directory where output from the LRG mapping process can be written
-TMPDIR=
+#############
+## WEBSITE ##
+#############
+
+# LRG website admin user name
+WEBADMIN=
+
+# Production virtual machine
+PRODVM=
+
+# The path to the production website directory
+PRODWEBSITE=
+
+# The path to the fallback production website directory
+FBWEBSITE=
 
 # The path to the dev website directory
 DEVWEBSITE=
 
-# Path to the jing jarfile, used for validating XMLs during healthcheck
-JINGPATH=
+
+###############
+## VARIABLES ##
+###############
 
 # Export the variables
-export LRGROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME SEQDIR TMPDIR JINGPATH REGISTRYFILE GITBRANCH
+export LRGROOTDIR PUBFTP PVTFTP PERLDIR LRGDBHOST LRGDBPORT LRGDBADMUSER LRGDBROUSER LRGDBNAME LRGDBNAMETEST SEQDIR TMPDIR JINGPATH REGISTRYFILE GITBRANCH WEBADMIN PRODVM PRODWEBSITE FBWEBSITE DEVWEBSITE
 
 # Define a shell function for grabbing the HGNC symbol from a LRG XML record
 function lrg_gene_name() { 
   grep lrg_locus "$@" | tail -1 | sed -re 's/[^>]+>([^<]+).*/\1/'; 
 }
+
 
