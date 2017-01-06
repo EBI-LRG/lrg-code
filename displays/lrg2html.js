@@ -211,7 +211,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var tableobj_old = document.getElementById('table_exon_'+pnum+"_old");
   var tableobj_left = document.getElementById('table_exon_'+pnum+'_left');
   var tableobj_right = document.getElementById('table_exon_'+pnum+'_right');  
-  var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename);
+  var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename+'_left');
   
   var exon_block_id = '#tr_img_exon_'+tname+'_'+ename;
 
