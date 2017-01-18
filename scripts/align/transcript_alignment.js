@@ -313,7 +313,17 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pa
         popup_content += "<ul>"; 
         var list = ens_pathogenic_variant_list.split(":");
         $.each(list, function( index, value ) {
-          popup_content += "<li><a class=\"external\" href=\""+ENS_VAR_LINK+value+"\" target=\"_blank\">"+value+"</a></li>";
+          var var_detail = value.split('-');
+          var var_id = var_detail[0];
+          var ref_allele = '';
+          var pat_allele = '';
+          if (var_detail[1]) {
+            ref_allele = ' (ref: '+var_detail[1]+')';
+          }
+          if (var_detail[2]) {
+            pat_allele = ' <b>'+var_detail[2]+'</b>';
+          }
+          popup_content += "<li><a class=\"external\" href=\""+ENS_VAR_LINK+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
         });
         popup_content += "</ul></div>";
       }

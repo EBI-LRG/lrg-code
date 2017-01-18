@@ -23,6 +23,8 @@ my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
 
+my $max_variants = 10;
+
 my $transcript_score_file = '/net/isilon3/production/panda/production/vertebrate-genomics/lrg/data_files/transcript_scores.txt';
 
 #$registry->load_registry_from_db(
@@ -1428,11 +1430,24 @@ sub display_exon {
 
   my $pathogenic_variants = '';
   if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}) {
-    my $pathogenic = scalar(keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}}));
+    my @variants = keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}});
+    my $pathogenic = scalar(@variants);
     if ($pathogenic) {
       $pathogenic_variants = qq{<div class="pathogenic_exon_label icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
       $title .= " | $pathogenic pathogenic variants";
       $show_hide_info_params .= ",'$pathogenic'";
+      if ($pathogenic <= $max_variants) {
+        my @variants_allele;
+        foreach my $var (@variants) {
+          my $var_allele = $var;
+          my $ref = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}{$var}{'ref_allele'};
+          $var_allele .= '-'.$ref if ($ref);
+          my $allele = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}{$var}{'allele'};
+          $var_allele .= '-'.$allele if ($allele);
+          push @variants_allele, $var_allele;
+        }
+        $show_hide_info_params .= ",'".join(':',@variants_allele)."'";
+      }
     }
   }
 
@@ -1545,15 +1560,23 @@ sub get_pathogenic_variants {
     next unless ($cs =~ /pathogenic$/i);
     next unless ($pf->source_name eq 'ClinVar');
 
-    my $ref_allele = $pf->slice->seq;
+    #my $ref_seq = $pf->slice->seq;
+
+    my $pf_slice = $slice_a->fetch_by_region('chromosome',$gene_chr, $pf->seq_region_start, $pf->seq_region_end, $pf->strand);
+    my $ref_allele = $pf_slice->seq;
+    $ref_allele = substr($ref_allele,0,9).'...' if ($pf->length > 10);
+
+    my $risk_allele = $pf->risk_allele;
+    $risk_allele = substr($risk_allele,0,9).'...' if ($risk_allele && length($risk_allele) > 10);
 
     $pathogenic_variants{"$start-$end"}{$pf->object_id} = {
        'chr'        => $gene_chr,
-       'start'      => $pf->start,
-       'end'        => $pf->end,
+       'start'      => $pf->seq_region_start,
+       'end'        => $pf->seq_region_end,
        'strand'     => $pf->strand,
-       'allele'     => $pf->risk_allele,
+       'allele'     => $risk_allele,
        'ref_allele' => $ref_allele,
+       #'ref_seq'    => $ref_seq,
        'clin_sign'  => $cs
      };  
   }
