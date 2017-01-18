@@ -1,5 +1,6 @@
 var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
+var ENS_VAR_LINK='http://www.ensembl.org/Homo_sapiens/Variation/Explore?v=';
 
 function showhide_elements(button_id,class_name) {
   var button_text = $("#"+button_id).html();
@@ -10,6 +11,20 @@ function showhide_elements(button_id,class_name) {
   else {
     $('.'+class_name).hide();
     $("#"+button_id).html(button_text.replace('Hide','Show'));
+  }
+}
+
+function showhide_id(button_id,id) {
+  var button_text = $("#"+button_id).html();
+  if (button_text.match(/show/i) || button_text.match(/\+/i)) {
+    $('#'+id).show();
+    $("#"+button_id).html(button_text.replace('Show','Hide'));
+    $("#"+button_id).html(button_text.replace('+','-'));
+  }
+  else {
+    $('#'+id).hide();
+    $("#"+button_id).html(button_text.replace('Hide','Show'));
+    $("#"+button_id).html(button_text.replace('-','+'));
   }
 }
 
@@ -239,7 +254,7 @@ function compact_expand(column_count) {
 function isEven(n) { return (n % 2 == 0); }
 function isOdd(n)  { return (n % 2 == 1); }
 
-function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pathogenic_var) {
+function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pathogenic_var,ens_pathogenic_variant_list) {
   var exon_popup = '';
   var exon_popup_id = "exon_popup_"+ens_id+"_"+exon_id;
   if (document.getElementById(exon_popup_id)) {
@@ -249,6 +264,10 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pa
     exon_popup = document.createElement('div');
     exon_popup.id = exon_popup_id;
     exon_popup.className = "hidden exon_popup";
+    
+    $('#'+exon_popup_id).attr("data-role","popup");
+    
+    //$('#'+exon_popup_id).append();
     
     // Header
     exon_popup_header = document.createElement('div');
@@ -275,17 +294,33 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pa
     exon_popup_body = document.createElement('div');
     exon_popup_body.className = "exon_popup_body";
     var popup_content = "";
+
     if (ens_id.substr(0,4) != 'ENSG') {
-      popup_content = "<b>Exon</b> #"+exon_id+"<br />";
+      popup_content += "<b>Exon</b> #"+exon_id+"<br />";
     }
     if (ens_exon_id && ens_exon_id != '') {
-      popup_content = popup_content+'<div><b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a></div>';
+      popup_content += '<div><b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a></div>';
     }
-    popup_content = popup_content+'<div><b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a></div>';
-    popup_content = popup_content+'<div><b>Size:</b> '+exon_length+'</div>';
+    popup_content += '<div><b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a></div>';
+    popup_content += '<div><b>Size:</b> '+exon_length+'</div>';
     if (ens_pathogenic_var) {
-      popup_content = popup_content+'<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var+'</div>';
+      popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
+      if (ens_pathogenic_variant_list) {
+        var ens_var_id = exon_popup_id+"_variant";
+        var ens_var_button_id = "button_"+ens_var_id;
+        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+        popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
+        popup_content += "<ul>"; 
+        var list = ens_pathogenic_variant_list.split(":");
+        $.each(list, function( index, value ) {
+          popup_content += "<li><a class=\"external\" href=\""+ENS_VAR_LINK+value+"\" target=\"_blank\">"+value+"</a></li>";
+        });
+        popup_content += "</ul></div>";
+      }
+      '</div>';
     }
+    
+    popup_content += '';
     
     exon_popup_body.innerHTML = popup_content;
     exon_popup.appendChild(exon_popup_body);
@@ -293,8 +328,8 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pa
     document.body.appendChild(exon_popup);
   }
   
-  if (exon_popup.className == "hidden exon_popup") {
-    exon_popup.className = "unhidden_popup exon_popup";
+  if ($('#'+exon_popup_id).hasClass("hidden")) {
+    $('#'+exon_popup_id).switchClass('hidden','unhidden_popup',0);
     
     if (!e) var e = window.event;
     var posX = e.pageX;
@@ -302,9 +337,10 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pa
     
     exon_popup.style.top = posY;
     exon_popup.style.left = posX;
+    $('#'+exon_popup_id).draggable();
   }
   else {
-    exon_popup.className = "hidden exon_popup";
+    $('#'+exon_popup_id).switchClass('unhidden_popup','hidden',0);
   }
 }
 

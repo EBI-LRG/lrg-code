@@ -431,19 +431,20 @@ my $exon_tab_list = qq{
         <th class="rowspan2 fixed_col col6" rowspan="2">Name<div class="transcript_length_header">(length)</div></th>
         <th class="rowspan2 fixed_col col7" rowspan="2">Biotype<div class="transcript_length_header">(Coding length)</div></th>
         <th class="rowspan2 fixed_col col8" rowspan="2" title="Strand">Str.</th>
-        <th class="rowspan1 sorttable_nosort" colspan="$coord_span"><small>Coordinates</small></th>
-        <th class="rowspan2 sorttable_nosort" rowspan="2">CCDS
-        <th class="rowspan2 sorttable_nosort" rowspan="2">RefSeq transcript</th>
-        <th class="rowspan2 sorttable_nosort" rowspan="2" title="Highlight rows">hl</th>
+        <th class="rowspan1" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
+        <th class="rowspan2" rowspan="2">CCDS</th>
+        <th class="rowspan2" rowspan="2">RefSeq transcript</th>
+        <th class="rowspan2" rowspan="2" title="Highlight rows">hl</th>
       </tr>
       <tr>
+        <th></th>
 };
 
 foreach my $exon_coord (sort(keys(%exons_list))) {
   
   my $exon_coord_label = thousandify($exon_coord);
   
-  $exon_tab_list .= qq{        <th class="rowspan1 coord sorttable_nosort" id="coord_$exon_number" title="$exon_coord_label" onclick="alert('Genomic coordinate $gene_chr:$exon_coord')">};
+  $exon_tab_list .= qq{        <th class="rowspan1 coord" id="coord_$exon_number" title="$exon_coord_label" onclick="alert('Genomic coordinate $gene_chr:$exon_coord')">};
   $exon_tab_list .= $exon_coord_label;
   $exon_tab_list .= qq{</th>};
 

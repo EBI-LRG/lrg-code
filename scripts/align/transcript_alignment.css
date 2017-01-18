@@ -29,6 +29,7 @@ body {
 table {
   border-collapse:collapse;
 }
+
 th {
   background-color:#0E4C87;
   color:#FFF;
@@ -648,7 +649,7 @@ table.transcript tr:last-child {
 .scrolling {
   max-width: 1200px;
   overflow-x:scroll;  
-  margin-left:610px; 
+  margin-left:605px;/*610px;*/
   overflow-y:visible;
   margin-bottom:20px 0px;
   /*padding-bottom:1px;*/
