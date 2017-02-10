@@ -287,7 +287,6 @@ my %json_data = ( "id"        => $lrg_id,
                   "chr_end"   => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
                   "synonyms"  => \@json_syn,
                   "xref"      => \@json_xref,
-                  "last_modification_date" => $data{'last_modified'}
                 );
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
