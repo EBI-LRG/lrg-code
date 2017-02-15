@@ -1560,23 +1560,30 @@ sub get_pathogenic_variants {
     next unless ($cs =~ /pathogenic$/i);
     next unless ($pf->source_name eq 'ClinVar');
 
-    #my $ref_seq = $pf->slice->seq;
-
-    my $pf_slice = $slice_a->fetch_by_region('chromosome',$gene_chr, $pf->seq_region_start, $pf->seq_region_end, $pf->strand);
-    my $ref_allele = $pf_slice->seq;
-    $ref_allele = substr($ref_allele,0,9).'...' if ($pf->length > 10);
+    my $pf_start = $pf->seq_region_start; 
+    my $pf_end   = $pf->seq_region_end;
+    
+    my $ref_allele;
+    # Insertion
+    if ($pf_start > $pf_end) {
+      $ref_allele = '-';
+    }
+    else {
+      my $pf_slice = $slice_a->fetch_by_region('chromosome',$gene_chr, $pf_start, $pf_end, $pf->strand);
+      $ref_allele = $pf_slice->seq;
+      $ref_allele = substr($ref_allele,0,9).'...' if ($pf->length > 10);
+    }
 
     my $risk_allele = $pf->risk_allele;
     $risk_allele = substr($risk_allele,0,9).'...' if ($risk_allele && length($risk_allele) > 10);
 
     $pathogenic_variants{"$start-$end"}{$pf->object_id} = {
        'chr'        => $gene_chr,
-       'start'      => $pf->seq_region_start,
-       'end'        => $pf->seq_region_end,
+       'start'      => $pf_start,
+       'end'        => $pf_end,
        'strand'     => $pf->strand,
        'allele'     => $risk_allele,
        'ref_allele' => $ref_allele,
-       #'ref_seq'    => $ref_seq,
        'clin_sign'  => $cs
      };  
   }
