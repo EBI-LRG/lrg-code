@@ -1,5 +1,32 @@
 var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
+var ENS_VAR_LINK='http://www.ensembl.org/Homo_sapiens/Variation/Explore?v=';
+
+function showhide_elements(button_id,class_name) {
+  var button_text = $("#"+button_id).html();
+  if (button_text.match(/show/i)) {
+    $('.'+class_name).show();
+    $("#"+button_id).html(button_text.replace('Show','Hide'));
+  }
+  else {
+    $('.'+class_name).hide();
+    $("#"+button_id).html(button_text.replace('Hide','Show'));
+  }
+}
+
+function showhide_id(button_id,id) {
+  var button_text = $("#"+button_id).html();
+  if (button_text.match(/show/i) || button_text.match(/\+/i)) {
+    $('#'+id).show();
+    $("#"+button_id).html(button_text.replace('Show','Hide'));
+    $("#"+button_id).html(button_text.replace('+','-'));
+  }
+  else {
+    $('#'+id).hide();
+    $("#"+button_id).html(button_text.replace('Hide','Show'));
+    $("#"+button_id).html(button_text.replace('-','+'));
+  }
+}
 
 function showhide(row_id) {
   var tr_row_id = "#"+TR_ID_PREFIX+row_id;
@@ -12,14 +39,20 @@ function showhide(row_id) {
   }
 }
 
-function showhide_range(start_row_id,end_row_id) {
+function showhide_range(start_row_id,end_row_id,show) {
+
   for (var id=start_row_id; id<=end_row_id; id++) {
-    showhide(id);
+    if (show == 1) {
+      show_row(id);
+    }
+    else {
+      hide_row(id);
+    }
   }
 }
 
 function showall() {
-  $("tr[id^='"+TR_ID_PREFIX+"']").each(function (i, el) {
+  $(".trans_row").each(function (i, el) {
      var tr_id = $(this).attr("id");
      var id = tr_id.split('_')[1];
      show_row(id);
@@ -36,27 +69,13 @@ function hideall() {
 
 function show_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
-  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
   
-  var row_obj = document.getElementById(tr_id);
-  var right_obj = document.getElementById(tr_id_right);
   var button_color = $("#button_color_"+row_id).val();
-
-  // Odd vs Even background
-  var bg = "bg2";
-  if (isOdd(row_id)) {
-    bg = "bg1";
-  }
   
-  // Checked => highlighted
-  if (document.getElementById('highlight_'+row_id).checked) {
-    bg += "_hl";
-  }
+  $('#'+tr_id).switchClass('hidden','unhidden',0);
   
-  row_obj.className   = "unhidden "+bg;
-  right_obj.className = "unhidden "+bg;
   if ($("#button_"+row_id).hasClass('off')) {
-    $("#button_"+row_id).removeClass('off').addClass(button_color);
+    $("#button_"+row_id).switchClass('off',button_color,0);
   }
   else {
     $("#button_"+row_id).addClass(button_color);
@@ -65,17 +84,13 @@ function show_row(row_id) {
 
 function hide_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
-  var tr_id_right = tr_id+TR_RIGHT_SUFFIX;
   
-  var row_obj = document.getElementById(tr_id);
-  var right_obj = document.getElementById(tr_id_right);
   var button_color = $("#button_color_"+row_id).val();
   
-  row_obj.className = "hidden";
-  right_obj.className = "hidden";
+  $('#'+tr_id).switchClass('unhidden','hidden',0);
   
   if ($("#button_"+row_id).hasClass(button_color)) {
-    $("#button_"+row_id).removeClass(button_color).addClass('off');
+    $("#button_"+row_id).switchClass(button_color,'off',0);
   }
   else {
     $("#button_"+row_id).addClass('off');
@@ -143,16 +158,11 @@ function show_hide_in_between_rows(row_id,tr_names) {
       }    
 
       current_row_id = row_obj.id.substr(TR_ID_PREFIX.length);
-      if ($(current_row_id).hasClass("hidden")) {
-        show_row(current_row_id);
-      }
-      else {
-        hide_row(current_row_id);
-      }
+      hide_row(current_row_id);
     }
   // end of 'row_loop'  
 
-  var button_row_obj = document.getElementById('button_'+row_id+'_'+tr_name[0]);
+  var button_row_obj = document.getElementById('button_'+row_id+'_'+tr_names[0]);
   var show_nm  = 'Show line(s)';
   var show_all = 'Show all';
   if (button_row_obj.innerHTML == show_nm) {
@@ -160,14 +170,13 @@ function show_hide_in_between_rows(row_id,tr_names) {
   }
   else {
     button_row_obj.innerHTML = show_nm;
+    showall();
   }
 }
 
-
-function highlight_row(row_id) {
-  
-  var row_obj   = document.getElementById(TR_ID_PREFIX + row_id);
-  var right_obj = document.getElementById(TR_ID_PREFIX + row_id + TR_RIGHT_SUFFIX);
+function highlight_row(row_id,type) {
+ 
+  var id_prefix = '#highlight_';
   
   // Odd vs Even background
   var bg = "bg2";
@@ -175,13 +184,15 @@ function highlight_row(row_id) {
     bg = "bg1";
   }
   
-  // Checked => highlighted
-  if (document.getElementById('highlight_' + row_id).checked) {
-    bg += "_hl";
+  var status = false;
+  if ($(id_prefix+row_id+'_'+type).is(':checked')) {
+    status = true;
+    bg += "_hl selected";
   }
-  
-  row_obj.className   = "unhidden " + bg;
-  right_obj.className = "unhidden " + bg;
+  $(id_prefix+row_id+'_left').prop( "checked", status );
+  $(id_prefix+row_id+'_right').prop( "checked", status );
+
+  $("#" + TR_ID_PREFIX + row_id).removeClass().addClass( "unhidden " + bg);
 }
 
 
@@ -243,7 +254,7 @@ function compact_expand(column_count) {
 function isEven(n) { return (n % 2 == 0); }
 function isOdd(n)  { return (n % 2 == 1); }
 
-function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
+function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,ens_pathogenic_var,ens_pathogenic_variant_list) {
   var exon_popup = '';
   var exon_popup_id = "exon_popup_"+ens_id+"_"+exon_id;
   if (document.getElementById(exon_popup_id)) {
@@ -253,6 +264,10 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     exon_popup = document.createElement('div');
     exon_popup.id = exon_popup_id;
     exon_popup.className = "hidden exon_popup";
+    
+    $('#'+exon_popup_id).attr("data-role","popup");
+    
+    //$('#'+exon_popup_id).append();
     
     // Header
     exon_popup_header = document.createElement('div');
@@ -279,14 +294,43 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     exon_popup_body = document.createElement('div');
     exon_popup_body.className = "exon_popup_body";
     var popup_content = "";
+
     if (ens_id.substr(0,4) != 'ENSG') {
-      popup_content = "<b>Exon</b> #"+exon_id+"<br />";
+      popup_content += "<b>Exon</b> #"+exon_id+"<br />";
     }
-    if (ens_exon_id) {
-      popup_content = popup_content+'<b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a><br />';
+    if (ens_exon_id && ens_exon_id != '') {
+      popup_content += '<div><b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a></div>';
     }
-    popup_content = popup_content+'<b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a><br />';
-    popup_content = popup_content+'<b>Size:</b> '+exon_length;
+    popup_content += '<div><b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a></div>';
+    popup_content += '<div><b>Size:</b> '+exon_length+'</div>';
+    if (ens_pathogenic_var) {
+      popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
+      if (ens_pathogenic_variant_list) {
+        var ens_var_id = exon_popup_id+"_variant";
+        var ens_var_button_id = "button_"+ens_var_id;
+        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+        popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
+        popup_content += "<ul>"; 
+        var list = ens_pathogenic_variant_list.split(":");
+        $.each(list, function( index, value ) {
+          var var_detail = value.split('-');
+          var var_id = var_detail[0];
+          var ref_allele = '';
+          var pat_allele = '';
+          if (var_detail[1]) {
+            ref_allele = ' (ref: '+var_detail[1]+')';
+          }
+          if (var_detail[2]) {
+            pat_allele = ' <b>'+var_detail[2]+'</b>';
+          }
+          popup_content += "<li><a class=\"external\" href=\""+ENS_VAR_LINK+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
+        });
+        popup_content += "</ul></div>";
+      }
+      '</div>';
+    }
+    
+    popup_content += '';
     
     exon_popup_body.innerHTML = popup_content;
     exon_popup.appendChild(exon_popup_body);
@@ -294,8 +338,8 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     document.body.appendChild(exon_popup);
   }
   
-  if (exon_popup.className == "hidden exon_popup") {
-    exon_popup.className = "unhidden_popup exon_popup";
+  if ($('#'+exon_popup_id).hasClass("hidden")) {
+    $('#'+exon_popup_id).switchClass('hidden','unhidden_popup',0);
     
     if (!e) var e = window.event;
     var posX = e.pageX;
@@ -303,9 +347,10 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id) {
     
     exon_popup.style.top = posY;
     exon_popup.style.left = posX;
+    $('#'+exon_popup_id).draggable();
   }
   else {
-    exon_popup.className = "hidden exon_popup";
+    $('#'+exon_popup_id).switchClass('unhidden_popup','hidden',0);
   }
 }
 

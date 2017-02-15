@@ -12,19 +12,10 @@
   <html>
     <head>
       <title>$title</title>
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
-      <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
-      <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
-      
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
-      <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-      <script type="text/javascript" src="transcript_alignment.js"></script>
-      <script>
-      $(document).ready(function(){
-        $('[data-toggle="tooltip"]').tooltip();
-      });
-    </script>
+
+      <!--<link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
+      <script type="text/javascript" src="transcript_alignment.js"></script>-->
+
     </head>
     <body>
 EOF;
@@ -39,7 +30,7 @@ EOF;
   
   if ($handle = opendir('./')) {
     while (false !== ($file = readdir($handle))) {
-      if (preg_match('/^(\w+)\.html$/',$file,$matches)) {
+      if (preg_match('/^(\w+-?\w*)\.html$/',$file,$matches)) {
         $gene = $matches[1];
         array_push($select_list,$gene);
       }
