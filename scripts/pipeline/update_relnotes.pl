@@ -1,3 +1,4 @@
+#!perl -w
 use strict;
 use File::stat;
 use LRG::LRG;

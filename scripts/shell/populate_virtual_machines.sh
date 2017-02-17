@@ -33,7 +33,7 @@ become ${WEBADMIN} bash << EOF
   
   if  [ -z "$prod_only" ] || [ $prod_only == 1 ];then
     # Fallback website
-    scd ${FBWEBSITE}
+    cd ${FBWEBSITE}
     rm -rf ./*
     cp -R ${input_dir}/* ./
     cp ${PUBFTP}/.lrg_index/${json_file} ./${json_dir}/

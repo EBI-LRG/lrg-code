@@ -197,7 +197,7 @@ sub newFromString {
 					
           if (!defined $val) {
             print "$key => missing value\n";
-            $val = '';
+            $val = 'nd';
           }
 
 					# remove "s and 's as these are converted to HTML form
