@@ -279,14 +279,14 @@ if ($json_chr_name) {
   $json_chr_name += 0 if ($json_chr_name =~ /^\d/); # Force number for the JSON data
 }
 
-my %json_data = ( "id"        => $lrg_id,  
-                  "symbol"    => $data{'hgnc'},
-                  "status"    => $status,
-                  "chr_name"  => $json_chr_name,
-                  "chr_start" => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
-                  "chr_end"   => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
-                  "synonyms"  => \@json_syn,
-                  "xref"      => \@json_xref,
+my %json_data = ( "id"       => $lrg_id,  
+                  "symbol"   => $data{'hgnc'},
+                  "status"   => $status,
+                  "chr"      => $json_chr_name,
+                  "start"    => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
+                  "end"      => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
+                  "synonyms" => \@json_syn,
+                  "xref"     => \@json_xref,
                 );
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
