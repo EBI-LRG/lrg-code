@@ -13,19 +13,19 @@ sub default_options {
 # line to override these default values.
 
   return {
-  
-        hive_auto_rebalance_semaphores => 0,
-    
+        hive_auto_rebalance_semaphores => 0, 
+
         hive_force_init         => 1,
-        hive_no_init            => 0,
         hive_use_param_stack    => 0,
         hive_use_triggers       => 0,
-        hive_root_dir           => $ENV{'HOME'} . '/ensembl_branch/git/ensembl-hive', # To update in order to match the location of your own hive copy!
+        hive_no_init            => 0,
+        hive_root_dir           => $ENV{'HOME'} . '/head/ensembl-hive', # To update in order to match the location of your own hive copy!
         hive_db_host            => $ENV{'LRGDBHOST'},
         hive_db_port            => $ENV{'LRGDBPORT'},
         hive_db_user            => $ENV{'LRGDBADMUSER'},
         hive_db_password        => $ENV{'LRGDBPASS'},
         debug                   => 0,
+        debug_mode              => 0,
         is_test                 => 0, # other values: 'is_hc' (only HealthChecks), or '1' (Test mode)
         skip_hc                 => 0,
 
@@ -70,8 +70,8 @@ sub default_options {
         run_sub_pipeline        => 0, # Run the full pipeline by default
         
         small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
-        default_lsf_options => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
-        highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is Sanger LSF speak for "give me 15GB of memory"
+        default_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
+        highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
@@ -168,7 +168,6 @@ sub pipeline_analyses {
             -rc_name           => 'small',
             -input_ids         => [],
             -hive_capacity     => 10,
-            -analysis_capacity => 10,
             -wait_for          => [ 'init_annotation' ],
             -flow_into         => {},
         },
@@ -214,6 +213,7 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::CreateIndexes',
             -rc_name           => 'small',
             -input_ids         => [],
+            -hive_capacity     => 20,
             -wait_for          => [ 'init_indexes' ],
             -flow_into         => {},
         },
@@ -236,7 +236,7 @@ sub pipeline_analyses {
         {   
             -logic_name        => 'update_relnotes_file', 
             -module            => 'LRG::Pipeline::UpdateRelnotesFile',
-            -rc_name           => 'small',
+            -rc_name           => 'default',
             -parameters        => {
                run_dir     => $self->o('run_dir'),
                assembly    => $self->o('assembly'),
