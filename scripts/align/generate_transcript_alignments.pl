@@ -5,14 +5,16 @@ use Bio::EnsEMBL::ApiVersion;
 use Cwd 'abs_path';
 use Getopt::Long;
 
-my ($xml_dirs, $output_dir, $help);
+my ($xml_dirs, $genes_list_file, $output_dir, $help);
 GetOptions(
-  'xml_dirs=s'	        => \$xml_dirs,
-  'output_dirs|ods=s'   => \$output_dir,
-  'help!'               => \$help
+  'xml_dirs=s'	      => \$xml_dirs,
+  'genes_list_file=s' => \$genes_list_file,
+  'output_dirs|ods=s' => \$output_dir,
+  'help!'             => \$help
 );
 
 usage() if ($help);
+
 usage("You need to give an output directory as argument of the script, using the option '-output_dir'.") if (!$output_dir);
 
 my $current_dir = abs_path($0);
@@ -41,7 +43,8 @@ foreach my $dir (split(',',$xml_dirs)) {
   closedir($dh);
 }
 
-
+# LRG XML directory
+print STDOUT "Loop over the LRG XML files\n";
 foreach my $dir (keys(%files)) {
 
   foreach my $file (@{$files{$dir}}) {
@@ -65,6 +68,27 @@ foreach my $dir (keys(%files)) {
   }
 }
 
+# Genes list from text file
+my $percent_genes = 0;
+if ($genes_list_file) {
+  print STDOUT "Loop over the genes in the file $genes_list_file\n";
+
+  open F, "< $genes_list_file" or die $!;
+  my $count_genes = 0;
+  my $nb_genes = `wc -l $genes_list_file`;
+     $nb_genes =~ /^(\d+)\s/;
+     $nb_genes = $1;
+  while(<F>) {
+    chomp $_;
+    my $gene = $_;
+    next if ($gene eq '' || $gene =~ /^\s/);
+    `perl $current_dir/transcript_alignment_tool.pl -g $gene -o $output_dir/$gene.html`;
+    # Count
+    $count_genes ++;
+    get_count_genes_list($nb_genes,$count_genes);
+  }
+  close(F);
+}
 
 sub get_count {
   my $c_percent = ($count_files/$nb_files)*100;
@@ -72,6 +96,18 @@ sub get_count {
   if ($c_percent =~ /($percent)\./ || $count_files == $nb_files) {
     print STDOUT "$percent% completed ($count_files/$nb_files)\n";
     $percent += 10;
+  }
+}
+
+sub get_count_genes_list {
+  my $nb_genes    = shift;
+  my $count_genes = shift;
+  
+  my $c_percent = ($count_genes/$nb_genes)*100;
+  
+  if ($c_percent =~ /($percent_genes)\./ || $count_genes == $nb_genes) {
+    print STDOUT "$percent_genes% completed ($count_genes/$nb_genes)\n";
+    $percent_genes += 10;
   }
 }
 
@@ -87,8 +123,8 @@ OPTIONS:
   -xml_dir           : directory path to the LRG XML files (optional)
                        By default, the script is pointing to the EBI LRG FTP pending directory:
                        $default_xml_dir
-  -output_dirs       : directory paths to the output HTML files, separated by a comma (required)
-  -ods          : alias of the option "-output_dirs"
+  -genes_list_file   : Text file containing a list of gene names (1 per line) (optional)
+  -output_dirs | ods : directory paths to the output HTML files, separated by a comma (required)
   };
   exit(0);
 }
