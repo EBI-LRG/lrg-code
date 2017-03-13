@@ -19,6 +19,9 @@ sub write_output {
   my $data_file_dir = $self->param('data_file_dir');
   my $genes_file    = $self->param('genes_file');
   my $havana_file   = $self->param('havana_file');
+  my $reports_dir   = $self->param('reports_dir'),
+  my $reports_file  = $self->param('reports_file');
+  
 
   my $genes_list_file  = "$data_file_dir/$genes_file";
   my $havana_list_file = "$data_file_dir/$havana_file";
@@ -26,6 +29,7 @@ sub write_output {
   my @jobs;
   
   my %files;
+  my %distinc_genes;
 
   $ftp_dir .= '/' if ($ftp_dir !~ /\/$/);
 
@@ -43,9 +47,13 @@ sub write_output {
   
   $self->run_cmd("rm -f $align_dir/*.html");
 
-  # LRG XML directory
-  foreach my $dir (keys(%files)) {
+  open REPORTS, "> $reports_dir/$reports_file" or die $!;
 
+  # LRG XML directory
+  my $count_lrg = 0;
+  foreach my $dir (keys(%files)) {
+    $count_lrg += scalar(@{$files{$dir}});
+    
     foreach my $file (@{$files{$dir}}) {
       $file =~ m/^(LRG\_([0-9]+))\.xml$/;
       my $lrg_id = $1;
@@ -59,6 +67,7 @@ sub write_output {
       }
       
       if ($gene) {
+        $distinc_genes{$gene} = 1;
         push @jobs, {
           'id'            => $id,
           'run_dir'       => $run_dir,
@@ -71,7 +80,11 @@ sub write_output {
       }
     }
   }
+  my $count_lrg_jobs = scalar(@jobs);
 
+  print REPORTS "<ul>";
+  print REPORTS "  <li>LRG XML files found: $count_lrg</li>\n";
+  print REPORTS "  <li>LRG with genes found: $count_lrg_jobs</li>\n";
 
   # Download latest Havana data file
   #my $havana_file_default = 'hg38.bed';
@@ -91,26 +104,31 @@ sub write_output {
   if (-e $genes_list_file) {
     open F, "< $genes_list_file" or die $!;
     my $count_genes = 0;
-    my $nb_genes = `wc -l $genes_list_file`;
-       $nb_genes =~ /^(\d+)\s/;
-       $nb_genes = $1;
     my $id = 100000;
     while(<F>) {
       chomp $_;
       my $gene = $_;
       next if ($gene eq '' || $gene =~ /^\s/);
+      next if ($distinc_genes{$gene});
       push @jobs, {
           'id'            => $id,
           'run_dir'       => $run_dir,
+          'align_dir'     => $align_dir,
           'gene'          => $gene,
           'data_file_dir' => $data_file_dir,
           'havana_file'   => $havana_file,
           'lrg'           => ''
       };
-      $id ++;
+      $count_genes ++;
+      $id += $count_genes;
     }
     close(F);
+    print REPORTS "  <li>Genes from the data file: $count_genes</li>\n";
   }
+  
+  print REPORTS "<li>Total alignments to run: <b>".scalar(@jobs)."</b></li>\n";
+  print "</ul>";
+  close(REPORTS);
   
   $self->dataflow_output_id(\@jobs, 2);  
   

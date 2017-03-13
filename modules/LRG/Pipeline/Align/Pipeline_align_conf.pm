@@ -28,12 +28,10 @@ sub default_options {
         
         pipeline_name           => 'lrg_align_pipeline',
 
+        reports_file            => 'align_reports.txt',
         genes_file              => 'genes_list.txt',
         havana_file             => 'hg38.bed',
-        data_file_dir           => '/homes/lgil/projets/LRG/lrg_head', # To update!
-        tmp_dir                 => $self->o('data_file_dir').'/tmp',   # To update!
-        pipeline_dir            => $self->o('tmp_dir'),
-        
+       
         git_branch              => $ENV{'GITBRANCH'},
 
         align_dir               => '/homes/lgil/public_html/LRG/align', # To update!
@@ -41,8 +39,12 @@ sub default_options {
         ftp_dir                 => $ENV{'PUBFTP'},
         xml_dirs                => ',pending,stalled',
         run_dir                 => $ENV{'LRGROOTDIR'},
+        data_file_dir           => '/homes/lgil/projets/LRG/lrg_head', # To update!
+        reports_dir             => $self->o('data_file_dir').'/tmp',   # To update!
+        pipeline_dir            => $self->o('reports_dir'),
         
-        output_dir              => $self->o('tmp_dir').'/hive_output',
+        
+        output_dir              => $self->o('reports_dir').'/hive_output',
 
         small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
         default_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
@@ -74,40 +76,47 @@ sub pipeline_analyses {
     
     push @analyses, (
       {   
-            -logic_name        => 'init_align', 
-            -module            => 'LRG::Pipeline::Align::InitAlign',
-            -rc_name           => 'small',
-            -parameters        => {
-               xml_dirs        => $self->o('xml_dirs'),
-               ftp_dir         => $self->o('ftp_dir'),
-               run_dir         => $self->o('run_dir'),
-               align_dir       => $self->o('align_dir'),
-               data_file_dir   => $self->o('data_file_dir'),
-               genes_file      => $self->o('genes_file'),
-               havana_file     => $self->o('havana_file'),
+            -logic_name => 'init_align', 
+            -module     => 'LRG::Pipeline::Align::InitAlign',
+            -rc_name    => 'small',
+            -parameters => {
+               xml_dirs      => $self->o('xml_dirs'),
+               ftp_dir       => $self->o('ftp_dir'),
+               run_dir       => $self->o('run_dir'),
+               align_dir     => $self->o('align_dir'),
+               data_file_dir => $self->o('data_file_dir'),
+               genes_file    => $self->o('genes_file'),
+               havana_file   => $self->o('havana_file'),
+               reports_dir   => $self->o('reports_dir'),
+               reports_file  => $self->o('reports_file')
             },
-            -input_ids     => [{}],
-            -flow_into     => { 
+            -input_ids  => [{}],
+            -flow_into  => { 
                '2->A' => ['create_align'],
                'A->1' => ['finish_align']
             },		
       },
       {   
-            -logic_name        => 'create_align', 
-            -module            => 'LRG::Pipeline::Align::CreateAlign',
-            -rc_name           => 'small',
-            -input_ids         => [],
-            -hive_capacity     => 20,
-            -wait_for          => [ 'init_align' ],
-            -flow_into         => {},
+            -logic_name    => 'create_align', 
+            -module        => 'LRG::Pipeline::Align::CreateAlign',
+            -rc_name       => 'small',
+            -input_ids     => [],
+            -hive_capacity => 25,
+            -wait_for      => [ 'init_align' ],
+            -flow_into     => {},
       },
       {   
-            -logic_name        => 'finish_align', 
-            -module            => 'LRG::Pipeline::Align::FinishAlign',
-            -rc_name           => 'small',
-            -input_ids         => [],
-            -wait_for          => [ 'create_align' ],
-            -flow_into         => {},
+            -logic_name => 'finish_align', 
+            -module     => 'LRG::Pipeline::Align::FinishAlign',
+            -rc_name    => 'small',
+            -parameters => {
+               align_dir    => $self->o('align_dir'),
+               reports_dir  => $self->o('reports_dir'),
+               reports_file => $self->o('reports_file')
+            },
+            -input_ids  => [],
+            -wait_for   => [ 'create_align' ],
+            -flow_into  => {},
       },
     );
     return \@analyses;
