@@ -87,17 +87,16 @@ sub write_output {
   print REPORTS "  <li>LRG with genes found: $count_lrg_jobs</li>\n";
 
   # Download latest Havana data file
-  #my $havana_file_default = 'hg38.bed';
-  #if ($data_file_dir && -d $data_file_dir) {
-  #  $havana_file = $havana_file_default if (!$havana_file);
-  #  my $h_file_path = "$data_file_dir/$havana_file";
-  #  `rm -f $h_file_path\.gz`;
-  #  `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
-  #  if (-e $h_file_path) {
-  #    `mv $h_file_path $h_file_path\_old`;
-  #  }
-  #  `gunzip $h_file_path\.gz`;
-  #}
+  my $havana_file_default = 'hg38.bed';
+  if ($data_file_dir && -d $data_file_dir) {
+    $havana_file = $havana_file_default if (!$havana_file);
+    `rm -f $havana_list_file\.gz`;
+    `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    if (-e $havana_list_file) {
+      `mv $havana_list_file $havana_list_file\_old`;
+    }
+    `gunzip $havana_list_file\.gz`;
+  }
 
 
   # Genes list from text file

@@ -1,21 +1,37 @@
-use strict;
+vuse strict;
 use warnings;
 use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::ApiVersion;
 use Cwd 'abs_path';
 use Getopt::Long;
 
-my ($xml_dirs, $genes_list_file, $output_dir, $help);
+my ($xml_dirs, $output_dir, $havana_dir, $havana_file, $no_havana_dl, $help);
 GetOptions(
-  'xml_dirs=s'	      => \$xml_dirs,
-  'genes_list_file=s' => \$genes_list_file,
-  'output_dirs|ods=s' => \$output_dir,
-  'help!'             => \$help
+  'xml_dirs=s'	        => \$xml_dirs,
+  'output_dirs|ods=s'   => \$output_dir,
+  'havana_dir|hd=s'     => \$havana_dir,
+  'havana_file|hf=s'    => \$havana_file,
+  'no_havana_dl|nh_dl!' => \$no_havana_dl,
+  'help!'               => \$help
 );
 
 usage() if ($help);
-
 usage("You need to give an output directory as argument of the script, using the option '-output_dir'.") if (!$output_dir);
+
+# Havana BED file
+my $havana_file_default = 'hg38.bed';
+if ($havana_dir && -d $havana_dir) {
+  $havana_file = $havana_file_default if (!$havana_file);
+
+  if (!$no_havana_dl) {
+    `rm -f $havana_dir/$havana_file\.gz`;
+    `wget -q -P $havana_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    if (-e "$havana_dir/$havana_file") {
+      `mv $havana_dir/$havana_file $havana_dir/$havana_file\_old`;
+    }
+    `gunzip $havana_dir/$havana_file`;
+  }
+}
 
 my $current_dir = abs_path($0);
 my @path = split('/',$current_dir);
@@ -120,12 +136,16 @@ sub usage {
 $msg
 
 OPTIONS:
-  -xml_dir           : directory path to the LRG XML files (optional)
-                       By default, the script is pointing to the EBI LRG FTP pending directory:
-                       $default_xml_dir
-  -genes_list_file   : Text file containing a list of gene names (1 per line) (optional)
-  -output_dirs | ods : directory paths to the output HTML files, separated by a comma (required)
+  -xml_dir               : directory path to the LRG XML files (optional)
+                           By default, the script is pointing to the EBI LRG FTP pending directory:
+                           $default_xml_dir
+  -output_dirs  | -ods   : directory paths to the output HTML files, separated by a comma (required)
+  -havana_dir   | -hd    : directory path of the Havana BED file which is already or will be downloaded by the script (optional)
+  -havana_file  | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
+  -no_havana_dl | -nh_dl : Flag to skip the download of the Havana BED file.
+                           Can speed up the script if we already have a recent version of the file (optional)
   };
   exit(0);
 }
+
 

@@ -5,13 +5,16 @@ use Bio::EnsEMBL::ApiVersion;
 use Getopt::Long;
 use LWP::Simple;
 
-my ($gene_name, $output_file, $lrg_id, $tsl, $help);
+my ($gene_name, $output_file, $lrg_id, $tsl, $havana_dir, $havana_file, $no_havana_dl, $help);
 GetOptions(
-  'gene|g=s'	     => \$gene_name,
-  'outputfile|o=s' => \$output_file,
-  'lrg|l=s'        => \$lrg_id,
-  'tsl=s'	         => \$tsl,
-  'help!'          => \$help
+  'gene|g=s'	          => \$gene_name,
+  'outputfile|o=s'      => \$output_file,
+  'lrg|l=s'             => \$lrg_id,
+  'tsl=s'	              => \$tsl,
+  'havana_dir|hd=s'     => \$havana_dir,
+  'havana_file|hf=s'    => \$havana_file,
+  'no_havana_dl|nh_dl!' => \$no_havana_dl,
+  'help!'               => \$help
 );
 
 usage() if ($help);
@@ -22,6 +25,7 @@ usage("You need to give an output file name as argument of the script , using th
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
+my $havana_file_default = 'hg38.bed';
 
 my $max_variants = 10;
 
@@ -31,6 +35,19 @@ my $transcript_score_file = '/net/isilon3/production/panda/production/vertebrate
 #    -host => 'ensembldb.ensembl.org',
 #    -user => 'anonymous'
 #);
+
+if ($havana_dir && -d $havana_dir) {
+  $havana_file = $havana_file_default if (!$havana_file);
+
+  if (!$no_havana_dl) {
+    `rm -f $havana_dir/$havana_file\.gz`;
+    `wget -q -P $havana_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    if (-e "$havana_dir/$havana_file") {
+      `mv $havana_dir/$havana_file $havana_dir/$havana_file\_old`;
+    }
+    `gunzip $havana_dir/$havana_file`;
+  }
+}
 
 $registry->load_registry_from_db(
     -host => 'mysql-ensembl-mirror.ebi.ac.uk',
@@ -62,12 +79,13 @@ my $pf_a         = $registry->get_adaptor($species, 'variation','phenotypefeatur
 # Biotype: protein_coding
 # External db: RefSeq_mRNA, CCDS
 # http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=CCDS13330
-my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1);
+my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1);
 
 my $GI_dbname = "EntrezGene";
 
 my %exons_list;
 my %ens_tr_exons_list;
+my %havana_tr_exons_list;
 my %refseq_tr_exons_list;
 my %refseq_gff3_tr_exons_list;
 my %cdna_tr_exons_list;
@@ -77,6 +95,7 @@ my %unique_exon;
 my %nm_data;
 my %compare_nm_data;
 my %pathogenic_variants;
+my %havana2ensembl;
 
 my $ref_seq_attrib = 'human';
 my $gff_attrib     = 'gff3';
@@ -215,6 +234,62 @@ foreach my $tr (@$ens_tr) {
   }
 }
 
+#-------------#
+# Havana data #
+#-------------#
+
+if ($havana_dir && -e "$havana_dir/$havana_file") {
+  foreach my $enst_id (keys(%ens_tr_exons_list)) {
+    if ($ens_tr_exons_list{$enst_id}{'OTTT'}) {
+      foreach my $ottt (keys(%{$ens_tr_exons_list{$enst_id}{'OTTT'}})) {
+        $havana2ensembl{$ottt} = $enst_id;
+      }
+    }
+  }
+  my $havana_content = `grep -w $gene_name $havana_dir/$havana_file`;
+  if ($havana_content =~ /\w+/) {
+    foreach my $line (split("\n", $havana_content)) {
+      my @h_data = split("\t", $line);
+      
+      my $tr_start    = $h_data[1] + 1;
+      my $tr_end      = $h_data[2];
+      my $tr_strand   = $h_data[5];
+         $tr_strand = ($tr_strand eq '+') ? 1 : -1;
+      my $tr_c_start  = $h_data[6];
+      my $tr_c_end    = $h_data[7];
+      my $e_count     = $h_data[9];
+      my @exon_sizes  = split(',', $h_data[10]);
+      my @exon_starts = split(',', $h_data[11]);
+      my $tr_name     = $h_data[12];
+      my $tr_biotype  = $h_data[16];
+      my $date = $h_data[$#h_data];
+         $date = (split(';', $date))[0] if ($date =~ /^\d+\-\w+\-\d+\;/);
+      
+      $havana_tr_exons_list{$tr_name} = {'start'        => $tr_start,
+                                         'end'          => $tr_end,
+                                         'coding_start' => $tr_c_start,
+                                         'coding_end'   => $tr_c_end,
+                                         'strand'       => $tr_strand,
+                                         'biotype'      => $tr_biotype,
+                                         'count'        => $e_count,
+                                         'date'         => $date
+                                        };
+    
+      $havana_tr_exons_list{$tr_name}{'enst'} = $havana2ensembl{$tr_name} if ($havana2ensembl{$tr_name});
+    
+      for(my $i=0;$i<scalar(@exon_sizes);$i++) {
+        my $start = $tr_start + $exon_starts[$i];
+        my $end = $start + $exon_sizes[$i] - 1;
+        
+        $havana_tr_exons_list{$tr_name}{'exon'}{$start}{$end} = 1;
+        
+        $exons_list{$start} ++;
+        $exons_list{$end} ++;
+      }
+    }
+  }
+}
+
 
 #-------------#
 # RefSeq data #
@@ -331,9 +406,10 @@ foreach my $o_gene (@$o_genes) {
 
 
 
-#############
-## DISPLAY ##
-#############
+
+###############################
+#####     DISPLAY DATA    #####
+###############################
 
 my $tsl_default_bgcolour = '#002366';
 my %tsl_colour = ( '1'   => '#090',
@@ -511,7 +587,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class transcript_column fixed_col col4" sorttable_customkey="$ens_tr">
+    <td class="$column_class transcript_column fixed_col col4">
       <table class="transcript" style="width:100%;text-align:center">
         <tr><td class="$column_class" colspan="6"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
         <tr>
@@ -534,7 +610,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $tr_name_label .= '</b>';
   }
   my $tr_orientation = get_strand($tr_object->strand);
-  my $biotype = get_biotype($tr_object);
+  my $biotype = get_biotype($tr_object->biotype);
   my $tr_number = (split('-',$tr_name))[1];
   $exon_tab_list .= qq{
     <td class="extra_column fixed_col col6" sorttable_customkey="$tr_number">$tr_name_label<div class="transcript_length">($cdna_length)</div></td>
@@ -634,6 +710,130 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 
 
 #----------------------------#
+# Display HAVANA transcripts #
+#----------------------------#
+my %havana_rows_list;
+foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_list{$a}{'count'}} keys(%havana_tr_exons_list)) {
+
+  my $e_count = $havana_tr_exons_list{$hv}{'count'}; 
+  
+  my $hide_row      = hide_button($row_id);
+  my $highlight_row = highlight_button($row_id,'left');
+  my $blast_button  = blast_button($hv);
+  
+  my $column_class = 'havana';
+  my $havana_strand = $havana_tr_exons_list{$hv}{'strand'};
+  my $havana_orientation = get_strand($havana_strand);
+  
+  my $havana_date = '';
+  if ($havana_tr_exons_list{$hv}{'date'}) {
+    $havana_date = ' title="'.$havana_tr_exons_list{$hv}{'date'}.'"';
+  }
+  
+  
+  my $havana_enst    = '';
+  if ($havana_tr_exons_list{$hv}{'enst'}) {
+    my $enst = $havana_tr_exons_list{$hv}{'enst'};
+    my $havana_button_title = "Click on the button to highlight the corresponding Ensembl trancript on the current column";
+    $havana_enst = qq{
+      <div class="havana_enst">
+        $enst
+        <button class="btn btn-lrg btn-xs" onclick="javascript:highlight_enst('$enst');" title="$havana_button_title">hl</button>
+      </div>
+    };
+  }
+  
+  $exon_tab_list .= qq{
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$hv">
+    <td class="fixed_col col1">$hide_row</td>
+    <td class="fixed_col col2">$highlight_row</td>
+    <td class="fixed_col col3">$blast_button</td>
+    <td class="$column_class first_column fixed_col col4">
+      <div$havana_date>
+        <a class="havana_link" href="http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=$hv" target="_blank">$hv</a>
+      </div>$havana_enst
+    </td>
+    <td class="extra_column fixed_col col5">$e_count</td>
+  };
+
+  my $biotype = get_biotype($havana_tr_exons_list{$hv}{'biotype'});
+
+  # HAVANA lengths
+  my $havana_start  = $havana_tr_exons_list{$hv}{'start'};
+  my $havana_end    = $havana_tr_exons_list{$hv}{'end'};
+  my $havana_length = ($havana_start && $havana_end) ? thousandify($havana_end - $havana_start + 1).' bp' : 'NA';
+  
+  
+  my $havana_coding_start = $havana_tr_exons_list{$hv}{'coding_start'};
+  my $havana_coding_end   = $havana_tr_exons_list{$hv}{'coding_end'};
+  my $havana_coding_length = ($havana_coding_start && $havana_coding_end) ? thousandify($havana_coding_end - $havana_coding_start + 1).' bp' : 'NA';
+  
+  
+  $exon_tab_list .= qq{
+    <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($havana_length)</div></td>
+    <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($havana_coding_length)</div></td>
+    <td class="extra_column fixed_col col8">$havana_orientation</td>
+  };
+  
+  $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
+  $havana_rows_list{$row_id}{'label'} = $hv;
+  $havana_rows_list{$row_id}{'class'} = 'havana';
+  
+  my %exon_set_match;
+  my $first_exon;
+  my $last_exon;
+  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    if ($havana_tr_exons_list{$hv}{'exon'}{$coord}) {
+      $first_exon = $coord if (!defined($first_exon));
+      $last_exon  = $coord;
+    }
+  }
+  
+  
+  my $exon_number = ($havana_strand == 1) ? 1 : $e_count;
+  my $exon_start;
+  my $colspan = 1;
+  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+
+    if ($exon_start and !$havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}) {
+      $colspan ++;
+      next;
+    }
+    # Exon start found
+    elsif (!$exon_start && $havana_tr_exons_list{$hv}{'exon'}{$coord}) {
+      $exon_start = $coord;
+      next;
+    }
+     # Exon end found
+    elsif ($exon_start and $havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}) {
+      $colspan ++;
+    }
+    
+    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
+    
+    my $has_exon = ($exon_start) ? 'exon' : $no_match;
+    
+    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
+    $exon_tab_list .= qq{</td><td$colspan_html>}; 
+    
+    if ($exon_start) {
+      $exon_tab_list .= display_exon("$has_exon havana_exon",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-');
+      if ($havana_strand == 1) { $exon_number++; }
+      else { $exon_number--; }
+      $exon_start = undef;
+      $colspan = 1;
+    }
+    else {
+      $exon_tab_list .= qq{<div class="$has_exon"> </div>};
+    }
+  }
+  $exon_tab_list .= end_of_row($row_id);
+  $row_id++;
+}
+
+
+
+#----------------------------#
 # Display REFSEQ transcripts #
 #----------------------------#
 my %refseq_rows_list = %{display_refseq_data(\%refseq_tr_exons_list, $ref_seq_attrib)};
@@ -665,7 +865,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class first_column fixed_col col4" sorttable_customkey="$nm">
+    <td class="$column_class first_column fixed_col col4">
       <div>
         <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
       </div>
@@ -677,7 +877,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $cdna_name   = ($cdna_object->external_name) ? $cdna_object->external_name : '-';
   my $cdna_strand = $cdna_object->slice->strand;
   my $cdna_orientation = get_strand($cdna_strand);
-  my $biotype = get_biotype($cdna_object);
+  my $biotype = get_biotype($cdna_object->biotype);
   
   # cDNA lengths
   my $cdna_coding_start = $cdna_object->cdna_coding_start;
@@ -774,14 +974,14 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class first_column fixed_col col4" sorttable_customkey="Z$o_ens_gene">
+    <td class="$column_class first_column fixed_col col4">
       <a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name
     </td>
     <td class="extra_column fixed_col col5">-</td>
   };
   
   my $gene_orientation = get_strand($gene_object->strand);
-  my $biotype = get_biotype($gene_object);
+  my $biotype = get_biotype($gene_object->biotype);
   $exon_tab_list .= qq{<td class="extra_column fixed_col col6">$o_gene_name</td><td class="extra_column fixed_col col7">$biotype</td><td class="extra_column fixed_col col8">$gene_orientation</td>};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -915,6 +1115,9 @@ my $max_per_line = 6;
 # Ensembl transcripts
 $html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
 
+# HAVANA
+$html .= display_transcript_buttons(\%havana_rows_list, 'HAVANA');
+
 # RefSeq
 $html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
 
@@ -970,41 +1173,42 @@ $html .= qq{
           <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
           <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
           <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
-          <tr class="bg1"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
-          <tr class="bg2"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
-           <tr class="bg1"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
-          <tr class="bg2"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
+          <tr class="bg1"><td class="havana first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>HAVANA transcripts</b></td></tr>
+          <tr class="bg2"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
+          <tr class="bg1"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
+          <tr class="bg2"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
+          <tr class="bg1"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
           <!-- Other -->
           <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-          <tr class="bg1">
+          <tr class="bg2">
             <td style="padding-left:2px">
               <span class="manual">M</span>
               <span class="not_manual">A</span>
             </td>
             <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td>
           </tr>
-          <tr class="bg2">
+          <tr class="bg1">
             <td style="padding-left:2px">
               <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
               <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
             </td>
             <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
           </tr>
-          <tr class="bg1">
+          <tr class="bg2">
             <td style="padding-left:2px">
               <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
               <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
             </td>
             <td style="padding-left:5px">Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
           </tr>
-          <tr class="bg2">
+          <tr class="bg1">
             <td style="padding-left:2px">
               <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
               <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
             </td>
             <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
           </tr>
-          <tr class="bg1">
+          <tr class="bg2">
             <td style="padding-left:2px">
               <span class="flag canonical">C</span>
             </td>
@@ -1016,7 +1220,7 @@ $html .= qq{
             </td>
             <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg1">
+          <tr class="bg2">
             <td style="padding-left:2px">
               <span class="flag source_flag gff3">gff3</span>
             </td>
@@ -1033,8 +1237,9 @@ $html .= qq{
             <!-- Coding -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
             <tr class="bg1"><td style="width:50px"><div class="exon coding">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon coding_unknown">#</div></td><td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="exon havana_exon">#</div></td><td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b> but we don't know if the exon is actually coding (information not available in the input file)</td></tr>
+            <tr class="bg1"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
+            <tr class="bg2"><td style="width:50px"><div class="exon coding_unknown">#</div></td><td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td></tr>
             <!-- Partially coding -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
             <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
@@ -1199,8 +1404,7 @@ sub get_source_html {
 }
 
 sub get_biotype {
-  my $object = shift;
-  my $biotype = $object->biotype;
+  my $biotype = shift;
   
   if ($biotype_labels{$biotype}) {
     return sprintf(
@@ -1208,6 +1412,7 @@ sub get_biotype {
       $biotype, $biotype_labels{$biotype}
     );
   }
+  $biotype =~ s/_/ /g;
   return $biotype;
 }
 
@@ -1288,7 +1493,7 @@ sub display_refseq_data {
     my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
     my $refseq_strand = $refseq_object->slice->strand;
     my $refseq_orientation = get_strand($refseq_strand);
-    my $biotype = get_biotype($refseq_object);
+    my $biotype = get_biotype($refseq_object->biotype);
     
     # cDNA lengths
     my $cdna_coding_start = $refseq_object->cdna_coding_start;
@@ -1600,15 +1805,18 @@ sub usage {
 $msg
 
 OPTIONS:
-  -gene        : gene name (HGNC symbol or ENS) (required)
-  -outputfile  : file path to the output HTML file (required)
-  -o           : alias of the option "-outputfile"
-  -lrg         : the LRG ID corresponding to the gene, if it exists (optional)
-  -tsl         : path to the Transcript Support Level text file (optional)
-                 By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
-                 The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
-                 http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
-                 First, you will need to uncompress it by using the command "gunzip <file>".
+  -gene                  : gene name (HGNC symbol or ENS) (required)
+  -outputfile | -o       : file path to the output HTML file (required)
+  -lrg                   : the LRG ID corresponding to the gene, if it exists (optional)
+  -tsl                   : path to the Transcript Support Level text file (optional)
+                           By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
+                           The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
+                           http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
+                           First, you will need to uncompress it by using the command "gunzip <file>".
+  -havana_dir   | -hd    : directory path of the Havana BED file which is already or will be downloaded by the script (optional)
+  -havana_file  | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
+  -no_havana_dl | -nh_dl : Flag to skip the download of the Havana BED file.
+                           Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
   };
   exit(0);
 }
