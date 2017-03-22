@@ -53,6 +53,12 @@ sub comment {
   my $self = shift;
   return $self->_meta('comment',@_);
 }
+
+sub add_extra_comment {
+  my $self = shift;
+  return $self->_add_meta('comment',@_);
+}
+
 sub creation_date {
   my $self = shift;
   return $self->_meta('creation_date',@_);

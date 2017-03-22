@@ -88,6 +88,27 @@ sub _meta {
   return $value;
 }
 
+sub _add_meta {
+  my $self = shift;
+  my $key = shift;
+  my $value = shift;
+  
+  return unless (defined($value));
+
+  # Locate the meta object that contains the key
+  my @keep;
+  foreach my $m (@{$self->meta() || []}) {
+    unless ($m->key() eq $key && $m->value() eq $value) {
+      push(@keep,$m);
+    }
+  }
+ 
+  # Update the meta with the new key/value
+  $self->meta([@keep,LRG::API::Meta->new($key,$value)]);
+
+  return $value;
+}
+
 sub _remove_meta {
   my $self = shift;
   my $key = shift;

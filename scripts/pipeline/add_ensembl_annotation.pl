@@ -171,7 +171,9 @@ foreach my $aset (@{$asets}) {
   last;
 }
 
-#my $diffs_list;
+
+my $comment_prefix = 'The coding sequence of this transcript is identical to the coding sequence of Ensembl transcript %s.';
+
 my $diffs_list = get_diff($asets);
 foreach my $f (@ens_feature) {
   foreach my $g (@{$f->gene}) {
@@ -181,13 +183,14 @@ foreach my $f (@ens_feature) {
     my $gene_flag = 0;
     my $symbol = $g->symbol();  
     my $ens_match_lrg = {};
+    my $ens_diff_utr_lrg = {};
     $gene_flag = 1 if ($symbol->name eq $lrg_locus && $symbol->source eq $option{locus_source});
 
     # Only mapping for the Transcripts corresponding to the same HGNC gene name than the LRG's 
     if ($gene_flag) {
       my $ens_tr_mapping = LRG::API::EnsemblTranscriptMapping->new($registry,$option{lrg_id},$g,$diffs_list);
       $ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
-      $ens_match_lrg = compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords,$diffs_list);
+      ($ens_match_lrg, $ens_diff_utr_lrg) = @{compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords,$diffs_list)};
     }
     
     remove_grc_coordinates($g);
@@ -204,8 +207,51 @@ foreach my $f (@ens_feature) {
         }
       }
     }
+    
+    # Create specific comment(s) for the ENST(s) with different 5' and/or 3' UTRs compared to the LRG transcript(s)
+    if ($ens_diff_utr_lrg) {
+      foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
+        my $lrg_tr_name = $lrg_tr_obj->name;
+        next if (!$ens_diff_utr_lrg->{$lrg_tr_name});
+        
+        foreach my $enst_name (keys(%{$ens_diff_utr_lrg->{$lrg_tr_name}})) {
+          next if (!$ens_match_lrg->{$enst_name});
+          next if ($ens_match_lrg->{$enst_name}{'fixed_id'} ne $lrg_tr_name);
+          
+          my $five_prime_diff = $ens_diff_utr_lrg->{$lrg_tr_name}{$enst_name}{'5_prime_diff'} ? 1 : 0;
+          my $three_prime_diff = $ens_diff_utr_lrg->{$lrg_tr_name}{$enst_name}{'3_prime_diff'} ? 1 : 0;
+          
+          my $comment_diff = '';
+          if ($five_prime_diff == 1 && $three_prime_diff == 1) {
+            $comment_diff = " The two transcripts differ at the 5' and 3'UTRs.";
+          }
+          elsif ($five_prime_diff == 1) {
+            $comment_diff = " The two transcripts differ at the 5'UTR.";
+          }
+          elsif ($three_prime_diff == 1) {
+            $comment_diff = " The two transcripts differ at the 3'UTR.";
+          }
+          
+          next if ($comment_diff eq '');
+          
+          $comment_diff = sprintf($comment_prefix.$comment_diff, $enst_name);
+          
+          # Check the comment is already in the LRG record
+          my $found_meta = 0;
+          foreach my $meta (@{$lrg_tr_obj->meta}) {
+            if ($meta->key eq 'comment' and $meta->value eq $comment_diff) {
+              $found_meta = 1;
+              last;
+            }
+          }
+          # Add the comment to the LRG record
+          $lrg_tr_obj->add_extra_comment($comment_diff) if ($found_meta == 0);
+        }
+      }
+    }
   }
 }
+
 
 # Attach the features and mappings to the Ensembl annotation set
 $ensembl_aset->feature($feature);
@@ -260,12 +306,38 @@ sub get_lrg_transcript_coords {
   my %tr_coord;
   foreach my $tr (@{$fixed->transcript}) {
     my $tr_name = $tr->name;
+    my $coords = $tr->coordinates;
+    
+    $tr_coord{$tr_name}{'start'} = int($coords->[0]->start);
+    $tr_coord{$tr_name}{'end'} = int($coords->[0]->end);
+    
+    my $exon_start_first = $tr_coord{$tr_name}{'end'}; # Bigger number
+       $exon_start_first ||= 10000000;
+    my $exon_end_last = $tr_coord{$tr_name}{'start'};  # Smaller number
+       $exon_end_last ||= 0;
+
     foreach my $e (@{$tr->exons}) {
       foreach my $coord (@{$e->coordinates}) {
         if ($coord->coordinate_system eq $lrg_id) {
-          $tr_coord{$tr_name}{$coord->start.'-'.$coord->end} = 1;
+          my $e_start = int($coord->start) || 0;
+          my $e_end   = int($coord->end)   || 0;
+          $tr_coord{$tr_name}{'exon'}{$e_start} = $e_end;
+          
+          $exon_start_first = $e_start if ($e_start < $exon_start_first);
+          $exon_end_last    = $e_end   if ($e_end > $exon_end_last);
         }
       }
+    }
+    $tr_coord{$tr_name}{'exon_start_first'} = $exon_start_first;
+    $tr_coord{$tr_name}{'exon_end_last'}    = $exon_end_last;
+    
+    my $five_prime_start;
+    my $five_prime_end;
+    
+    if ($tr->coding_region) {
+      my $cds_coords = $tr->coding_region->[0]->coordinates;
+      $tr_coord{$tr_name}{'CDS_start'} = $cds_coords->[0]->start;
+      $tr_coord{$tr_name}{'CDS_end'}   = $cds_coords->[0]->end;
     }
   }
   return \%tr_coord;
@@ -277,35 +349,73 @@ sub compare_ens_transcripts_with_lrg_transcripts {
   my $diff_list    = shift;
 
   my %ens_list;
+  my %ens_utr_list;
   MAPPING: foreach my $mapping (@$mappings) {
     my $trans_name = $mapping->other_coordinates->coordinate_system;
     my %tr_coord_match;
     my @mapping_spans = @{$mapping->mapping_span};
     my $ms_count = @mapping_spans;
+    
+    my $enst_lrg_start = 1000000000;
+    my $enst_lrg_end   = 0;
+    
+    # Get start and end of the ENST, in LRG coordinates
     foreach my $mapping_span (@mapping_spans) {
-
       next MAPPING if ($mapping_span->mapping_diff);
 
-      my $mapping_start = $mapping_span->lrg_coordinates->start;
-      my $mapping_end   = $mapping_span->lrg_coordinates->end;
-      my $coord = "$mapping_start-$mapping_end";
+      my $m_start = $mapping_span->lrg_coordinates->start;
+      my $m_end   = $mapping_span->lrg_coordinates->end;
+      
+      $enst_lrg_start = $m_start if ($m_start < $enst_lrg_start);
+      $enst_lrg_end   = $m_end if ($m_end > $enst_lrg_end);
+    }
+    
+    foreach my $mapping_span (@mapping_spans) {
+      next MAPPING if ($mapping_span->mapping_diff);
+
+      my $m_start = $mapping_span->lrg_coordinates->start;
+      my $m_end   = $mapping_span->lrg_coordinates->end;
 
       foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
-        $tr_coord_match{$lrg_tr}{$trans_name}++ if ($lrg_tr_coord->{$lrg_tr}{$coord});
+        my $cds_start =  $lrg_tr_coord->{$lrg_tr}{'CDS_start'};
+        my $cds_end   =  $lrg_tr_coord->{$lrg_tr}{'CDS_end'};
+          
+        # Exon coord match
+        if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} && $lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} == $m_end) {
+          $tr_coord_match{$lrg_tr}{$trans_name}++ if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start});
+        }
+         # 3 prime difference
+        elsif ($m_end > $cds_end) {
+          if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} && $lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} != $m_end) {
+            $tr_coord_match{$lrg_tr}{$trans_name}++;
+            $ens_utr_list{$lrg_tr}{$trans_name}{'3_prime_diff'} = 1;
+          }
+        }
+        # 5 prime difference
+        elsif ($m_start < $cds_start) {
+          if (!$lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start}) {
+            my %end_coords = map { $lrg_tr_coord->{$lrg_tr}{'exon'}{$_} => 1 } keys(%{$lrg_tr_coord->{$lrg_tr}{'exon'}});
+            if ($end_coords{$m_end}) {
+              $tr_coord_match{$lrg_tr}{$trans_name}++;
+              $ens_utr_list{$lrg_tr}{$trans_name}{'5_prime_diff'} = 1;
+            }
+          }
+        }
       }
     }
 
+    # Compare the number of correct exons between LRG and ENST
     foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
       if ($tr_coord_match{$lrg_tr}) {
-        my $lrg_tr_count = scalar(keys(%{$lrg_tr_coord->{$lrg_tr}}));
+        my $lrg_tr_count = scalar(keys(%{$lrg_tr_coord->{$lrg_tr}{'exon'}}));
         foreach my $t_name (keys(%{$tr_coord_match{$lrg_tr}})) {
           if ($tr_coord_match{$lrg_tr}{$t_name} == $lrg_tr_count && $ms_count == $lrg_tr_count){
-            $ens_list{$t_name} = $lrg_tr;
+            $ens_list{$t_name}{'fixed_id'} = $lrg_tr;
           }
         }
       }
     }
   }
-  return \%ens_list;
+  return [\%ens_list, \%ens_utr_list];
 }
 

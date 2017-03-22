@@ -35,6 +35,8 @@ my $date = sprintf("\%d-\%02d-%02d",($year+1900),($mon+1),$mday);
 die("You need to specify an LRG xml file with the -xmlfile option") unless ($option{xmlfile});
 die(sprintf("XML file '\%s' does not exist",$option{xmlfile})) unless (-e $option{xmlfile});
 
+my $refseq_label = 'NCBI RefSeqGene';
+
 # Load the XML file
 my $xmla = LRG::API::XMLA::XMLAdaptor->new();
 $xmla->load_xml_file($option{xmlfile});
@@ -128,6 +130,183 @@ while (my ($name,$obj) = each(%sets)) {
   $obj->mapping(\@to_keep);
 }
 
+
+## Compare LRG transcript / RefSeq transcript ##
+# Method: RefSeq with fixed LRG tr ID 
+# 1) Check if sequence diff in 5' and 3' UTRs between the RefSeq and the LRG transcript.
+# 2) Compare start and end coordinates of the RefSeq and the LRG transcript.
+
+my $comment_prefix = 'The coding sequence of this transcript is identical to the coding sequence of RefSeq transcript %s.';
+
+my $lrg_tr_coords = get_lrg_transcript_coords($lrg);
+
+my $asets = $lrg->updatable_annotation->annotation_set();
+
+# Look at the NCBI/RefSeq annotation set
+foreach my $aset (@{$asets}) {
+  next unless ($aset->source->name() eq $refseq_label || $aset->type eq lc($refseq_label));
+  
+  # Get NM corresponding to the LRG transcripts
+  my %refseq_tr;
+  my %refseq_tr_diff;
+  foreach my $gene (@{$aset->feature->gene}) {
+    foreach my $tr (@{$gene->transcript}) {
+       $refseq_tr{$tr->fixed_id} = $tr->accession if ($tr->fixed_id);
+    }
+  }
+  
+  foreach my $lrg_tr_name (keys(%refseq_tr)) {
+    my $refseq_tr_name = $refseq_tr{$lrg_tr_name};
+    
+    my $cds_start = $lrg_tr_coords->{$lrg_tr_name}{'CDS_start'};
+    my $cds_end   = $lrg_tr_coords->{$lrg_tr_name}{'CDS_end'};
+    
+    my $five_prime_diff  = 0;
+    my $three_prime_diff = 0;
+    
+    foreach my $mapping (@{$aset->mapping}) {
+      next if ($mapping->assembly ne $refseq_tr_name);
+      
+      # Get corresponding LRG start and end
+      my $refseq_lrg_start;
+      my $refseq_lrg_end = 0;
+      foreach my $m_span (@{$mapping->mapping_span}) {
+        my $span_start = $m_span->lrg_coordinates->start;
+        my $span_end   = $m_span->lrg_coordinates->end;
+        
+        $refseq_lrg_start = $span_start if (!$refseq_lrg_start || $span_start < $refseq_lrg_start);
+        $refseq_lrg_end   = $span_end if (!$refseq_lrg_end || $span_end > $refseq_lrg_end);
+
+        # Get 5' 3' differences
+        if ($m_span->mapping_diff) {
+          foreach my $diff (@{$m_span->mapping_diff}) {
+            my $diff_type  = $diff->type;
+            my $diff_start = $diff->lrg_coordinates->start;
+            my $diff_end   = $diff->lrg_coordinates->end;
+            
+            # In 5'UTR ?
+            if ($diff_start < $cds_start && $diff_end < $cds_start) {
+              $five_prime_diff = 1;
+            }
+            # In 3'UTR ?
+            elsif ($diff_start > $cds_end && $diff_end > $cds_end) {
+              $three_prime_diff = 1;
+            }
+          }
+        }
+      }
+      # Compare start and end coordinates of the transcripts
+      $five_prime_diff  = 1 if ($refseq_lrg_start != $lrg_tr_coords->{$lrg_tr_name}{'start'} && $refseq_lrg_start < $cds_start);
+      $three_prime_diff = 1 if ($refseq_lrg_end != $lrg_tr_coords->{$lrg_tr_name}{'end'} && $refseq_lrg_end > $cds_end);
+    }
+  
+    my $comment_diff = '';
+    if ($five_prime_diff == 1 && $three_prime_diff == 1) {
+      $comment_diff = " The two transcripts differ at the 5' and 3'UTRs.";
+    }
+    elsif ($five_prime_diff == 1) {
+      $comment_diff = " The two transcripts differ at the 5'UTR.";
+    }
+    elsif ($three_prime_diff == 1) {
+      $comment_diff = " The two transcripts differ at the 3'UTR.";
+    }
+    
+    if ($comment_diff ne '') {
+      $comment_diff = sprintf($comment_prefix.$comment_diff, $refseq_tr_name);
+      # Check if the comment is already present in the document
+      foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
+        next if $lrg_tr_obj->name ne $lrg_tr_name; 
+        
+        my $found_meta = 0;
+        foreach my $meta (@{$lrg_tr_obj->meta}) {
+          if ($meta->key eq 'comment' and $meta->value eq $comment_diff) {
+            $found_meta = 1;
+            last;
+          }
+        }
+        $lrg_tr_obj->add_extra_comment($comment_diff) if ($found_meta == 0);
+      }
+    }
+  }
+}
+
+
+## Compare LRG transcript / Reference sequence assembly ##
+# Method: for the main Reference sequence assembly, compare the LRG tr sequence(s): coordinates of the exon and 'mapping_diff'.
+# 1) Check if sequence diff between the Reference sequence assembly and the LRG transcript(s).
+# 2) Compare the diff coordinates with the start and end coordinates of each exon of each LRG transcript.
+
+# Look at the sequence difference between LRG transcript and the current primary reference assembly
+my $seq_diff_comment = 'This transcript contains %s difference(s) with respect to the Primary Reference Assembly (GRCh38). See the sequence difference(s)';
+foreach my $aset (@{$asets}) {
+  next unless ($aset->source->name() eq 'LRG' || $aset->type eq lc('LRG'));
+ 
+  my %lrg_ref_diff;
+  
+  # Loop over the mappings to get the correct one
+  foreach my $m (@{$aset->mapping() || []}) {
+    next unless ($m->assembly() =~ /^$main_assembly/i && $m->other_coordinates->coordinate_system =~ /^([0-9]+|[XY])$/i);
+    
+    # Get corresponding LRG start and end
+    my ($refseq_lrg_start, $refseq_lrg_end);
+    foreach my $m_span (@{$m->mapping_span}) {
+      foreach my $m_diff (@{$m_span->mapping_diff}) {
+      
+        my $diff_type  = $m_diff->type;
+        my $diff_start = $m_diff->lrg_coordinates->start || 0;
+        my $diff_end   = $m_diff->lrg_coordinates->end || 0;
+
+        foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
+          my $lrg_tr_name = $lrg_tr_obj->name;
+
+          my $cds_start = $lrg_tr_coords->{$lrg_tr_name}{'CDS_start'};
+          my $cds_end   = $lrg_tr_coords->{$lrg_tr_name}{'CDS_end'};
+          
+          # Non coding difference
+          if (($diff_start < $cds_start && $diff_end < $cds_start) ||
+              ($diff_start > $cds_end && $diff_end > $cds_end)) {
+            $lrg_ref_diff{$lrg_tr_name}{'non-coding'} = 1;
+          }
+          # Non coding difference
+          else {
+            foreach my $e_start (keys(%{$lrg_tr_coords->{$lrg_tr_name}{'exon'}})) {
+              my $e_end = $lrg_tr_coords->{$lrg_tr_name}{'exon'}{$e_start};
+              
+              if (($diff_start >= $e_start && $diff_start <= $e_end) || ($diff_end >= $e_start && $diff_end <= $e_end)) {
+                $lrg_ref_diff{$lrg_tr_name}{'coding'} = 1;
+                last;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  # Group Reference Assembly - LRG transcript sequence differences by LRG transcript
+  foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
+    my $lrg_tr_name = $lrg_tr_obj->name;
+    next if (!$lrg_ref_diff{$lrg_tr_name});
+    
+    my $comment_detail;
+    
+    # Both coding and non-coding differences
+    if ($lrg_ref_diff{$lrg_tr_name}{'coding'} && $lrg_ref_diff{$lrg_tr_name}{'non-coding'}) {
+      $comment_detail = 'both coding and non-coding';
+    }
+    # Only coding difference(s)
+    elsif ($lrg_ref_diff{$lrg_tr_name}{'coding'}) {
+      $comment_detail = 'coding';
+    }
+    # Only non-coding difference(s)
+    elsif ($lrg_ref_diff{$lrg_tr_name}{'non-coding'}) {
+      $comment_detail = 'non-coding';
+    }
+    
+    $lrg_tr_obj->add_extra_comment(sprintf($seq_diff_comment, $comment_detail)) if ($comment_detail);
+  }
+}
+
 # Print the XML
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
 
@@ -136,3 +315,48 @@ warn (sprintf("Could not find any mapping to '\%s'",$main_assembly)) if (!grep {
 warn("Done!\n");
 
  
+sub get_lrg_transcript_coords {
+  my $lrg_obj = shift;
+
+  my $fixed = $lrg_obj->fixed_annotation;
+  my $lrg_id = $fixed->name;
+
+  my %tr_coord;
+  foreach my $tr (@{$fixed->transcript}) {
+    my $tr_name = $tr->name;
+    my $coords = $tr->coordinates;
+    
+    $tr_coord{$tr_name}{'start'} = int($coords->[0]->start);
+    $tr_coord{$tr_name}{'end'} = int($coords->[0]->end);
+    
+    my $exon_start_first = $tr_coord{$tr_name}{'end'}; # Bigger number
+       $exon_start_first ||= 10000000;
+    my $exon_end_last = $tr_coord{$tr_name}{'start'};  # Smaller number
+       $exon_end_last ||= 0;
+
+    foreach my $e (@{$tr->exons}) {
+      foreach my $coord (@{$e->coordinates}) {
+        if ($coord->coordinate_system eq $lrg_id) {
+          my $e_start = int($coord->start) || 0;
+          my $e_end   = int($coord->end)   || 0;
+          $tr_coord{$tr_name}{'exon'}{$e_start} = $e_end;
+          
+          $exon_start_first = $e_start if ($e_start < $exon_start_first);
+          $exon_end_last    = $e_end   if ($e_end > $exon_end_last);
+        }
+      }
+    }
+    $tr_coord{$tr_name}{'exon_start_first'} = $exon_start_first;
+    $tr_coord{$tr_name}{'exon_end_last'}    = $exon_end_last;
+    
+    my $five_prime_start;
+    my $five_prime_end;
+    
+    if ($tr->coding_region) {
+      my $cds_coords = $tr->coding_region->[0]->coordinates;
+      $tr_coord{$tr_name}{'CDS_start'} = $cds_coords->[0]->start;
+      $tr_coord{$tr_name}{'CDS_end'}   = $cds_coords->[0]->end;
+    }
+  }
+  return \%tr_coord;
+}
