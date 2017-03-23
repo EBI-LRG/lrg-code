@@ -18,6 +18,7 @@ sub write_output {
   my $align_dir     = $self->param('align_dir'),
   my $data_file_dir = $self->param('data_file_dir');
   my $genes_file    = $self->param('genes_file');
+  my $havana_ftp    = $self->param('havana_ftp');
   my $havana_file   = $self->param('havana_file');
   my $reports_dir   = $self->param('reports_dir'),
   my $reports_file  = $self->param('reports_file');
@@ -91,7 +92,7 @@ sub write_output {
   if ($data_file_dir && -d $data_file_dir) {
     $havana_file = $havana_file_default if (!$havana_file);
     `rm -f $havana_list_file\.gz`;
-    `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    `wget -q -P $data_file_dir $havana_ftp/$havana_file\.gz`;
     if (-e $havana_list_file) {
       `mv $havana_list_file $havana_list_file\_old`;
     }
