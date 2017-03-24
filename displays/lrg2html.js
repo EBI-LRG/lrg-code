@@ -208,7 +208,6 @@ function clear_exon_highlight(eclass) {
 function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var num = tname+'_'+ename;
   var pnum = tname+'_'+pname+'_'+ename;
-  var tableobj_old = document.getElementById('table_exon_'+pnum+"_old");
   var tableobj_left = document.getElementById('table_exon_'+pnum+'_left');
   var tableobj_right = document.getElementById('table_exon_'+pnum+'_right');  
   var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename+'_left');
@@ -232,7 +231,6 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     if(tableobj_left.className.length > 11) {
       tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-      tableobj_old.className = (tableobj_old.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
@@ -247,7 +245,6 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     else {
       tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
       tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-      tableobj_old.className = (tableobj_old.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
       if(tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
       }
@@ -431,6 +428,12 @@ function create_external_link (lrg_status) {
     var new_ens_link = $(this).html().replace(exp_ens,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
     $(this).html(new_ens_link);
   });
+  
+  $('.internal_link').each(function(index) {
+    var text2replace = /(See the sequence difference\(s\))/;
+    var new_int_link = $(this).html().replace(text2replace,"<a class='icon-next-page close-icon-2 smaller-icon' href='#assembly_mapping'>$1</a>");
+    $(this).html(new_int_link);
+  });
 }
 
 // function to build the HTML code to display the external icon
@@ -464,9 +467,10 @@ function search_in_ensembl(lrg_id, lrg_status) {
   
   if (lrg_status == 0) { // Only for public LRGs
     
-    var ens_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Summary?lrg='+lrg_id;
-    var var_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Variation_LRG/Table?lrg='+lrg_id;  
-    var phe_link = 'http://www.ensembl.org/Homo_sapiens/LRG/Phenotype?lrg='+lrg_id;
+    var ens_url  = 'http://www.ensembl.org/Homo_sapiens/LRG/';
+    var ens_link = ens_url+'Summary?lrg='+lrg_id;
+    var var_link = ens_url+'Variation_LRG/Table?lrg='+lrg_id;  
+    var phe_link = ens_url+'Phenotype?lrg='+lrg_id;
     
     var icon     = '<span class="glyphicon glyphicon-circle-arrow-right green_button_4"></span>';
     var external = 'icon-external-link';
@@ -478,7 +482,7 @@ function search_in_ensembl(lrg_id, lrg_status) {
     for (var i = 0; i < fileArray.length; i++) {
       var id = fileArray[i];
       if (id==lrg_id) {
-        $('#ensembl_links').html(ens_html+var_html+phe_html);
+        $('#ensembl_links').html("<div>"+ens_html+var_html+phe_html+"</div>");
         return 0;
       }
     }
