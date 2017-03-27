@@ -196,7 +196,7 @@ foreach my $f (@ens_feature) {
     remove_grc_coordinates($g);
     foreach my $t (@{$g->transcript}) {
       my $enst_name = $t->accession;
-      $t->fixed_id($ens_match_lrg->{$enst_name}) if ($ens_match_lrg->{$enst_name});
+      $t->fixed_id($ens_match_lrg->{$enst_name}{'fixed_id'}) if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'});
       remove_grc_coordinates($t);
       foreach my $e (@{$t->exon}) {
         remove_grc_coordinates($e);
@@ -238,10 +238,12 @@ foreach my $f (@ens_feature) {
           
           # Check the comment is already in the LRG record
           my $found_meta = 0;
-          foreach my $meta (@{$lrg_tr_obj->meta}) {
-            if ($meta->key eq 'comment' and $meta->value eq $comment_diff) {
-              $found_meta = 1;
-              last;
+          if ($lrg_tr_obj->meta) {
+            foreach my $meta (@{$lrg_tr_obj->meta}) {
+              if ($meta->key eq 'comment' and $meta->value eq $comment_diff) {
+                $found_meta = 1;
+                last;
+              }
             }
           }
           # Add the comment to the LRG record
@@ -260,13 +262,6 @@ $ensembl_aset->mapping($ens_mapping);
 
 # Print the XML
 print $lrg_adaptor->string_from_xml($lrg_adaptor->xml_from_objs($lrg));
-#
-#my $f_adaptor = $xmla->get_FeatureUpXMLAdaptor();
-#my $xml = $f_adaptor->xml_from_objs($feature);
-#my $lrg_root = LRG::LRG::new('/tmp/LRG.xml');
-#map {$lrg_root->addExisting($_)} @{$xml};
-#$lrg_root->printAll();
-# 
 warn("Done!\n");
 
 
