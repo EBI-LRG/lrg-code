@@ -18,7 +18,7 @@ GetOptions(
 usage() if ($help);
 usage("You need to give an output directory as argument of the script, using the option '-output_dir'.") if (!$output_dir);
 
-# Havana BED file
+# Havana BED file (actually bigGenePred => https://genome.ucsc.edu/goldenPath/help/bigGenePred.html)
 my $havana_file_default = 'hg38.bed';
 if ($havana_dir && -d $havana_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
