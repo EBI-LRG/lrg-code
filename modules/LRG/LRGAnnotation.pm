@@ -15,11 +15,35 @@ use LRG::API::Xref;
 
 package LRG::LRGAnnotation;
 
+# The DB names we will use for the different feature types
+my %SOURCE_DBS = (
+  'Bio::EnsEMBL::Gene' => {
+    'MIM_GENE' => 'MIM',
+    'EntrezGene' => 'GeneID',
+    'HGNC' => 'HGNC',
+    'HGNC_curated' => 'HGNC',
+    'RFAM'  =>  'RFAM',
+    'miRBase'  =>  'miRBase',
+    'pseudogene.org'  =>  'pseudogene.org'
+  },
+  'Bio::EnsEMBL::Transcript' => {
+    'RefSeq_mRNA' =>  'RefSeq',
+    'RefSeq_ncRNA'  =>  'RefSeq',
+    'CCDS'  =>  'CCDS'
+  },
+  'Bio::EnsEMBL::Translation' => {
+    'RefSeq_peptide'  =>  'RefSeq',
+    'Uniprot/SWISSPROT'  =>  'UniProtKB',
+    'GI' => 'GI'
+  }
+);
+my %XREFS_MOVE_TR2PR = ('CCDS' => 1);
+
 sub new {
   my $class = shift;
   my $slice = shift;
   
-  my $self = bless({},$class);
+  my $self = bless({ '_xref_tr2pr' => {} },$class);
   $self->initialize($slice);
   
   return $self;
@@ -389,33 +413,12 @@ sub xref {
   
   my @xrefs;
   my @xrefs_list;
-
-  # The DB names we will use for the different feature types
-  my %source_dbs = (
-    'Bio::EnsEMBL::Gene' => {
-      'MIM_GENE' => 'MIM',
-      'EntrezGene' => 'GeneID',
-      'HGNC' => 'HGNC',
-      'HGNC_curated' => 'HGNC',
-      'RFAM'  =>  'RFAM',
-      'miRBase'  =>  'miRBase',
-      'pseudogene.org'  =>  'pseudogene.org'
-    },
-    'Bio::EnsEMBL::Transcript' => {
-      'RefSeq_mRNA' =>  'RefSeq',
-      'RefSeq_ncRNA'  =>  'RefSeq',
-      'CCDS'  =>  'CCDS',
-    },
-    'Bio::EnsEMBL::Translation' => {
-      'RefSeq_peptide'  =>  'RefSeq',
-      'Uniprot/SWISSPROT'  =>  'UniProtKB',
-      'GI' => 'GI'
-    }
-  );
+  
+  my $stable_id = $feature->stable_id();
   
   foreach my $dblink (@{$feature->get_all_DBLinks()}) {
     my $feature_type = ref($feature);
-    my $xref_source = $source_dbs{$feature_type}->{$dblink->dbname()};
+    my $xref_source = $SOURCE_DBS{$feature_type}->{$dblink->dbname()};
     
     # Skip if the external db source name is not among the listed sources for this feature type 
     next unless ($xref_source);
@@ -429,20 +432,62 @@ sub xref {
 
     next if (grep {"$xref_source:$xref_id" eq $_} @xrefs_list);
 
-    push(@xrefs_list,"$xref_source:$xref_id");
-
+    # Move Xrefs from transcript to protein
+    if ($XREFS_MOVE_TR2PR{$xref_source} && $feature_type =~ /transcript/i && $feature->translation) {
+      my $pr_stable_id = $feature->translation->stable_id;
+      $self->set_trans_xref_to_protein_xref($pr_stable_id, $xref_source, $xref_id);
+    }
+    else {
+      # Create a new xref object
+      push(@xrefs,LRG::API::Xref->new($xref_source,$xref_id,$dblink->get_all_synonyms()));
+      
+      # List to avoid duplicated entries
+      push(@xrefs_list,"$xref_source:$xref_id");
+    }
+  }
+  
+  # Add the moved xref(s) to the translation object
+  my $moved_xrefs = $self->get_trans_xref_to_protein_xref($stable_id);
+  foreach my $moved_xref_source (keys(%{$moved_xrefs})) {
+    my $moved_xref_id = $moved_xrefs->{$moved_xref_source};
+    next if (grep {"$moved_xref_source:$moved_xref_id" eq $_} @xrefs_list);
+    
     # Create a new xref object
-    #push(@xrefs,LRG::API::Xref->new($xref_source,$dblink->primary_id() . ($dblink->version > 0 ? ".".$dblink->version : ""),$dblink->get_all_synonyms()));
-    push(@xrefs,LRG::API::Xref->new($xref_source,$xref_id,$dblink->get_all_synonyms()));
+    push(@xrefs,LRG::API::Xref->new($moved_xref_source,$moved_xref_id));
+      
+    # List to avoid duplicated entries
+    push(@xrefs_list,"$moved_xref_source:$moved_xref_id");
   }
   
   # Lastly, add an xref to Ensembl as well
-  if ($feature->stable_id() !~ /^ENS(P|T)/) {
-    push(@xrefs,LRG::API::Xref->new('Ensembl',$feature->stable_id()));
+  if ($stable_id !~ /^ENS(P|T)/) {
+    push(@xrefs,LRG::API::Xref->new('Ensembl',$stable_id));
   }
   
   return \@xrefs;
   
 }
+
+sub set_trans_xref_to_protein_xref {
+  my $self = shift;
+  my $pr_stable_id = shift;
+  my $xref_source  = shift;
+  my $xref_id      = shift;
+  
+  $self->{_xref_tr2pr}{$pr_stable_id}{$xref_source} = $xref_id;
+}
+
+sub get_trans_xref_to_protein_xref {
+  my $self = shift;
+  my $pr_stable_id = shift;
+  
+  if ($self->{_xref_tr2pr}{$pr_stable_id}) {
+    return $self->{_xref_tr2pr}{$pr_stable_id};
+  }
+  else {
+    return {};
+  }
+}
+
 
 1;
