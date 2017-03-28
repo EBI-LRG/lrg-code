@@ -34,7 +34,7 @@
 <xsl:variable name="hgnc_url">http://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
 <xsl:variable name="lrg_root_ftp">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/</xsl:variable>
 <xsl:variable name="lrg_bed_url"><xsl:value-of select="$lrg_extra_path"/>LRG_GRCh38.bed</xsl:variable>
-<xsl:variable name="lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>LRG_diff_GRCh38.txt</xsl:variable>
+<xsl:variable name="lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>lrg_diff.txt</xsl:variable>
 <xsl:variable name="lrg_url">http://dev.lrg-sequence.org</xsl:variable>
 <xsl:variable name="vep_parser_url"><xsl:value-of select="$lrg_url"/>/vep2lrg?</xsl:variable>
 <xsl:variable name="bootstrap_url">https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6</xsl:variable>
@@ -3476,20 +3476,59 @@
   
   <xsl:variable name="tr_length" select="$tr_end - $tr_start + 1"/>
   
-  <xsl:variable name="cds_start" select="coding_region[position() = 1]/coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="cds_end" select="coding_region[position() = 1]/coordinates[@coord_system = $lrg_coord_system]/@end" />
+  <xsl:variable name="cds_start">
+    <xsl:choose>
+      <xsl:when test="coding_region">
+        <xsl:value-of select="coding_region[position() = 1]/coordinates[@coord_system = $lrg_coord_system]/@start" />
+      </xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
   
-  <xsl:variable name="pepname" select="coding_region[position() = 1]/translation[position() = 1]/@name" />
+  <xsl:variable name="cds_end">
+    <xsl:choose>
+      <xsl:when test="coding_region">
+        <xsl:value-of select="coding_region[position() = 1]/coordinates[@coord_system = $lrg_coord_system]/@end" />
+      </xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  
+  <xsl:variable name="pepname">
+    <xsl:choose>
+      <xsl:when test="coding_region">
+        <xsl:value-of select="coding_region[position() = 1]/translation[position() = 1]/@name" />
+      </xsl:when>
+      <xsl:otherwise></xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  
   <div class="transcript_image_container">   
     <div class="transcript_image clearfix">
       <xsl:attribute name="style">
         <xsl:text>width:</xsl:text><xsl:value-of select="$image_width" /><xsl:text>px</xsl:text>
       </xsl:attribute>
       
-      <xsl:variable name="cds_start_percent" select="($cds_start - $tr_start) div $tr_length"/>
+      <xsl:variable name="cds_start_percent">
+        <xsl:choose>
+          <xsl:when test="$cds_start=0">0</xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="($cds_start - $tr_start) div $tr_length"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      
       <xsl:variable name="cds_pos_start" select="format-number(($cds_start_percent * $image_width),0)" />
     
-      <xsl:variable name="cds_width_percent" select="($cds_end - $cds_start + 1) div $tr_length"/>
+      <xsl:variable name="cds_width_percent">
+        <xsl:choose>
+          <xsl:when test="$cds_start=0">0</xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="($cds_end - $cds_start + 1) div $tr_length"/>
+          </xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+       
       <xsl:variable name="cds_width" select="format-number(($cds_width_percent * $image_width),0)"/>
       
       <div>
@@ -3521,17 +3560,21 @@
           Coord.: <xsl:value-of select="$lrg_start"/>-<xsl:value-of select="$lrg_end"/> | 
           Size: <xsl:value-of select="$exon_size"/>nt | 
           <xsl:choose>
+            <!-- Non coding -->
+            <xsl:when test="$cds_start=0 and $cds_end=0">
+              <xsl:text>Non coding</xsl:text>
+            </xsl:when>
             <!-- Coding -->
             <xsl:when test="$cds_start &lt; $lrg_start and $cds_end &gt; $lrg_end">
               <xsl:text>Coding</xsl:text>
             </xsl:when>
             <!-- Non coding 5 prime -->
             <xsl:when test="$cds_start &gt; $lrg_start and $cds_start &gt; $lrg_end">
-              <xsl:text>Non coding (UTR)</xsl:text>
+              <xsl:text>Non coding (5'UTR)</xsl:text>
             </xsl:when>
             <!-- Non coding 3 prime -->
             <xsl:when test="$cds_end &lt; $lrg_start and $cds_end &lt; $lrg_end">
-              <xsl:text>Non coding (UTR)</xsl:text>
+              <xsl:text>Non coding (3'UTR)</xsl:text>
             </xsl:when>
             <!-- Partially coding (UTR) -->
             <xsl:otherwise>
