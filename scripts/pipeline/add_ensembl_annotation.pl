@@ -329,7 +329,7 @@ sub get_lrg_transcript_coords {
     my $five_prime_start;
     my $five_prime_end;
     
-    if ($tr->coding_region) {
+    if (scalar(@{$tr->coding_region}) != 0) {
       my $cds_coords = $tr->coding_region->[0]->coordinates;
       $tr_coord{$tr_name}{'CDS_start'} = $cds_coords->[0]->start;
       $tr_coord{$tr_name}{'CDS_end'}   = $cds_coords->[0]->end;
