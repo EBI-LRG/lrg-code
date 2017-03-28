@@ -24,7 +24,7 @@ usage() if (defined($help));
 $tmp_dir ||= $index_dir;
 my $lrg_list = 'lrgs_in_ensembl.txt';
 my $lrg_json = 'lrg_index.json';
-my $lrg_diff = 'lrg_index.diff';
+my $lrg_diff = 'lrg_diff.txt';
 
 my $extra_options  = '';
    $extra_options .= " -default_assembly $default_assembly" if (defined($default_assembly));
@@ -156,7 +156,7 @@ opendir($dh,$tmp_dir);
 warn("Could not process directory $tmp_dir") unless (defined($dh));
 # Loop over the files in the directory and open the DIFF txt files
 while (my $file = readdir($dh)) {
-  next unless ($file =~ m/\.txt$/);
+  next unless ($file =~ m/\d+_diff\.txt$/);
   $count_diff_files ++;
   open F, "< $tmp_dir/$file" || die $!;
   while (<F>) {
@@ -176,9 +176,13 @@ if ($tmp_dir ne $index_dir) {
   if (-s "$tmp_dir/$lrg_json") {
     `cp $tmp_dir/$lrg_json $index_dir/`;
   }
+  if (-s "$tmp_dir/$lrg_diff") {
+    `cp $tmp_dir/$lrg_diff $index_dir/`;
+  }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
 }
 `rm -f $tmp_dir/LRG_*$index_suffix.json`;
+`rm -f $tmp_dir/LRG_*_diff.txt`;
 
 print " done\n";
 

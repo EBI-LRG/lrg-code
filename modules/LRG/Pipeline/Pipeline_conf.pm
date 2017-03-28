@@ -33,6 +33,7 @@ sub default_options {
 
         lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
         lrg_index_json          => 'lrg_index.json',
+        lrg_diff_file           => 'lrg_diff.txt',
         
         missing_file_name       => 'missing_files.txt',
         reports_file_name       => 'pipeline_reports.txt',
@@ -226,6 +227,7 @@ sub pipeline_analyses {
                ftp_dir        => $self->o('ftp_dir'),
                index_suffix   => $self->o('index_suffix'),
                lrg_index_json => $self->o('lrg_index_json'),
+               lrg_diff_file  => $self->o('lrg_diff_file'),
             },
             -input_ids         => [],
             -wait_for          => [ 'create_indexes' ],
