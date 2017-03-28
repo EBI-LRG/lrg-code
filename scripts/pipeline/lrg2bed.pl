@@ -204,8 +204,8 @@ foreach my $status (keys(%lrg_meta)) {
             $c_end   = lrg2genomic($c_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
           }
           else {
-            $c_start = $t_start;
-            $c_end   = $t_end; 
+            $c_start = 0;#$t_start;
+            $c_end   = 0;#$t_end; 
           }
 
           if ($strand == -1) {
