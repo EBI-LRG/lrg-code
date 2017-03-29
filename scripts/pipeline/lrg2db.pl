@@ -241,6 +241,9 @@ if ($purge) {
 }
 
 
+my $polya_comment_prefix = 'This transcript is identical to the RefSeq transcript';
+my $polya_comment_suffix = 'but with the polyA tail removed.';
+
 print STDOUT localtime() . "\tCreating LRG object from input XML file $xmlfile\n" if ($verbose);
 my $lrg = LRG::LRG::newFromFile($xmlfile) or error_msg("ERROR: Could not create LRG object from XML file!");
 
@@ -619,7 +622,7 @@ if (!$only_updatable_data) {
     my $name = $transcript->data()->{'name'};
 
     # Check PolyA
-    if ($warning eq 'polyA') {
+    if ($warning =~ /polyA/i) {
       if (-e $warning_log && !-z $warning_log) {
         my $info = `grep -w $name $warning_log`;
         
@@ -627,13 +630,13 @@ if (!$only_updatable_data) {
           foreach my $inf (split("\n",$info)) {
             chomp $inf;
             my (undef,$refseq_with_poly_a) = split(' ',$inf);
-            $transcript->addNode('comment')->content(get_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
+            $transcript->addNode('comment')->content(get_polya_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
           }
         }
       }
     }
     
-    # Get LRG coords
+    # Get LRG coords
     my (undef,$lrg_start,$lrg_end) = parse_coordinates($transcript->findNode('coordinates'));
     
     # Insert the transcript into db
@@ -655,21 +658,21 @@ if (!$only_updatable_data) {
 
     # Insert comment if exists (optional)
     my $tr_com_nodes = $transcript->findNodeArray('comment');
-    if (defined($tr_com_nodes)) {
+    if (scalar(@{$tr_com_nodes}) != 0) {
       while (my $tr_com_node = shift(@{$tr_com_nodes})) {
         my $tr_comment = $tr_com_node->content();
 
         # Check if the comment is already in the database
         my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
         next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
-        
-        my $comment_id = check_existing_comment($name,$tr_comment);
-        if (defined($comment_id)) {
+              
+        my $comment_id = check_existing_polya_comment($name,$tr_comment);
+        if (defined($comment_id)) { 
           $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
           $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
           $tr_com_up_sth->execute();
         }
-        else {
+        else { 
           $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
           $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
           $tr_com_ins_sth->execute();
@@ -781,7 +784,7 @@ if (!$only_updatable_data) {
             
         my @peptides;
             
-        # Get the coordinates
+        # Get the coordinates
         foreach my $node (@{$child->findNodeArray('coordinates') || []}) {
           my ($cs,$start,$end) = parse_coordinates($node);
           if ($cs =~ m/^LRG_\d+$/) {
@@ -1497,7 +1500,7 @@ sub lrg_id {
     return $lrg_id;
 }
 
-# Parse a coordinates element tag
+# Parse a coordinates element tag
 sub parse_coordinates {
   my $element = shift;
   
@@ -1587,26 +1590,29 @@ sub cleanup_comments {
   }
 }
 
-sub check_existing_comment { 
+sub check_existing_polya_comment { 
   my $transcript = shift;
   my $comment = shift;
   
-  my $stmt = qq{
+  my $comment_id;
+  
+  if ($comment =~ /^$polya_comment_prefix.+$polya_comment_suffix$/i) {
+    my $stmt = qq{
             SELECT comment_id 
             FROM lrg_comment 
             WHERE gene_id=$gene_id AND 
                   name="$transcript" AND
-                  comment LIKE "This transcript is identical to the RefSeq transcript%" AND
-                  comment NOT LIKE "$comment"
+                  comment LIKE "$polya_comment_prefix % $polya_comment_suffix" AND
+                  comment != "$comment"
         };
-  my $comment_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
-  
+    $comment_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
+  }
   return (defined($comment_id)) ? $comment_id : undef;
 }
 
-sub get_comment_sentence {
+sub get_polya_comment_sentence {
   my $refseq_id = shift;
-  return "This transcript is identical to the RefSeq transcript $refseq_id but with the polyA tail removed.";
+  return "$polya_comment_prefix $refseq_id $polya_comment_suffix";
 }
 
 
