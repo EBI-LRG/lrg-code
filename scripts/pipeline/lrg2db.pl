@@ -658,7 +658,7 @@ if (!$only_updatable_data) {
 
     # Insert comment if exists (optional)
     my $tr_com_nodes = $transcript->findNodeArray('comment');
-    if (scalar(@{$tr_com_nodes}) != 0) {
+    if ($tr_com_nodes && scalar(@{$tr_com_nodes}) != 0) {
       while (my $tr_com_node = shift(@{$tr_com_nodes})) {
         my $tr_comment = $tr_com_node->content();
 
