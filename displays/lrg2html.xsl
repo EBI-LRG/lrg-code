@@ -1345,7 +1345,7 @@
   
     <xsl:if test="$ref_transcript or $transcript_comment or $ens_identical_tr or $translation_exception or creation_date">
       <tr>
-        <td class="bold_font">Comment:</td>
+        <td class="bold_font">Comment(s):</td>
         <td class="external_link">
 
           <table class="table bordered" style="margin-bottom:0px"><tbody>
@@ -1390,7 +1390,14 @@
         <!-- Ensembl transcript -->
         <xsl:if test="$ens_identical_tr">
           <xsl:variable name="enst_accession"><xsl:value-of select="$ens_identical_tr/@accession" /></xsl:variable>
-          <xsl:if test="not($transcript_comment) or not(contains(comment,$enst_accession))">
+          
+          <xsl:variable name="has_enst_comment">
+            <xsl:for-each select="./comment">
+              <xsl:if test="contains(.,$enst_accession)">1</xsl:if>
+            </xsl:for-each>
+          </xsl:variable>
+          
+          <xsl:if test="not($transcript_comment) or $has_enst_comment!=1">
             <tr>
               <td style="padding-right:0px"><span class="icon-approve close-icon-0 ok_colour"></span></td>
               <td>This transcript is identical to the Ensembl transcript <xsl:value-of select="$enst_accession" /></td>
