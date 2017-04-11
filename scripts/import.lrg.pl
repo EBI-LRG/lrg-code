@@ -367,7 +367,8 @@ while (my $lrg_id = shift(@lrg_ids)) {
     die("ERROR: LRG identifier in $input_file is '$lrg_name' but expected '$lrg_id'") if ($lrg_name ne $lrg_id);
     
     if ($import) {
-      
+      my $hgnc_accession;
+
       # Check if the LRG already exists in the database (if the seq_region exists), in which case it should first be deleted
       my $cs_id = LRG::LRGImport::add_coord_system($LRG_COORD_SYSTEM_NAME);
       
@@ -379,7 +380,7 @@ while (my $lrg_id = shift(@lrg_ids)) {
       my @metas = @{ $fixed_annotation->meta() };
       foreach my $meta (@metas) {
         if ($meta->key() eq 'hgnc_id') {
-          my $hgnc_accession = $meta->value();
+          $hgnc_accession = $meta->value();
           last;
         }
       }
@@ -490,22 +491,43 @@ while (my $lrg_id = shift(@lrg_ids)) {
         next;
       }
       
-      my $hgnc_accession;
+#      my $hgnc_accession;
       my %refseq_transcript;
       my ($ensembl_annotation, $refseq_annotation);
       my ($ensembl_core_gene, $ensembl_genes, $refseq_genes, $refseq_transcripts, $symbols);
       if ($annotation{'Ensembl'}) {
         $ensembl_annotation = $annotation{'Ensembl'};
         $ensembl_genes = $ensembl_annotation->feature->gene();
-        foreach my $gene (@$ensembl_genes) {
+        ENSEMBL_GENE: foreach my $gene (@$ensembl_genes) {
           $symbols = $gene->symbol();
           foreach my $symbol (@$symbols) {
             if ($symbol->source() eq 'HGNC' && $symbol->name() eq $hgnc_name) {
               $ensembl_core_gene = $gene;
+              last ENSEMBL_GENE;
             }
           }
+          print STDOUT localtime() . "\tCould not find gene with matching HGNC symbol $hgnc_name for stable_id $lrg_name in ensembl annotation (" . $gene->accession . "). Trying via HGNC accession\n" if ($verbose);
+          my $db_xrefs = $gene->xref();
+          foreach my $db_xref (@$db_xrefs) {
+            if ($db_xref->source() eq 'HGNC' && $db_xref->accession() eq $hgnc_accession) {
+              $ensembl_core_gene = $gene;
+              last ENSEMBL_GENE;
+            }
+          }
+
         }
       }
+
+      # Did we get an Ensembl gene that matched via HGNC symbol or access?
+      # If no, this is a big problem, bail on this LRG.
+      if(! defined($ensembl_core_gene)) {
+        print STDOUT localtime() . "\tWarning! Could not find gene with matching HGNC id ($hgnc_name,$hgnc_accession) for stable_id $lrg_name in ensembl annotation. Skipping $lrg_name\n" if ($verbose);
+        # Undefine the input_file so that the next one will be fetched
+        undef($input_file);
+        # Note, this will also skip verify method for this LRG
+        next;
+      }
+
       if ($annotation{'NCBI RefSeqGene'}) {
         $refseq_annotation = $annotation{'NCBI RefSeqGene'};
         $refseq_genes = $refseq_annotation->feature->gene();
@@ -519,11 +541,14 @@ while (my $lrg_id = shift(@lrg_ids)) {
       
       my $xref_id;
       my $object_xref_id;
-      
-      if (defined($hgnc_accession)) {
-	# Add HGNC entry to xref table
-	LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name, $core_lrg_gene, 'gene');
-      }
+
+# Under the original structure this section was never running, $hgnc_accession was created
+# about 15 lines up and never assigned to, so this condition could never be true. But I don't
+# know the purpose of this block well enough to definitively take it out.
+#      if (defined($hgnc_accession)) {
+#	# Add HGNC entry to xref table
+#	LRG::LRGImport::add_xref('HGNC',$hgnc_accession,$hgnc_name, $core_lrg_gene, 'gene');
+#      }
       
       # Add external LRG link to xref table
       my $ext_xref = LRG::LRGImport::add_xref($LRG_EXTERNAL_DB_NAME, $lrg_name, $lrg_name, $core_lrg_gene, 'gene',
