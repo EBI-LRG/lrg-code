@@ -24,6 +24,7 @@ $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 my $ensg_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=';
 my $enst_url = 'http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=';
 
+my $max_new_lrg = 10;
 
 die("Reports directory (-reports_dir) needs to be specified!")     unless (defined($reports_dir));
 die("Reports file (-reports_file) needs to be specified!")         unless (defined($reports_file));
@@ -100,6 +101,8 @@ my $html_header = qq{
       .summary_box    { border:1px solid #1A4468 }
       .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
       .missing_header { background-color:#D00;color:#FFF;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
+      .summary_clickable { cursor:pointer; }
+      .summary_clickable:hover, .summary_clickable:active { color:#48a726 }
       
       table {border-collapse:collapse; }
       table > thead > tr {background-color:#1A4468}
@@ -351,14 +354,29 @@ foreach my $l_status (@lrg_status) {
 $html_summary .= qq{        </table>\n      </div>\n    </div>\n  </div>};
 
 # New LRGs
-if (scalar(%new_lrgs)) {
-  $html_summary .= qq{
+my $count_new_lrgs = scalar(%new_lrgs);
+if ($count_new_lrgs) {
+  my $new_lrg_div_id = 'new_lrg';
+  my $plural  = ($count_new_lrgs>1) ? 's' : '';
+  
+  my $summary_class  = '';
+  my $display_button = '';
+  my $display_table  = '';
+  
+  if ($count_new_lrgs > $max_new_lrg) ?
+    $summary_class  = qq{ summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')};
+    $display_button = qq{<span id="$new_lrg_div_id\_button" class="glyphicon glyphicon-plus-sign"></span> };
+    $display_table  = ' class="hidden"';
+  }
+  
+  $html_summary .= sprintf( q{
     <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
       <div class="summary_box">
-        <div class="summary_header">New LRG(s)</div>
-        <div>
+        <div class="summary_header%s"%s>%sNew LRG%s (%i)</div>
+        <div id="%s" %s>
           <table class="table table-hover table_small" style="width:100%">
-  };
+  }, $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table);
+  
   foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
     my $lrg_id = $new_lrgs{$id}{'lrg_id'};
     my $pipeline_status = $new_lrgs{$id}{'status'};
@@ -487,7 +505,7 @@ sub get_detailled_log_info {
     
     $html = qq{
       $error_type
-      <div class="clearfix log_header" onclick="javascript:showhide('$id')">
+      <div class="log_header" onclick="javascript:showhide('$id')">
         <span id="$id\_button" class="glyphicon glyphicon-plus-sign"></span> $label details
       </div>
       <div id="$id" class="hidden">
