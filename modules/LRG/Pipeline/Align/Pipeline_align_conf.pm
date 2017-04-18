@@ -48,7 +48,7 @@ sub default_options {
         
         output_dir              => $self->o('reports_dir').'/hive_output',
 
-        small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
+        small_lsf_options   => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
         default_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
         highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
 
@@ -102,7 +102,7 @@ sub pipeline_analyses {
       {   
             -logic_name    => 'create_align', 
             -module        => 'LRG::Pipeline::Align::CreateAlign',
-            -rc_name       => 'small',
+            -rc_name       => 'default',
             -input_ids     => [],
             -hive_capacity => 25,
             -wait_for      => [ 'init_align' ],
