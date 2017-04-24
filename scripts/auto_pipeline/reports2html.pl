@@ -354,16 +354,16 @@ foreach my $l_status (@lrg_status) {
 $html_summary .= qq{        </table>\n      </div>\n    </div>\n  </div>};
 
 # New LRGs
-my $count_new_lrgs = scalar(%new_lrgs);
+my $count_new_lrgs = scalar(keys(%new_lrgs));
 if ($count_new_lrgs) {
   my $new_lrg_div_id = 'new_lrg';
-  my $plural  = ($count_new_lrgs>1) ? 's' : '';
+  my $plural  = ($count_new_lrgs > 1) ? 's' : '';
   
   my $summary_class  = '';
   my $display_button = '';
   my $display_table  = '';
   
-  if ($count_new_lrgs > $max_new_lrg) ?
+  if ($count_new_lrgs > $max_new_lrg) {
     $summary_class  = qq{ summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')};
     $display_button = qq{<span id="$new_lrg_div_id\_button" class="glyphicon glyphicon-plus-sign"></span> };
     $display_table  = ' class="hidden"';
@@ -372,10 +372,10 @@ if ($count_new_lrgs) {
   $html_summary .= sprintf( q{
     <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
       <div class="summary_box">
-        <div class="summary_header%s"%s>%sNew LRG%s (%i)</div>
+        <div class="summary_header%s">%sNew LRG%s (%s)</div>
         <div id="%s" %s>
-          <table class="table table-hover table_small" style="width:100%">
-  }, $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table);
+          <table class="table table-hover table_small" style="width:%s">
+  } , $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table,'100%');
   
   foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
     my $lrg_id = $new_lrgs{$id}{'lrg_id'};
