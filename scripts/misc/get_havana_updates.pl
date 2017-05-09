@@ -11,7 +11,7 @@ GetOptions(
   'tmp_dir=s'           => \$tmp_dir,
   'havana_file=s'       => \$havana_file,
   'no_havana_dl|nh_dl!' => \$no_havana_dl,
-  'havana_ftp'          => \$havana_ftp,
+  'havana_ftp=s'        => \$havana_ftp,
   'help!'               => \$help
 );
 
@@ -34,7 +34,10 @@ if ($tmp_dir && -d $tmp_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
 
   if (!$no_havana_dl) {
-    `rm -f $tmp_dir/$havana_file\.gz`;
+    if (-e "$tmp_dir/$havana_file.gz") {
+      `rm -f $tmp_dir/$havana_file\.gz`;
+    }
+
     `wget -q -P $tmp_dir $havana_ftp/$havana_file\.gz`;
     if (-e "$tmp_dir/$havana_file") {
       `mv $tmp_dir/$havana_file $tmp_dir/$havana_file\_old`;
@@ -69,19 +72,21 @@ foreach my $file (@lrg_files) {
 
 
 # Parse the genes list from text file
-if (-e $genes_list_file) {
-  open F, "< $genes_list_file" or die $!;
-  while(<F>) {
-    chomp $_;
-    my $gene = $_;
-    next if ($gene eq '' || $gene =~ /^\s/);
-    next if ($distinc_genes{$gene});
-    
-    fetch_data($gene);
-    
-    $distinc_genes{$gene} = 1;
+if ($genes_list_file) {
+  if (-e $genes_list_file) {
+    open F, "< $genes_list_file" or die $!;
+    while(<F>) {
+      chomp $_;
+      my $gene = $_;
+      next if ($gene eq '' || $gene =~ /^\s/);
+      next if ($distinc_genes{$gene});
+      
+      fetch_data($gene);
+      
+      $distinc_genes{$gene} = 1;
+    }
+    close(F);
   }
-  close(F);
 }
 
 
@@ -96,7 +101,7 @@ foreach my $chr (sort { $a <=> $b} keys(%entries)) {
   }
 }
 close(OUT);
-if (-s $tmp_dir/$output_file) {
+if (-s "$tmp_dir/$output_file") {
   `cp $tmp_dir/$output_file $output_dir`;
 }
 
