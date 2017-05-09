@@ -267,6 +267,36 @@ th.coord {
   background-color:#336;
   color:#EEE;
 }
+
+.ens_hv, .gold_hv {
+  background-color:#ff9900;
+  color:#FFF;
+}
+.ens_hv a:hover, .ens_hv a:active, .gold_hv a:hover, .gold_hv a:active {
+  color:#8d0017;
+}
+
+.havana, .havana:hover, .havana:active {
+  background-color:#ff9900;
+  color:#FFF;
+}
+
+.havana_link {
+  color:#FFF;
+  font-size:15px;
+}
+.havana_link:hover, .havana_link:active {
+  color:#8d0017;
+}
+
+.havana_enst {
+  text-align:center;
+  padding-top:4px;
+  font-size:13px;
+  color:#8d0017;
+}
+
+
 .nm, .nm:hover, .nm:active {
   background-color:#55F;
   color:#EEE;
@@ -343,8 +373,13 @@ th.coord {
   top:50%
 }
 .none {
-  display:none
+  display:none;
 } 
+
+.havana_exon {
+  background-color:#ff9900;
+  box-shadow:2px 2px 1px #CCC
+}
 
 .gene_exon {
   height:20px;
