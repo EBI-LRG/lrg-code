@@ -79,28 +79,32 @@ table.legend td {
 
 .small_cell {
   text-align:left;
-  padding: 1px 4px 2px 2px;
-  width:12%;
+  padding: 1px 2px 2px 2px;
   font-size:0.9em;
+  width:11%;
 }
 
 .medium_cell {
   text-align:left;
-  padding: 1px 4px 2px 2px;
-  width:15%;
+  padding: 1px 2px 2px 2px;
   font-size:0.9em;
+  width:15%;
 }
 
 .large_cell {
+  text-align:left;
+  padding: 1px 2px 2px 2px;
+  font-size:0.9em;
+  width:18%;
+}
+
+.x_large_cell {
   text-align:right;
   padding: 1px 2px 2px 0px;
-  width:34%;
+  font-size:0.9em;
+  width:30%;
 }
 
-.large_cell {
-  text-align:right;
-  width:50%;
-}
 
 .exon_number {
   text-align:right;
@@ -158,10 +162,9 @@ table.legend td {
 }
 
 .canonical {
-  padding:1px 2px;
+  border: none !important;
+  padding:1px;
   color: #F00;
-  font-weight:bold;
-  background-color:#FFF;
 }
 
 .trans_score {
@@ -196,6 +199,13 @@ table.legend td {
   color: #FFF;
   background-color:#555;
   border-radius:0px;
+}
+
+.uniprot {
+  padding:1px;
+  color: #FFF;
+  font-weight:bold;
+  background-color:#5CAECD;
 }
 
 .source_flag {

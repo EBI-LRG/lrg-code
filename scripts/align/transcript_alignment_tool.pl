@@ -4,6 +4,7 @@ use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::ApiVersion;
 use Getopt::Long;
 use LWP::Simple;
+use HTTP::Tiny;
 
 my ($gene_name, $output_file, $lrg_id, $tsl, $havana_dir, $havana_file, $no_havana_dl, $help);
 GetOptions(
@@ -31,10 +32,10 @@ my $max_variants = 10;
 
 my $transcript_score_file = '/net/isilon3/production/panda/production/vertebrate-genomics/lrg/data_files/transcript_scores.txt';
 
-#$registry->load_registry_from_db(
-#    -host => 'ensembldb.ensembl.org',
-#    -user => 'anonymous'
-#);
+my $uniprot_url      = 'http://www.uniprot.org/uniprot';
+my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
+
+my $http = HTTP::Tiny->new();
 
 if ($havana_dir && -d $havana_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
@@ -48,6 +49,11 @@ if ($havana_dir && -d $havana_dir) {
     `gunzip $havana_dir/$havana_file`;
   }
 }
+
+#$registry->load_registry_from_db(
+#    -host => 'ensembldb.ensembl.org',
+#    -user => 'anonymous'
+#);
 
 $registry->load_registry_from_db(
     -host => 'mysql-ensembl-mirror.ebi.ac.uk',
@@ -564,21 +570,22 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $cdna_coding_length = ($cdna_coding_start && $cdna_coding_end) ? thousandify($cdna_coding_end - $cdna_coding_start + 1).' bp' : 'NA';
   my $cdna_length        = thousandify($tr_object->length).' bp';
   
-  my $tr_ext_name      = $tr_object->external_name;
-  my $manual_class     = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-  my $manual_label     = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
-  my $manual_border    = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  my $tr_ext_name        = $tr_object->external_name;
+  my $manual_class       = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label       = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_border      = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  my $manual_html      = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $tsl_html         = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
-  my $appris_html      = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $canonical_html   = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $trans_score_html = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $pathogenic_html  = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
+  my $manual_html        = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tsl_html           = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
+  my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $trans_score_html   = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
 
-  my $hide_row         = hide_button($row_id);
-  my $highlight_row    = highlight_button($row_id,'left');
-  my $blast_button     = blast_button($ens_tr);
+  my $hide_row           = hide_button($row_id);
+  my $highlight_row      = highlight_button($row_id,'left');
+  my $blast_button       = blast_button($ens_tr);
   
   
   # First columns
@@ -589,14 +596,26 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td class="fixed_col col3">$blast_button</td>
     <td class="$column_class transcript_column fixed_col col4">
       <table class="transcript" style="width:100%;text-align:center">
-        <tr><td class="$column_class" colspan="6"><a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a></td></tr>
+        <tr>
+          <td class="$column_class clearfix" colspan="6">
+            <table style="width:100%">
+              <tr>
+                <td style="width:15px"></td>
+                <td>
+                  <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a>
+                </td>
+                <td style="width:15px;text-align:right">$canonical_html</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
         <tr>
           <td class="small_cell">$manual_html</td>
           <td class="small_cell">$tsl_html</td>
           <td class="medium_cell">$trans_score_html</td>
           <td class="medium_cell">$appris_html</td>
-          <td class="small_cell">$canonical_html</td>
-          <td class="large_cell">$pathogenic_html</td>
+          <td class="large_cell">$uniprot_score_html</td>
+          <td class="x_large_cell">$pathogenic_html</td>
         </tr>
       </table>
     </td>
@@ -1210,17 +1229,23 @@ $html .= qq{
           </tr>
           <tr class="bg2">
             <td style="padding-left:2px">
-              <span class="flag canonical">C</span>
+              <span class="flag canonical icon-favourite close-icon-0 smaller-icon"></span>
             </td>
             <td style="padding-left:5px">Label to indicate the canonical transcript</td>
           </tr>
           <tr class="bg1">
             <td style="padding-left:2px">
+               <span class="flag uniprot icon-target close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
+            </td>
+            <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
+          </tr>
+          <tr class="bg2">
+            <td style="padding-left:2px">
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg2">
+          <tr class="bg1">
             <td style="padding-left:2px">
               <span class="flag source_flag gff3">gff3</span>
             </td>
@@ -1351,9 +1376,9 @@ sub get_canonical_html {
   
   return '' unless($transcript->is_canonical);
   
-  my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  #my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  return qq{<span class="flag canonical"$border_colour data-toggle="tooltip" data-placement="bottom" title="Canonical transcript">C</span>};
+  return qq{<span class="flag canonical icon-favourite close-icon-0 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
 }
 
 sub get_trans_score_html {
@@ -1388,6 +1413,48 @@ sub get_appris_html {
   
   return qq{<span class="flag appris"$border_colour data-toggle="tooltip" data-placement="bottom" title="APPRIS $appris">$appris_label</span>};
 }
+
+
+sub get_uniprot_score_html {
+  my $transcript   = shift;
+  my $column_class = shift;
+  
+  return '' unless $transcript->biotype eq 'protein_coding';
+  
+  my $enst = $transcript->stable_id;
+  
+  my $uniprot_id;
+  my $uniprot_result;
+  my $uniprot_score;
+  
+  my $rest_url = $uniprot_rest_url;
+     $rest_url =~ s/####ENST####/$enst/;
+     
+  my $response = $http->get($rest_url, {});
+  
+  if (length $response->{content}) {
+    my @content = split("\n", $response->{content});
+    my ($uniprot_id, $uniprot_result) = split("\t",$content[1]);
+    
+    return '' unless ($uniprot_id && $uniprot_result && $uniprot_result ne '');
+    
+    $uniprot_result =~ /^(\d+)/;
+    $uniprot_score = $1;
+    
+    return '' unless ($uniprot_score);
+    
+    my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  
+    return qq{
+    <a href="$uniprot_url/$uniprot_id" target="_blank">
+      <span class="flag uniprot icon-target close-icon-2 smaller-icon"$border_colour data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>
+    </a>};
+  }
+  else {
+    return '';
+  }
+}
+
 
 sub get_pathogenic_html {
   my $data = shift;
