@@ -601,7 +601,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td class="$column_class transcript_column fixed_col col4">
       <table class="transcript" style="width:100%;text-align:center">
         <tr>
-          <td class="$column_class clearfix" colspan="6">
+          <td class="$column_class" style="padding:0px" colspan="6">
             <table style="width:100%">
               <tr>
                 <td style="width:15px"></td>
