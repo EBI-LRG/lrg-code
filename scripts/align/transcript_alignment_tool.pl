@@ -6,7 +6,7 @@ use Getopt::Long;
 use LWP::Simple;
 use HTTP::Tiny;
 
-my ($gene_name, $output_file, $lrg_id, $tsl, $havana_dir, $havana_file, $no_havana_dl, $help);
+my ($gene_name, $output_file, $lrg_id, $tsl, $havana_dir, $havana_file, $no_havana_dl, $hgmd_file, $help);
 GetOptions(
   'gene|g=s'	          => \$gene_name,
   'outputfile|o=s'      => \$output_file,
@@ -15,6 +15,7 @@ GetOptions(
   'havana_dir|hd=s'     => \$havana_dir,
   'havana_file|hf=s'    => \$havana_file,
   'no_havana_dl|nh_dl!' => \$no_havana_dl,
+  'hgmd_file|hgmd=s'    => \$hgmd_file,    
   'help!'               => \$help
 );
 
@@ -22,6 +23,8 @@ usage() if ($help);
 
 usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.")  if (!$gene_name);
 usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
+
+usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f $hgmd_file);
 
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
@@ -413,9 +416,9 @@ foreach my $o_gene (@$o_genes) {
 
 
 
-###############################
-#####     DISPLAY DATA    #####
-###############################
+################################
+#####     DISPLAY DATA     #####
+################################
 
 my $tsl_default_bgcolour = '#002366';
 my %tsl_colour = ( '1'   => '#090',
@@ -518,6 +521,7 @@ my $exon_tab_list = qq{
         <th class="rowspan1" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
         <th class="rowspan2" rowspan="2">CCDS</th>
         <th class="rowspan2" rowspan="2">RefSeq transcript</th>
+        <th class="rowspan2" rowspan="2">HGMD</th>
         <th class="rowspan2" rowspan="2" title="Highlight rows">hl</th>
       </tr>
       <tr>
@@ -549,7 +553,7 @@ my $row_id = 1;
 my $row_id_prefix = 'tr_';
 my $bg = 'bg1';
 my $min_exon_evidence = 1;
-my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column"></td><td>####HIGHLIGHT####</td></tr>\n};
+my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column"></td><td class="extra_column">####HGMD####</td><td>####HIGHLIGHT####</td></tr>\n};
 
 
 #----------------------------#
@@ -609,7 +613,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
             </table>
           </td>
         </tr>
-        <tr>
+        <tr class="bottom_row">
           <td class="small_cell">$manual_html</td>
           <td class="small_cell">$tsl_html</td>
           <td class="medium_cell">$trans_score_html</td>
@@ -722,6 +726,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $refseq_display = (scalar @refseq) ? display_extra_ids(\@refseq).$refseq_button : '-';
   $exon_tab_list .= qq{</td><td class="extra_column">$ccds_display};
   $exon_tab_list .= qq{</td><td class="extra_column">$refseq_display};
+  $exon_tab_list .= qq{</td><td class="extra_column">-};
   $exon_tab_list .= qq{</td><td>}.highlight_button($row_id, 'right');
   $exon_tab_list .= qq{</td></tr>\n};
   $row_id++;
@@ -965,7 +970,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       $exon_tab_list .= qq{<div class="$has_exon"> </div>};
     }
   }
-  $exon_tab_list .= end_of_row($row_id);
+  $exon_tab_list .= end_of_row($row_id,$nm);
   $row_id++;
 }
 
@@ -1635,7 +1640,7 @@ sub display_refseq_data {
         $exon_tab_list .= qq{<div class="$has_exon"> </div>};
       }
     }
-    $exon_tab_list .= end_of_row($row_id);
+    $exon_tab_list .= end_of_row($row_id,$nm);
     $row_id++;
   }
   return \%rows_list;
@@ -1801,11 +1806,27 @@ sub display_extra_ids {
   return $html;
 }
 
+
+sub check_if_in_hgmd_file {
+  my $tr = shift;
+  
+  return '-' if (!$hgmd_file || !-f $hgmd_file);
+  
+  my $result = `grep $tr $hgmd_file`;
+
+  return ($result =~ /^$gene_name/i) ? 'HGMD' : '-';
+}
+
+
 sub end_of_row {
   my $id = shift;
+  my $tr = shift;
   
+  my $hgmd_flag = ($tr) ? check_if_in_hgmd_file($tr) : '-';
   my $highlight_button = highlight_button($id, 'right');
+  
   my $html = $end_of_row;
+     $html =~ s/####HGMD####/$hgmd_flag/;
      $html =~ s/####HIGHLIGHT####/$highlight_button/;
   return $html;
 }

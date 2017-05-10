@@ -30,9 +30,10 @@ sub default_options {
 
         reports_file            => 'align_reports.txt',
         genes_file              => 'genes_list.txt',
+        hgmd_file               => '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/HGMD_gene_refseq.txt',
         # Havana BED file (actually bigGenePred => https://genome.ucsc.edu/goldenPath/help/bigGenePred.html)
         havana_ftp              => 'ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data',
-        havana_file             => 'hg38.bed', 
+        havana_file             => 'hg38.bed',
        
         git_branch              => $ENV{'GITBRANCH'},
 
@@ -90,6 +91,7 @@ sub pipeline_analyses {
                genes_file    => $self->o('genes_file'),
                havana_ftp    => $self->o('havana_ftp'),
                havana_file   => $self->o('havana_file'),
+               hgmd_file     => $self->o('hgmd_file'),
                reports_dir   => $self->o('reports_dir'),
                reports_file  => $self->o('reports_file')
             },

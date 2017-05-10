@@ -20,6 +20,7 @@ sub write_output {
   my $genes_file    = $self->param('genes_file');
   my $havana_ftp    = $self->param('havana_ftp');
   my $havana_file   = $self->param('havana_file');
+  my $hgmd_file     = $self->param('hgmd_file');
   my $reports_dir   = $self->param('reports_dir'),
   my $reports_file  = $self->param('reports_file');
   
@@ -76,6 +77,7 @@ sub write_output {
           'gene'          => $gene,
           'data_file_dir' => $data_file_dir,
           'havana_file'   => $havana_file,
+          'hgmd_file'     => $hgmd_file,
           'lrg'           => $lrg_id
         };  
       }

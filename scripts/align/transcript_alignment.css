@@ -658,7 +658,7 @@ table.transcript {
 table.transcript tr {
   height: 25px;
 }
-table.transcript tr:last-child {
+table.transcript tr.bottom_row {
   height: 25px;
   background-color: rgba(255,255,255,0.1);
 }
