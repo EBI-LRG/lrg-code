@@ -12,26 +12,24 @@ sub run {
 sub write_output {
   my $self = shift;
   
-  my @xml_dirs      = split(',',$self->param('xml_dirs'));
-  my $ftp_dir       = $self->param('ftp_dir'),
-  my $run_dir       = $self->param('run_dir'),
-  my $align_dir     = $self->param('align_dir'),
-  my $data_file_dir = $self->param('data_file_dir');
-  my $genes_file    = $self->param('genes_file');
-  my $havana_ftp    = $self->param('havana_ftp');
-  my $havana_file   = $self->param('havana_file');
-  my $hgmd_file     = $self->param('hgmd_file');
-  my $reports_dir   = $self->param('reports_dir'),
-  my $reports_file  = $self->param('reports_file');
+  my @xml_dirs       = split(',',$self->param('xml_dirs'));
+  my $ftp_dir        = $self->param('ftp_dir'),
+  my $run_dir        = $self->param('run_dir'),
+  my $align_dir      = $self->param('align_dir'),
+  my $data_files_dir = $self->param('data_file_dir');
+  my $genes_file     = $self->param('genes_file');
+  my $havana_ftp     = $self->param('havana_ftp');
+  my $havana_file    = $self->param('havana_file');
+  my $hgmd_file      = $self->param('hgmd_file');
+  my $reports_dir    = $self->param('reports_dir'),
+  my $reports_file   = $self->param('reports_file');
   
-
-  my $genes_list_file  = "$data_file_dir/$genes_file";
-  my $havana_list_file = "$data_file_dir/$havana_file";
-
+  my $havana_list_file = "$data_files_dir/$havana_file";
+  
   my @jobs;
   
   my %files;
-  my %distinc_genes;
+  my %distinct_genes;
 
   $ftp_dir .= '/' if ($ftp_dir !~ /\/$/);
 
@@ -69,13 +67,13 @@ sub write_output {
       }
       
       if ($gene) {
-        $distinc_genes{$gene} = 1;
+        $distinct_genes{$gene} = 1;
         push @jobs, {
           'id'            => $id,
           'run_dir'       => $run_dir,
           'align_dir'     => $align_dir,
           'gene'          => $gene,
-          'data_file_dir' => $data_file_dir,
+          'data_file_dir' => $data_files_dir,
           'havana_file'   => $havana_file,
           'hgmd_file'     => $hgmd_file,
           'lrg'           => $lrg_id
@@ -91,10 +89,10 @@ sub write_output {
 
   # Download latest Havana data file
   my $havana_file_default = 'hg38.bed';
-  if ($data_file_dir && -d $data_file_dir) {
+  if ($data_files_dir && -d $data_files_dir) {
     $havana_file = $havana_file_default if (!$havana_file);
     `rm -f $havana_list_file\.gz`;
-    `wget -q -P $data_file_dir $havana_ftp/$havana_file\.gz`;
+    `wget -q -P $data_files_dir $havana_ftp/$havana_file\.gz`;
     if (-e $havana_list_file) {
       `mv $havana_list_file $havana_list_file\_old`;
     }
@@ -103,24 +101,25 @@ sub write_output {
 
 
   # Genes list from text file
-  if (-e $genes_list_file) {
-    open F, "< $genes_list_file" or die $!;
+  if (-e $genes_file) {
+    open F, "< $genes_file" or die $!;
     my $count_genes = 0;
     my $id = 100000;
     while(<F>) {
       chomp $_;
       my $gene = $_;
-      next if ($gene eq '' || $gene =~ /^\s/);
-      next if ($distinc_genes{$gene});
+      next if ($gene eq '' || $gene =~ /^\s/ || $gene =~ /^#/);
+      next if ($distinct_genes{$gene});
       push @jobs, {
           'id'            => $id,
           'run_dir'       => $run_dir,
           'align_dir'     => $align_dir,
           'gene'          => $gene,
-          'data_file_dir' => $data_file_dir,
+          'data_file_dir' => $data_files_dir,
           'havana_file'   => $havana_file,
           'lrg'           => ''
       };
+      $distinct_genes{$gene} = 1;
       $count_genes ++;
       $id += $count_genes;
     }

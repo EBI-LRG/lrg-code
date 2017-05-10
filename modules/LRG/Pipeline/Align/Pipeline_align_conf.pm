@@ -28,25 +28,25 @@ sub default_options {
         
         pipeline_name           => 'lrg_align_pipeline',
 
+        # Directories
+        data_files_dir          => '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/',
+        align_dir               => '/homes/lgil/public_html/LRG/align', # To update!
+        ftp_dir                 => $ENV{'PUBFTP'},
+        xml_dirs                => ',pending,stalled',
+        run_dir                 => $ENV{'LRGROOTDIR'},
+        reports_dir             => '/homes/lgil/projets/LRG/lrg_head/tmp',   # To update!
+        pipeline_dir            => $self->o('reports_dir'),
+        
+        # Files
         reports_file            => 'align_reports.txt',
-        genes_file              => 'genes_list.txt',
-        hgmd_file               => '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/HGMD_gene_refseq.txt',
+        genes_file              => $self->o('data_files_dir').'genes_list.txt',
+        hgmd_file               => $self->o('data_files_dir').'HGMD_gene_refseq.txt',
         # Havana BED file (actually bigGenePred => https://genome.ucsc.edu/goldenPath/help/bigGenePred.html)
         havana_ftp              => 'ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data',
         havana_file             => 'hg38.bed',
        
         git_branch              => $ENV{'GITBRANCH'},
 
-        align_dir               => '/homes/lgil/public_html/LRG/align', # To update!
-
-        ftp_dir                 => $ENV{'PUBFTP'},
-        xml_dirs                => ',pending,stalled',
-        run_dir                 => $ENV{'LRGROOTDIR'},
-        data_file_dir           => '/homes/lgil/projets/LRG/lrg_head', # To update!
-        reports_dir             => $self->o('data_file_dir').'/tmp',   # To update!
-        pipeline_dir            => $self->o('reports_dir'),
-        
-        
         output_dir              => $self->o('reports_dir').'/hive_output',
 
         small_lsf_options   => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
@@ -83,17 +83,17 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::Align::InitAlign',
             -rc_name    => 'small',
             -parameters => {
-               xml_dirs      => $self->o('xml_dirs'),
-               ftp_dir       => $self->o('ftp_dir'),
-               run_dir       => $self->o('run_dir'),
-               align_dir     => $self->o('align_dir'),
-               data_file_dir => $self->o('data_file_dir'),
-               genes_file    => $self->o('genes_file'),
-               havana_ftp    => $self->o('havana_ftp'),
-               havana_file   => $self->o('havana_file'),
-               hgmd_file     => $self->o('hgmd_file'),
-               reports_dir   => $self->o('reports_dir'),
-               reports_file  => $self->o('reports_file')
+               xml_dirs       => $self->o('xml_dirs'),
+               ftp_dir        => $self->o('ftp_dir'),
+               run_dir        => $self->o('run_dir'),
+               align_dir      => $self->o('align_dir'),
+               data_files_dir => $self->o('data_files_dir'),
+               genes_file     => $self->o('genes_file'),
+               havana_ftp     => $self->o('havana_ftp'),
+               havana_file    => $self->o('havana_file'),
+               hgmd_file      => $self->o('hgmd_file'),
+               reports_dir    => $self->o('reports_dir'),
+               reports_file   => $self->o('reports_file')
             },
             -input_ids  => [{}],
             -flow_into  => { 
