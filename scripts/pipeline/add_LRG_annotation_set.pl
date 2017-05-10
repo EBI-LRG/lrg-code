@@ -237,7 +237,8 @@ foreach my $aset (@{$asets}) {
 # 2) Compare the diff coordinates with the start and end coordinates of each exon of each LRG transcript.
 
 # Look at the sequence difference between LRG transcript and the current primary reference assembly
-my $seq_diff_comment = 'This transcript contains %s difference(s) with respect to the Primary Reference Assembly (GRCh38). See the sequence difference(s)';
+my $seq_diff_comment = 'There is a difference(s) in the %s of this transcript with respect to the Primary Genome Reference Assembly (GRCh38). See the sequence difference(s)';
+
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'LRG' || $aset->type eq lc('LRG'));
  
@@ -292,15 +293,15 @@ foreach my $aset (@{$asets}) {
     
     # Both coding and non-coding differences
     if ($lrg_ref_diff{$lrg_tr_name}{'coding'} && $lrg_ref_diff{$lrg_tr_name}{'non-coding'}) {
-      $comment_detail = 'both coding and non-coding';
+      $comment_detail = 'both coding and non-coding sequences';
     }
     # Only coding difference(s)
     elsif ($lrg_ref_diff{$lrg_tr_name}{'coding'}) {
-      $comment_detail = 'coding';
+      $comment_detail = 'coding sequence';
     }
     # Only non-coding difference(s)
     elsif ($lrg_ref_diff{$lrg_tr_name}{'non-coding'}) {
-      $comment_detail = 'non-coding';
+      $comment_detail = 'non-coding region';
     }
     
     $lrg_tr_obj->add_extra_comment(sprintf($seq_diff_comment, $comment_detail)) if ($comment_detail);
