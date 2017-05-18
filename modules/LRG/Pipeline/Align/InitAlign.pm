@@ -16,7 +16,7 @@ sub write_output {
   my $ftp_dir        = $self->param('ftp_dir'),
   my $run_dir        = $self->param('run_dir'),
   my $align_dir      = $self->param('align_dir'),
-  my $data_files_dir = $self->param('data_file_dir');
+  my $data_files_dir = $self->param('data_files_dir');
   my $genes_file     = $self->param('genes_file');
   my $havana_ftp     = $self->param('havana_ftp');
   my $havana_file    = $self->param('havana_file');
@@ -69,14 +69,14 @@ sub write_output {
       if ($gene) {
         $distinct_genes{$gene} = 1;
         push @jobs, {
-          'id'            => $id,
-          'run_dir'       => $run_dir,
-          'align_dir'     => $align_dir,
-          'gene'          => $gene,
-          'data_file_dir' => $data_files_dir,
-          'havana_file'   => $havana_file,
-          'hgmd_file'     => $hgmd_file,
-          'lrg'           => $lrg_id
+          'id'             => $id,
+          'run_dir'        => $run_dir,
+          'align_dir'      => $align_dir,
+          'gene'           => $gene,
+          'data_files_dir' => $data_files_dir,
+          'havana_file'    => $havana_file,
+          'hgmd_file'      => $hgmd_file,
+          'lrg'            => $lrg_id
         };  
       }
     }
