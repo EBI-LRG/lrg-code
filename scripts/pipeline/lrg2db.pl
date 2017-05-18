@@ -1583,8 +1583,15 @@ sub cleanup_comments {
       my $comment    =  $comment_entry->[1];
          $comment    =~ /(NM_\d+\.?\d+)/;
       my $id = $1;
-      # Delete the out of date LRG comment
-      if (!$nm_list{$id}) {
+      if ($id && $id =~ /^NM_/) {
+        # Delete the out of date LRG NM comment
+        if (!$nm_list{$id}) {
+          $tr_del_com_sth->bind_param(1,$comment_id,SQL_INTEGER);
+          $tr_del_com_sth->execute();
+        }
+      }
+      # Delete the other LRG transcript comments
+      else {
         $tr_del_com_sth->bind_param(1,$comment_id,SQL_INTEGER);
         $tr_del_com_sth->execute();
       }
