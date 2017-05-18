@@ -78,7 +78,7 @@ if ($genes_list_file) {
     while(<F>) {
       chomp $_;
       my $gene = $_;
-      next if ($gene eq '' || $gene =~ /^\s/);
+      next if ($gene eq '' || $gene =~ /^(#|\s)/);
       next if ($distinc_genes{$gene});
       
       fetch_data($gene);
