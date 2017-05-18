@@ -1566,7 +1566,9 @@ sub cleanup_comments {
       FROM lrg_comment
       WHERE gene_id=$gene_id AND
       name="$tr_name" AND
-      comment LIKE "\%NM_%"
+      comment LIKE "\%NM_%" OR 
+      comment LIKE "\%The two transcripts differ at%" OR
+      comment LIKE "\%respect to the Primary Genome Reference Assembly%"
   };
 
   my $stmt_del_com = qq{ DELETE FROM lrg_comment WHERE comment_id=? };
