@@ -421,12 +421,12 @@ foreach my $o_gene (@$o_genes) {
 ################################
 
 my $tsl_default_bgcolour = '#002366';
-my %tsl_colour = ( '1'   => '#090',
-                   '2'   => $tsl_default_bgcolour,
-                   '3'   => $tsl_default_bgcolour,#'#d700ff',
-                   '4'   => $tsl_default_bgcolour,#'#FFA500',
-                   '5'   => $tsl_default_bgcolour,#'#900',
-                   'INA' => $tsl_default_bgcolour,#'#000'
+my %tsl_colour = ( '1'   => '#080',
+                   '2'   => '#EE7600',
+                   '3'   => '#EE7600',
+                   '4'   => '#800',
+                   '5'   => '#800',
+                   'INA' => $tsl_default_bgcolour,
                  );
 
 my $coord_span = scalar(keys(%exons_list));
@@ -1187,6 +1187,7 @@ if ($gene_name !~ /^ENS(G|T)\d{11}/) {
 my $nb_exon_evidence = $min_exon_evidence+1;
 my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
+my $tsl4 = $tsl_colour{4};
 $html .= qq{ 
       <div class="clearfix" style="margin-top:50px;width:920px;border:1px solid #336;border-radius:5px">
         <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
@@ -1215,12 +1216,14 @@ $html .= qq{
             <td style="padding-left:2px">
               <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
               <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
+              <span class="tsl" style="background-color:$tsl4" title="Transcript Support Level = 4">4</span>
             </td>
             <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
           </tr>
           <tr class="bg2">
             <td style="padding-left:2px">
               <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
+              <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
               <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
             </td>
             <td style="padding-left:5px">Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
@@ -1246,11 +1249,17 @@ $html .= qq{
           </tr>
           <tr class="bg2">
             <td style="padding-left:2px">
+              <span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
+            </td>
+            <td style="padding-left:5px">Number of pathogenic variants overlapping the transcript exon(s)</td>
+          </tr>
+          <tr class="bg1">
+            <td style="padding-left:2px">
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg1">
+          <tr class="bg2">
             <td style="padding-left:2px">
               <span class="flag source_flag gff3">gff3</span>
             </td>
