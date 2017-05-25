@@ -3460,230 +3460,6 @@
   <xsl:param name="refseqname"/>
   <xsl:param name="enstname"/>
   
-  <!-- =============== -->
-  <!-- LRG coordinates -->
-  <!-- =============== -->
-  <xsl:variable name="tr_fixed" select="/*/fixed_annotation/transcript[@name = $transname]"/>
-  
-  <xsl:variable name="lrg_start" select="$tr_fixed/coordinates/@start" />
-  <xsl:variable name="lrg_end"   select="$tr_fixed/coordinates/@end" />
-  <xsl:variable name="peptide_start" select="$tr_fixed/coding_region/coordinates/@start"/>
-  <xsl:variable name="peptide_end"   select="$tr_fixed/coding_region/coordinates/@end"/>
-  
-  <xsl:variable name="lrg_gen_utr_5_end"   select="$peptide_start - 1" />
-  <xsl:variable name="lrg_gen_utr_3_start" select="$peptide_end + 1" />
-  
-  <xsl:variable name="five_prime_utr_length" select="$lrg_gen_utr_5_end - $lrg_start + 1"/>
-  <xsl:variable name="three_prime_utr_length" select="$lrg_end - $peptide_end"/>
-  
-  <xsl:variable name="lrg_utr_size">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$five_prime_utr_length"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$three_prime_utr_length"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-    
-  <xsl:variable name="lrg_gen_start">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$lrg_start"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$lrg_gen_utr_3_start"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-  
-  <xsl:variable name="lrg_gen_end">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$lrg_gen_utr_5_end"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$lrg_end"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-  
-  <!-- LRG - Genomic reference assembly coordinates -->
-  <xsl:variable name="temp_lrg_ref_start">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$lrg_start"/>
-      <xsl:with-param name="end_coord" select="$lrg_gen_utr_3_start"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:variable name="temp_lrg_ref_end">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$peptide_start"/>
-      <xsl:with-param name="end_coord" select="$lrg_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-    
-  <xsl:variable name="lrg_ref_start">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_lrg_ref_start"/>
-      <xsl:with-param name="start_coord" select="$lrg_gen_start"/>
-      <xsl:with-param name="end_coord" select="$lrg_gen_end"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-        
-  <xsl:variable name="lrg_ref_end">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_lrg_ref_end"/>
-      <xsl:with-param name="start_coord" select="$lrg_gen_start"/>
-      <xsl:with-param name="end_coord" select="$lrg_gen_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-
-
-  <!-- =================== -->
-  <!-- Ensembl coordinates -->
-  <!-- =================== -->
-  <xsl:variable name="enst" select="/*/updatable_annotation/annotation_set[@type=$ensembl_set_name]/features/gene/transcript[@accession=$enstname and @fixed_id=$transname]"/>
-  
-  <xsl:variable name="enst_start" select="$enst/coordinates/@start" />
-  <xsl:variable name="enst_end" select="$enst/coordinates/@end" />
-  <xsl:variable name="enst_peptide_start" select="$enst/protein_product/coordinates/@start"/>
-  <xsl:variable name="enst_peptide_end" select="$enst/protein_product/coordinates/@end"/>
-  
-  <xsl:variable name="enst_gen_utr_5_end"   select="$enst_peptide_start - 1" />
-  <xsl:variable name="enst_gen_utr_3_start" select="$enst_peptide_end + 1" />
-  
-  <xsl:variable name="enst_five_prime_utr_length" select="$enst_gen_utr_5_end - $enst_start + 1"/>
-  <xsl:variable name="enst_three_prime_utr_length" select="$enst_end - $enst_peptide_end"/>
-  
-  <xsl:variable name="enst_utr_size">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$enst_five_prime_utr_length"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$enst_three_prime_utr_length"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-  
-  <xsl:variable name="enst_lrg_start">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$enst_start"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$enst_gen_utr_3_start"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-  
-  <xsl:variable name="enst_lrg_end">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$enst_gen_utr_5_end"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$enst_end"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>    
-  
-  <!-- Ensembl - Genomic reference assembly coordinates -->
-  <xsl:variable name="temp_enst_ref_start">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$enst_start"/>
-      <xsl:with-param name="end_coord" select="$enst_gen_utr_3_start"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:variable name="temp_enst_ref_end">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$enst_peptide_start"/>
-      <xsl:with-param name="end_coord" select="$enst_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:variable name="enst_ref_start">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_enst_ref_start"/>
-      <xsl:with-param name="start_coord" select="$enst_lrg_start"/>
-      <xsl:with-param name="end_coord" select="$enst_lrg_end"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-        
-  <xsl:variable name="enst_ref_end">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_enst_ref_end"/>
-      <xsl:with-param name="start_coord" select="$enst_lrg_start"/>
-      <xsl:with-param name="end_coord" select="$enst_lrg_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-
-  <!-- ================== -->
-  <!-- RefSeq coordinates -->
-  <!-- ================== -->
-  <xsl:variable name="refseq" select="/*/updatable_annotation/annotation_set[@type=$ncbi_set_name]/features/gene/transcript[@accession=$refseqname and @fixed_id=$transname]"/>
-  
-  <xsl:variable name="refseq_start" select="$refseq/coordinates/@start" />
-  <xsl:variable name="refseq_end" select="$refseq/coordinates/@end" />
-  <xsl:variable name="refseq_peptide_start" select="$refseq/protein_product/coordinates/@start"/>
-  <xsl:variable name="refseq_peptide_end" select="$refseq/protein_product/coordinates/@end"/>
-  
-  <xsl:variable name="refseq_gen_utr_5_end"   select="$refseq_peptide_start - 1" />
-  <xsl:variable name="refseq_gen_utr_3_start" select="$refseq_peptide_end + 1" />
-  
-  <xsl:variable name="refseq_five_prime_utr_length" select="$refseq_gen_utr_5_end - $refseq_start + 1"/>
-  <xsl:variable name="refseq_three_prime_utr_length" select="$refseq_end - $refseq_peptide_end"/>
-  
-  <xsl:variable name="refseq_utr_size">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$refseq_five_prime_utr_length"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$refseq_three_prime_utr_length"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-   
-  <xsl:variable name="refseq_lrg_start">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$refseq_start"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$refseq_gen_utr_3_start"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable>
-  
-  <xsl:variable name="refseq_lrg_end">
-    <xsl:choose>
-      <xsl:when test="$utr=5"><xsl:value-of select="$refseq_gen_utr_5_end"/></xsl:when>
-      <xsl:when test="$utr=3"><xsl:value-of select="$refseq_end"/></xsl:when>
-    </xsl:choose>  
-  </xsl:variable> 
-  
-  <!-- Refseq - Genomic reference assembly coordinates -->
-  <xsl:variable name="temp_refseq_ref_start">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$refseq_start"/>
-      <xsl:with-param name="end_coord" select="$refseq_gen_utr_3_start"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:variable name="temp_refseq_ref_end">
-    <xsl:call-template name="unprocessed_ref_coord">
-      <xsl:with-param name="utr" select="$utr"/>
-      <xsl:with-param name="start_coord" select="$refseq_peptide_start"/>
-      <xsl:with-param name="end_coord" select="$refseq_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
-  <xsl:variable name="refseq_ref_start">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_refseq_ref_start"/>
-      <xsl:with-param name="start_coord" select="$refseq_lrg_start"/>
-      <xsl:with-param name="end_coord" select="$refseq_lrg_end"/>
-      <xsl:with-param name="type_coord">start</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-        
-  <xsl:variable name="refseq_ref_end">
-    <xsl:call-template name="ref_coord">
-      <xsl:with-param name="temp_ref_start" select="$temp_refseq_ref_end"/>
-      <xsl:with-param name="start_coord" select="$refseq_lrg_start"/>
-      <xsl:with-param name="end_coord" select="$refseq_lrg_end"/>
-      <xsl:with-param name="type_coord">end</xsl:with-param>
-    </xsl:call-template>
-  </xsl:variable>
-  
   <!-- ========== -->
   <!-- HTML table -->
   <!-- ========== -->  
@@ -3709,38 +3485,131 @@
     
     <tbody>
     
+      <!-- ============== -->
       <!-- LRG transcript -->
-      <xsl:call-template name="fill_utr_difference_row">
-        <xsl:with-param name="id">Transcript <xsl:value-of select="$transname"/></xsl:with-param>
-        <xsl:with-param name="genomic_start" select="$lrg_ref_start"/>
-        <xsl:with-param name="genomic_end" select="$lrg_ref_end"/>
-        <xsl:with-param name="lrg_start" select="$lrg_gen_start"/>
-        <xsl:with-param name="lrg_end" select="$lrg_gen_end"/>
-        <xsl:with-param name="utr_size" select="$lrg_utr_size"/>
+      <!-- ============== -->
+      <xsl:variable name="lrg_tr" select="/*/fixed_annotation/transcript[@name = $transname]"/>
+      <xsl:call-template name="display_utr_difference">
+        <xsl:with-param name="utr" select="$utr" />
+        <xsl:with-param name="transname">Transcript <xsl:value-of select="$transname" /></xsl:with-param>
+        <xsl:with-param name="trans_start" select="$lrg_tr/coordinates/@start" />
+        <xsl:with-param name="trans_end" select="$lrg_tr/coordinates/@end" />
+        <xsl:with-param name="peptide_start" select="$lrg_tr/coding_region/coordinates/@start" />
+        <xsl:with-param name="peptide_end" select="$lrg_tr/coding_region/coordinates/@end" />
       </xsl:call-template>
       
+      <!-- ================== -->
       <!-- Ensembl transcript -->
-      <xsl:call-template name="fill_utr_difference_row">
-        <xsl:with-param name="id" select="$enstname"/>
-        <xsl:with-param name="genomic_start" select="$enst_ref_start"/>
-        <xsl:with-param name="genomic_end" select="$enst_ref_end"/>
-        <xsl:with-param name="lrg_start" select="$enst_lrg_start"/>
-        <xsl:with-param name="lrg_end" select="$enst_lrg_end"/>
-        <xsl:with-param name="utr_size" select="$enst_utr_size"/>
+      <!-- ================== -->
+      <xsl:variable name="ens_tr" select="/*/updatable_annotation/annotation_set[@type=$ensembl_set_name]/features/gene/transcript[@accession=$enstname and @fixed_id=$transname]"/>
+      <xsl:call-template name="display_utr_difference">
+        <xsl:with-param name="utr" select="$utr" />
+        <xsl:with-param name="transname" select="$enstname" />
+        <xsl:with-param name="trans_start" select="$ens_tr/coordinates/@start" />
+        <xsl:with-param name="trans_end" select="$ens_tr/coordinates/@end" />
+        <xsl:with-param name="peptide_start" select="$ens_tr/protein_product/coordinates/@start" />
+        <xsl:with-param name="peptide_end" select="$ens_tr/protein_product/coordinates/@end" />
       </xsl:call-template>
       
+      <!-- ================= -->
       <!-- RefSeq transcript -->
-      <xsl:call-template name="fill_utr_difference_row">
-        <xsl:with-param name="id" select="$refseqname"/>
-        <xsl:with-param name="genomic_start" select="$refseq_ref_start"/>
-        <xsl:with-param name="genomic_end" select="$refseq_ref_end"/>
-        <xsl:with-param name="lrg_start" select="$refseq_lrg_start"/>
-        <xsl:with-param name="lrg_end" select="$refseq_lrg_end"/>
-        <xsl:with-param name="utr_size" select="$refseq_utr_size"/>
+      <!-- ================= -->
+      <xsl:variable name="refseq_tr" select="/*/updatable_annotation/annotation_set[@type=$ncbi_set_name]/features/gene/transcript[@accession=$refseqname and @fixed_id=$transname]"/>
+      <xsl:call-template name="display_utr_difference">
+        <xsl:with-param name="utr" select="$utr" />
+        <xsl:with-param name="transname" select="$refseqname" />
+        <xsl:with-param name="trans_start" select="$refseq_tr/coordinates/@start" />
+        <xsl:with-param name="trans_end" select="$refseq_tr/coordinates/@end" />
+        <xsl:with-param name="peptide_start" select="$refseq_tr/protein_product/coordinates/@start" />
+        <xsl:with-param name="peptide_end" select="$refseq_tr/protein_product/coordinates/@end" />
       </xsl:call-template>
       
     </tbody>
   </table>
+
+</xsl:template>
+
+<xsl:template name="display_utr_difference">
+  <xsl:param name="utr" />
+  <xsl:param name="transname"/>
+  <xsl:param name="trans_start" />
+  <xsl:param name="trans_end" />
+  <xsl:param name="peptide_start" />
+  <xsl:param name="peptide_end" />
+  
+  <xsl:variable name="gen_utr_5_end"   select="$peptide_start - 1" />
+  <xsl:variable name="gen_utr_3_start" select="$peptide_end + 1" />
+  
+  <xsl:variable name="five_prime_utr_length" select="$gen_utr_5_end - $trans_start + 1"/>
+  <xsl:variable name="three_prime_utr_length" select="$trans_end - $peptide_end"/>
+  
+  <xsl:variable name="utr_size">
+    <xsl:choose>
+      <xsl:when test="$utr=5"><xsl:value-of select="$five_prime_utr_length"/></xsl:when>
+      <xsl:when test="$utr=3"><xsl:value-of select="$three_prime_utr_length"/></xsl:when>
+    </xsl:choose>  
+  </xsl:variable>
+    
+  <xsl:variable name="trans_gen_start">
+    <xsl:choose>
+      <xsl:when test="$utr=5"><xsl:value-of select="$trans_start"/></xsl:when>
+      <xsl:when test="$utr=3"><xsl:value-of select="$gen_utr_3_start"/></xsl:when>
+    </xsl:choose>  
+  </xsl:variable>
+  
+  <xsl:variable name="trans_gen_end">
+    <xsl:choose>
+      <xsl:when test="$utr=5"><xsl:value-of select="$gen_utr_5_end"/></xsl:when>
+      <xsl:when test="$utr=3"><xsl:value-of select="$trans_end"/></xsl:when>
+    </xsl:choose>  
+  </xsl:variable>
+  
+  <!-- Genomic reference assembly coordinates -->
+  <xsl:variable name="temp_trans_ref_start">
+    <xsl:call-template name="unprocessed_ref_coord">
+      <xsl:with-param name="utr" select="$utr"/>
+      <xsl:with-param name="start_coord" select="$trans_start"/>
+      <xsl:with-param name="end_coord" select="$gen_utr_3_start"/>
+      <xsl:with-param name="type_coord">start</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+  
+  <xsl:variable name="temp_trans_ref_end">
+    <xsl:call-template name="unprocessed_ref_coord">
+      <xsl:with-param name="utr" select="$utr"/>
+      <xsl:with-param name="start_coord" select="$peptide_start"/>
+      <xsl:with-param name="end_coord" select="$trans_end"/>
+      <xsl:with-param name="type_coord">end</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+    
+  <xsl:variable name="trans_ref_start">
+    <xsl:call-template name="ref_coord">
+      <xsl:with-param name="temp_ref_start" select="$temp_trans_ref_start"/>
+      <xsl:with-param name="start_coord" select="$trans_gen_start"/>
+      <xsl:with-param name="end_coord" select="$trans_gen_end"/>
+      <xsl:with-param name="type_coord">start</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+        
+  <xsl:variable name="trans_ref_end">
+    <xsl:call-template name="ref_coord">
+      <xsl:with-param name="temp_ref_start" select="$temp_trans_ref_end"/>
+      <xsl:with-param name="start_coord" select="$trans_gen_start"/>
+      <xsl:with-param name="end_coord" select="$trans_gen_end"/>
+      <xsl:with-param name="type_coord">end</xsl:with-param>
+    </xsl:call-template>
+  </xsl:variable>
+
+  <!-- Call HTML code -->
+  <xsl:call-template name="fill_utr_difference_row">
+    <xsl:with-param name="id"><xsl:value-of select="$transname"/></xsl:with-param>
+    <xsl:with-param name="genomic_start" select="$trans_ref_start"/>
+    <xsl:with-param name="genomic_end" select="$trans_ref_end"/>
+    <xsl:with-param name="lrg_start" select="$trans_gen_start"/>
+    <xsl:with-param name="lrg_end" select="$trans_gen_end"/>
+    <xsl:with-param name="utr_size" select="$utr_size"/>
+  </xsl:call-template>
 
 </xsl:template>
 
