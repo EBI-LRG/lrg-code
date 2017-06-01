@@ -119,6 +119,10 @@ th.sub_other_label {
   border-bottom: 3px solid #1C9BCF;
 }
 
+.table>thead>tr>th.default_col {
+  border-bottom: 2px solid #78BE43;
+}
+
 .table>thead>tr>th.common_col {
   border-bottom: 3px solid #BCBEC0;
 }
@@ -147,6 +151,10 @@ th.sub_other_label {
 }
 .no_border_right {
   border-right:none;
+}
+
+table.no_border>tbody>tr>td {
+  padding: 0px 4px 6px;
 }
 
 /* Bordered table */
@@ -230,8 +238,11 @@ div.top_icon {
 div.top_icon a {
   color: #FFF;
 }
-div.top_icon a:before {
+div.top_icon1 a:before {
   color: #1C9BCF;
+}
+div.top_icon2 a:before {
+  color: #78BE43;
 }
 div.top_icon a:hover, div.top_icon a:active, div.top_icon a:hover:before {
   color: #78BE43;
@@ -274,11 +285,23 @@ td.left_col {
   font-weight:bold;
   padding:2px 4px;
   text-align:right;
+  width:185px;
 }
 td.right_col {
   padding:2px 4px;
 }
 
+td.right_col_fixed_width {
+  width:120px;
+}
+td.right_col_fixed_width_2 {
+  width:300px;
+}
+
+.lrg_left_arrow {
+  width:20px;
+  text-align:center;
+}
 
 .new_transcript {
   cursor:help;
@@ -289,9 +312,8 @@ td.right_col {
   color: #E00000;
 }
 
-/* LRG button */
+/* LRG buttons */
 .btn-lrg {
-	background-color: #1C9BCF;
 	color: #FFF;
 	padding:0px 4px;
 	margin-right:5px;
@@ -316,6 +338,16 @@ td.right_col {
   vertical-align:baseline;
   padding:0px 2px;
 }
+
+/* Blue */
+.btn-lrg1 {
+ background-color: #1C9BCF;
+}
+/* Green */
+.btn-lrg2 {
+	background-color: #78BE43;
+}
+
 
 /* Glyphicon colouring */
 .green_button_0 {
@@ -479,10 +511,17 @@ div.submenu>ul {
 }
 
 .section_annotation {
-  border-bottom: 4px solid #1C9BCF;
+  /*border-bottom: 4px solid;*/
   background-color: #3C3F45;
-  padding: 5px 5px 5px 8px;
+  padding: 5px 5px 5px 0px;
   margin-bottom:15px;
+}
+
+.section_annotation1 {
+  border-color: #1C9BCF;
+}
+.section_annotation2 {
+  border-color: #78BE43;
 }
 
 .section_annotation h2 {
@@ -498,6 +537,37 @@ div.submenu>ul {
   color:#FFF;
   font-weight:bold;
 }
+.section_annotation_icon {
+  padding:5px 12px !important;
+  margin: -5px 0px !important;
+}
+.section_annotation_icon1 {
+  background-color: #1C9BCF;
+}
+.section_annotation_icon2 {
+  background-color: #78BE43;
+}
+
+
+.section_annotation_menu>div {
+  background-color: #3C3F45;
+}
+.section_annotation_menu h4 {
+  padding: 0px 8px;
+  margin: 0px;
+  color: #FFF;
+  font-weight: normal;
+}
+.section_annotation_menu {
+  color: #FFF;
+  text-decoration: none;
+}
+.section_annotation_menu:hover>div>div:first-child>h4, .section_annotation_menu:active>div>div:first-child>h4 {
+  background-color: #9051A0;
+}
+
+
+
 
 div.other_source {
   padding:10px 0px;
@@ -525,7 +595,15 @@ div.main_subsection {
   background-color: #3C3F45;
   vertical-align:baseline;
   font-size:22px;
-  border-bottom: 3px solid #1C9BCF;
+  border-bottom: 3px solid;
+}
+div.main_subsection1 {
+  color: #1C9BCF;
+  border-color: #1C9BCF;
+}
+div.main_subsection2 {
+  color: #78BE43;
+  border-color: #78BE43;
 }
 
 span.main_subsection {
@@ -546,10 +624,16 @@ h3.subsection {
   padding: 2px 4px;
   margin-top: 25px;
   margin-bottom: 5px;
+  border-bottom: 2px solid;
 }
 
-h3.subsection_blue {
-  border-bottom: 2px solid #1C9BCF;
+h3.subsection1 {
+  color: #1C9BCF;
+  border-color: #1C9BCF;
+}
+h3.subsection2 {
+  color: #78BE43;
+  border-color: #78BE43;
 }
 
 h3.subsection span.subsection {
@@ -847,9 +931,12 @@ div.lrg_transcript {
 table.lrg_transcript_content {
   margin-left: 4px;
   border:none;
+  width: 100%;
 }
-
-.lrg_transcript_content td {
+table.lrg_transcript_content>tbody>tr>td:first-child {
+  width:120px;
+}
+table.lrg_transcript_content td {
   padding : 3px 4px;
   vertical-align: top;
   border: none;
@@ -959,7 +1046,7 @@ ul.seq_info > li {
   text-decoration: none;
   color: #1C9BCF;
   cursor:pointer;
-} 
+}
 .show_hide_button span {
   color: #FFF;
 }
@@ -1164,6 +1251,26 @@ footer p {
 .exon_block_large:hover > .selected_exon_block_non_coding_5_prime, 
 .exon_block_large:hover > .selected_exon_block_non_coding_3_prime {
   border-color: #87adf1;
+}
+
+.padding_left_10 {
+  padding-left:10px;
+}
+
+.gradient-dark-green {
+  background: #3C3F45;
+  /* IE10 */ 
+  background: -ms-linear-gradient(left, #3C3F45 25%, #78BE43 100%);
+  /* Mozilla Firefox */ 
+  background: -moz-linear-gradient(left, #3C3F45 25%, #78BE43 100%);
+  /* Opera */ 
+  background: -o-linear-gradient(left, #3C3F45 25%, #78BE43 100%);
+  /* Webkit (Safari/Chrome 10) */ 
+  background: -webkit-gradient(linear, left, right, color-stop(0.25, #3C3F45), color-stop(1, #78BE43));
+  /* Webkit (Chrome 11+) */ 
+  background: -webkit-linear-gradient(left, #3C3F45 25%, #78BE43 100%);
+  /* W3C Markup, IE10 Release Preview */ 
+  background: linear-gradient(to right, #3C3F45 25%, #78BE43 100%);
 }
 
 /** Genoverse **/
