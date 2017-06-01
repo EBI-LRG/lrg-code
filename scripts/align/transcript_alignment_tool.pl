@@ -246,7 +246,6 @@ foreach my $tr (@$ens_tr) {
 #-------------#
 # Havana data #
 #-------------#
-
 if ($havana_dir && -e "$havana_dir/$havana_file") {
   foreach my $enst_id (keys(%ens_tr_exons_list)) {
     if ($ens_tr_exons_list{$enst_id}{'OTTT'}) {
@@ -270,6 +269,7 @@ if ($havana_dir && -e "$havana_dir/$havana_file") {
       my @exon_sizes  = split(',', $h_data[10]);
       my @exon_starts = split(',', $h_data[11]);
       my $tr_name     = $h_data[12];
+      my @exon_frames = split(',', $h_data[15]);
       my $tr_biotype  = $h_data[16];
       my $date = $h_data[$#h_data];
          $date = (split(';', $date))[0] if ($date =~ /^\d+\-\w+\-\d+\;/);
@@ -281,7 +281,7 @@ if ($havana_dir && -e "$havana_dir/$havana_file") {
                                          'strand'       => $tr_strand,
                                          'biotype'      => $tr_biotype,
                                          'count'        => $e_count,
-                                         'date'         => $date
+                                         'date'         => $date,
                                         };
     
       $havana_tr_exons_list{$tr_name}{'enst'} = $havana2ensembl{$tr_name} if ($havana2ensembl{$tr_name});
@@ -290,7 +290,7 @@ if ($havana_dir && -e "$havana_dir/$havana_file") {
         my $start = $tr_start + $exon_starts[$i];
         my $end = $start + $exon_sizes[$i] - 1;
         
-        $havana_tr_exons_list{$tr_name}{'exon'}{$start}{$end} = 1;
+        $havana_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'frame'} = $exon_frames[$i];
         
         $exons_list{$start} ++;
         $exons_list{$end} ++;
@@ -368,17 +368,20 @@ foreach my $refseq_tr (@$refseq_gff3) {
 # cDNA #
 #------#
 my $cdna_dna = $cdna_dna_a->fetch_all_by_Slice($gene_slice);
-
 foreach my $cdna_tr (@$cdna_dna) {
   next if ($cdna_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
   my $cdna_name = '';
   my $cdna_exons = $cdna_tr->get_all_Exons;
   my $cdna_exon_count = scalar(@$cdna_exons);
+  
   foreach my $cdna_exon (@{$cdna_exons}) {
     foreach my $cdna_exon_evidence (@{$cdna_exon->get_all_supporting_features}) {
-      next unless ($cdna_exon_evidence->db_name);
-      next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
+      
+      #next unless ($cdna_exon_evidence->db_name);
+      #next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
+      next unless ($cdna_exon_evidence->display_id =~ /^(N|X)M_/);
+      
       $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
       next if ($cdna_name !~ /^\w+/);
       my $cdna_evidence_start = $cdna_exon_evidence->seq_region_start;
@@ -696,21 +699,24 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $exon_tab_list .= qq{</td><td$colspan_html>}; 
     if ($exon_start) {
 
-      if(! $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object)) {
+      my $exon_obj = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'};
+
+      if(! $exon_obj->coding_region_start($tr_object)) {
         $is_coding = ' non_coding';
       }
       else {
-        my $coding_start = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_start($tr_object);
-        my $coding_end   = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->coding_region_end($tr_object);
+        my $coding_start = $exon_obj->coding_region_start($tr_object);
+        my $coding_end   = $exon_obj->coding_region_end($tr_object);
 
         $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
       }
       
-      
+      my $phase_start = $exon_obj->phase;
+      my $phase_end   = $exon_obj->end_phase;
       
       $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $exon_tab_list .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name);
+      $exon_tab_list .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name,$phase_start,$phase_end);
 
       if ($tr_object->strand == 1) { $exon_number++; }
       else { $exon_number--; }
@@ -739,7 +745,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 my %havana_rows_list;
 foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_list{$a}{'count'}} keys(%havana_tr_exons_list)) {
 
-  my $e_count = $havana_tr_exons_list{$hv}{'count'}; 
+  my $e_count = $havana_tr_exons_list{$hv}{'count'};
   
   my $hide_row      = hide_button($row_id);
   my $highlight_row = highlight_button($row_id,'left');
@@ -838,10 +844,13 @@ foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_li
     my $has_exon = ($exon_start) ? 'exon' : $no_match;
     
     my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $exon_tab_list .= qq{</td><td$colspan_html>}; 
+    $exon_tab_list .= qq{</td><td$colspan_html>};
     
     if ($exon_start) {
-      $exon_tab_list .= display_exon("$has_exon havana_exon",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-');
+      my $phase_start = $havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}{'frame'};
+      my $phase_end   = '';
+
+      $exon_tab_list .= display_exon("$has_exon havana_exon",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-',$phase_start,$phase_end);
       if ($havana_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -960,7 +969,12 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       my $exon_evidence = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'dna_align'};
       my $identity = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '_np';
       my $identity_score = ($exon_evidence->score == 100 && $exon_evidence->percent_id==100) ? '' : '<span class="identity">('.$exon_evidence->percent_id.'%)</span>';
-      $exon_tab_list .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$identity_score);
+      
+      my $exon_obj    = $cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}{'exon_obj'};
+      my $phase_start = $exon_obj->phase;
+      my $phase_end   = $exon_obj->end_phase;
+      
+      $exon_tab_list .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$phase_start,$phase_end,$identity_score);
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -1630,16 +1644,21 @@ sub display_refseq_data {
       my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
       $exon_tab_list .= qq{</td><td$colspan_html>}; 
       if ($exon_start) {
-        if(! $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object)) {
+        my $exon_obj = $refseq_exons->{$exon_start}{$coord}{'exon_obj'};
+      
+        if(! $exon_obj->coding_region_start($refseq_object)) {
           $is_coding = ' non_coding_unknown';
         }
-        elsif ($refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object) > $exon_start) {
-          my $coding_start = $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_start($refseq_object);
-          my $coding_end   = $refseq_exons->{$exon_start}{$coord}{'exon_obj'}->coding_region_end($refseq_object);
+        elsif ($exon_obj->coding_region_start($refseq_object) > $exon_start) {
+          my $coding_start = $exon_obj->coding_region_start($refseq_object);
+          my $coding_end   = $exon_obj->coding_region_end($refseq_object);
           $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
         }
+        
+        my $phase_start = $exon_obj->phase;
+        my $phase_end   = $exon_obj->end_phase;
 
-        $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$nm);
+        $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$phase_start,$phase_end);
         if ($refseq_strand == 1) { $exon_number++; }
         else { $exon_number--; }
         $exon_start = undef;
@@ -1698,8 +1717,9 @@ sub display_exon {
   my $e_stable_id = shift;
   my $e_tr        = shift;
   my $e_tr_name   = shift;
+  my $phase_start = shift;
+  my $phase_end   = shift;
   my $e_extra     = shift;
-  
   
   $e_extra ||= '';
 
@@ -1709,10 +1729,23 @@ sub display_exon {
 
   my $show_hide_info_params  = "event,'$e_tr','$e_number','$e_chr:$e_start-$e_end','$e_length'";
      $show_hide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
+     $show_hide_info_params .= ",'$phase_start','$phase_end'";
 
   my $title = "$e_tr";
      $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
      $title .= " | $e_length";
+     if ($phase_start ne '-1' && $phase_end !~ /^-?\d$/) {
+    
+       $title .= " | Frame: $phase_start";
+     }
+     elsif ($phase_start =~ /^\d$/ || $phase_end =~ /^\d$/) {
+       my $phase_start_content = ($phase_start eq '-1') ? '-' : "$phase_start";
+       my $phase_end_content   = ($phase_end eq '-1')   ? '-' : "$phase_end";
+       $title .= " | Phase: $phase_start_content;$phase_end_content";
+     }
+     else {
+       $title .= " | No phase data";
+     }
 
   my $pathogenic_variants = '';
   if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}) {
@@ -1914,6 +1947,7 @@ OPTIONS:
   -havana_file  | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
   -no_havana_dl | -nh_dl : Flag to skip the download of the Havana BED file.
                            Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
+  -hgmd_file    |hgmd    : Filepath to the HGMD file (required)
   };
   exit(0);
 }
