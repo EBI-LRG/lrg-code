@@ -303,18 +303,20 @@ function show_hide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,phase_
     }
     popup_content += '<div><b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a></div>';
     // Phase
-    if (phase_start.match(/^\d$/) && phase_end.match(/^\W$/)) {
-      popup_content += '<div><b>Frame:</b> '+phase_start+'</div>';
-    }
-    else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
-      if (phase_start == -1) {
-        phase_start = '-';
+    if (phase_start != null && phase_end != null) {
+      if (phase_start.match(/^\d$/) && !phase_end.match(/^\d$/)) {
+        popup_content += '<div><b>Frame:</b> '+phase_start+'</div>';
       }
-      if (phase_end == -1) {
-        phase_end = '-';
+      else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
+        if (phase_start == -1) {
+          phase_start = '-';
+        }
+        if (phase_end == -1) {
+          phase_end = '-';
+        }
+        popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
       }
-      popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
-    }
+    }  
     popup_content += '<div><b>Size:</b> '+exon_length+'</div>';
     if (ens_pathogenic_var) {
       popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;

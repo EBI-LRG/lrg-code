@@ -1727,7 +1727,8 @@ sub display_exon {
      $e_length  = thousandify($e_length);
      $e_length .= ' bp';
 
-  my $show_hide_info_params  = "event,'$e_tr','$e_number','$e_chr:$e_start-$e_end','$e_length'";
+  my $e_tr_id = (split(/\./,$e_tr))[0];
+  my $show_hide_info_params  = "event,'$e_tr_id','$e_number','$e_chr:$e_start-$e_end','$e_length'";
      $show_hide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
      $show_hide_info_params .= ",'$phase_start','$phase_end'";
 
