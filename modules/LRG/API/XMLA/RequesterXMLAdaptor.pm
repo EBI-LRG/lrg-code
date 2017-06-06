@@ -57,7 +57,7 @@ sub objs_from_xml {
     if ($node->name() eq 'annotation_set') {
     
       # Get the transcript name attribute
-      my $type = lc($node->data()->{'type'}); # 'requester'
+      my $type = ($node->data()->{'type'}) ? lc($node->data()->{'type'}) : ''; # 'requester'
    
       # Skip if the annotation set is not a requester annotation set (see the object 'AnnotationSet')
       next unless ($type && $type eq $requester_type);

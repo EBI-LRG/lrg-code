@@ -40,7 +40,7 @@ sub objs_from_xml {
     next unless ($set->name() eq 'annotation_set');
     
     # Get the transcript name attribute
-    my $type = lc($set->data()->{'type'});
+    my $type = ($set->data()->{'type'}) ? lc($set->data()->{'type'}) : '';
     
     # Skip if this is an requester annotation set (see the object 'Requester')
     next if ($type && $type eq $requester_type); 
