@@ -45,7 +45,7 @@ my %email_message = (
                                   'We are pleased to let you know that the LRG for %s (%s) has been finalised. '.
                                   'The fixed section will now remain stable and we can recommend the use of this LRG for variant reporting.<br />'.
                                   'Many thanks for your help in creating this LRG.<br />'.
-                                  'The public record is available at <a href="%s">%s</a>.<br /><br />'.
+                                  'The public record will be available within the next 24h at <a href="%s">%s</a>.<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
@@ -53,10 +53,10 @@ my %email_message = (
                                   $lrg_ps,
                       'pending' => $title.'<br />'.
                                   '<p>'.
-                                  'We have now created a pending LRG record for %s (%s) following your specifications.'.
+                                  'We have now created a pending LRG record for %s (%s).'.
                                   '<br /><br />'.
                                   'We would be grateful if you could review the record and let us know if any changes are required. '.
-                                  'The record is available for review at <a href="%s">%s</a>.'.
+                                  'The record will be available for review within the next 24h at <a href="%s">%s</a>.'.
                                   '<br /><br />'.
                                   'Please note that this record is not finalised and will undergo manual curation in the near future. '.
                                   'Curation will establish if the record contains the most suitable reference sequences for reporting variants at the %s locus. '.
