@@ -12,6 +12,7 @@ sub run {
   my $reports_dir    = $self->param('reports_dir');
   my $reports_html   = $self->param('reports_html');
   my $reports_sum    = $self->param('reports_sum');
+  my $reports_email  = $self->param('reports_email');
   my $new_xml_dir    = $self->param('new_xml_dir');
   my $ftp_dir        = $self->param('ftp_dir');
   my $global_reports = $self->param('reports_file');
@@ -50,7 +51,7 @@ sub run {
   }
 
   # Send email
-  $self->send_email($html_reports_file,$reports_dir,$reports_sum,$date, $is_test);
+  $self->send_email($html_reports_file,$reports_dir,$reports_sum, $reports_email, $date, $is_test);
 }
 
 sub send_email {
@@ -58,6 +59,7 @@ sub send_email {
   my $html_file_name = shift;
   my $reports_dir    = shift;
   my $reports_sum    = shift;
+  my $reports_email  = shift;
   my $date           = shift;
   my $is_test        = shift;
 
@@ -72,7 +74,7 @@ sub send_email {
 
   my $test = ($is_test) ? ' - TEST' : '';
 
-  my $email_recipient   = ($is_test) ? 'lgil@ebi.ac.uk' : 'lrg-internal@ebi.ac.uk';
+  my $email_recipient   = ($is_test) ? 'lgil@ebi.ac.uk' : $reports_email;
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG pipeline$test] Automated pipeline ran the $formatted_date";
 

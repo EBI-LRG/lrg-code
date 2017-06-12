@@ -63,6 +63,8 @@ sub default_options {
         date                    => LRG::LRG::date(),
         run_dir                 => $ENV{'LRGROOTDIR'},
         
+        email_contact           => 'lrg-internal@ebi.ac.uk',
+        
         output_dir              => $self->o('tmp_dir').'/hive_output',
         
         # these flags control which parts of the pipeline are run
@@ -256,22 +258,23 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::GenerateReports',
             -rc_name    => 'small',
             -parameters => {
-               new_xml_dir  => $self->o('new_dir'),
-               reports_dir  => $self->o('tmp_dir'),
-               reports_file => $self->o('reports_file_name'),
-               reports_url  => $self->o('reports_url'),
-               reports_html => $self->o('reports_html'),
-               reports_sum  => $self->o('reports_sum_file_name'),
-               missing_file => $self->o('missing_file_name'),
-               ftp_dir      => $self->o('ftp_dir'),
-               run_dir      => $self->o('run_dir'),
-               date         => $self->o('date'),
-               is_test      => $self->o('is_test'),
+               new_xml_dir   => $self->o('new_dir'),
+               reports_dir   => $self->o('tmp_dir'),
+               reports_file  => $self->o('reports_file_name'),
+               reports_url   => $self->o('reports_url'),
+               reports_html  => $self->o('reports_html'),
+               reports_sum   => $self->o('reports_sum_file_name'),
+               reports_email => $self->o('email_contact'),
+               missing_file  => $self->o('missing_file_name'),
+               ftp_dir       => $self->o('ftp_dir'),
+               run_dir       => $self->o('run_dir'),
+               date          => $self->o('date'),
+               is_test       => $self->o('is_test'),
                # To send the guiHive link
-               host         => $self->o('hive_db_host'),
-               port         => $self->o('hive_db_port'),
-               user         => $self->o('hive_db_user'),
-               dbname       => $self->o('pipeline_name'),
+               host          => $self->o('hive_db_host'),
+               port          => $self->o('hive_db_port'),
+               user          => $self->o('hive_db_user'),
+               dbname        => $self->o('pipeline_name')
             },
             -input_ids  => [],
             -wait_for   => [ 'update_relnotes_file' ],
