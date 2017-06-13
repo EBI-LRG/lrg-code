@@ -72,8 +72,8 @@ sub default_options {
         run_extract_xml_files   => 1,
         run_sub_pipeline        => 0, # Run the full pipeline by default
         
-        small_lsf_options   => '-R"select[mem>1500] rusage[mem=1500]" -M1500',
-        default_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
+        small_lsf_options   => '-R"select[mem>500]  rusage[mem=500]" -M500',
+        default_lsf_options => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
         highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
 
         pipeline_db => {
@@ -100,6 +100,15 @@ sub pipeline_analyses {
     my ($self) = @_;
     my @analyses;
     
+    my @common_params = (
+        data_dir     => $self->o('data_dir'),
+        xml_tmp_dir  => $self->o('xml_dir'),
+        new_xml_dir  => $self->o('new_dir'),
+        reports_dir  => $self->o('tmp_dir'),
+        ftp_dir      => $self->o('ftp_dir'),
+        run_dir      => $self->o('run_dir')
+    );
+    
     if ($self->o('run_sub_pipeline')) {
       push @analyses, (
         {
@@ -108,9 +117,8 @@ sub pipeline_analyses {
             -rc_name    => 'small',
             -parameters => {
                pipeline_dir => $self->o('pipeline_dir'),
-               data_dir     => $self->o('data_dir'),
-               xml_tmp_dir  => $self->o('xml_dir'),
-               date         => $self->o('date')
+               date         => $self->o('date'),
+               @common_params
             },
             -input_ids  => [{}],
             -flow_into  => {
@@ -127,12 +135,9 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::ExtractXMLFiles',
             -rc_name    => 'small',
             -parameters => {
-               xml_tmp_dir  => $self->o('xml_dir'),
                ncbi_xml_dir => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
-               ftp_dir      => $self->o('ftp_dir'),
-               data_dir     => $self->o('data_dir'),
-               reports_dir  => $self->o('tmp_dir'),
                missing_file => $self->o('missing_file_name'),
+               @common_params
             },
             -input_ids  => [{}],
             -flow_into  => {
@@ -148,15 +153,12 @@ sub pipeline_analyses {
             -rc_name           => 'small',
             -parameters        => {
                ncbi_xml_dir        => $self->o('xml_dir').'/'.$self->o('xml_dir_sub'),
-               new_xml_dir         => $self->o('new_dir'),
-               reports_dir         => $self->o('tmp_dir'),
-               ftp_dir             => $self->o('ftp_dir'),
-               run_dir             => $self->o('run_dir'),
                date                => $self->o('date'),
                assembly            => $self->o('assembly'),
                is_test             => $self->o('is_test'),
                skip_hc             => $self->o('skip_hc'),
                skip_lrgs_hc_file   => $self->o('skip_lrgs_hc_file'),
+               @common_params
             },
             -input_ids     => ($self->o('run_extract_xml_files')) ? [] : [{}],
             -wait_for      => ($self->o('run_extract_xml_files')) ? [ 'extract_xml_files' ] : [],
@@ -168,7 +170,7 @@ sub pipeline_analyses {
         {   
             -logic_name        => 'annotate_xml_files', 
             -module            => 'LRG::Pipeline::AnnotateXMLFiles',
-            -rc_name           => 'small',
+            -rc_name           => 'default',
             -input_ids         => [],
             -hive_capacity     => 10,
             -wait_for          => [ 'init_annotation' ],
@@ -179,12 +181,10 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::MoveXMLFiles',
             -rc_name           => 'small',
             -parameters        => {
-               run_dir     => $self->o('run_dir'),
-               new_xml_dir => $self->o('new_dir'),
-               ftp_dir     => $self->o('ftp_dir'),
                date        => $self->o('date'),
                is_test     => $self->o('is_test'),
                git_branch  => $self->o('git_branch'),
+               @common_params
             },
             -input_ids         => [],
             -wait_for          => [ 'annotate_xml_files' ],
@@ -197,12 +197,10 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::InitIndexes',
             -rc_name           => 'small',
             -parameters        => {
-               new_xml_dir       => $self->o('new_dir'),
-               ftp_dir           => $self->o('ftp_dir'),
-               run_dir           => $self->o('run_dir'),
                index_assembly    => $self->o('index_assembly'),
                lrg_in_ensembl    => $self->o('lrg_in_ensembl'),
                index_suffix      => $self->o('index_suffix'),
+               @common_params
             },
             -input_ids     => [],
             -wait_for      => ['move_xml_files'],
@@ -225,11 +223,10 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::FinishIndexes',
             -rc_name           => 'small',
             -parameters        => {
-               new_xml_dir    => $self->o('new_dir'),
-               ftp_dir        => $self->o('ftp_dir'),
                index_suffix   => $self->o('index_suffix'),
                lrg_index_json => $self->o('lrg_index_json'),
                lrg_diff_file  => $self->o('lrg_diff_file'),
+               @common_params
             },
             -input_ids         => [],
             -wait_for          => [ 'create_indexes' ],
@@ -242,10 +239,9 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::UpdateRelnotesFile',
             -rc_name           => 'default',
             -parameters        => {
-               run_dir     => $self->o('run_dir'),
                assembly    => $self->o('assembly'),
-               new_xml_dir => $self->o('new_dir'),
                is_test     => $self->o('is_test'),
+               @common_params
             },
             -input_ids         => [],
             -wait_for          => [ 'finish_indexes' ],
@@ -258,23 +254,20 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::GenerateReports',
             -rc_name    => 'small',
             -parameters => {
-               new_xml_dir   => $self->o('new_dir'),
-               reports_dir   => $self->o('tmp_dir'),
                reports_file  => $self->o('reports_file_name'),
                reports_url   => $self->o('reports_url'),
                reports_html  => $self->o('reports_html'),
                reports_sum   => $self->o('reports_sum_file_name'),
                reports_email => $self->o('email_contact'),
                missing_file  => $self->o('missing_file_name'),
-               ftp_dir       => $self->o('ftp_dir'),
-               run_dir       => $self->o('run_dir'),
                date          => $self->o('date'),
                is_test       => $self->o('is_test'),
                # To send the guiHive link
                host          => $self->o('hive_db_host'),
                port          => $self->o('hive_db_port'),
                user          => $self->o('hive_db_user'),
-               dbname        => $self->o('pipeline_name')
+               dbname        => $self->o('pipeline_name'),
+               @common_params
             },
             -input_ids  => [],
             -wait_for   => [ 'update_relnotes_file' ],
