@@ -47,11 +47,17 @@ sub default_options {
        
         git_branch              => $ENV{'GITBRANCH'},
 
+        rest_gene_endpoint      => 'http://rest.ensembl.org/lookup/symbol/homo_sapiens/',
+        
+        gene_length_highmem_threshold => 400000,
+        
+        email_contact           => 'lrg-internal@ebi.ac.uk',
+
         output_dir              => $self->o('reports_dir').'/hive_output',
 
-        small_lsf_options   => '-R"select[mem>2000] rusage[mem=2000]" -M2000',
-        default_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
-        highmem_lsf_options => '-R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
+        small_lsf_options   => '-R"select[mem>250]  rusage[mem=250]"  -M250',
+        default_lsf_options => '-R"select[mem>1000] rusage[mem=1000]" -M1000',
+        highmem_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
@@ -69,7 +75,7 @@ sub resource_classes {
     return {
           'small'   => { 'LSF' => $self->o('small_lsf_options')   },
           'default' => { 'LSF' => $self->o('default_lsf_options') },
-          'highmem' => { 'LSF' => $self->o('highmem_lsf_options') },
+          'highmem' => { 'LSF' => $self->o('highmem_lsf_options') }
     };
 }
 
@@ -77,28 +83,35 @@ sub pipeline_analyses {
     my ($self) = @_;
     my @analyses;
     
+    my @common_params = (
+        align_dir     => $self->o('align_dir'),
+        reports_dir   => $self->o('reports_dir'),
+        reports_file  => $self->o('reports_file')
+    );
+    
     push @analyses, (
       {   
             -logic_name => 'init_align', 
             -module     => 'LRG::Pipeline::Align::InitAlign',
             -rc_name    => 'small',
             -parameters => {
-               xml_dirs       => $self->o('xml_dirs'),
-               ftp_dir        => $self->o('ftp_dir'),
-               run_dir        => $self->o('run_dir'),
-               align_dir      => $self->o('align_dir'),
-               data_files_dir => $self->o('data_files_dir'),
-               genes_file     => $self->o('genes_file'),
-               havana_ftp     => $self->o('havana_ftp'),
-               havana_file    => $self->o('havana_file'),
-               hgmd_file      => $self->o('hgmd_file'),
-               reports_dir    => $self->o('reports_dir'),
-               reports_file   => $self->o('reports_file')
+               xml_dirs        => $self->o('xml_dirs'),
+               ftp_dir         => $self->o('ftp_dir'),
+               run_dir         => $self->o('run_dir'),
+               data_files_dir  => $self->o('data_files_dir'),
+               genes_file      => $self->o('genes_file'),
+               havana_ftp      => $self->o('havana_ftp'),
+               havana_file     => $self->o('havana_file'),
+               hgmd_file       => $self->o('hgmd_file'),
+               rest_url        => $self->o('rest_gene_endpoint'),
+               gene_max_length => $self->o('gene_length_highmem_threshold'),
+               @common_params
             },
             -input_ids  => [{}],
             -flow_into  => { 
-               '2->A' => ['create_align'],
-               'A->1' => ['finish_align']
+               2 => ['create_align'],
+               3 => ['create_align_highmem'],
+               4 => ['finish_align']
             },		
       },
       {   
@@ -107,7 +120,17 @@ sub pipeline_analyses {
             -rc_name       => 'default',
             -input_ids     => [],
             -hive_capacity => 25,
-            -wait_for      => [ 'init_align' ],
+            -flow_into      => {
+              -1 => ['create_align_highmem'],
+            }
+      },
+      {   
+            -logic_name    => 'create_align_highmem', 
+            -module        => 'LRG::Pipeline::Align::CreateAlign',
+            -rc_name       => 'highmem',
+            -can_be_empty  => 1,
+            -input_ids     => [],
+            -hive_capacity => 25,
             -flow_into     => {},
       },
       {   
@@ -115,12 +138,11 @@ sub pipeline_analyses {
             -module     => 'LRG::Pipeline::Align::FinishAlign',
             -rc_name    => 'small',
             -parameters => {
-               align_dir    => $self->o('align_dir'),
-               reports_dir  => $self->o('reports_dir'),
-               reports_file => $self->o('reports_file')
+               email_contact => $self->o('email_contact'),
+               @common_params
             },
             -input_ids  => [],
-            -wait_for   => [ 'create_align' ],
+            -wait_for   => [ 'create_align', 'create_align_highmem' ],
             -flow_into  => {},
       },
     );

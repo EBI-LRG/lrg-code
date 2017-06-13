@@ -4,6 +4,14 @@ use strict;
 use warnings;
 
 use base ('Bio::EnsEMBL::Hive::Process');
+use HTTP::Tiny;
+use JSON;
+
+my $HTTP = HTTP::Tiny->new();
+
+my $SERVER;
+my $LENGTH;
+my %GENES_LENGTH;
 
 sub run {
   my $self = shift;
@@ -24,9 +32,14 @@ sub write_output {
   my $reports_dir    = $self->param('reports_dir'),
   my $reports_file   = $self->param('reports_file');
   
+  $SERVER = $self->param('rest_url');
+  $LENGTH = $self->param('gene_max_length');
+
+  my $batch_size = 100; # Number of gene symbols send in a batch to Ensembl REST (POST)
+  
   my $havana_list_file = "$data_files_dir/$havana_file";
   
-  my @jobs;
+  my (@jobs, @big_jobs);
   
   my %files;
   my %distinct_genes;
@@ -55,9 +68,8 @@ sub write_output {
     $count_lrg += scalar(@{$files{$dir}});
     
     foreach my $file (@{$files{$dir}}) {
-      $file =~ m/^(LRG\_([0-9]+))\.xml$/;
+      $file =~ m/^(LRG\_[0-9]+)\.xml$/;
       my $lrg_id = $1;
-      my $id = $2;
       
       my $gene;
       my $lrg_locus = `grep -m1 'lrg_locus' $dir/$file`;
@@ -66,26 +78,14 @@ sub write_output {
         $gene = $1;
       }
       
-      if ($gene) {
-        $distinct_genes{$gene} = 1;
-        push @jobs, {
-          'id'             => $id,
-          'run_dir'        => $run_dir,
-          'align_dir'      => $align_dir,
-          'gene'           => $gene,
-          'data_files_dir' => $data_files_dir,
-          'havana_file'    => $havana_file,
-          'hgmd_file'      => $hgmd_file,
-          'lrg'            => $lrg_id
-        };  
-      }
+      $distinct_genes{$gene} = $lrg_id if ($gene);
     }
   }
   my $count_lrg_jobs = scalar(@jobs);
 
   print REPORTS "<ul>";
   print REPORTS "  <li>LRG XML files found: $count_lrg</li>\n";
-  print REPORTS "  <li>LRG with genes found: $count_lrg_jobs</li>\n";
+  print REPORTS "  <li>LRG with genes found: ".scalar(keys(%distinct_genes))."</li>\n";
 
   # Download latest Havana data file
   my $havana_file_default = 'hg38.bed';
@@ -110,16 +110,8 @@ sub write_output {
       my $gene = $_;
       next if ($gene eq '' || $gene =~ /^\s/ || $gene =~ /^#/);
       next if ($distinct_genes{$gene});
-      push @jobs, {
-          'id'            => $id,
-          'run_dir'       => $run_dir,
-          'align_dir'     => $align_dir,
-          'gene'          => $gene,
-          'data_file_dir' => $data_files_dir,
-          'havana_file'   => $havana_file,
-          'lrg'           => ''
-      };
-      $distinct_genes{$gene} = 1;
+      
+      $distinct_genes{$gene} = $id;
       $count_genes ++;
       $id += $count_genes;
     }
@@ -127,13 +119,88 @@ sub write_output {
     print REPORTS "  <li>Genes from the data file: $count_genes</li>\n";
   }
   
-  print REPORTS "<li>Total alignments to run: <b>".scalar(@jobs)."</b></li>\n";
+  
+  # Get gene sizes (in order to dispatch the jobs to the analysis 'create_align' or 'create_align_highmem')
+  my $batch_count = 0;
+  my @batch_array = ();
+  foreach my $gene (keys(%distinct_genes)) {
+    if ($batch_count == $batch_size) {
+      get_genes_length(\@batch_array);
+      $batch_count = 0;
+      @batch_array = ();
+    }
+    push @batch_array, $gene;
+    $batch_count ++;
+  }
+  get_genes_length(\@batch_array); # Finish
+  
+  
+  # Dispatch jobs:
+  foreach my $gene (keys(%distinct_genes)) {
+
+    my $id = $distinct_genes{$gene};
+    my $job_id = $id;
+    my $lrg_id = '';
+    if ($id =~ m/^LRG\_([0-9]+)/) {
+      $job_id = $1;
+      $lrg_id = $id;
+    }
+  
+    my $gene_job = {
+          'id'             => $job_id,
+          'run_dir'        => $run_dir,
+          'align_dir'      => $align_dir,
+          'gene'           => $gene,
+          'data_files_dir' => $data_files_dir,
+          'havana_file'    => $havana_file,
+          'hgmd_file'      => $hgmd_file,
+          'lrg'            => $lrg_id
+       };
+    if ($GENES_LENGTH{$gene} < $LENGTH) {
+      push @jobs, $gene_job;
+    } else {
+      push @big_jobs, $gene_job;
+    }
+
+  }
+  
+  
+  my $total_jobs = scalar(@jobs) + scalar(@big_jobs);
+  print REPORTS "<li>Total alignments to run: <b>$total_jobs</b></li>\n";
   print "</ul>";
   close(REPORTS);
   
-  $self->dataflow_output_id(\@jobs, 2);  
+  $self->dataflow_output_id(\@jobs, 2);
+  $self->dataflow_output_id(\@big_jobs, 3);
+  $self->dataflow_output_id([{}], 4);
   
   return;
+}
+
+sub get_genes_length {
+  my $genes = shift;
+  
+  my $genes_string = '"'.join('","',@$genes).'"';
+
+  my $response = $HTTP->request('POST', $SERVER, {
+    headers => { 'Content-type' => 'application/json', 'Accept' => 'application/json' },
+    content => '{ "symbols" : ['.$genes_string.'] }'
+  });
+ 
+  my $length = $LENGTH;
+  
+  if ($response->{success}) {
+    if (length $response->{content}) {
+      my $hash = decode_json($response->{content});
+      foreach my $gene (keys(%$hash)) {
+        $length = $hash->{$gene}{'end'} - $hash->{$gene}{'start'} + 1;
+        $GENES_LENGTH{$gene} = $length;
+      }
+    }
+  }
+  else {
+    print STDERR "Genes are not found in Ensembl REST\n";
+  }
 }
 
 sub run_cmd {

@@ -9,30 +9,30 @@ use base ('Bio::EnsEMBL::Hive::Process');
 sub run {
   my $self = shift;
   
-  my $align_dir    = $self->param('align_dir');
-  my $reports_dir  = $self->param('reports_dir');
-  my $reports_file = $self->param('reports_file');
-  my $date         = LRG::LRG::date();
+  my $align_dir     = $self->param('align_dir');
+  my $reports_dir   = $self->param('reports_dir');
+  my $reports_file  = $self->param('reports_file');
+  my $email_contact = $self->param('email_contact');
+  my $date          = LRG::LRG::date();
 
   my $nb_files = `ls -l $align_dir/*.html | wc -l`;
   chomp $nb_files;
 
   # Send email
-  $self->send_email($reports_dir, $reports_file, $nb_files, $date);
+  $self->send_email($reports_dir, $reports_file, $nb_files, $email_contact, $date);
 }
 
 sub send_email {
-  my $self         = shift;
-  my $reports_dir  = shift;
-  my $reports_file = shift;
-  my $nb_files     = shift;
-  my $date         = shift;
+  my $self            = shift;
+  my $reports_dir     = shift;
+  my $reports_file    = shift;
+  my $nb_files        = shift;
+  my $email_recipient = shift;
+  my $date            = shift;
 
   $date =~ /^(\d{4})-(\d{2})-(\d{2})$/;
   my $formatted_date = "$3/$2/$1";
 
-
-  my $email_recipient   = 'lgil@ebi.ac.uk';
   my $recipient_name  ||= 'LRG team';
   my $subject           = "[LRG align] Automated alignment pipeline ran the $formatted_date";
 
