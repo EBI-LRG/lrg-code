@@ -285,15 +285,24 @@ if ($havana_dir && -e "$havana_dir/$havana_file") {
                                         };
     
       $havana_tr_exons_list{$tr_name}{'enst'} = $havana2ensembl{$tr_name} if ($havana2ensembl{$tr_name});
-    
+      
+      my $havana_tr_length = 0;
       for(my $i=0;$i<scalar(@exon_sizes);$i++) {
         my $start = $tr_start + $exon_starts[$i];
         my $end = $start + $exon_sizes[$i] - 1;
         
+        $havana_tr_length += $exon_sizes[$i];
         $havana_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'frame'} = $exon_frames[$i];
         
         $exons_list{$start} ++;
         $exons_list{$end} ++;
+      }
+      $havana_tr_exons_list{$tr_name}{'length_tr'} = $havana_tr_length;
+      if ($tr_start != $tr_c_start && $tr_end != $tr_c_end) {
+        my $havana_coding_length = $havana_tr_length;
+           $havana_coding_length -= ($tr_c_start - $tr_start);
+           $havana_coding_length -= ($tr_end - $tr_c_end);
+        $havana_tr_exons_list{$tr_name}{'length_coding'} = $havana_coding_length;
       }
     }
   }
@@ -791,12 +800,13 @@ foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_li
   # HAVANA lengths
   my $havana_start  = $havana_tr_exons_list{$hv}{'start'};
   my $havana_end    = $havana_tr_exons_list{$hv}{'end'};
-  my $havana_length = ($havana_start && $havana_end) ? thousandify($havana_end - $havana_start + 1).' bp' : 'NA';
+  my $havana_length = ($havana_tr_exons_list{$hv}{'length_tr'}) ? thousandify($havana_tr_exons_list{$hv}{'length_tr'}).' bp' : 'NA';
   
   
   my $havana_coding_start = $havana_tr_exons_list{$hv}{'coding_start'};
   my $havana_coding_end   = $havana_tr_exons_list{$hv}{'coding_end'};
-  my $havana_coding_length = ($havana_coding_start && $havana_coding_end) ? thousandify($havana_coding_end - $havana_coding_start + 1).' bp' : 'NA';
+  my $havana_coding_length = ($havana_tr_exons_list{$hv}{'length_coding'}) ? thousandify($havana_tr_exons_list{$hv}{'length_coding'}).' bp' : 'NA';
+
   
   $exon_tab_list .= qq{
     <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($havana_length)</div></td>
