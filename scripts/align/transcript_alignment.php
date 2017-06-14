@@ -61,7 +61,7 @@ EOF;
        ];
       $( "#autogene" ).autocomplete({
         source: availableGenes,
-        minLength: 3
+        minLength: 2
       });
     });
   </script>

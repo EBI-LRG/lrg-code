@@ -68,13 +68,24 @@ a.external {
 a.external:hover {
   text-decoration:underline;
 }
- 
+
+.legend_container {
+  margin-top:50px;
+  width:1120px;
+  border:1px solid #336;
+  border-radius:5px;
+}
+.legend_column {
+  float:left;
+  width:550px;
+}
+
 table.legend {
   margin:2px;
   font-size:0.8em
 }
 table.legend td {
-  padding:2px 1px
+  padding: 4px;
 }
 
 .small_cell {
@@ -376,9 +387,16 @@ th.coord {
   display:none;
 } 
 
-.havana_exon {
+.havana_coding {
+  height:20px;
   background-color:#ff9900;
-  box-shadow:2px 2px 1px #CCC
+  box-shadow:2px 2px 1px #CCC;
+}
+.havana_non_coding {
+  height:18px;
+  position:relative;
+  border:1px inset #CCC;
+  background-color:rgba(255, 153, 0, 0.4); /*#090*/
 }
 
 .gene_exon {
@@ -397,10 +415,10 @@ th.coord {
   padding:0px;
   margin:0px 1px 0px;
 }
-.bg1 {
+.bg1, .bg1_legend {
   background-color:#FFF;
 }
-.bg2 {
+.bg2, .bg2_legend {
   background-color:#EEE;
 }
 .bg1_hl {
@@ -410,7 +428,11 @@ th.coord {
   background-color:#b297ca;
 }
 .bg1, .bg2 {
- height:50px;
+  height:50px;
+}
+
+.bg1_legend>td:first-child, .bg2_legend>td:first-child {
+  width: 50px;
 }
 
 .on {
@@ -692,7 +714,7 @@ table.transcript tr.bottom_row {
 
 
 .scrolling {
-  max-width: 1200px;
+  max-width: 1900px;
   overflow-x:scroll;  
   margin-left:605px;/*610px;*/
   overflow-y:visible;

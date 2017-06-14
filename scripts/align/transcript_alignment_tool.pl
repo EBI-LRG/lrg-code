@@ -263,7 +263,7 @@ if ($havana_dir && -e "$havana_dir/$havana_file") {
       my $tr_end      = $h_data[2];
       my $tr_strand   = $h_data[5];
          $tr_strand = ($tr_strand eq '+') ? 1 : -1;
-      my $tr_c_start  = $h_data[6];
+      my $tr_c_start  = $h_data[6] + 1;
       my $tr_c_end    = $h_data[7];
       my $e_count     = $h_data[9];
       my @exon_sizes  = split(',', $h_data[10]);
@@ -798,7 +798,6 @@ foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_li
   my $havana_coding_end   = $havana_tr_exons_list{$hv}{'coding_end'};
   my $havana_coding_length = ($havana_coding_start && $havana_coding_end) ? thousandify($havana_coding_end - $havana_coding_start + 1).' bp' : 'NA';
   
-  
   $exon_tab_list .= qq{
     <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($havana_length)</div></td>
     <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($havana_coding_length)</div></td>
@@ -824,7 +823,9 @@ foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_li
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-
+    my $is_coding = ' havana_coding';
+    my $is_partial = '';
+    
     if ($exon_start and !$havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
       next;
@@ -849,8 +850,17 @@ foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_li
     if ($exon_start) {
       my $phase_start = $havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}{'frame'};
       my $phase_end   = '';
-
-      $exon_tab_list .= display_exon("$has_exon havana_exon",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-',$phase_start,$phase_end);
+      
+      if (($havana_coding_start > $exon_start && $havana_coding_start > $coord) || 
+          ($havana_coding_end < $exon_start && $havana_coding_end < $coord) || 
+          ($havana_coding_start == $havana_start && $havana_coding_end == $havana_end && $biotype ne 'protein_coding')) {
+        $is_coding  = ' havana_non_coding';
+      }
+      elsif ($havana_coding_start > $exon_start || $havana_coding_end < $coord) {
+        $is_partial = ' partial';
+      }
+      
+      $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-',$phase_start,$phase_end);
       if ($havana_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -1203,78 +1213,94 @@ my $tsl1 = $tsl_colour{1};
 my $tsl2 = $tsl_colour{2};
 my $tsl4 = $tsl_colour{4};
 $html .= qq{ 
-      <div class="clearfix" style="margin-top:50px;width:920px;border:1px solid #336;border-radius:5px">
+      <div class="legend_container clearfix">
         <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
       
         <!-- Transcript -->
-        <div style="float:left;width:450px">
+        <div class="legend_column">
         <table class="legend">
           <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
-          <tr class="bg1"><td class="gold first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td></tr>
-          <tr class="bg2"><td class="ens first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl transcripts</b> (not merged with Havana)</td></tr>
-          <tr class="bg1"><td class="havana first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>HAVANA transcripts</b></td></tr>
-          <tr class="bg2"><td class="cdna first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts cDNA</b> data</td></tr>
-          <tr class="bg1"><td class="nm first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq transcripts</b></td></tr>
-          <tr class="bg2"><td class="gff3 first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>RefSeq  transcripts</b> from the <b>GFF3 import</b></td></tr>
-          <tr class="bg1"><td class="gene first_column" style="width:50px"></td><td style="padding-left:5px">Label the <b>Ensembl genes</b></td></tr>
+          <tr class="bg1_legend">
+            <td class="gold first_column"></td>
+            <td>Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td>
+          </tr>
+          <tr class="bg2_legend">
+            <td class="ens first_column"></td><td>Label the <b>Ensembl transcripts</b> (not merged with Havana)</td>
+          </tr>
+          <tr class="bg1_legend">
+            <td class="havana first_column"></td><td>Label the <b>HAVANA transcripts</b></td>
+          </tr>
+          <tr class="bg2_legend">
+            <td class="cdna first_column"></td><td>Label the <b>RefSeq transcripts cDNA</b> data</td>
+          </tr>
+          <tr class="bg1_legend">
+            <td class="nm first_column"></td><td>Label the <b>RefSeq transcripts</b></td>
+          </tr>
+          <tr class="bg2_legend">
+            <td class="gff3 first_column"></td><td>Label the <b>RefSeq transcripts</b> from the <b>GFF3 import</b></td>
+          </tr>
+          <tr class="bg1_legend">
+            <td class="gene first_column"></td><td>Label the <b>Ensembl genes</b></td>
+          </tr>
+          
           <!-- Other -->
           <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-          <tr class="bg2">
-            <td style="padding-left:2px">
+          <tr class="bg2_legend">
+            <td>
               <span class="manual">M</span>
               <span class="not_manual">A</span>
             </td>
-            <td style="padding-left:5px">Label for the type of annotation: manual (M) or automated (A)</td>
+            <td>Label for the type of annotation: manual (M) or automated (A)</td>
           </tr>
-          <tr class="bg1">
-            <td style="padding-left:2px">
+          <tr class="bg1_legend">
+            <td>
               <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
               <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
               <span class="tsl" style="background-color:$tsl4" title="Transcript Support Level = 4">4</span>
             </td>
-            <td style="padding-left:5px">Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
+            <td>Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
           </tr>
-          <tr class="bg2">
-            <td style="padding-left:2px">
+          <tr class="bg2_legend">
+            <td>
               <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
               <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
               <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
             </td>
-            <td style="padding-left:5px">Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
+            <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
           </tr>
-          <tr class="bg1">
-            <td style="padding-left:2px">
+          <tr class="bg1_legend">
+            <td>
               <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
               <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
             </td>
-            <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
+            <td>Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
           </tr>
-          <tr class="bg2">
-            <td style="padding-left:2px">
+          <tr class="bg2_legend">
+            <td>
               <span class="flag canonical icon-favourite close-icon-0 smaller-icon"></span>
             </td>
-            <td style="padding-left:5px">Label to indicate the canonical transcript</td>
+            <td>Label to indicate the canonical transcript</td>
           </tr>
-          <tr class="bg1">
-            <td style="padding-left:2px">
+          <tr class="bg1_legend">
+            <td>
                <span class="flag uniprot icon-target close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
             </td>
-            <td style="padding-left:5px">Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
+            <td>Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
           </tr>
-          <tr class="bg2">
-            <td style="padding-left:2px">
+          <tr class="bg2_legend">
+            <td>
               <span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
-            <td style="padding-left:5px">Number of pathogenic variants overlapping the transcript exon(s)</td>
+            <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
-          <tr class="bg1">
-            <td style="padding-left:2px">
+          <tr class="bg1_legend">
+            <td>
               <span class="flag source_flag cdna">cdna</span>
             </td>
-            <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
+            <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
           <tr class="bg2">
-            <td style="padding-left:2px">
+            <td>
               <span class="flag source_flag gff3">gff3</span>
             </td>
             <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
@@ -1284,38 +1310,91 @@ $html .= qq{
         </div>
        
         <!-- Exons -->
-        <div style="float:left;width:450px;margin-left:10px">
+        <div class="legend_column" style="margin-left:10px">
           <table class="legend">
             <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
+            
             <!-- Coding -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon coding">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="exon havana_exon">#</div></td><td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b> but we don't know if the exon is actually coding (information not available in the input file)</td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon coding_np">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="exon coding_unknown">#</div></td><td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td></tr>
+            <tr class="bg1_legend">
+              <td><div class="exon coding">#</div></td>
+              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            <tr class="bg2_legend">
+              <td><div class="exon havana_coding">#</div></td>
+              <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            <tr class="bg1_legend">
+              <td><div class="exon coding_np">#</div></td>
+              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td>
+            </tr>
+            <tr class="bg2_legend">
+              <td><div class="exon coding_unknown">#</div></td>
+              <td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td>
+            </tr>
+            
             <!-- Partially coding -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon coding partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td></tr>
-            <!--<tr class="bg2"><td style="width:50px"><div class="exon coding_np partial">#</div></td><td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
-            <!--<tr class="bg1"><td style="width:50px"><div class="exon coding_unknown partial">#</div></td><td style="padding-left:5px">The exon is partially coding.  We don't know whether the sequence is identical or different with the reference</td></tr>-->
+            <tr class="bg1_legend">
+              <td><div class="exon coding partial">#</div></td>
+              <td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            <tr class="bg2_legend">
+              <td><div class="exon havana_coding partial">#</div></td>
+              <td style="padding-left:5px">The Havana exon is partially coding. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            
             <!-- Non coding -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon non_coding">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td></tr>
-            <!--<tr class="bg2"><td style="width:50px"><div class="exon non_coding_np">#</div></td><td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>not identical</b></td></tr>-->
-            <tr class="bg1"><td style="width:50px"><div class="exon non_coding_unknown">#</div></td><td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td></tr>
+            <tr class="bg1_legend">
+              <td><div class="exon non_coding">#</div></td>
+              <td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            <tr class="bg2_legend">
+              <td><div class="exon havana_non_coding">#</div></td>
+              <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
+            </tr>
+            <tr class="bg1_legend">
+              <td><div class="exon non_coding_unknown">#</div></td>
+              <td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td>
+            </tr>
+            
             <!-- Low evidences -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences</small></td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon coding few_evidence">#</div></td><td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="exon coding few_evidence partial">#</div></td><td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon non_coding few_evidence">#</div></td><td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon (only for the Ensembl transcripts)</td></tr>
+            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences <span style="color:#AFA">(only for Ensembl transcripts)</span></small></td></tr>
+            <tr class="bg1_legend">
+              <td><div class="exon coding few_evidence">#</div></td>
+              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
+            </tr>
+            <tr class="bg2_legend">
+              <td><div class="exon coding few_evidence partial">#</div></td>
+              <td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
+            </tr>
+            <tr class="bg1_legend">
+              <td><div class="exon non_coding few_evidence">#</div></td>
+              <td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
+            </tr>
+            
             <!-- Gene -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Gene</small></td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="exon gene_exon">></div></td><td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="exon gene_exon partial">></div></td><td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td></tr>
+            <tr class="bg2_legend">
+              <td><div class="exon gene_exon">></div></td>
+              <td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td>
+            </tr>
+            <tr class="bg1_legend">
+              <td><div class="exon gene_exon partial">></div></td>
+              <td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td>
+            </tr>
+            
             <!-- Other -->
             <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-            <tr class="bg2"><td style="width:50px"><div class="none"></div></td><td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td></tr>
-            <tr class="bg1"><td style="width:50px"><div class="no_exon"></div></td><td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td></tr>
+            <tr class="bg2_legend">
+              <td><div class="none"></div></td>
+              <td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td>
+            </tr>
+            <tr class="bg1_legend">
+              <td><div class="no_exon"></div></td>
+              <td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td>
+            </tr>
           </table>
         </div>
       </div>
