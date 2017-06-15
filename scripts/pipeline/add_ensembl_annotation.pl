@@ -74,6 +74,19 @@ $xmla->load_xml_file($option{xmlfile});
 # Get an LRGXMLAdaptor and fetch all annotation sets
 my $lrg_adaptor = $xmla->get_LocusReferenceXMLAdaptor();
 my $lrg = $lrg_adaptor->fetch();
+
+# Get translation sequences (for comparison with Ensembl protein sequences)
+my %lrg_pr_seq;
+my $lrg_transcripts = $lrg->fixed_annotation->transcript;
+foreach my $lrg_tr (@$lrg_transcripts) {
+  next if (!$lrg_tr->coding_region);
+  foreach my $cds (@{$lrg_tr->coding_region}) {
+    my $pr = $cds->translation;
+    my $pr_seq  = $pr->sequence->sequence;
+    $lrg_pr_seq{ $lrg_tr->name}{$pr->name} = seq2array($pr_seq);
+  }
+}
+
 my $asets = $lrg->updatable_annotation->annotation_set();
 
 my $lrg_tr_coords = get_lrg_transcript_coords($lrg);
@@ -148,6 +161,7 @@ die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n"
 my $s_adaptor = $registry->get_adaptor($option{species},'core','slice');
 my $slice = $s_adaptor->fetch_by_region('chromosome',$mapping->other_coordinates->coordinate_system(),$mapping->other_coordinates->start(),$mapping->other_coordinates->end(),$mapping->mapping_span->[0]->strand(),$option{assembly}) or die("Could not fetch a slice for the mapped region");
 
+my $pr_adaptor = $registry->get_adaptor($option{species},'core','translation');
 
 # Create a new LRGAnnotation object and load the slice into it
 my $lrga = LRG::LRGAnnotation->new($slice);
@@ -203,6 +217,19 @@ foreach my $f (@ens_feature) {
       }
       if ($t->translation) {
         foreach my $trans (@{$t->translation}) {
+          if ($t->fixed_id) {
+            my $ens_pr_seq = get_ens_protein_seq($trans->accession);
+            my $ens_pr_seq_array = seq2array($ens_pr_seq);
+            
+            my $lrg_tr_name = $t->fixed_id;
+            
+            foreach my $lrg_pr_name (keys(%{$lrg_pr_seq{$lrg_tr_name}})) {
+              if (compare_ens_proteins_with_lrg_proteins($ens_pr_seq_array, $lrg_pr_seq{$lrg_tr_name}{$lrg_pr_name})) {
+                $trans->fixed_id($lrg_pr_name);
+                last;
+              }  
+            }
+          }
           remove_grc_coordinates($trans);
         }
       }
@@ -414,3 +441,35 @@ sub compare_ens_transcripts_with_lrg_transcripts {
   return [\%ens_list, \%ens_utr_list];
 }
 
+
+sub compare_ens_proteins_with_lrg_proteins {
+  my $ens_seq = shift;
+  my $lrg_seq = shift;
+
+  return 0 if (scalar(@$ens_seq) != scalar(@$lrg_seq));
+  
+  for (my $i=0; $i<scalar(@$ens_seq); $i++) {
+    return 0 if ($ens_seq->[$i] ne $lrg_seq->[$i]);
+  }
+  return 1;
+}
+
+sub seq2array {
+  my $sequence = shift;
+  
+  my $sep = ':';
+
+  $sequence =~ s/(.{250})/$1$sep/g;
+  my @seq_array = split($sep,$sequence);
+
+  return \@seq_array;
+}
+
+
+sub get_ens_protein_seq {
+  my $ensp_id = shift;
+  
+  my $ensp_obj = $pr_adaptor->fetch_by_stable_id($ensp_id);
+  
+  return $ensp_obj->seq;
+}
