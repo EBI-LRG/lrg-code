@@ -353,6 +353,16 @@ CREATE TABLE `lrg_transcript` (
 );
 
 --
+-- Table structure for table `lrg_transcript_ens`
+--
+CREATE TABLE `lrg_transcript_ens` (
+  `gene_id` int(11) NOT NULL,
+  `transcript_name` varchar(64) NOT NULL default 't1',
+  `ensembl_transcript` varchar(64) NOT NULL,
+  PRIMARY KEY (`gene_id`,`transcript_name`)
+);
+
+--
 -- Table structure for table `lrg_transcript_date`
 --
 CREATE TABLE `lrg_transcript_date` (

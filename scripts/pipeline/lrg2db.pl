@@ -945,6 +945,12 @@ sub parse_annotation_set {
         warn("HGNC symbol for $lrg_id as specified in XML file is different from corresponding symbol stored in db ($lrg_gene_name in xml vs $hgnc_symbol in db)") if ($lrg_gene_name ne $hgnc_symbol);
     }
     
+    # Fetch and store the relation between LRG transcript & Ensembl transcript
+    if ($annotation_set->data()->{'type'} eq 'ensembl') {
+      my $ens_trs = $annotation_set->findNodeArray('features/gene/transcript');
+      update_lrg_transcript_ensembl($ens_trs);
+    }
+
     # Create an XML writer to print the XML of the rest of the nodes
     my $xml_string;
     my $xml_out;
@@ -1624,6 +1630,40 @@ sub get_polya_comment_sentence {
   return "$polya_comment_prefix $refseq_id $polya_comment_suffix";
 }
 
+sub update_lrg_transcript_ensembl {
+  my $ens_trs = shift;
+
+  my $lrg_tr_ens_table = 'lrg_transcript_ens';
+  my $stmt_del = qq{
+            DELETE FROM $lrg_tr_ens_table
+            WHERE gene_id=$gene_id AND transcript_name=?
+     };
+  my $stmt_ins = qq{
+            INSERT IGNORE INTO $lrg_tr_ens_table
+              (gene_id,transcript_name,ensembl_transcript)
+            VALUES ($gene_id,?,?)
+     };
+  my $del_sth = $db_adaptor->dbc->prepare($stmt_del);
+  my $ins_sth = $db_adaptor->dbc->prepare($stmt_ins);
+
+  foreach my $ens_tr (@$ens_trs) {
+    if ($ens_tr->data()->{'fixed_id'}) {
+      my $ens_id = $ens_tr->data()->{'accession'};
+      my $lrg_tr = $ens_tr->data()->{'fixed_id'};
+
+      # Delete former entry (to be on a safe side)
+      $del_sth->bind_param(1,$lrg_tr,SQL_VARCHAR);
+      $del_sth->execute();
+
+      # Insert new data
+      $ins_sth->bind_param(1,$lrg_tr,SQL_VARCHAR);
+      $ins_sth->bind_param(2,$ens_id,SQL_VARCHAR);
+      $ins_sth->execute();
+    }
+  }
+  $del_sth->finish();
+  $ins_sth->finish();
+}
 
 sub error_msg {
   my $msg = shift;
