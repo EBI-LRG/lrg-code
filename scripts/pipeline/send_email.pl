@@ -33,7 +33,7 @@ my $lrg_sender = 'noreply@lrg-sequence.org';
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
 my $title          = 'Dear %s,';
-my $lrg_contact    = 'If you have any questions or comments, please send an email at <a href="mailto:help@lrg-sequence.org?Subject='.$lrg_id.'">help@lrg-sequence.org</a>';
+my $lrg_contact    = 'If you have any questions or comments, please send an email at <a href="mailto:help@lrg-sequence.org?Subject='.$lrg_id.'">help@lrg-sequence.org</a>.';
 my $lrg_signature  = 'The LRG team';
 my $lrg_ps         = '<small>Please do not reply to this message: this email is an automated notification, which is unable to receive replies.</small>';
 
@@ -51,7 +51,7 @@ my %email_message = (
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
-                                  '%s<br />'.
+                                  '%s<br /><br />'.
                                   $lrg_ps,
                       'pending' => $title.'<br />'.
                                   '<p>'.
@@ -62,11 +62,11 @@ my %email_message = (
                                   '<br /><br />'.
                                   'Please note that this record is not finalised and will undergo manual curation in the near future. '.
                                   'Curation will establish if the record contains the most suitable reference sequences for reporting variants at the %s locus. '.
-                                  'A member of the LRG team will contact you if any questions arise during the curation process<br /><br />'.
+                                  'A member of the LRG team will contact you if any questions arise during the curation process.<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
-                                  '%s<br />'.
+                                  '%s<br /><br />'.
                                   $lrg_ps,
                     );
 
