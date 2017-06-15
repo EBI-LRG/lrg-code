@@ -36,13 +36,13 @@ sub new {
 }
 
 sub sender {
-  my $self   = shift;
+  my $self = shift;
   return $self->{'sender'} = shift if(@_);
   return $self->{'sender'};
 }
 
 sub recipient {
-  my $self      = shift;
+  my $self = shift;
   return $self->{'recipient'} = shift if(@_);
   return $self->{'recipient'};
 }

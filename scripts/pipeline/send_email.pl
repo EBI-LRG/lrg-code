@@ -28,6 +28,8 @@ $xml_dir   ||= '/ebi/ftp/pub/databases/lrgex/';
 $ftp_dir   ||= 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
 $lrg_email ||= 'lrg-internal@ebi.ac.uk';
 
+my $lrg_sender = 'noreply@lrg-sequence.org';
+
 my $pending_status = 'pending';
 my $default_name   = 'LRG requester';
 my $title          = 'Dear %s,';
@@ -45,7 +47,7 @@ my %email_message = (
                                   'We are pleased to let you know that the LRG for %s (%s) has been finalised. '.
                                   'The fixed section will now remain stable and we can recommend the use of this LRG for variant reporting.<br />'.
                                   'Many thanks for your help in creating this LRG.<br />'.
-                                  'The public record will be available within the next 24h at <a href="%s">%s</a>.<br /><br />'.
+                                  'The public record will be available in a few hours at <a href="%s">%s</a>.<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
@@ -56,7 +58,7 @@ my %email_message = (
                                   'We have now created a pending LRG record for %s (%s).'.
                                   '<br /><br />'.
                                   'We would be grateful if you could review the record and let us know if any changes are required. '.
-                                  'The record will be available for review within the next 24h at <a href="%s">%s</a>.'.
+                                  'The record will be available for review in a few hours at <a href="%s">%s</a>.'.
                                   '<br /><br />'.
                                   'Please note that this record is not finalised and will undergo manual curation in the near future. '.
                                   'Curation will establish if the record contains the most suitable reference sequences for reporting variants at the %s locus. '.
@@ -154,15 +156,15 @@ sub send_lrg_email {
     print "MESSAGE:\n$message\n";
   }
   else {
-    #my $email_obj = LRG::LRGEmail->new($email,$subject,$message);
-    #$email_obj->send;
+    my $email_obj = LRG::LRGEmail->new($email,$subject,$message,$lrg_sender);
+       $email_obj->send;
 
     # Copy of the email sent to the LRG internal mailing list
     unless ($no_lrg_email) {
       my $lrg_subject = "Test - $subject";#"Copy - $subject";
       my $lrg_message = "Copy of the automatic email sent to $name about $lrg_id:<br /><br />$message";
       my $lrg_email_obj = LRG::LRGEmail->new($lrg_email,$lrg_subject,$lrg_message);
-      $lrg_email_obj->send;
+         $lrg_email_obj->send;
     }
   }
 }
