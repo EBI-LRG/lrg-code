@@ -30,11 +30,11 @@ sub default_options {
 
         # Directories
         data_files_dir          => '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/',
-        align_dir               => '/homes/lgil/public_html/LRG/align', # To update!
+        align_dir               => '/homes/lgil/public_html/LRG/align',  # To update!
         ftp_dir                 => $ENV{'PUBFTP'},
         xml_dirs                => ',pending,stalled',
         run_dir                 => $ENV{'LRGROOTDIR'},
-        reports_dir             => '/homes/lgil/projets/LRG/lrg_head/tmp',   # To update!
+        reports_dir             => '/homes/lgil/projets/LRG/lrg_head/tmp',  # To update!
         pipeline_dir            => $self->o('reports_dir'),
         
         # Files
@@ -48,6 +48,7 @@ sub default_options {
         git_branch              => $ENV{'GITBRANCH'},
 
         rest_gene_endpoint      => 'http://rest.ensembl.org/lookup/symbol/homo_sapiens/',
+        align_url               => 'http://www.ebi.ac.uk/~lgil/LRG/align/transcript_alignment.php',  # To update!
         
         gene_length_highmem_threshold => 400000,
         
@@ -139,6 +140,7 @@ sub pipeline_analyses {
             -rc_name    => 'small',
             -parameters => {
                email_contact => $self->o('email_contact'),
+               align_url     => $self->o('align_url'),
                @common_params
             },
             -input_ids  => [],
