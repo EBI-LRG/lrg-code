@@ -85,12 +85,17 @@ sub send_email {
         local $/;
         $summary .= "<br />";
         $summary .= qq{
-  <div style="border-radius:5px;border:1px solid #CCC;background-color:#1A4468;padding:2px 4px 4px;max-width:500px">
+  <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px 4px 4px;max-width:600px">
     <div style="color:#FFF;font-weight:bold;padding:2px"># Summary reports</div>
-    <div style="background-color:#FFF;padding-top:8px">};
+    <div style="background-color:#FFF;padding:8px 4px 4px">};
         $summary .= <$file>;
-        $summary .= "  </div>\n</div>";
-        $summary .= "<br />";
+        $summary .= qq{
+      <hr style="width:75%;text-align:center"/>
+      <div style="text-align:center">
+        <a style="margin-left:10px;text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 8px 3px;border-radius:5px;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">See full HTML reports</a>
+      </div>
+    </div>
+  </div>};
     }
     close($file);
   }
@@ -102,8 +107,6 @@ Dear $recipient_name,
 The automated pipeline ran fully the $formatted_date. However this doesn't mean that everything worked perfectly.
 <br />
 $summary
-Please, have a look at the HTML reports on the following link: 
-<a style="color:#FFF;background-color:48A726;font-weight:bold;padding:3px;border-radius:5px;border:1px solid #EEE;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">HTML reports</a>.
 <br />
 <br />
 You can also have a look at the <a href="http://guihive.ebi.ac.uk:8080/?username=$user&host$host&dbname=$dbname&port=$port&passwd=xxxxx">ehive pipeline</a> (you will need to provide the MySQL admin password).

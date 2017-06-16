@@ -419,44 +419,73 @@ close(OUT);
 
 
 # Summary reports file
-my $div_style  = 'background-color:#1A4468;padding:3px 4px;color:#FFF;border-radius:5px';
-my $span_style = 'margin-left:5px;padding:2px 6px;color:#FFF';
+my $div_style       = 'background-color:#3C3F45;padding:3px 6px;color:#FFF;margin:0px 2px 10px';
+my $div_style_left  = 'float:left;padding:2px 0px';
+my $div_style_right = 'float:right;margin-left:10px;padding:2px 8px 1px;border-radius:10px;color:#FFF';
+my $th_style        = 'padding:2px 6px;background-color:#3C3F45;font-weight:bold;color:#FFF;border-bottom:2px solid #78BE43';
+my $colour_new      = '#9051A0';
 open S, "> $reports_dir/$reports_sum" or die $!;
-print S qq{  <div style="$div_style;margin:0px 2px 8px">Total number of LRGs: <span style="$span_style;background-color:#48A726">$total_lrg_count</span></div>\n};
 print S qq{
-  <table class="table table-hover" style="border:1px solid #1A4468;margin:10px 5px 15px 25px">
-    <thead>
-      <tr>
-        <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Status</th>
-        <th style="padding:2px 4px;background-color:#48A726;font-weight:bold;color:#FFF">Count</th>
-      </tr>
-     </thead>\n};
+  <div style="float:left">
+    <div style="$div_style">
+      <div style="$div_style_left">Total number of LRGs:</div>
+      <div style="$div_style_right;background-color:#78BE43">$total_lrg_count</div>
+      <div style="clear:both"></div>
+    </div>\n};
+  print S qq{
+    <table class="table table-hover" style="border:1px solid #1A4468;margin:10px 25px;border-collapse:collapse">
+      <thead>
+        <tr>
+          <th style="$th_style">Status</th>
+          <th style="$th_style">Count</th>
+        </tr>
+       </thead>
+       <tbody>\n};
 
-my $is_first_line = 1;
+my $bg_color = '#FFF';
 foreach my $l_status (@lrg_status) {
   next if (!$lrg_counts{$l_status});
   my $count = $lrg_counts{$l_status};
-  my $padding = 'padding:2px 4px';
+  my $padding = 'padding:3px 6px';
   my $font    = 'font-weight:bold';
-  my $bg      = 'background-color:#F9F9F9';
+  my $bg      = 'background-color:'.$bg_color;
 
-  my $left_style  = qq{style="$padding;$bg"};
-  my $right_style = qq{style="text-align:right;$padding;$bg;$font"};
+  $font .= ";color:$colour_new" if ($l_status eq 'new');
 
-  print S qq{    <tr><td $left_style>$l_status</td><td $right_style>$count</td></tr>\n};
+  my $left_style  = qq{style="$padding"};
+  my $right_style = qq{style="text-align:right;$padding;$font"};
+  
+  $bg_color = ($bg_color eq '#FFF') ? '#F9F9F9' : '#FFF';
+  
+  print S qq{      <tr style="$bg"><td $left_style>$l_status</td><td $right_style>$count</td></tr>\n};
 }
-print S "  </table>\n";
+print S "      </tbody>\n    </table>\n";
 my $count_failed  = ($lrgs_list{'failed'}) ? scalar(keys(%{$lrgs_list{'failed'}})) : 0;
-my $colour_failed = ($count_failed == 0) ? '#48A726' : '#F00';
-print S qq{  <div style="$div_style;margin:0px 2px 10px">Number of failed LRG(s): <span style="$span_style;background-color:$colour_failed">$count_failed</span></div>\n};
+my $colour_failed = ($count_failed == 0) ? '#78BE43' : '#F00';
+print S qq{
+  </div>
+  <div style="float:left;margin-left:10px">
+    <div style="$div_style">
+      <div style="$div_style_left">Failed LRG(s):</div>
+      <div style="$div_style_right;background-color:$colour_failed">$count_failed</div>
+      <div style="clear:both"></div>
+    </div>\n};
 
 if (scalar(%new_lrgs)) {
-  print S qq{  <div style="$div_style;margin:0px 2px 10px">List of the new LRG(s):</div>\n};
-  print S qq{  <ul style="padding-bottom:15px;margin-top:0px;margin-bottom:0px;font-weight:bold">\n};
+  my $count_new = scalar(%new_lrgs);
+  print S qq{ 
+  </div>
+  <div style="float:left;margin-left:10px"> 
+    <div style="$div_style">
+      <div style="$div_style_left">New LRG(s):</div>
+      <div style="$div_style_right;background-color:$colour_new">$count_new</div>
+      <div style="clear:both"></div>
+    </div>\n};
+  print S qq{    <ul style="padding-bottom:s5px;margin-top:0px;margin-bottom:0px;font-weight:bold">\n};
   foreach my $id (sort {$a <=> $b} keys(%new_lrgs)) {
-    print S qq{    <li>}.$new_lrgs{$id}{'lrg_id'}.qq{</li>\n};
+    print S qq{      <li>}.$new_lrgs{$id}{'lrg_id'}.qq{</li>\n};
   }
-  print S "  </ul>";
+  print S qq{    </ul>\n  </div>\n  <div style="clear:both"></div>};
 }
 close(S);
 
