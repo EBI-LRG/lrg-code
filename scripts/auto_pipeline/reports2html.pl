@@ -471,8 +471,8 @@ print S qq{
       <div style="clear:both"></div>
     </div>\n};
 
-if (scalar(%new_lrgs)) {
-  my $count_new = scalar(%new_lrgs);
+if (scalar(keys(%new_lrgs))) {
+  my $count_new = scalar(keys(%new_lrgs));
   print S qq{ 
   </div>
   <div style="float:left;margin-left:10px"> 

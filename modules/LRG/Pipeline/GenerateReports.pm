@@ -85,7 +85,7 @@ sub send_email {
         local $/;
         $summary .= "<br />";
         $summary .= qq{
-  <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px 4px 4px;max-width:600px">
+  <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px 4px 4px;max-width:650px">
     <div style="color:#FFF;font-weight:bold;padding:2px"># Summary reports</div>
     <div style="background-color:#FFF;padding:8px 4px 4px">};
         $summary .= <$file>;
