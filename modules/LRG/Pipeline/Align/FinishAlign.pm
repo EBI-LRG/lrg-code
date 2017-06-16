@@ -46,14 +46,19 @@ sub send_email {
         local $/;
         $summary .= "<br />";
         $summary .= qq{
-  <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px 4px 4px;max-width:500px">
+  <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px;max-width:450px">
     <div style="color:#FFF;font-weight:bold;padding:2px"># Summary reports</div>
     <div style="background-color:#FFF;padding:4px 0px">};
         $summary .= <$file>;
         $summary .= qq{
-      <hr />
       <div style="padding-left:25px">
-        Total number of entries generated: <span style="font-weight:bold;color:#1C9BCF">$nb_files</span>
+        Total number of entries generated:
+        <span style="font-weight:bold;margin-left:10px;padding:2px 8px 1px;border-radius:10px;color:#FFF;background-color:#1C9BCF">$nb_files</span>
+      </div>
+
+      <hr style="width:75%;text-align:center"/>
+      <div style="text-align:center">
+        <a style="text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 6px 3px;border-radius:5px;text-align:center;cursor:pointer"
         <a style="margin-left:10px;text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 6px 3px;border-radius:5px;text-align:center;cursor:pointer" href="$align_url">Exon Alignment Tool</a>
       </div>
     </div>

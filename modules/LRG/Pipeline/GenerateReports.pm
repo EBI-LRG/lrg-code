@@ -92,7 +92,7 @@ sub send_email {
         $summary .= qq{
       <hr style="width:75%;text-align:center"/>
       <div style="text-align:center">
-        <a style="margin-left:10px;text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 8px 3px;border-radius:5px;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">See full HTML reports</a>
+        <a style="text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 8px 3px;border-radius:5px;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">See full HTML reports</a>
       </div>
     </div>
   </div>};
