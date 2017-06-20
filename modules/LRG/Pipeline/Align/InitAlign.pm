@@ -167,7 +167,7 @@ sub write_output {
   
   my $total_jobs = scalar(@jobs) + scalar(@big_jobs);
   print REPORTS "<li>Total alignments to run: <b>$total_jobs</b></li>\n";
-  print "</ul>";
+  print REPORTS "</ul>";
   close(REPORTS);
   
   $self->dataflow_output_id(\@jobs, 2);
