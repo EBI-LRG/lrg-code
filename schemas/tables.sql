@@ -220,7 +220,7 @@ CREATE TABLE `lrg_mapping` (
   `chr_syn` varchar(255) default NULL,
   `type` enum('main_assembly','other_assembly','patch','haplotype','transcript') default 'other_assembly',
   PRIMARY KEY  (`mapping_id`),
-  UNIQUE KEY `gene_mapping_idx` (`gene_id`,`assembly`,`chr_name`,`chr_id`)
+  UNIQUE KEY `gene_mapping_idx` (`gene_id`,`assembly`,`chr_name`,`chr_id`,`chr_start`)
 );
 
 --
