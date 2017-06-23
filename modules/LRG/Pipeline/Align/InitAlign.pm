@@ -29,6 +29,7 @@ sub write_output {
   my $havana_ftp     = $self->param('havana_ftp');
   my $havana_file    = $self->param('havana_file');
   my $hgmd_file      = $self->param('hgmd_file');
+  my $uniprot_file   = $self->param('uniprot_file');
   my $reports_dir    = $self->param('reports_dir'),
   my $reports_file   = $self->param('reports_file');
   
@@ -101,6 +102,7 @@ sub write_output {
 
 
   # Genes list from text file
+  $genes_file = "$data_files_dir/$genes_file";
   if (-e $genes_file) {
     open F, "< $genes_file" or die $!;
     my $count_genes = 0;
@@ -154,6 +156,7 @@ sub write_output {
           'data_files_dir' => $data_files_dir,
           'havana_file'    => $havana_file,
           'hgmd_file'      => $hgmd_file,
+          'uniprot_file'   => $uniprot_file,
           'lrg'            => $lrg_id
        };
     if ($GENES_LENGTH{$gene} < $LENGTH) {

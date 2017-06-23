@@ -212,7 +212,7 @@ table.legend td {
   border-radius:0px;
 }
 
-.uniprot {
+.uniprot_flag {
   padding:1px;
   color: #FFF;
   font-weight:bold;
@@ -283,10 +283,17 @@ th.coord {
   background-color:#ff9900;
   color:#FFF;
 }
-.ens_hv a:hover, .ens_hv a:active, .gold_hv a:hover, .gold_hv a:active {
+.ens_uni, .gold_uni {
+  background-color:#5CAECD;
+  color:#FFF;
+}
+.ens_hv a:hover, .ens_hv a:active, .gold_hv a:hover, .gold_hv a:active,
+.ens_uni a:hover, .ens_uni a:active, .gold_uni a:hover, .gold_uni a:active,
+ {
   color:#8d0017;
 }
 
+/* Havana */
 .havana, .havana:hover, .havana:active {
   background-color:#ff9900;
   color:#FFF;
@@ -307,7 +314,28 @@ th.coord {
   color:#8d0017;
 }
 
+/* Uniprot */
+.uniprot, .uniprot:hover, .uniprot:active {
+  background-color:#5CAECD;
+  color:#FFF;
+}
 
+.uniprot_link {
+  color:#FFF;
+  font-size:15px;
+}
+.uniprot_link:hover, .uniprot_link:active {
+  color:#8d0017;
+}
+
+.uniprot_enst {
+  text-align:center;
+  padding-top:4px;
+  font-size:13px;
+  color:#8d0017;
+}
+
+/* RefSeq */
 .nm, .nm:hover, .nm:active {
   background-color:#55F;
   color:#EEE;
@@ -359,19 +387,19 @@ th.coord {
 }*/
 
 .non_coding   {
-  height:18px;
+  height:20px;
   position:relative;
   border:1px inset #CCC;
   background-color:rgba(0,153,0, 0.4); /*#090*/
 }
 .non_coding_np{
-  height:18px;
+  height:20px;
   position:relative;
   border:1px inset #CCC;
   background-color:rgba(153,0,0, 0.4); /*#900*/
 }
 .non_coding_unknown {
-  height:18px;
+  height:20px;
   position:relative;
   border:1px inset #CCC;
   background-color:rgba(0,0,153, 0.4); /*#009*/
@@ -393,10 +421,23 @@ th.coord {
   box-shadow:2px 2px 1px #CCC;
 }
 .havana_non_coding {
-  height:18px;
+  height:20px;
   position:relative;
   border:1px inset #CCC;
   background-color:rgba(255, 153, 0, 0.4); /*#090*/
+}
+
+.uniprot_coding {
+  height:20px;
+  background-color:#5CAECD;
+  box-shadow:2px 2px 1px #CCC;
+}
+
+.uniprot_non_coding {
+  height:20px;
+  position:relative;
+  border:1px inset #CCC;
+  background-color:rgba(92, 174, 205, 0.4); /*#090*/
 }
 
 .gene_exon {

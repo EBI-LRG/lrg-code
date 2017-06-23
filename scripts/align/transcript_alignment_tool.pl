@@ -6,16 +6,17 @@ use Getopt::Long;
 use LWP::Simple;
 use HTTP::Tiny;
 
-my ($gene_name, $output_file, $lrg_id, $tsl, $havana_dir, $havana_file, $no_havana_dl, $hgmd_file, $help);
+my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_havana_dl, $hgmd_file, $help);
 GetOptions(
   'gene|g=s'	          => \$gene_name,
   'outputfile|o=s'      => \$output_file,
   'lrg|l=s'             => \$lrg_id,
   'tsl=s'	              => \$tsl,
-  'havana_dir|hd=s'     => \$havana_dir,
+  'data_file_dir|df=s'  => \$data_file_dir,
   'havana_file|hf=s'    => \$havana_file,
   'no_havana_dl|nh_dl!' => \$no_havana_dl,
-  'hgmd_file|hgmd=s'    => \$hgmd_file,    
+  'hgmd_file|hgmd=s'    => \$hgmd_file,
+  'uniprot_file|uf=s'   => \$uniprot_file,
   'help!'               => \$help
 );
 
@@ -24,34 +25,43 @@ usage() if ($help);
 usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.")  if (!$gene_name);
 usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
 
-usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f $hgmd_file);
+usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana, UniProt) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
+
+usage("Uniprot file '$uniprot_file' not found") if ($uniprot_file && !-f "$data_file_dir/$uniprot_file");
+usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f "$data_file_dir/$hgmd_file");
 
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
-my $havana_file_default = 'hg38.bed';
+my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
+my $havana_file_default  = 'hg38.bed';
 
 my $max_variants = 10;
 
-my $transcript_score_file = '/net/isilon3/production/panda/production/vertebrate-genomics/lrg/data_files/transcript_scores.txt';
+my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
+$uniprot_file ||= $uniprot_file_default;
+
+$uniprot_file = "$data_file_dir/$uniprot_file";
+$hgmd_file    = "$data_file_dir/$hgmd_file";
 
 my $uniprot_url      = 'http://www.uniprot.org/uniprot';
 my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
 
 my $http = HTTP::Tiny->new();
 
-if ($havana_dir && -d $havana_dir) {
+if ($data_file_dir && -d $data_file_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
 
   if (!$no_havana_dl) {
-    `rm -f $havana_dir/$havana_file\.gz`;
-    `wget -q -P $havana_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
-    if (-e "$havana_dir/$havana_file") {
-      `mv $havana_dir/$havana_file $havana_dir/$havana_file\_old`;
+    `rm -f $data_file_dir/$havana_file\.gz`;
+    `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    if (-e "$data_file_dir/$havana_file") {
+      `mv $data_file_dir/$havana_file $data_file_dir/$havana_file\_old`;
     }
-    `gunzip $havana_dir/$havana_file`;
+    `gunzip $data_file_dir/$havana_file`;
   }
 }
+
 
 #$registry->load_registry_from_db(
 #    -host => 'ensembldb.ensembl.org',
@@ -88,13 +98,14 @@ my $pf_a         = $registry->get_adaptor($species, 'variation','phenotypefeatur
 # Biotype: protein_coding
 # External db: RefSeq_mRNA, CCDS
 # http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=CCDS13330
-my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1);
+my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1, 'Uniprot/SWISSPROT' => 1, 'Uniprot/SPTREMBL' => 1);
 
 my $GI_dbname = "EntrezGene";
 
 my %exons_list;
 my %ens_tr_exons_list;
 my %havana_tr_exons_list;
+my %uniprot_tr_exons_list;
 my %refseq_tr_exons_list;
 my %refseq_gff3_tr_exons_list;
 my %cdna_tr_exons_list;
@@ -105,6 +116,7 @@ my %nm_data;
 my %compare_nm_data;
 my %pathogenic_variants;
 my %havana2ensembl;
+my %uniprot2ensembl;
 
 my $ref_seq_attrib = 'human';
 my $gff_attrib     = 'gff3';
@@ -118,6 +130,11 @@ my $genomic_region_url = "http://www.ensembl.org/Homo_sapiens/Location/View?db=c
 my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=###ENSG###';
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
+my %source_url = ( 
+                   'havana'  => 'http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=',
+                   'uniprot' => 'http://www.uniprot.org/uniprot/',
+                 );
+
 
 my $gtex_url = 'http://www.gtexportal.org/home/gene/';
 my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
@@ -219,6 +236,14 @@ foreach my $tr (@$ens_tr) {
     $ens_tr_exons_list{$tr_name}{$dbname}{$xref->display_id} = 1;
   }
   
+  if ($tr->translation) {
+    foreach my $xref (@{$tr->translation->get_all_DBEntries}) {
+      my $dbname = $xref->dbname;
+      next if (!$external_db{$dbname});
+      $ens_tr_exons_list{$tr_name}{$dbname}{$xref->display_id} = 1;
+    }
+  }
+  
   # Ensembl exons
   foreach my $exon (@$ens_exons) {
     my $start = $exon->start;
@@ -246,64 +271,58 @@ foreach my $tr (@$ens_tr) {
 #-------------#
 # Havana data #
 #-------------#
-if ($havana_dir && -e "$havana_dir/$havana_file") {
+if ($data_file_dir && -e "$data_file_dir/$havana_file") {
   foreach my $enst_id (keys(%ens_tr_exons_list)) {
     if ($ens_tr_exons_list{$enst_id}{'OTTT'}) {
       foreach my $ottt (keys(%{$ens_tr_exons_list{$enst_id}{'OTTT'}})) {
         $havana2ensembl{$ottt} = $enst_id;
+        push @{$havana2ensembl{$ottt}}, $enst_id;
       }
     }
   }
-  my $havana_content = `grep -w $gene_name $havana_dir/$havana_file`;
+  my $havana_content = `grep -w $gene_name $data_file_dir/$havana_file`;
   if ($havana_content =~ /\w+/) {
     foreach my $line (split("\n", $havana_content)) {
-      my @h_data = split("\t", $line);
+      my @line_data = split("\t", $line);
+
+      my $tr_name   = $line_data[12];
       
-      my $tr_start    = $h_data[1] + 1;
-      my $tr_end      = $h_data[2];
-      my $tr_strand   = $h_data[5];
+      my $hash_data = bed2hash('long', \@line_data, \%havana2ensembl);
+      $havana_tr_exons_list{$tr_name} = $hash_data;
+    }
+  }
+}
+
+
+#-------------#
+# Uniprot data #
+#-------------#
+if ($data_file_dir && -e $uniprot_file) {
+  foreach my $enst_id (keys(%ens_tr_exons_list)) {
+    foreach my $dbname ('Uniprot/SWISSPROT','Uniprot/SPTREMBL') {
+      if ($ens_tr_exons_list{$enst_id}{$dbname}) {
+        foreach my $uni_id (keys(%{$ens_tr_exons_list{$enst_id}{$dbname}})) {
+          push @{$uniprot2ensembl{$uni_id}}, $enst_id;
+        }
+      }
+    }
+  }
+  my $uniprot_content = `grep -w chr$gene_chr $uniprot_file`;
+  if ($uniprot_content =~ /\w+/) {
+    foreach my $line (split("\n", $uniprot_content)) {
+      my @line_data = split("\t", $line);
+      
+      my $tr_start  = $line_data[1] + 1;
+      my $tr_end    = $line_data[2];
+      my $tr_strand = $line_data[5];
          $tr_strand = ($tr_strand eq '+') ? 1 : -1;
-      my $tr_c_start  = $h_data[6] + 1;
-      my $tr_c_end    = $h_data[7];
-      my $e_count     = $h_data[9];
-      my @exon_sizes  = split(',', $h_data[10]);
-      my @exon_starts = split(',', $h_data[11]);
-      my $tr_name     = $h_data[12];
-      my @exon_frames = split(',', $h_data[15]);
-      my $tr_biotype  = $h_data[16];
-      my $date = $h_data[$#h_data];
-         $date = (split(';', $date))[0] if ($date =~ /^\d+\-\w+\-\d+\;/);
+      my $tr_name   = $line_data[12];
       
-      $havana_tr_exons_list{$tr_name} = {'start'        => $tr_start,
-                                         'end'          => $tr_end,
-                                         'coding_start' => $tr_c_start,
-                                         'coding_end'   => $tr_c_end,
-                                         'strand'       => $tr_strand,
-                                         'biotype'      => $tr_biotype,
-                                         'count'        => $e_count,
-                                         'date'         => $date,
-                                        };
-    
-      $havana_tr_exons_list{$tr_name}{'enst'} = $havana2ensembl{$tr_name} if ($havana2ensembl{$tr_name});
+      next if ($tr_strand != $gene_strand);
+      next if ($tr_start < $gene_start || $tr_end > $gene_end);
       
-      my $havana_tr_length = 0;
-      for(my $i=0;$i<scalar(@exon_sizes);$i++) {
-        my $start = $tr_start + $exon_starts[$i];
-        my $end = $start + $exon_sizes[$i] - 1;
-        
-        $havana_tr_length += $exon_sizes[$i];
-        $havana_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'frame'} = $exon_frames[$i];
-        
-        $exons_list{$start} ++;
-        $exons_list{$end} ++;
-      }
-      $havana_tr_exons_list{$tr_name}{'length_tr'} = $havana_tr_length;
-      if ($tr_start != $tr_c_start && $tr_end != $tr_c_end) {
-        my $havana_coding_length = $havana_tr_length;
-           $havana_coding_length -= ($tr_c_start - $tr_start);
-           $havana_coding_length -= ($tr_end - $tr_c_end);
-        $havana_tr_exons_list{$tr_name}{'length_coding'} = $havana_coding_length;
-      }
+      my $hash_data = bed2hash('short', \@line_data, \%uniprot2ensembl);
+      $uniprot_tr_exons_list{$tr_name} = $hash_data;
     }
   }
 }
@@ -751,139 +770,13 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 #----------------------------#
 # Display HAVANA transcripts #
 #----------------------------#
-my %havana_rows_list;
-foreach my $hv (sort {$havana_tr_exons_list{$b}{'count'} <=> $havana_tr_exons_list{$a}{'count'}} keys(%havana_tr_exons_list)) {
+my %havana_rows_list = %{display_bed_source_data(\%havana_tr_exons_list, 'havana')};
 
-  my $e_count = $havana_tr_exons_list{$hv}{'count'};
-  
-  my $hide_row      = hide_button($row_id);
-  my $highlight_row = highlight_button($row_id,'left');
-  my $blast_button  = blast_button($hv);
-  
-  my $column_class = 'havana';
-  my $havana_strand = $havana_tr_exons_list{$hv}{'strand'};
-  my $havana_orientation = get_strand($havana_strand);
-  
-  my $havana_date = '';
-  if ($havana_tr_exons_list{$hv}{'date'}) {
-    $havana_date = ' title="'.$havana_tr_exons_list{$hv}{'date'}.'"';
-  }
-  
-  
-  my $havana_enst    = '';
-  if ($havana_tr_exons_list{$hv}{'enst'}) {
-    my $enst = $havana_tr_exons_list{$hv}{'enst'};
-    my $havana_button_title = "Click on the button to highlight the corresponding Ensembl trancript on the current column";
-    $havana_enst = qq{
-      <div class="havana_enst">
-        $enst
-        <button class="btn btn-lrg btn-xs" onclick="javascript:highlight_enst('$enst');" title="$havana_button_title">hl</button>
-      </div>
-    };
-  }
-  
-  $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$hv">
-    <td class="fixed_col col1">$hide_row</td>
-    <td class="fixed_col col2">$highlight_row</td>
-    <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class first_column fixed_col col4">
-      <div$havana_date>
-        <a class="havana_link" href="http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=$hv" target="_blank">$hv</a>
-      </div>$havana_enst
-    </td>
-    <td class="extra_column fixed_col col5">$e_count</td>
-  };
 
-  my $biotype = get_biotype($havana_tr_exons_list{$hv}{'biotype'});
-
-  # HAVANA lengths
-  my $havana_start  = $havana_tr_exons_list{$hv}{'start'};
-  my $havana_end    = $havana_tr_exons_list{$hv}{'end'};
-  my $havana_length = ($havana_tr_exons_list{$hv}{'length_tr'}) ? thousandify($havana_tr_exons_list{$hv}{'length_tr'}).' bp' : 'NA';
-  
-  
-  my $havana_coding_start = $havana_tr_exons_list{$hv}{'coding_start'};
-  my $havana_coding_end   = $havana_tr_exons_list{$hv}{'coding_end'};
-  my $havana_coding_length = ($havana_tr_exons_list{$hv}{'length_coding'}) ? thousandify($havana_tr_exons_list{$hv}{'length_coding'}).' bp' : 'NA';
-
-  
-  $exon_tab_list .= qq{
-    <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($havana_length)</div></td>
-    <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($havana_coding_length)</div></td>
-    <td class="extra_column fixed_col col8">$havana_orientation</td>
-  };
-  
-  $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-  $havana_rows_list{$row_id}{'label'} = $hv;
-  $havana_rows_list{$row_id}{'class'} = 'havana';
-  
-  my %exon_set_match;
-  my $first_exon;
-  my $last_exon;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    if ($havana_tr_exons_list{$hv}{'exon'}{$coord}) {
-      $first_exon = $coord if (!defined($first_exon));
-      $last_exon  = $coord;
-    }
-  }
-  
-  
-  my $exon_number = ($havana_strand == 1) ? 1 : $e_count;
-  my $exon_start;
-  my $colspan = 1;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    my $is_coding = ' havana_coding';
-    my $is_partial = '';
-    
-    if ($exon_start and !$havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-      next;
-    }
-    # Exon start found
-    elsif (!$exon_start && $havana_tr_exons_list{$hv}{'exon'}{$coord}) {
-      $exon_start = $coord;
-      next;
-    }
-     # Exon end found
-    elsif ($exon_start and $havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}) {
-      $colspan ++;
-    }
-    
-    my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
-    
-    my $has_exon = ($exon_start) ? 'exon' : $no_match;
-    
-    my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
-    $exon_tab_list .= qq{</td><td$colspan_html>};
-    
-    if ($exon_start) {
-      my $phase_start = $havana_tr_exons_list{$hv}{'exon'}{$exon_start}{$coord}{'frame'};
-      my $phase_end   = '';
-      
-      if (($havana_coding_start > $exon_start && $havana_coding_start > $coord) || 
-          ($havana_coding_end < $exon_start && $havana_coding_end < $coord) || 
-          ($havana_coding_start == $havana_start && $havana_coding_end == $havana_end && $biotype ne 'protein_coding')) {
-        $is_coding  = ' havana_non_coding';
-      }
-      elsif ($havana_coding_start > $exon_start || $havana_coding_end < $coord) {
-        $is_partial = ' partial';
-      }
-      
-      $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$hv,'-',$phase_start,$phase_end);
-      if ($havana_strand == 1) { $exon_number++; }
-      else { $exon_number--; }
-      $exon_start = undef;
-      $colspan = 1;
-    }
-    else {
-      $exon_tab_list .= qq{<div class="$has_exon"> </div>};
-    }
-  }
-  $exon_tab_list .= end_of_row($row_id);
-  $row_id++;
-}
-
+#----------------------#
+# Display UNIPROT data #
+#----------------------#
+my %uniprot_rows_list = %{display_bed_source_data(\%uniprot_tr_exons_list, 'uniprot')};
 
 
 #----------------------------#
@@ -1175,6 +1068,9 @@ $html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
 
 # HAVANA
 $html .= display_transcript_buttons(\%havana_rows_list, 'HAVANA');
+
+# Uniprot
+$html .= display_transcript_buttons(\%uniprot_rows_list, 'Uniprot');
 
 # RefSeq
 $html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
@@ -1564,7 +1460,7 @@ sub get_uniprot_score_html {
   
     return qq{
     <a href="$uniprot_url/$uniprot_id" target="_blank">
-      <span class="flag uniprot icon-target close-icon-2 smaller-icon"$border_colour data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>
+      <span class="flag uniprot_flag icon-target close-icon-2 smaller-icon"$border_colour data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>
     </a>};
   }
   else {
@@ -1758,6 +1654,152 @@ sub display_refseq_data {
       }
     }
     $exon_tab_list .= end_of_row($row_id,$nm);
+    $row_id++;
+  }
+  return \%rows_list;
+}
+
+sub display_bed_source_data {
+  my $tr_exons_list = shift;
+  my $source        = shift;
+  my %rows_list;
+  
+  foreach my $id (sort {$tr_exons_list->{$b}{'count'} <=> $tr_exons_list->{$a}{'count'}} keys(%$tr_exons_list)) {
+
+    my $e_count = $tr_exons_list->{$id}{'count'};
+    
+    my $hide_row      = hide_button($row_id);
+    my $highlight_row = highlight_button($row_id,'left');
+    my $blast_button  = blast_button($id);
+    
+    my $column_class = $source;
+    my $strand = $tr_exons_list->{$id}{'strand'};
+    my $orientation = get_strand($strand);
+    
+    my $date = '';
+    if ($tr_exons_list->{$id}{'date'}) {
+      $date = ' title="'.$tr_exons_list->{$id}{'date'}.'"';
+    }
+    
+    my $enst = '';
+    if ($tr_exons_list->{$id}{'enst'} && scalar(@{$tr_exons_list->{$id}{'enst'}})) {
+      my $count_enst = scalar(@{$tr_exons_list->{$id}{'enst'}});
+      my $ensts = join("','",@{$tr_exons_list->{$id}{'enst'}});
+      my $suffix = ($source eq 'uniprot') ? 'uni' : 'hv';
+      $enst = ($count_enst > 1) ? $count_enst." Ensembl Tr." : $tr_exons_list->{$id}{'enst'}[0];
+      
+      my $button_title = "Click on the button to highlight the corresponding Ensembl trancript(s) on the current column";
+      $enst = qq{
+        <div class="$source\_enst">
+          $enst
+          <button class="btn btn-lrg btn-xs" onclick="javascript:highlight_enst(['$ensts'],'$suffix');" title="$button_title">hl</button>
+        </div>
+      };
+      
+      
+    }
+    
+    my $external_url = $source_url{$source}.$id;
+    
+    $exon_tab_list .= qq{
+    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$id">
+      <td class="fixed_col col1">$hide_row</td>
+      <td class="fixed_col col2">$highlight_row</td>
+      <td class="fixed_col col3">$blast_button</td>
+      <td class="$column_class first_column fixed_col col4">
+        <div$date>
+          <a class="$source\_link" href="$external_url" target="_blank">$id</a>
+        </div>$enst
+      </td>
+      <td class="extra_column fixed_col col5">$e_count</td>
+    };
+
+    my $biotype = get_biotype($tr_exons_list->{$id}{'biotype'});
+
+    # Entry lengths
+    my $start  = $tr_exons_list->{$id}{'start'};
+    my $end    = $tr_exons_list->{$id}{'end'};
+    my $length = ($tr_exons_list->{$id}{'length_tr'}) ? thousandify($tr_exons_list->{$id}{'length_tr'}).' bp' : 'NA';
+    
+    
+    my $coding_start = $tr_exons_list->{$id}{'coding_start'};
+    my $coding_end   = $tr_exons_list->{$id}{'coding_end'};
+    my $coding_length = ($tr_exons_list->{$id}{'length_coding'}) ? thousandify($tr_exons_list->{$id}{'length_coding'}).' bp' : 'NA';
+
+    
+    $exon_tab_list .= qq{
+      <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($length)</div></td>
+      <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($coding_length)</div></td>
+      <td class="extra_column fixed_col col8">$orientation</td>
+    };
+    
+    $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
+    $rows_list{$row_id}{'label'} = $id;
+    $rows_list{$row_id}{'class'} = $source;
+    
+    my %exon_set_match;
+    my $first_exon;
+    my $last_exon;
+    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+      if ($tr_exons_list->{$id}{'exon'}{$coord}) {
+        $first_exon = $coord if (!defined($first_exon));
+        $last_exon  = $coord;
+      }
+    }
+    
+    
+    my $exon_number = ($strand == 1) ? 1 : $e_count;
+    my $exon_start;
+    my $colspan = 1;
+    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+      my $is_coding = " $source\_coding";
+      my $is_partial = '';
+      
+      if ($exon_start and !$tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}) {
+        $colspan ++;
+        next;
+      }
+      # Exon start found
+      elsif (!$exon_start && $tr_exons_list->{$id}{'exon'}{$coord}) {
+        $exon_start = $coord;
+        next;
+      }
+       # Exon end found
+      elsif ($exon_start and $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}) {
+        $colspan ++;
+      }
+      
+      my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
+      
+      my $has_exon = ($exon_start) ? 'exon' : $no_match;
+      
+      my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
+      $exon_tab_list .= qq{</td><td$colspan_html>};
+      
+      if ($exon_start) {
+        my $phase_start = $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}{'frame'};
+        my $phase_end   = '';
+        
+        if (($coding_start > $exon_start && $coding_start > $coord) || 
+            ($coding_end < $exon_start && $coding_end < $coord) || 
+            ($coding_start == $start && $coding_end == $end && $biotype ne 'protein_coding')) {
+          $is_coding  = " $source\_non_coding";
+        }
+        elsif ($coding_start > $exon_start || $coding_end < $coord) {
+          $is_partial = ' partial';
+        }
+        
+        $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$id,'-',$phase_start,$phase_end);
+        if ($strand == 1) { $exon_number++; }
+        else { $exon_number--; }
+        $exon_start = undef;
+        $colspan = 1;
+      }
+      else {
+        $exon_tab_list .= qq{<div class="$has_exon"> </div>};
+      }
+    }
+    $exon_tab_list .= end_of_row($row_id);
     $row_id++;
   }
   return \%rows_list;
@@ -2017,6 +2059,75 @@ sub get_pathogenic_variants {
   
 }
 
+
+sub bed2hash {
+  my $bed_type = shift;
+  my $bed_data = shift;
+  my $src2ens  = shift;
+  
+  my @exon_frames;
+  
+  my $tr_start    = $bed_data->[1] + 1;
+  my $tr_end      = $bed_data->[2];
+  my $tr_strand   = $bed_data->[5];
+     $tr_strand = ($tr_strand eq '+') ? 1 : -1;
+  my $tr_c_start  = $bed_data->[6] + 1;
+  my $tr_c_end    = $bed_data->[7];
+  my $e_count     = $bed_data->[9];
+  my @exon_sizes  = split(',', $bed_data->[10]);
+  my @exon_starts = split(',', $bed_data->[11]);
+  my $tr_name     = $bed_data->[12];
+  my $tr_biotype  = ($bed_type eq 'long') ? $bed_data->[16] : 'NA';
+  
+  my %hash_data = ('start'        => $tr_start,
+                   'end'          => $tr_end,
+                   'coding_start' => $tr_c_start,
+                   'coding_end'   => $tr_c_end,
+                   'strand'       => $tr_strand,
+                   'biotype'      => $tr_biotype,
+                   'count'        => $e_count,
+                  );
+  
+  
+  if ($bed_type eq 'long') {
+    @exon_frames = split(',', $bed_data->[15]);
+    my $date = $bed_data->[$#$bed_data];
+       $date = (split(';', $date))[0] if ($date =~ /^\d+\-\w+\-\d+\;/);
+    $hash_data{'date'} = $date;
+  }
+  else {
+    foreach my $e (@exon_sizes) {
+      push @exon_frames, -1;
+    }
+  }
+  
+  $hash_data{'enst'} = $src2ens->{$tr_name} if ($src2ens->{$tr_name});
+      
+  my $tr_length = 0;
+  for(my $i=0;$i<scalar(@exon_sizes);$i++) {
+    my $start = $tr_start + $exon_starts[$i];
+    my $end = $start + $exon_sizes[$i] - 1;
+        
+    $tr_length += $exon_sizes[$i];
+    $hash_data{'exon'}{$start}{$end}{'frame'} = $exon_frames[$i];
+        
+    $exons_list{$start} ++;
+    $exons_list{$end} ++;
+  }
+  
+  $hash_data{'length_tr'} = $tr_length;
+  
+  if ($tr_start != $tr_c_start && $tr_end != $tr_c_end) {
+    my $coding_length = $tr_length;
+       $coding_length -= ($tr_c_start - $tr_start);
+       $coding_length -= ($tr_end - $tr_c_end);
+    $hash_data{'length_coding'} = $coding_length;
+  }
+  
+  return \%hash_data;
+}
+
+
 sub usage {
   my $msg = shift;
   $msg ||= '';
@@ -2025,17 +2136,18 @@ sub usage {
 $msg
 
 OPTIONS:
-  -gene                  : gene name (HGNC symbol or ENS) (required)
-  -outputfile | -o       : file path to the output HTML file (required)
-  -lrg                   : the LRG ID corresponding to the gene, if it exists (optional)
-  -tsl                   : path to the Transcript Support Level text file (optional)
-                           By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
-                           The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
-                           http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
-                           First, you will need to uncompress it by using the command "gunzip <file>".
-  -havana_dir   | -hd    : directory path of the Havana BED file which is already or will be downloaded by the script (optional)
-  -havana_file  | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
-  -no_havana_dl | -nh_dl : Flag to skip the download of the Havana BED file.
+  -gene                   : gene name (HGNC symbol or ENS) (required)
+  -outputfile | -o        : file path to the output HTML file (required)
+  -lrg                    : the LRG ID corresponding to the gene, if it exists (optional)
+  -tsl                    : path to the Transcript Support Level text file (optional)
+                            By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
+                            The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
+                            http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
+                            First, you will need to uncompress it by using the command "gunzip <file>".
+  -data_file_dir | -df    : directory path of the data file directory which is already or will be downloaded by the script (optional)
+  -uniprot_file  | -uf    : Uniprot BED file name. Default '$uniprot_file_default' (optional)
+  -havana_file   | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
+  -no_havana_dl  | -nh_dl : Flag to skip the download of the Havana BED file.
                            Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
   -hgmd_file    |hgmd    : Filepath to the HGMD file (required)
   };

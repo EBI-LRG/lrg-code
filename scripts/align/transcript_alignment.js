@@ -174,6 +174,44 @@ function show_hide_in_between_rows(row_id,tr_names) {
   }
 }
 
+function highlight_enst(enst_list,suffix) {
+
+  $.each(enst_list, function (index, enst) {
+
+    var elem = $("tr[data-name='" + enst + "']");
+    if (elem) {
+    
+      var enst_col = elem.find('.transcript_column');
+      if (enst_col.hasClass('transcript_column')) {
+        
+        var ens_trans_table = enst_col.find('.transcript');
+        if (ens_trans_table.hasClass('transcript')) {
+        
+          var enst_td_ens = ens_trans_table.find('.ens');
+          var enst_td_gold = ens_trans_table.find('.gold');
+          var enst_td_ens_hv = ens_trans_table.find('.ens_'+suffix);
+          var enst_td_gold_hv = ens_trans_table.find('.gold_'+suffix);
+          
+          if (enst_td_ens.hasClass('ens')) {
+            enst_td_ens.switchClass('ens','ens_'+suffix);
+          }
+          else if (enst_td_gold.hasClass('gold')) {
+            enst_td_gold.switchClass('gold','gold_'+suffix);
+          }
+          else if (enst_td_ens_hv.hasClass('ens_'+suffix)) {
+            enst_td_ens_hv.switchClass('ens_'+suffix,'ens');
+          }
+          else if (enst_td_gold_hv.hasClass('gold_'+suffix)) {
+            enst_td_gold_hv.switchClass('gold_'+suffix,'gold');
+          }
+        }
+      }
+    }
+    
+  });
+}
+
+
 function highlight_row(row_id,type) {
  
   var id_prefix = '#highlight_';
