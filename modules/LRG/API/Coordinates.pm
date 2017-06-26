@@ -24,6 +24,7 @@ sub initialize {
   # Use 0 as default values for strand, start_ext and end_ext
   $strand ||= 0;
   $start_ext ||= 0;
+  $start_ext = 0 if ($start_ext !~ /^\d+$/);
   $end_ext ||= 0;
   $end_ext = 0 if ($end_ext !~ /^\d+$/);
   $prefix ||= '';
