@@ -6,7 +6,7 @@ use Getopt::Long;
 use LWP::Simple;
 use HTTP::Tiny;
 
-my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_havana_dl, $hgmd_file, $help);
+my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_download, $hgmd_file, $help);
 GetOptions(
   'gene|g=s'	          => \$gene_name,
   'outputfile|o=s'      => \$output_file,
@@ -14,7 +14,7 @@ GetOptions(
   'tsl=s'	              => \$tsl,
   'data_file_dir|df=s'  => \$data_file_dir,
   'havana_file|hf=s'    => \$havana_file,
-  'no_havana_dl|nh_dl!' => \$no_havana_dl,
+  'no_dl!'              => \$no_download,
   'hgmd_file|hgmd=s'    => \$hgmd_file,
   'uniprot_file|uf=s'   => \$uniprot_file,
   'help!'               => \$help
@@ -41,8 +41,7 @@ my $max_variants = 10;
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
 $uniprot_file ||= $uniprot_file_default;
 
-$uniprot_file = "$data_file_dir/$uniprot_file";
-$hgmd_file    = "$data_file_dir/$hgmd_file";
+
 
 my $uniprot_url      = 'http://www.uniprot.org/uniprot';
 my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
@@ -52,16 +51,26 @@ my $http = HTTP::Tiny->new();
 if ($data_file_dir && -d $data_file_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
 
-  if (!$no_havana_dl) {
+  if (!$no_download) {
+    # Havana
     `rm -f $data_file_dir/$havana_file\.gz`;
     `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
     if (-e "$data_file_dir/$havana_file") {
       `mv $data_file_dir/$havana_file $data_file_dir/$havana_file\_old`;
     }
     `gunzip $data_file_dir/$havana_file`;
+  
+    # Uniprot
+    if (-e "$data_file_dir/$uniprot_file") {
+      `mv $data_file_dir/$uniprot_file $data_file_dir/$uniprot_file\_old`;
+    }
+    `wget -q -P $data_file_dir ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds/$uniprot_file`;
   }
 }
 
+
+$uniprot_file = "$data_file_dir/$uniprot_file";
+$hgmd_file    = "$data_file_dir/$hgmd_file";
 
 #$registry->load_registry_from_db(
 #    -host => 'ensembldb.ensembl.org',
@@ -294,9 +303,9 @@ if ($data_file_dir && -e "$data_file_dir/$havana_file") {
 }
 
 
-#-------------#
+#--------------#
 # Uniprot data #
-#-------------#
+#--------------#
 if ($data_file_dir && -e $uniprot_file) {
   foreach my $enst_id (keys(%ens_tr_exons_list)) {
     foreach my $dbname ('Uniprot/SWISSPROT','Uniprot/SPTREMBL') {
@@ -2136,20 +2145,20 @@ sub usage {
 $msg
 
 OPTIONS:
-  -gene                   : gene name (HGNC symbol or ENS) (required)
-  -outputfile | -o        : file path to the output HTML file (required)
-  -lrg                    : the LRG ID corresponding to the gene, if it exists (optional)
-  -tsl                    : path to the Transcript Support Level text file (optional)
-                            By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
-                            The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
-                            http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
-                            First, you will need to uncompress it by using the command "gunzip <file>".
-  -data_file_dir | -df    : directory path of the data file directory which is already or will be downloaded by the script (optional)
-  -uniprot_file  | -uf    : Uniprot BED file name. Default '$uniprot_file_default' (optional)
-  -havana_file   | -hf    : Havana BED file name. Default '$havana_file_default' (optional)
-  -no_havana_dl  | -nh_dl : Flag to skip the download of the Havana BED file.
-                           Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
-  -hgmd_file    |hgmd    : Filepath to the HGMD file (required)
+  -gene                 : gene name (HGNC symbol or ENS) (required)
+  -outputfile | -o      : file path to the output HTML file (required)
+  -lrg                  : the LRG ID corresponding to the gene, if it exists (optional)
+  -tsl                  : path to the Transcript Support Level text file (optional)
+                          By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
+                          The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
+                          http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
+                          First, you will need to uncompress it by using the command "gunzip <file>".
+  -data_file_dir | -df  : directory path of the data file directory which is already or will be downloaded by the script (optional)
+  -uniprot_file  | -uf  : Uniprot BED file name. Default '$uniprot_file_default' (optional)
+  -havana_file   | -hf  : Havana BED file name. Default '$havana_file_default' (optional)
+  -no_dl                : Flag to skip the download of the Havana & UniPrto BED files.
+                          Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
+  -hgmd_file    |hgmd   : Filepath to the HGMD file (required)
   };
   exit(0);
 }

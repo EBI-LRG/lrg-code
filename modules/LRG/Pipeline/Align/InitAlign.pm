@@ -29,6 +29,7 @@ sub write_output {
   my $havana_ftp     = $self->param('havana_ftp');
   my $havana_file    = $self->param('havana_file');
   my $hgmd_file      = $self->param('hgmd_file');
+  my $uniprot_ftp    = $self->param('uniprot_ftp');
   my $uniprot_file   = $self->param('uniprot_file');
   my $reports_dir    = $self->param('reports_dir'),
   my $reports_file   = $self->param('reports_file');
@@ -38,7 +39,8 @@ sub write_output {
 
   my $batch_size = 100; # Number of gene symbols send in a batch to Ensembl REST (POST)
   
-  my $havana_list_file = "$data_files_dir/$havana_file";
+  my $havana_list_file  = "$data_files_dir/$havana_file";
+  my $uniprot_list_file = "$data_files_dir/$uniprot_file";
   
   my (@jobs, @big_jobs);
   
@@ -88,18 +90,23 @@ sub write_output {
   print REPORTS "  <li>LRG XML files found: $count_lrg</li>\n";
   print REPORTS "  <li>LRG with genes found: ".scalar(keys(%distinct_genes))."</li>\n";
 
-  # Download latest Havana data file
-  my $havana_file_default = 'hg38.bed';
+  # Download latest data files
   if ($data_files_dir && -d $data_files_dir) {
-    $havana_file = $havana_file_default if (!$havana_file);
+    
+    # Download latest Havana data file
     `rm -f $havana_list_file\.gz`;
     `wget -q -P $data_files_dir $havana_ftp/$havana_file\.gz`;
     if (-e $havana_list_file) {
       `mv $havana_list_file $havana_list_file\_old`;
     }
     `gunzip $havana_list_file\.gz`;
-  }
 
+    # Download latest Uniprot data files
+    if (-e $uniprot_list_file) {
+      `mv $uniprot_list_file $uniprot_list_file\_old`;
+    }
+    `wget -q -P $data_files_dir $uniprot_ftp/$uniprot_file`;
+  }
 
   # Genes list from text file
   $genes_file = "$data_files_dir/$genes_file";
