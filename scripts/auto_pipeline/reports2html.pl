@@ -395,7 +395,7 @@ if (-e "$reports_dir/$missing_file") {
     $html_summary .= qq{
       <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
         <div class="summary_box">
-          <div class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site">Missing LRG file(s)</div>
+          <div class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site"><span class="glyphicon glyphicon-warning-sign"></span> Missing LRG file(s)</div>
           <div>
             <table class="table table-hover table_small" style="width:100%">
     };
