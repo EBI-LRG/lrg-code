@@ -209,10 +209,10 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var num = tname+'_'+ename;
   var pnum = tname+'_'+pname+'_'+ename;
   var tableobj_left = document.getElementById('table_exon_'+pnum+'_left');
-  var tableobj_right = document.getElementById('table_exon_'+pnum+'_right');  
+  var tableobj_right = document.getElementById('table_exon_'+pnum+'_right');
   var othertableobj = document.getElementById('table_exon_'+tname+'_other_naming_'+pname+'_'+ename+'_left');
   
-  var exon_block_id = '#tr_img_exon_'+tname+'_'+ename;
+  var exon_block_id = 'tr_img_exon_'+tname+'_'+ename;
 
   // we only want to get the genomic exon if this is transcript t1
   var genob, exon_select;
@@ -268,37 +268,39 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   }
  
   // Exon block
-  var exon_block_children = $(exon_block_id).children();
-  // Partial coding exon
-  if(exon_block_children.length) {
-    $.each( exon_block_children, function( index, child ) {
+  $("[id^='"+exon_block_id+"']").each(function (i, el) {
+    var exon_block_children = $(el).children();
+    // Partial coding exon
+    if(exon_block_children.length) {
+      $.each( exon_block_children, function( index, child ) {
+        $.each( tr_img_classes, function( index, value ) {
+          var selected_class = tr_img_class_prefix + value;
+          if($(child).hasClass(value)) {
+            $(child).removeClass(value).addClass(selected_class);
+            return false;
+          }
+          else if ($(child).hasClass(selected_class)) {
+            $(child).removeClass(selected_class).addClass(value);
+            return false;
+          }
+        });
+      });
+    }
+    // Full coding or non coding exon
+    else {
       $.each( tr_img_classes, function( index, value ) {
         var selected_class = tr_img_class_prefix + value;
-        if($(child).hasClass(value)) {
-          $(child).removeClass(value).addClass(selected_class);
+        if ($(el).hasClass(value)) {
+          $(el).removeClass(value).addClass(selected_class);
           return false;
         }
-        else if ($(child).hasClass(selected_class)) {
-          $(child).removeClass(selected_class).addClass(value);
+        else if ($(el).hasClass(selected_class)) {
+          $(el).removeClass(selected_class).addClass(value);
           return false;
         }
       });
-    });
-  }
-  // Full coding or non coding exon
-  else {
-    $.each( tr_img_classes, function( index, value ) {
-      var selected_class = tr_img_class_prefix + value;
-      if ($(exon_block_id).hasClass(value)) {
-        $(exon_block_id).removeClass(value).addClass(selected_class);
-        return false;
-      }
-      else if ($(exon_block_id).hasClass(selected_class)) {
-        $(exon_block_id).removeClass(selected_class).addClass(value);
-        return false;
-      }
-    });
-  }
+    }
+  });
 }
 
 // function to clear exon highlighting
@@ -407,8 +409,8 @@ function getElementsByIdStartsWith(selectorTag, prefix) {
 }
 
 
-// function to replace a text by a link
-function create_external_link (lrg_status) {
+// function to edit the content of the page
+function edit_content (lrg_status) {
   var external_icon = get_external_icon(lrg_status);
 
   var external_icon_class = "icon-external-link";
@@ -418,15 +420,21 @@ function create_external_link (lrg_status) {
 
   // Links to NCBI & Ensembl
   $('.external_link').each(function(index) {
-    // NCBI
+    // NCBI //
     var exp_ncbi = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
     var new_ncbi_link = $(this).html().replace(exp_ncbi,"<a class=\""+external_icon_class+"\" href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1</a>");
     $(this).html(new_ncbi_link);
   
-    // Ensembl
-    var exp_ens = /(ENST[0-9]+\.?[0-9]*)/g;
-    var new_ens_link = $(this).html().replace(exp_ens,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
-    $(this).html(new_ens_link);
+    // Ensembl //
+    // Transcript
+    var exp_enst = /(ENST[0-9]+\.?[0-9]*)/g;
+    var new_enst_link = $(this).html().replace(exp_enst,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
+    $(this).html(new_enst_link);
+    
+    // Protein
+    var exp_ensp = /(ENSP[0-9]+\.?[0-9]*)/g;
+    var new_ensp_link = $(this).html().replace(exp_ensp,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/ProteinSummary?db=core;protein=$1' target='_blank'>$1</a>");
+    $(this).html(new_ensp_link);
   });
   
   $('.internal_link').each(function(index) {
@@ -434,6 +442,16 @@ function create_external_link (lrg_status) {
     var new_int_link = $(this).html().replace(text2replace,"<a class='icon-next-page close-icon-2 smaller-icon' href='#assembly_mapping'>$1</a>");
     $(this).html(new_int_link);
   });
+  
+  $('.internal_comment').each(function(index) {
+    var text2replace = ["Ensembl transcript","5'","3'","Primary Reference Assembly"];
+    for (i = 0; i < text2replace.length; i++) {
+      var re = new RegExp(text2replace[i], "g");
+      var new_text = $(this).html().replace(re,"<span class=\"bold_font\">"+text2replace[i]+"</span>");
+      $(this).html(new_text);
+    }
+  });
+  
 }
 
 // function to build the HTML code to display the external icon
@@ -498,3 +516,4 @@ function offsetAnchor() {
     window.scrollTo(window.scrollX, window.scrollY - 110);
   }
 }
+
