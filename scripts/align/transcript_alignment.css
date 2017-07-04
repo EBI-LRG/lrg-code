@@ -148,18 +148,30 @@ table.legend td {
   line-height:14px;
 }
 
+.tsl_container {
+  margin: 0px 2px 1px;
+}
+.tsl, .tsl div {
+  transform-origin: 50% 50%;
+  overflow: hidden;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+}
 .tsl {
-  margin-bottom:1px;
-  padding:1px 3px;
-  cursor:help;
-  color:#FFF;
-  border-radius:20px;
   border:1px solid #FFF;
-  background-color:#000;
-  font-size:14px;
-  font-weight:bold;
-  display:inline-block;
-  line-height:14px;
+  transform: rotate(45deg) translateY(1px);
+}
+.tsl div {
+  width: 16px;
+  height: 16px;
+  transform: rotate(-45deg) translateY(-2px);
+  font-size:12px;
+  text-align:center;
+  font-weight: bold;
+  display: inline-block;
+  line-height: 14px;
+  color:#FFF;
 }
 
 .flag {
@@ -723,10 +735,10 @@ table.transcript tr {
 }
 table.transcript tr.bottom_row {
   height: 25px;
-  background-color: rgba(255,255,255,0.1);
+  background-color: rgba(255,255,255,0.15);
 }
 
-.gold table.transcript tr:last-child {
+.gold table.transcript tr.bottom_row {
   background-color: rgba(255,255,255,0.3);
 }
 

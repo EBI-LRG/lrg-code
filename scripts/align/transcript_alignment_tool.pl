@@ -238,6 +238,7 @@ foreach my $tr (@$ens_tr) {
   
   $ens_tr_exons_list{$tr_name}{'count'} = $ens_tr_count;
   $ens_tr_exons_list{$tr_name}{'object'} = $tr;
+  $ens_tr_exons_list{$tr_name}{'label'} = $tr_name.".".$tr->version if ($tr->version);
   
   foreach my $xref (@{$tr->get_all_DBEntries}) {
     my $dbname = $xref->dbname;
@@ -465,8 +466,7 @@ my %tsl_colour = ( '1'   => '#080',
                    '2'   => '#EE7600',
                    '3'   => '#EE7600',
                    '4'   => '#800',
-                   '5'   => '#800',
-                   'INA' => $tsl_default_bgcolour,
+                   '5'   => '#800'
                  );
 
 my $coord_span = scalar(keys(%exons_list));
@@ -608,6 +608,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $column_class = ($tr_object->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
+  my $ens_tr_label = ($ens_tr_exons_list{$ens_tr}{'label'}) ? $ens_tr_exons_list{$ens_tr}{'label'} : $ens_tr;
+  
   # cDNA lengths
   my $cdna_coding_start = $tr_object->cdna_coding_start;
   my $cdna_coding_end   = $tr_object->cdna_coding_end;
@@ -646,7 +648,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
               <tr>
                 <td style="width:15px"></td>
                 <td>
-                  <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr</a>
+                  <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr_label</a>
                 </td>
                 <td style="width:15px;text-align:right">$canonical_html</td>
               </tr>
@@ -692,7 +694,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $refseq_button = qq{ <button class="btn btn-lrg btn-xs" id='button_$row_id\_$nm_list[0]' onclick="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button>};
   }
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-  $ens_rows_list{$row_id}{'label'} = $ens_tr;
+  $ens_rows_list{$row_id}{'label'} = $ens_tr_label;
   $ens_rows_list{$row_id}{'class'} = $column_class;
   
   my %exon_set_match;
@@ -1169,17 +1171,29 @@ $html .= qq{
           </tr>
           <tr class="bg1_legend">
             <td>
-              <span class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1">1</span>
-              <span class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2">2</span>
-              <span class="tsl" style="background-color:$tsl4" title="Transcript Support Level = 4">4</span>
+              <div class="tsl_container" style="margin-bottom:5px">
+                <div class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1"><div>1</div></div>
+              </div>
+              <div class="tsl_container" style="margin-bottom:5px">
+                <div class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2"><div>2</div></div>
+              </div>
+              <div class="tsl_container" style="margin-bottom:5px">
+                <div class="tsl" style="background-color:$tsl4" title="Transcript Support Level = 4"><div>4</div></div>
+              </div>
             </td>
             <td>Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
           </tr>
           <tr class="bg2_legend">
             <td>
-              <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
-              <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
-              <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
+              <div style="margin-bottom:3px">
+                <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
+              </div>
+              <div style="margin-bottom:3px">
+                <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
+              </div>
+              <div style="margin-bottom:3px">
+                <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
+              </div>
             </td>
             <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
           </tr>
@@ -1385,11 +1399,16 @@ sub get_tsl_html {
   }
   
   # HTML
-  return '' if ($level eq '0');
+  return '' if ($level eq '0' || $level !~ /^\d+$/);
  
   my $bg_colour     = ($tsl_colour{$level}) ? $tsl_colour{$level} : $tsl_default_bgcolour;
   my $border_colour = ($tr_type eq 'gold') ? qq{ ;border-color:#555} : '';
-  return qq{<span class="tsl" style="background-color:$bg_colour$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">$level</span>};
+  return qq{
+  <div class="tsl_container">
+    <div class="tsl" style="background-color:$bg_colour$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">
+      <div>$level</div>
+    </div>  
+  </div>};
 }
 
 sub get_canonical_html {
