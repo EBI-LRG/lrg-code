@@ -48,15 +48,19 @@ my $lrg_label = 'LRG';
 my @set_list = ('requester', lc($lrg_label) , 'ncbi', lc($ens_label), 'community');
 
 # Determine the schema version
-my $mca = $registry->get_adaptor($option{species},'core','metacontainer');
+my $mca = $registry->get_adaptor($option{species},'core','metacontainer') or die ("Could not get adaptor from registry");
 my $ens_db_version = $mca->get_schema_version();
 
 # Get the current date
 my $date = LRG::LRG::date();
 
+# Ensembl adaptors
+my $tr_adaptor = $registry->get_adaptor($option{species},'core','transcript');
+my $pr_adaptor = $registry->get_adaptor($option{species},'core','translation');
+
 # If no assembly was specified, use the default assembly from the database
 unless ($option{assembly}) {
-  my $cs_adaptor = $registry->get_adaptor($option{species},'core','coordsystem') or die ("Could not get adaptor from registry");
+  my $cs_adaptor = $registry->get_adaptor($option{species},'core','coordsystem');
   my $cs = $cs_adaptor->fetch_by_name('chromosome');
   $option{assembly} = $cs->version();
 }
@@ -160,8 +164,6 @@ die (sprintf("No mapping to \%s could be found in any of the annotation sets!\n"
 # Get a SliceAdaptor and a Slice spanning the mapped region
 my $s_adaptor = $registry->get_adaptor($option{species},'core','slice');
 my $slice = $s_adaptor->fetch_by_region('chromosome',$mapping->other_coordinates->coordinate_system(),$mapping->other_coordinates->start(),$mapping->other_coordinates->end(),$mapping->mapping_span->[0]->strand(),$option{assembly}) or die("Could not fetch a slice for the mapped region");
-
-my $pr_adaptor = $registry->get_adaptor($option{species},'core','translation');
 
 # Create a new LRGAnnotation object and load the slice into it
 my $lrga = LRG::LRGAnnotation->new($slice);
@@ -380,6 +382,12 @@ sub compare_ens_transcripts_with_lrg_transcripts {
     
     my $enst_lrg_start = 1000000000;
     my $enst_lrg_end   = 0;
+
+    my $tr_acc = (split(/\./,$trans_name))[0];
+    my $enst_obj = $tr_adaptor->fetch_by_stable_id($tr_acc);
+    
+    my $ens_coding_start = $enst_obj->cdna_coding_start;
+    my $ens_coding_end   = $enst_obj->cdna_coding_end;
     
     # Get start and end of the ENST, in LRG coordinates
     foreach my $mapping_span (@mapping_spans) {
@@ -389,7 +397,7 @@ sub compare_ens_transcripts_with_lrg_transcripts {
       my $m_end   = $mapping_span->lrg_coordinates->end;
       
       $enst_lrg_start = $m_start if ($m_start < $enst_lrg_start);
-      $enst_lrg_end   = $m_end if ($m_end > $enst_lrg_end);
+      $enst_lrg_end   = $m_end   if ($m_end > $enst_lrg_end);
     }
     
     foreach my $mapping_span (@mapping_spans) {
@@ -397,6 +405,9 @@ sub compare_ens_transcripts_with_lrg_transcripts {
 
       my $m_start = $mapping_span->lrg_coordinates->start;
       my $m_end   = $mapping_span->lrg_coordinates->end;
+      
+      my $cdna_start = $mapping_span->other_coordinates->start;
+      my $cdna_end   = $mapping_span->other_coordinates->end;
 
       foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
         my $cds_start =  $lrg_tr_coord->{$lrg_tr}{'CDS_start'};
@@ -404,9 +415,17 @@ sub compare_ens_transcripts_with_lrg_transcripts {
           
         # Exon coord match
         if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} && $lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} == $m_end) {
-          $tr_coord_match{$lrg_tr}{$trans_name}++ if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start});
+          # Compare coding start and end between LRG transcript and ENST
+          next if ($cds_start < $m_start && $ens_coding_start >= $cdna_start);
+          next if ($cds_start > $m_start && $ens_coding_start <= $cdna_start);
+          next if ($cds_start == $m_start && $ens_coding_start != $cdna_start);
+          next if ($cds_end < $m_end && $ens_coding_end >= $cdna_end);
+          next if ($cds_end > $m_end && $ens_coding_end <= $cdna_end);
+          next if ($cds_end == $m_end && $ens_coding_end != $cdna_end);
+          
+          $tr_coord_match{$lrg_tr}{$trans_name}++;
         }
-         # 3 prime difference
+        # 3 prime difference
         elsif ($m_end > $cds_end) {
           if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} && $lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} != $m_end) {
             $tr_coord_match{$lrg_tr}{$trans_name}++;
