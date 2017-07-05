@@ -41,12 +41,12 @@ sub default_options {
         reports_file            => 'align_reports.txt',
         genes_file              => 'genes_list.txt',
         hgmd_file               => 'HGMD_gene_refseq.txt',
-        uniprot_file            => 'UP000005640_9606_proteome.bed',
+        #uniprot_file            => 'UP000005640_9606_proteome.bed',
         havana_file             => 'hg38.bed',
         # Havana BED file (actually bigGenePred => https://genome.ucsc.edu/goldenPath/help/bigGenePred.html)
         havana_ftp              => 'ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data',
-        # Uniprot BED file
-        uniprot_ftp             => 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds',
+        ## Uniprot BED file
+        #uniprot_ftp             => 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds',
         
         git_branch              => $ENV{'GITBRANCH'},
 
@@ -107,8 +107,8 @@ sub pipeline_analyses {
                havana_ftp      => $self->o('havana_ftp'),
                havana_file     => $self->o('havana_file'),
                hgmd_file       => $self->o('hgmd_file'),
-               uniprot_ftp     => $self->o('uniprot_ftp'),
-               uniprot_file    => $self->o('uniprot_file'),
+               #uniprot_ftp     => $self->o('uniprot_ftp'),
+               #uniprot_file    => $self->o('uniprot_file'),
                rest_url        => $self->o('rest_gene_endpoint'),
                gene_max_length => $self->o('gene_length_highmem_threshold'),
                @common_params

@@ -29,8 +29,8 @@ sub write_output {
   my $havana_ftp     = $self->param('havana_ftp');
   my $havana_file    = $self->param('havana_file');
   my $hgmd_file      = $self->param('hgmd_file');
-  my $uniprot_ftp    = $self->param('uniprot_ftp');
-  my $uniprot_file   = $self->param('uniprot_file');
+  #my $uniprot_ftp    = $self->param('uniprot_ftp');
+  #my $uniprot_file   = $self->param('uniprot_file');
   my $reports_dir    = $self->param('reports_dir'),
   my $reports_file   = $self->param('reports_file');
   
@@ -40,7 +40,7 @@ sub write_output {
   my $batch_size = 100; # Number of gene symbols send in a batch to Ensembl REST (POST)
   
   my $havana_list_file  = "$data_files_dir/$havana_file";
-  my $uniprot_list_file = "$data_files_dir/$uniprot_file";
+  #my $uniprot_list_file = "$data_files_dir/$uniprot_file";
   
   my (@jobs, @big_jobs);
   
@@ -101,11 +101,11 @@ sub write_output {
     }
     `gunzip $havana_list_file\.gz`;
 
-    # Download latest Uniprot data files
-    if (-e $uniprot_list_file) {
-      `mv $uniprot_list_file $uniprot_list_file\_old`;
-    }
-    `wget -q -P $data_files_dir $uniprot_ftp/$uniprot_file`;
+    ## Download latest Uniprot data files
+    #if (-e $uniprot_list_file) {
+    #  `mv $uniprot_list_file $uniprot_list_file\_old`;
+    #}
+    #`wget -q -P $data_files_dir $uniprot_ftp/$uniprot_file`;
   }
 
   # Genes list from text file
@@ -163,7 +163,7 @@ sub write_output {
           'data_files_dir' => $data_files_dir,
           'havana_file'    => $havana_file,
           'hgmd_file'      => $hgmd_file,
-          'uniprot_file'   => $uniprot_file,
+          #'uniprot_file'   => $uniprot_file,
           'lrg'            => $lrg_id
        };
     if ($GENES_LENGTH{$gene} < $LENGTH) {

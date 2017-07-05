@@ -16,7 +16,7 @@ GetOptions(
   'havana_file|hf=s'    => \$havana_file,
   'no_dl!'              => \$no_download,
   'hgmd_file|hgmd=s'    => \$hgmd_file,
-  'uniprot_file|uf=s'   => \$uniprot_file,
+#  'uniprot_file|uf=s'   => \$uniprot_file,
   'help!'               => \$help
 );
 
@@ -25,23 +25,22 @@ usage() if ($help);
 usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.")  if (!$gene_name);
 usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
 
-usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana, UniProt) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
+#usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana, UniProt) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
+usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
 
-usage("Uniprot file '$uniprot_file' not found") if ($uniprot_file && !-f "$data_file_dir/$uniprot_file");
+#usage("Uniprot file '$uniprot_file' not found") if ($uniprot_file && !-f "$data_file_dir/$uniprot_file");
 usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f "$data_file_dir/$hgmd_file");
 
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'human';
 my $html;
-my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
+#my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
 my $havana_file_default  = 'hg38.bed';
 
 my $max_variants = 10;
 
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
-$uniprot_file ||= $uniprot_file_default;
-
-
+#$uniprot_file ||= $uniprot_file_default;
 
 my $uniprot_url      = 'http://www.uniprot.org/uniprot';
 my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
@@ -60,16 +59,16 @@ if ($data_file_dir && -d $data_file_dir) {
     }
     `gunzip $data_file_dir/$havana_file`;
   
-    # Uniprot
-    if (-e "$data_file_dir/$uniprot_file") {
-      `mv $data_file_dir/$uniprot_file $data_file_dir/$uniprot_file\_old`;
-    }
-    `wget -q -P $data_file_dir ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds/$uniprot_file`;
+    ## Uniprot
+    #if (-e "$data_file_dir/$uniprot_file") {
+    #  `mv $data_file_dir/$uniprot_file $data_file_dir/$uniprot_file\_old`;
+    #}
+    #`wget -q -P $data_file_dir ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds/$uniprot_file`;
   }
 }
 
 
-$uniprot_file = "$data_file_dir/$uniprot_file";
+#$uniprot_file = "$data_file_dir/$uniprot_file";
 $hgmd_file    = "$data_file_dir/$hgmd_file";
 
 #$registry->load_registry_from_db(
@@ -107,14 +106,15 @@ my $pf_a         = $registry->get_adaptor($species, 'variation','phenotypefeatur
 # Biotype: protein_coding
 # External db: RefSeq_mRNA, CCDS
 # http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=CCDS13330
-my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1, 'Uniprot/SWISSPROT' => 1, 'Uniprot/SPTREMBL' => 1);
+my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1);
+#my %external_db = ('RefSeq_mRNA' => 1, 'CCDS' => 1, 'OTTT' => 1, 'Uniprot/SWISSPROT' => 1, 'Uniprot/SPTREMBL' => 1);
 
 my $GI_dbname = "EntrezGene";
 
 my %exons_list;
 my %ens_tr_exons_list;
 my %havana_tr_exons_list;
-my %uniprot_tr_exons_list;
+#my %uniprot_tr_exons_list;
 my %refseq_tr_exons_list;
 my %refseq_gff3_tr_exons_list;
 my %cdna_tr_exons_list;
@@ -125,7 +125,7 @@ my %nm_data;
 my %compare_nm_data;
 my %pathogenic_variants;
 my %havana2ensembl;
-my %uniprot2ensembl;
+#my %uniprot2ensembl;
 
 my $ref_seq_attrib = 'human';
 my $gff_attrib     = 'gff3';
@@ -141,7 +141,7 @@ my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
 my %source_url = ( 
                    'havana'  => 'http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=',
-                   'uniprot' => 'http://www.uniprot.org/uniprot/',
+                   #'uniprot' => 'http://www.uniprot.org/uniprot/',
                  );
 
 
@@ -304,38 +304,38 @@ if ($data_file_dir && -e "$data_file_dir/$havana_file") {
 }
 
 
-#--------------#
-# Uniprot data #
-#--------------#
-if ($data_file_dir && -e $uniprot_file) {
-  foreach my $enst_id (keys(%ens_tr_exons_list)) {
-    foreach my $dbname ('Uniprot/SWISSPROT','Uniprot/SPTREMBL') {
-      if ($ens_tr_exons_list{$enst_id}{$dbname}) {
-        foreach my $uni_id (keys(%{$ens_tr_exons_list{$enst_id}{$dbname}})) {
-          push @{$uniprot2ensembl{$uni_id}}, $enst_id;
-        }
-      }
-    }
-  }
-  my $uniprot_content = `grep -w chr$gene_chr $uniprot_file`;
-  if ($uniprot_content =~ /\w+/) {
-    foreach my $line (split("\n", $uniprot_content)) {
-      my @line_data = split("\t", $line);
-      
-      my $tr_start  = $line_data[1] + 1;
-      my $tr_end    = $line_data[2];
-      my $tr_strand = $line_data[5];
-         $tr_strand = ($tr_strand eq '+') ? 1 : -1;
-      my $tr_name   = $line_data[12];
-      
-      next if ($tr_strand != $gene_strand);
-      next if ($tr_start < $gene_start || $tr_end > $gene_end);
-      
-      my $hash_data = bed2hash('short', \@line_data, \%uniprot2ensembl);
-      $uniprot_tr_exons_list{$tr_name} = $hash_data;
-    }
-  }
-}
+##--------------#
+## Uniprot data #
+##--------------#
+#if ($data_file_dir && -e $uniprot_file) {
+#  foreach my $enst_id (keys(%ens_tr_exons_list)) {
+#    foreach my $dbname ('Uniprot/SWISSPROT','Uniprot/SPTREMBL') {
+#      if ($ens_tr_exons_list{$enst_id}{$dbname}) {
+#        foreach my $uni_id (keys(%{$ens_tr_exons_list{$enst_id}{$dbname}})) {
+#          push @{$uniprot2ensembl{$uni_id}}, $enst_id;
+#        }
+#      }
+#    }
+#  }
+#  my $uniprot_content = `grep -w chr$gene_chr $uniprot_file`;
+#  if ($uniprot_content =~ /\w+/) {
+#    foreach my $line (split("\n", $uniprot_content)) {
+#      my @line_data = split("\t", $line);
+#      
+#      my $tr_start  = $line_data[1] + 1;
+#      my $tr_end    = $line_data[2];
+#      my $tr_strand = $line_data[5];
+#         $tr_strand = ($tr_strand eq '+') ? 1 : -1;
+#      my $tr_name   = $line_data[12];
+#      
+#      next if ($tr_strand != $gene_strand);
+#      next if ($tr_start < $gene_start || $tr_end > $gene_end);
+#      
+#      my $hash_data = bed2hash('short', \@line_data, \%uniprot2ensembl);
+#      $uniprot_tr_exons_list{$tr_name} = $hash_data;
+#    }
+#  }
+#}
 
 
 #-------------#
@@ -784,10 +784,10 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 my %havana_rows_list = %{display_bed_source_data(\%havana_tr_exons_list, 'havana')};
 
 
-#----------------------#
-# Display UNIPROT data #
-#----------------------#
-my %uniprot_rows_list = %{display_bed_source_data(\%uniprot_tr_exons_list, 'uniprot')};
+##----------------------#
+## Display UNIPROT data #
+##----------------------#
+#my %uniprot_rows_list = %{display_bed_source_data(\%uniprot_tr_exons_list, 'uniprot')};
 
 
 #----------------------------#
@@ -1080,8 +1080,8 @@ $html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
 # HAVANA
 $html .= display_transcript_buttons(\%havana_rows_list, 'HAVANA');
 
-# Uniprot
-$html .= display_transcript_buttons(\%uniprot_rows_list, 'Uniprot');
+## Uniprot
+#$html .= display_transcript_buttons(\%uniprot_rows_list, 'Uniprot');
 
 # RefSeq
 $html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
@@ -1713,7 +1713,7 @@ sub display_bed_source_data {
     if ($tr_exons_list->{$id}{'enst'} && scalar(@{$tr_exons_list->{$id}{'enst'}})) {
       my $count_enst = scalar(@{$tr_exons_list->{$id}{'enst'}});
       my $ensts = join("','",@{$tr_exons_list->{$id}{'enst'}});
-      my $suffix = ($source eq 'uniprot') ? 'uni' : 'hv';
+      my $suffix = 'hv'; #($source eq 'uniprot') ? 'uni' : 'hv';
       $enst = ($count_enst > 1) ? $count_enst." Ensembl Tr." : $tr_exons_list->{$id}{'enst'}[0];
       
       my $button_title = "Click on the button to highlight the corresponding Ensembl trancript(s) on the current column";
@@ -2164,20 +2164,21 @@ sub usage {
 $msg
 
 OPTIONS:
-  -gene                 : gene name (HGNC symbol or ENS) (required)
-  -outputfile | -o      : file path to the output HTML file (required)
-  -lrg                  : the LRG ID corresponding to the gene, if it exists (optional)
-  -tsl                  : path to the Transcript Support Level text file (optional)
-                          By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
-                          The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
-                          http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
-                          First, you will need to uncompress it by using the command "gunzip <file>".
-  -data_file_dir | -df  : directory path of the data file directory which is already or will be downloaded by the script (optional)
-  -uniprot_file  | -uf  : Uniprot BED file name. Default '$uniprot_file_default' (optional)
-  -havana_file   | -hf  : Havana BED file name. Default '$havana_file_default' (optional)
-  -no_dl                : Flag to skip the download of the Havana & UniPrto BED files.
-                          Useful when we run X times the script, using the 'generate_transcript_alignments.pl' script (optional)
-  -hgmd_file    |hgmd   : Filepath to the HGMD file (required)
+  -gene                  : gene name (HGNC symbol or ENS) (required)
+  -outputfile | -o       : file path to the output HTML file (required)
+  -lrg                   : the LRG ID corresponding to the gene, if it exists (optional)
+  -tsl                   : path to the Transcript Support Level text file (optional)
+                           By default, the script is using TSL from EnsEMBL, using the EnsEMBL API.
+                           The compressed file is available in USCC, e.g. for GeneCode v19 (GRCh38):
+                           http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/wgEncodeGencodeTranscriptionSupportLevelV19.txt.gz
+                           First, you will need to uncompress it by using the command "gunzip <file>".
+  -data_file_dir | -df   : directory path of the data file directory which is already or will be downloaded by the script (optional)
+  -havana_file   | -hf   : Havana BED file name without its path. Default '$havana_file_default' (optional)
+  -hgmd_file     | -hgmd : HGMD file name without its path (required)
+  -no_dl                 : Flag to skip the download of the Havana BED file.
+                           Useful when we run x times the script, using the 'generate_transcript_alignments.pl' script (optional)
+
   };
   exit(0);
+  #-uniprot_file  | -uf   : Uniprot BED file name. Default '$uniprot_file_default' (optional)
 }
