@@ -90,28 +90,24 @@ table.legend td {
 
 .small_cell {
   text-align:left;
-  padding: 1px 2px 2px 2px;
+  padding: 1px 2px;
+  margin-top:3px;
   font-size:0.9em;
-  width:11%;
+  width:10%;
 }
 
 .medium_cell {
-  text-align:left;
-  padding: 1px 2px 2px 2px;
+  text-align:right;
+  padding: 1px 2px;
+  margin-top:1px;
   font-size:0.9em;
-  width:15%;
+  width:20%;
 }
 
 .large_cell {
-  text-align:left;
-  padding: 1px 2px 2px 2px;
-  font-size:0.9em;
-  width:18%;
-}
-
-.x_large_cell {
   text-align:right;
-  padding: 1px 2px 2px 0px;
+  padding: 1px 2px;
+  margin-top:1px;
   font-size:0.9em;
   width:30%;
 }
@@ -149,7 +145,7 @@ table.legend td {
 }
 
 .tsl_container {
-  margin: 0px 2px 1px;
+  margin: 0px 2px 1px 4px;
 }
 .tsl, .tsl div {
   transform-origin: 50% 50%;
@@ -735,10 +731,15 @@ table.transcript tr {
 }
 table.transcript tr.bottom_row {
   height: 25px;
+  display: -webkit-flex;
+  display: flex;
   background-color: rgba(255,255,255,0.15);
 }
 
 .gold table.transcript tr.bottom_row {
+  height: 25px;
+  display: -webkit-flex;
+  display: flex;
   background-color: rgba(255,255,255,0.3);
 }
 

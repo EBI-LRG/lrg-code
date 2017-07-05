@@ -621,7 +621,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $manual_label       = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
   my $manual_border      = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  my $manual_html        = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  #my $manual_html        = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $tsl_html           = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
   my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
@@ -656,12 +656,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           </td>
         </tr>
         <tr class="bottom_row">
-          <td class="small_cell">$manual_html</td>
           <td class="small_cell">$tsl_html</td>
           <td class="medium_cell">$trans_score_html</td>
           <td class="medium_cell">$appris_html</td>
-          <td class="large_cell">$uniprot_score_html</td>
-          <td class="x_large_cell">$pathogenic_html</td>
+          <td class="medium_cell">$uniprot_score_html</td>
+          <td class="large_cell">$pathogenic_html</td>
         </tr>
       </table>
     </td>
@@ -1162,13 +1161,13 @@ $html .= qq{
           
           <!-- Other -->
           <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-          <tr class="bg2_legend">
+          <!--<tr class="bg2_legend">
             <td>
               <span class="manual">M</span>
               <span class="not_manual">A</span>
             </td>
             <td>Label for the type of annotation: manual (M) or automated (A)</td>
-          </tr>
+          </tr>-->
           <tr class="bg1_legend">
             <td>
               <div class="tsl_container" style="margin-bottom:5px">
@@ -1358,18 +1357,18 @@ sub blast_button {
 
 }
 
-sub get_manual_html {
-  my $transcript   = shift;
-  my $column_class = shift;
-  
-  my $tr_ext_name    = $transcript->external_name;
-  my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-  my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
-  my $manual_title   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'Manual' : 'Automated';
-  my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
- 
-  return qq{<span class="$manual_class"$manual_border data-toggle="tooltip" data-placement="bottom" title="$manual_title annotation">$manual_label</span>};
-}  
+#sub get_manual_html {
+#  my $transcript   = shift;
+#  my $column_class = shift;
+#  
+#  my $tr_ext_name    = $transcript->external_name;
+#  my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+#  my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+#  my $manual_title   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'Manual' : 'Automated';
+#  my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+# 
+#  return qq{<span class="$manual_class"$manual_border data-toggle="tooltip" data-placement="bottom" title="$manual_title annotation">$manual_label</span>};
+#}  
 
 sub get_tsl_html {
   my $transcript = shift;

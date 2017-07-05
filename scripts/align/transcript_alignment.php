@@ -4,7 +4,7 @@
   $title = 'Transcript alignments';
   
   if ($_GET['gene']) {
-    $gene_id = $_GET['gene'];
+    $gene_id = strtoupper($_GET['gene']);
     $title = "Gene $gene_id - $title";
   }
   
@@ -24,13 +24,6 @@
         var availableGenes = [
 
 EOF;
-
-  
-  $gene_id = '';
-  
-  if ($_GET['gene']) {
-    $gene_id = $_GET['gene'];
-  }
   
   $select_list = array();
   $first_gene = 1;
