@@ -47,7 +47,7 @@ th.rowspan2{
 }
 
 td {
-  padding:1px;
+  padding:1px 1px;
 }
 
 a {
@@ -417,7 +417,8 @@ th.coord {
   height:1px;
   background-color:#000;
   position:relative;
-  top:50%
+  top:50%;
+  margin: 0px -1px;
 }
 .none {
   display:none;
@@ -627,11 +628,15 @@ th.coord {
   font-size:14px;
   font-weight:bold;
   display:inline-block;
-  padding:2px 2px;
+  padding:1px 2px 0px;
 }
 
 .hide_button_x:hover {
   color:#D22;
+}
+
+.blast_div {
+  margin-top:15px;
 }
 
 .buttons_row {
@@ -694,6 +699,8 @@ th.coord {
 
 input[type=checkbox].highlight_row {
   margin-top:0px;
+  height:50px;
+  vertical-align:middle;
 }
 
 .nm_details {
@@ -709,7 +716,10 @@ div.left_div {
 div.right_div {
   float:right;
 }
-
+.helptip_label {
+  border-bottom:1px dotted #555;
+  cursor:default;
+}
 .transcript_length_header {
   padding-top:4px;
   font-size:75%;
@@ -719,6 +729,11 @@ div.right_div {
   padding-top:4px;
   font-size:80%;
   color:#666;
+}
+.incomplete_cds {
+  padding-top:4px;
+  font-size:80%;
+  color:#A66;
 }
 
 table.transcript {
@@ -770,7 +785,7 @@ table.transcript tr.bottom_row {
 .scrolling {
   max-width: 1900px;
   overflow-x:scroll;  
-  margin-left:605px;/*610px;*/
+  margin-left:615px;/*610px;*/
   overflow-y:visible;
   margin-bottom:20px 0px;
   /*padding-bottom:1px;*/
@@ -778,13 +793,12 @@ table.transcript tr.bottom_row {
 
 .fixed_col {
   position:absolute;
-  /*display: table-cell;*/
-  vertical-align: inherit;
+  vertical-align: middle;
   height:50px;
 }
 .col1 { 
   width:20px; 
-  left:0;
+  left:0px;
   line-height:50px;
 }
 .col2 { 
@@ -795,26 +809,32 @@ table.transcript tr.bottom_row {
 .col3 {
   width:50px; 
   left:40px;
+  line-height:50px;
 }
 .col4 { 
-  width:200px; 
+  width:210px; 
   left:90px;
+}
+th.col4 {
+  line-height:50px;
 }
 .col5 {
   width:45px; 
-  left:290px;
+  left:300px;
+  line-height:50px;
 }
 .col6 { 
   width:100px; 
-  left:335px;
+  left:345px;
+  vertical-align: middle;
 }
 .col7 {
   width:150px; 
-  left:435px;
+  left:445px;
 }
 .col8 { 
   width:35px; 
-  left:585px;
+  left:595px;
   line-height:50px;
 }
 

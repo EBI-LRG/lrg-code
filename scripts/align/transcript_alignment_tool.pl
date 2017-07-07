@@ -675,10 +675,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   }
   my $tr_orientation = get_strand($tr_object->strand);
   my $biotype = get_biotype($tr_object->biotype);
+  my $incomplete = is_incomplete($tr_object);
   my $tr_number = (split('-',$tr_name))[1];
   $exon_tab_list .= qq{
     <td class="extra_column fixed_col col6" sorttable_customkey="$tr_number">$tr_name_label<div class="transcript_length">($cdna_length)</div></td>
-    <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
+    <td class="extra_column fixed_col col7">$biotype$incomplete<div class="transcript_length">($cdna_coding_length)</div></td>
     <td class="extra_column fixed_col col8">$tr_orientation</td>
   };
   
@@ -1353,7 +1354,7 @@ sub highlight_button {
 sub blast_button {
   my $id  = shift;
   my $url = $blast_url.$id;
-  return qq{<button class="btn btn-lrg btn-sm" onclick="window.open('$url','_blank')">BLAST</button>};
+  return qq{<div class="blast_div"><button class="btn btn-lrg btn-sm" onclick="window.open('$url','_blank')">BLAST</button></div>};
 
 }
 
@@ -1415,10 +1416,8 @@ sub get_canonical_html {
   my $column_class = shift;
   
   return '' unless($transcript->is_canonical);
-  
-  #my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
-  
-  return qq{<span class="flag canonical icon-favourite close-icon-0 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
+
+  return qq{<span class="flag canonical glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
 }
 
 sub get_trans_score_html {
@@ -1515,12 +1514,42 @@ sub get_biotype {
   
   if ($biotype_labels{$biotype}) {
     return sprintf(
-      '<span style="border-bottom:1px dotted #555;cursor:default" data-toggle="tooltip" data-placement="bottom" title="%s">%s</span>',
+      '<span class="helptip_label" data-toggle="tooltip" data-placement="bottom" title="%s">%s</span>',
       $biotype, $biotype_labels{$biotype}
     );
   }
   $biotype =~ s/_/ /g;
   return $biotype;
+}
+
+sub is_incomplete {
+  my $tr = shift;
+  
+  (my $five_prime)  = @{$tr->get_all_Attributes('CDS_start_NF')};
+  (my $three_prime) = @{$tr->get_all_Attributes('CDS_end_NF')};
+  
+  my $label = '';
+  my $title = '';
+  if ($five_prime && $three_prime) {
+    $label = "CDS 5' and 3' incomplete";
+    $title = "5' and 3' truncations in transcript evidence prevent annotation of the start and the end of the CDS.";
+  }
+  elsif ($five_prime) {
+    $label = "CDS 5' incomplete";
+    $title = "5' truncation in transcript evidence prevents annotation of the start of the CDS.";
+  }
+  elsif ($three_prime) {
+    $label = "CDS 3' incomplete";
+    $title = "3' truncation in transcript evidence prevents annotation of the end of the CDS.";
+  }
+  else {
+    return '';
+  }
+  
+  return sprintf(
+      '<br /><span class="incomplete_cds helptip_label" data-toggle="tooltip" data-placement="bottom" title="%s">%s</span>',
+      $title, $label
+  );
 }
 
 sub get_showhide_buttons {
