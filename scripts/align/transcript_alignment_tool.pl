@@ -609,6 +609,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
   my $ens_tr_label = ($ens_tr_exons_list{$ens_tr}{'label'}) ? $ens_tr_exons_list{$ens_tr}{'label'} : $ens_tr;
+     $ens_tr_label = version_label($ens_tr_label);
   
   # cDNA lengths
   my $cdna_coding_start = $tr_object->cdna_coding_start;
@@ -816,7 +817,9 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $hide_row      = hide_button($row_id);
   my $highlight_row = highlight_button($row_id,'left');
   my $blast_button  = blast_button($nm);
-     
+
+  my $nm_label = version_label($nm);
+
   $exon_tab_list .= qq{
   <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
     <td class="fixed_col col1">$hide_row</td>
@@ -824,7 +827,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     <td class="fixed_col col3">$blast_button</td>
     <td class="$column_class first_column fixed_col col4">
       <div>
-        <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
+        <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
       </div>
     </td>
     <td class="extra_column fixed_col col5">$e_count</td>
@@ -849,7 +852,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   };
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-  $cdna_rows_list{$row_id}{'label'} = $nm;
+  $cdna_rows_list{$row_id}{'label'} = $nm_label;
   $cdna_rows_list{$row_id}{'class'} = $column_class;
   
   my %exon_set_match;
@@ -1610,6 +1613,8 @@ sub display_refseq_data {
         $labels .= get_source_html($source);
       }
     }
+
+    my $nm_label = version_label($nm);
     
     $exon_tab_list .= qq{
     <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
@@ -1618,7 +1623,7 @@ sub display_refseq_data {
       <td class="fixed_col col3">$blast_button</td>
       <td class="$column_class first_column fixed_col col4">
         <div>
-          <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm</a>
+          <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
         </div>
         <div class="nm_details">$labels</div>
       </td>
@@ -1644,7 +1649,7 @@ sub display_refseq_data {
     };
   
     $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-    $rows_list{$row_id}{'label'} = $nm;
+    $rows_list{$row_id}{'label'} = $nm_label;
     $rows_list{$row_id}{'class'} = $column_class;
   
     my %exon_set_match;
@@ -2181,6 +2186,12 @@ sub bed2hash {
   }
   
   return \%hash_data;
+}
+
+sub version_label {
+  my $label = shift;
+  $label =~ s/\.(\d+)$/\.<span class="tr_version">$1<\/span>/;
+  return $label;
 }
 
 
