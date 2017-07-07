@@ -1206,7 +1206,7 @@ $html .= qq{
           </tr>
           <tr class="bg2_legend">
             <td>
-              <span class="flag canonical icon-favourite close-icon-0 smaller-icon"></span>
+              <span class="flag canonical glyphicon glyphicon-flag"></span>
             </td>
             <td>Label to indicate the canonical transcript</td>
           </tr>
