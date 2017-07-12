@@ -389,6 +389,8 @@ sub compare_ens_transcripts_with_lrg_transcripts {
     my $ens_coding_start = $enst_obj->cdna_coding_start;
     my $ens_coding_end   = $enst_obj->cdna_coding_end;
     
+    next if (!$ens_coding_start || !$ens_coding_end);
+    
     # Get start and end of the ENST, in LRG coordinates
     foreach my $mapping_span (@mapping_spans) {
       next MAPPING if ($mapping_span->mapping_diff);
