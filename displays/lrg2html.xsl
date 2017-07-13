@@ -364,7 +364,7 @@
       <div class="margin-top-5"></div>
       
       <xsl:call-template name="section_menu">
-        <xsl:with-param name="section_link">#requester_data_anchor</xsl:with-param>
+        <xsl:with-param name="section_link">#requester_anchor</xsl:with-param>
         <xsl:with-param name="section_id">requester_menu</xsl:with-param>
         <xsl:with-param name="section_icon">icon-request</xsl:with-param>
         <xsl:with-param name="section_desc" select="$requester_set_desc"/>
