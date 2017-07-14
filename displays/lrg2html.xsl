@@ -4166,56 +4166,64 @@
   
   <xsl:variable name="seq_length" select="$end - $start + 1" />
   
-  <div class="clearfix" style="position:relative;margin:5px;height:9px;border-left:1px solid #000;border-right:1px solid #000">
-    <div style="border-top:1px solid #000;position:relative;top:4px"></div>
-    <div style="float:left;background-color:#FFF;z-index:10;position:relative;top:-4px;left:4px;font-size:10px;color:#000;padding:0px 2px"><xsl:value-of select="$start"/></div>
+  <div class="transcript_legend_container clearfix">
+    <div class="transcript_legend_ruler"></div>
+    <div class="left transcript_legend transcript_legend_text" style="left:4px">
+      <xsl:call-template name="thousandify">
+        <xsl:with-param name="number" select="$start"/>
+      </xsl:call-template>
+    </div>
     
      <!-- 1/4 -->
     <xsl:variable name="one_quarter" select="format-number((($seq_length div 4) + $start),0)" />
     <xsl:variable name="one_quarter_pos" select="format-number(($image_width div 4),0)" />
     <xsl:variable name="one_quarter_label_pos" select="$one_quarter_pos + 4" />
     <div>
-      <xsl:attribute name="style">
-        float:left;z-index:10;position:absolute;height:10px;top:-1px;left:<xsl:value-of select="$one_quarter_pos"/>px;padding:0px;border-left:1px solid #000
-      </xsl:attribute>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_vbar</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$one_quarter_pos"/>px</xsl:attribute>
     </div>
     <div>
-      <xsl:attribute name="style">
-        float:left;background-color:#FFF;z-index:10;position:absolute;top:-3px;left:<xsl:value-of select="$one_quarter_label_pos"/>px;font-size:10px;color:#000;padding:0px 2px;
-      </xsl:attribute>
-      <xsl:value-of select="$one_quarter"/>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_text</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$one_quarter_label_pos"/>px</xsl:attribute>
+      <xsl:call-template name="thousandify">
+        <xsl:with-param name="number" select="$one_quarter"/>
+      </xsl:call-template>
     </div>
     <!-- 2/4 -->
     <xsl:variable name="two_quarters" select="format-number((($seq_length div 2) + $start),0)" />
     <xsl:variable name="two_quarters_pos" select="format-number(($image_width div 2),0)" />
     <xsl:variable name="two_quarters_label_pos" select="$two_quarters_pos + 4" />
     <div>
-      <xsl:attribute name="style">
-        float:left;z-index:10;position:absolute;height:10px;top:-1px;left:<xsl:value-of select="$two_quarters_pos"/>px;padding:0px;border-left:1px solid #000
-      </xsl:attribute>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_vbar</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$two_quarters_pos"/>px</xsl:attribute>
     </div>
     <div>
-      <xsl:attribute name="style">
-        float:left;background-color:#FFF;z-index:10;position:absolute;top:-3px;left:<xsl:value-of select="$two_quarters_label_pos"/>px;font-size:10px;color:#000;padding:0px 2px;
-      </xsl:attribute>
-      <xsl:value-of select="$two_quarters"/>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_text</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$two_quarters_label_pos"/>px</xsl:attribute>
+      <xsl:call-template name="thousandify">
+        <xsl:with-param name="number" select="$two_quarters"/>
+      </xsl:call-template>
     </div>
     <!-- 3/4 -->
     <xsl:variable name="three_quarters" select="format-number(((($seq_length div 4) * 3) + $start),0)" />
     <xsl:variable name="three_quarters_pos" select="format-number((($image_width div 4) * 3),0)" />
     <xsl:variable name="three_quarters_label_pos" select="$three_quarters_pos + 4" />
     <div>
-      <xsl:attribute name="style">
-        float:left;z-index:10;position:absolute;height:10px;top:-1px;left:<xsl:value-of select="$three_quarters_pos"/>px;padding:0px;border-left:1px solid #000
-      </xsl:attribute>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_vbar</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$three_quarters_pos"/>px</xsl:attribute>
     </div>
     <div>
-      <xsl:attribute name="style">
-        float:left;background-color:#FFF;z-index:10;position:absolute;top:-3px;left:<xsl:value-of select="$three_quarters_label_pos"/>px;font-size:10px;color:#000;padding:0px 2px;
-      </xsl:attribute>
-      <xsl:value-of select="$three_quarters"/>
+      <xsl:attribute name="class">left transcript_legend transcript_legend_text</xsl:attribute>
+      <xsl:attribute name="style">left:<xsl:value-of select="$three_quarters_label_pos"/>px</xsl:attribute>
+      <xsl:call-template name="thousandify">
+        <xsl:with-param name="number" select="$three_quarters"/>
+      </xsl:call-template>
     </div>  
-    <div style="float:right;background-color:#FFF;z-index:10;position:relative;top:-4px;right:4px;font-size:10px;color:#000;padding:0px 2px"><xsl:value-of select="$end"/></div>
+    <div class="right transcript_legend transcript_legend_text" style="right:4px">
+      <xsl:call-template name="thousandify">
+        <xsl:with-param name="number" select="$end"/>
+      </xsl:call-template>
+    </div>
   </div>
 </xsl:template>
 
