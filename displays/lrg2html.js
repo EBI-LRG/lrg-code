@@ -268,7 +268,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   }
  
   // Exon block
-  $("[id^='"+exon_block_id+"']").each(function (i, el) {
+  $("[id^='"+exon_block_id+"_']").each(function (i, el) {
     var exon_block_children = $(el).children();
     // Partial coding exon
     if(exon_block_children.length) {
@@ -365,32 +365,33 @@ function clear_highlight(trans,pep) {
     }
   }
   
-  // clear exon blocks
+  // clear exon blocks (from multi image alignment, single image an exon table)
   i = 1;
-  while($('#tr_img_exon_'+trans+'_'+i).length) {
-    var exon_block_id = '#tr_img_exon_'+trans+'_'+i;
-    var exon_block_children = $(exon_block_id).children();
-    // Full coding exon
-    if(exon_block_children.length) {
-      $.each( exon_block_children, function( index, child ) {
+  while($("[id^='tr_img_exon_"+trans+"_"+i+"_']").length) {
+    $("[id^='tr_img_exon_"+trans+"_"+i+"_']").each(function (i, exon_block_id) {
+      var exon_block_children = $(exon_block_id).children();
+      // Full coding exon
+      if(exon_block_children.length) {
+        $.each( exon_block_children, function( index, child ) {
+          $.each( tr_img_classes, function( index, value ) {
+            var selected_class = tr_img_class_prefix + value;
+            if ($(child).hasClass(selected_class)) {
+              $(child).removeClass(selected_class).addClass(value);
+              return false;
+            }
+          });
+        });
+      }
+      else {
         $.each( tr_img_classes, function( index, value ) {
           var selected_class = tr_img_class_prefix + value;
-          if ($(child).hasClass(selected_class)) {
-            $(child).removeClass(selected_class).addClass(value);
+          if ($(exon_block_id).hasClass(selected_class)) {
+            $(exon_block_id).removeClass(selected_class).addClass(value);
             return false;
           }
         });
-      });
-    }
-    else {
-      $.each( tr_img_classes, function( index, value ) {
-        var selected_class = tr_img_class_prefix + value;
-        if ($(exon_block_id).hasClass(selected_class)) {
-          $(exon_block_id).removeClass(selected_class).addClass(value);
-          return false;
-        }
-      });
-    }
+      }
+    });
     i++;
   }
 }
