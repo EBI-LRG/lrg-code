@@ -665,14 +665,18 @@ if (!$only_updatable_data) {
         # Check if the comment is already in the database
         my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
         next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
-              
-        my $comment_id = check_existing_polya_comment($name,$tr_comment);
-        if (defined($comment_id)) { 
-          $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
-          $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
-          $tr_com_up_sth->execute();
+
+        # Check polyA comment
+        if ($tr_comment =~ /$polya_comment_suffix/i) {
+          my $comment_id = check_existing_polya_comment($name,$tr_comment);
+          if (defined($comment_id)) {
+            $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
+            $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
+            $tr_com_up_sth->execute();
+          }
         }
-        else { 
+        # Add comment
+        else {
           $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
           $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
           $tr_com_ins_sth->execute();
