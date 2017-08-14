@@ -310,7 +310,7 @@ if (defined($gene_id)) {
   }
 }
 
-# Fixed section annotations
+## Fixed section annotations
 if (!$only_updatable_data) {
 
   ## Check HGNC & RefSeqGene IDs ##
@@ -392,25 +392,6 @@ if (!$only_updatable_data) {
   $node = $fixed->findNodeSingle('creation_date') or error_msg("ERROR: Could not find creation date tag");
   my $creation_date = $node->content();
 
-  # Get the comment (optional)
-  $node = $fixed->findNodeSingle('comment');
-  if (defined($node)) {
-    my $f_comment = $node->content();
-    my $com_stmt = qq{
-      REPLACE INTO
-        lrg_comment (
-            gene_id,
-            name,
-            comment
-        )
-        SELECT gene_id, symbol, '$f_comment'
-        FROM gene WHERE symbol='$hgnc_symbol'
-    };
-    print STDOUT localtime() . "\tAdding LRG comment for $lrg_id to database\n" if ($verbose);
-    $db_adaptor->dbc->do($com_stmt);
-  }
-
-
   # Get the LRG sequence
   $node = $fixed->findNode('sequence') or error_msg("ERROR: Could not find LRG sequence tag");
   my $lrg_seq = $node->content();
@@ -486,24 +467,6 @@ if (!$only_updatable_data) {
         ?,
         ?
     )
-  };
-
-  my $tr_com_ins_stmt = qq{
-    REPLACE INTO
-        lrg_comment (
-            gene_id,
-            name,
-            comment
-        )
-    VALUES (
-        $gene_id,
-        ?,
-        ?
-    )
-  };
-
-  my $tr_com_up_stmt = qq{
-    UPDATE lrg_comment SET comment = ? WHERE comment_id = ?
   };
 
   my $cdna_ins_stmt = qq{
@@ -601,8 +564,6 @@ if (!$only_updatable_data) {
   };
   my $tr_ins_sth = $db_adaptor->dbc->prepare($tr_ins_stmt);
   my $tr_date_ins_sth = $db_adaptor->dbc->prepare($tr_date_ins_stmt);
-  my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
-  my $tr_com_up_sth  = $db_adaptor->dbc->prepare($tr_com_up_stmt);
   my $cdna_ins_sth = $db_adaptor->dbc->prepare($cdna_ins_stmt);
   my $ce_ins_sth = $db_adaptor->dbc->prepare($ce_ins_stmt);
   my $cds_ins_sth = $db_adaptor->dbc->prepare($cds_ins_stmt);
@@ -620,21 +581,6 @@ if (!$only_updatable_data) {
 
     # Transcript name
     my $name = $transcript->data()->{'name'};
-
-    # Check PolyA
-    if ($warning =~ /polyA/i) {
-      if (-e $warning_log && !-z $warning_log) {
-        my $info = `grep -w $name $warning_log`;
-        
-        if (defined($info)) {
-          foreach my $inf (split("\n",$info)) {
-            chomp $inf;
-            my (undef,$refseq_with_poly_a) = split(' ',$inf);
-            $transcript->addNode('comment')->content(get_polya_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
-          }
-        }
-      }
-    }
     
     # Get LRG coords
     my (undef,$lrg_start,$lrg_end) = parse_coordinates($transcript->findNode('coordinates'));
@@ -651,37 +597,6 @@ if (!$only_updatable_data) {
       $tr_date_ins_sth->bind_param(1,$name,SQL_VARCHAR);
       $tr_date_ins_sth->bind_param(2,$tr_creation_date,SQL_DATE);
       $tr_date_ins_sth->execute();
-    }
-    
-    # Cleanup comments
-    cleanup_comments($gene_id,$name);
-
-    # Insert comment if exists (optional)
-    my $tr_com_nodes = $transcript->findNodeArray('comment');
-    if ($tr_com_nodes && scalar(@{$tr_com_nodes}) != 0) {
-      while (my $tr_com_node = shift(@{$tr_com_nodes})) {
-        my $tr_comment = $tr_com_node->content();
-
-        # Check if the comment is already in the database
-        my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
-        next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
-
-        # Check polyA comment
-        if ($tr_comment =~ /$polya_comment_suffix/i) {
-          my $comment_id = check_existing_polya_comment($name,$tr_comment);
-          if (defined($comment_id)) {
-            $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
-            $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
-            $tr_com_up_sth->execute();
-          }
-        }
-        # Add comment
-        else {
-          $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
-          $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
-          $tr_com_ins_sth->execute();
-        }
-      }
     }
     
     # Get the cdna
@@ -846,7 +761,108 @@ if (!$only_updatable_data) {
   }
 
 }
-# End of fixed section
+## End of fixed section
+
+
+## Update comment in fixed section (allowed even for the public LRGs)
+
+# Get the LRG general comment (optional)
+my $com_node = $fixed->findNodeSingle('comment');
+if (defined($com_node)) {
+  my $f_comment = $com_node->content();
+  my $com_stmt = qq{
+    REPLACE INTO
+      lrg_comment (
+          gene_id,
+          name,
+          comment
+      )
+      SELECT gene_id, symbol, '$f_comment'
+      FROM gene WHERE symbol='$hgnc_symbol'
+  };
+  print STDOUT localtime() . "\tAdding LRG comment for $lrg_id to database\n" if ($verbose);
+  $db_adaptor->dbc->do($com_stmt);
+}
+
+# Get the LRG transcript comment(s) (optional)
+
+my $tr_com_ins_stmt = qq{
+  REPLACE INTO
+      lrg_comment (
+          gene_id,
+          name,
+          comment
+      )
+  VALUES (
+      $gene_id,
+      ?,
+      ?
+  )
+};
+
+my $tr_com_up_stmt = qq{
+  UPDATE lrg_comment SET comment = ? WHERE comment_id = ?
+};
+
+my $tr_com_ins_sth = $db_adaptor->dbc->prepare($tr_com_ins_stmt);
+my $tr_com_up_sth  = $db_adaptor->dbc->prepare($tr_com_up_stmt);
+
+# Get the transcript nodes
+my $transcripts = $fixed->findNodeArray('transcript') or error_msg("ERROR: Could not find transcript tags");
+
+# Parse and add each transcript to the database separately
+while (my $transcript = shift(@{$transcripts})) {
+
+  # Transcript name
+  my $name = $transcript->data()->{'name'};
+
+  # Check PolyA
+  if ($warning =~ /polyA/i) {
+    if (-e $warning_log && !-z $warning_log) {
+      my $info = `grep -w $name $warning_log`;
+      
+      if (defined($info)) {
+        foreach my $inf (split("\n",$info)) {
+          chomp $inf;
+          my (undef,$refseq_with_poly_a) = split(' ',$inf);
+          $transcript->addNode('comment')->content(get_polya_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
+        }
+      }
+    }
+  }
+  
+  # Cleanup comments
+  cleanup_comments($gene_id,$name);
+
+  # Insert comment if exists (optional)
+  my $tr_com_nodes = $transcript->findNodeArray('comment');
+  if ($tr_com_nodes && scalar(@{$tr_com_nodes}) != 0) {
+    while (my $tr_com_node = shift(@{$tr_com_nodes})) {
+      my $tr_comment = $tr_com_node->content();
+      # Check if the comment is already in the database
+      my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
+      next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
+
+      # Check polyA comment
+      if ($tr_comment =~ /$polya_comment_suffix/i) {
+        my $comment_id = check_existing_polya_comment($name,$tr_comment);
+        if (defined($comment_id)) {
+          $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
+          $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
+          $tr_com_up_sth->execute();
+        }
+      }
+      # Add comment
+      else {
+        $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+        $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
+        $tr_com_ins_sth->execute();
+      }
+    }
+  }
+}  
+
+## End of update comment
 
 
 # Parse the updatable section to get the annotation sets
