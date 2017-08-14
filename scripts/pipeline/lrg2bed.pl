@@ -185,11 +185,11 @@ foreach my $status (keys(%lrg_meta)) {
         }
 	  
 	      # Transcript coordinates
-	      #my %protein_list;
         my $transcripts = $lrg->findNodeArraySingle('fixed_annotation/transcript');
         foreach my $transcript (@$transcripts) {
           my $t_short_name = $transcript->data->{name};
           my $t_name   = $lrg_id.$t_short_name;
+          my $t_nm     = get_corresponding_nm($lrg,$t_short_name);
           my $t_number = substr($t_short_name,1);
           my $t_coords = $transcript->findNodeSingle('coordinates');
           my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
@@ -256,7 +256,9 @@ foreach my $status (keys(%lrg_meta)) {
           my $exons_sizes_list = join(',',@exons_sizes);
           my $exons_starts_list = join(',',@exons_starts);
       
-          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name(transcript$t_number)\t0\t$strand_operator\t$c_start\t$c_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
+          my $t_extra_info = $t_nm ? $t_nm : "transcript$t_number";
+      
+          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name($t_extra_info)\t0\t$strand_operator\t$c_start\t$c_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
           if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
 	          push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
@@ -432,6 +434,23 @@ sub lrg2genomic {
   }  
 }
 
+sub get_corresponding_nm {
+  my $lrg = shift;
+  my $lrg_tr_name = shift;
+  
+  my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set');
+	foreach my $aset (@$asets) {
+	  next if ($aset->{data}->{type} ne 'ncbi');
+	  
+	  my $ncbi_trs = $aset->findNodeArray('features/gene/transcript');
+	  foreach my $ncbi_tr (@$ncbi_trs) {
+	    if ($ncbi_tr->{data}->{fixed_id} && $ncbi_tr->{data}->{fixed_id} eq $lrg_tr_name) {
+	      return $ncbi_tr->{data}->{accession}
+	    }
+    }
+  }
+  return undef;
+}
 
 sub usage {
     
