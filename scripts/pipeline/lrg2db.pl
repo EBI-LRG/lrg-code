@@ -839,6 +839,7 @@ while (my $transcript = shift(@{$transcripts})) {
   if ($tr_com_nodes && scalar(@{$tr_com_nodes}) != 0) {
     while (my $tr_com_node = shift(@{$tr_com_nodes})) {
       my $tr_comment = $tr_com_node->content();
+
       # Check if the comment is already in the database
       my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
       next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
@@ -860,7 +861,7 @@ while (my $transcript = shift(@{$transcripts})) {
       }
     }
   }
-}  
+}
 
 ## End of update comment
 
@@ -1591,11 +1592,11 @@ sub cleanup_comments {
       SELECT comment_id, comment
       FROM lrg_comment
       WHERE gene_id=$gene_id AND
-      name="$tr_name" AND
+      name="$tr_name" AND (
       comment LIKE "\%NM_%" OR 
       comment LIKE "\%The two transcripts differ at%" OR
       comment LIKE "\%respect to the Primary Genome Reference Assembly%" OR
-      comment LIKE "\%respect to the Primary Reference Assembly%"
+      comment LIKE "\%respect to the Primary Reference Assembly%")
   };
 
   my $stmt_del_com = qq{ DELETE FROM lrg_comment WHERE comment_id=? };
