@@ -231,13 +231,13 @@ foreach my $aset (@{$asets}) {
 }
 
 
-## Compare LRG transcript / Reference sequence assembly ##
-# Method: for the main Reference sequence assembly, compare the LRG tr sequence(s): coordinates of the exon and 'mapping_diff'.
-# 1) Check if sequence diff between the Reference sequence assembly and the LRG transcript(s).
+## Compare LRG transcript / genome sequence assembly ##
+# Method: for the main genome sequence assembly, compare the LRG tr sequence(s): coordinates of the exon and 'mapping_diff'.
+# 1) Check if sequence diff between the genome sequence assembly and the LRG transcript(s).
 # 2) Compare the diff coordinates with the start and end coordinates of each exon of each LRG transcript.
 
-# Look at the sequence difference between LRG transcript and the current primary reference assembly
-my $seq_diff_comment = 'There is a difference(s) in the %s of this transcript with respect to the Primary Genome Reference Assembly (GRCh38). See the sequence difference(s)';
+# Look at the sequence difference between LRG transcript and the current primary genome assembly
+my $seq_diff_comment = 'There is a difference(s) in the %s of this transcript with respect to the Primary Genome Assembly (GRCh38). See the sequence difference(s)';
 
 foreach my $aset (@{$asets}) {
   next unless ($aset->source->name() eq 'LRG' || $aset->type eq lc('LRG'));
@@ -284,7 +284,7 @@ foreach my $aset (@{$asets}) {
     }
   }
   
-  # Group Reference Assembly - LRG transcript sequence differences by LRG transcript
+  # Group Genome Assembly - LRG transcript sequence differences by LRG transcript
   foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
     my $lrg_tr_name = $lrg_tr_obj->name;
     next if (!$lrg_ref_diff{$lrg_tr_name});
