@@ -8,16 +8,6 @@ p {
   margin: 8px 0px;
 }
 
-/*.blue{
-  color: #0E4C87;
-  font-weight: bold;
-}
-
-.green{
-  color: #48a726;
-  font-weight: bold;
-}*/
-
 li {
   padding-bottom:2px;
   padding-right:5px;
@@ -335,7 +325,13 @@ td.right_col_fixed_width_2 {
 	margin-right:5px;
 	white-space:nowrap;
 	vertical-align:middle;
-	height:24px;
+}
+.btn-lrg-normal {
+  height:24px;
+}
+.btn-lrg-small {
+  font-size:12px;
+  line-height:1.5;
 }
 .btn-lrg:hover, .btn-lrg:active, .btn-lrg:visited {
 	color: #9051A0;/*#48a726;*/
@@ -350,7 +346,7 @@ td.right_col_fixed_width_2 {
 	color: #FFF;
 	text-decoration: none;
 }
-.btn-lrg span {
+.btn-lrg span,.btn-lrg-small span {
   vertical-align:baseline;
   padding:0px 2px;
 }
@@ -410,8 +406,9 @@ td.right_col_fixed_width_2 {
 }
 
 .annotation_set {
-  margin: 0px 5px 50px;
-  padding-bottom:15px;
+  margin-bottom: 50px;
+  padding:0px 5px 25px;
+  border-left: 1px dotted #78BE43;
 }
 
 .annotation_set_sub_section {
@@ -551,17 +548,16 @@ div.submenu>ul {
 }
 
 .section_annotation {
-  /*border-bottom: 4px solid;*/
   background-color: #3C3F45;
   padding: 5px 5px 5px 0px;
-  margin-bottom:15px;
+  margin-bottom:0px;
 }
 
 .section_annotation1 {
-  border-color: #1C9BCF;
+  border-color: #1C9BCF !important;
 }
 .section_annotation2 {
-  border-color: #78BE43;
+  border-color: #78BE43 !important;
 }
 
 .section_annotation h2 {
@@ -585,6 +581,9 @@ div.submenu>ul {
 }
 .section_annotation_icon2 {
   background-color: #78BE43;
+}
+.section_annotation_content {
+  padding:5px 0px 10px;
 }
 
 
@@ -623,7 +622,6 @@ a.section_annotation_h_menu:hover>span:first-child {
 
 div.other_source {
   padding:10px 0px;
-  background-color:#F9F9F9;
 }
 
 span.other_source{
@@ -927,20 +925,15 @@ div.contact {
   padding: 2px;
   width: 672px;
   background-color: #FFF;
+  margin-bottom:5px;
 }
 
-.oddDiv {
+.section_div {
   background: #F9F9F9;
   margin: 5px 5px 75px;
-  padding-bottom: 5px;
+  /*padding-bottom: 5px;
+  border-left: 1px dashed #1C9BCF;*/
 }
-     
-.evenDiv {
-  background: #FFFFFF;
-  margin: 5px 5px 75px;
-  padding-bottom: 5px;
-}
-
 
 div.line_content {
   padding: 2px 0px;
@@ -958,9 +951,10 @@ div.meta_source {
 }
 
 div.external_source {
-	background-color: #F9F9F9; 
-	border: 1px dotted #0E4C87;
+	background-color: #FFF; 
+	border: 1px solid #DDD;
 	padding-bottom: 10px;
+	margin:10px 5px 0px;
 }
 
 div.lrg_source {
@@ -996,6 +990,9 @@ table.lrg_genomic_content>tbody>tr>td:first-child {
 }
 table.lrg_transcript_content>tbody>tr>td:first-child {
   width:160px;
+}
+table.lrg_transcript_content>tbody>tr>td {
+  padding: 4px;
 }
 
 table.gene_annotation>tbody>tr {
@@ -1134,7 +1131,6 @@ ul.seq_info > li {
 
 div.top_upd_anno_link {
   padding:3px 4px;
-  margin-bottom:50px;
   background-color:#F0F0F0;
   font-size:0.9em;
   text-align:right;

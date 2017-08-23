@@ -19,7 +19,7 @@
 
 <!-- Annotation sets -->
 <xsl:variable name="fixed_set_desc">Stable and specific LRG annotation</xsl:variable>
-<xsl:variable name="updatable_set_desc">Mappings to reference assemblies and annotations from external sources</xsl:variable>
+<xsl:variable name="updatable_set_desc">Mappings to genome assemblies and annotations from external sources</xsl:variable>
 <xsl:variable name="additional_set_desc">Information about additional annotation sources</xsl:variable>
 <xsl:variable name="requester_set_desc">LRG requester's details</xsl:variable>
 
@@ -64,13 +64,13 @@
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
-<!-- Coordinates on the current reference assembly -->
+<!-- Coordinates on the current genome assembly -->
 <xsl:variable name="current_mapping" select="/*/updatable_annotation/annotation_set[@type=$lrg_set_name]/mapping[@type='main_assembly' and contains(@coord_system,$current_assembly)]"/>
 <xsl:variable name="current_ref_start"><xsl:value-of select="$current_mapping/@other_start"/></xsl:variable>
 <xsl:variable name="current_ref_end"><xsl:value-of select="$current_mapping/@other_end"/></xsl:variable>
 <xsl:variable name="current_ref_strand"><xsl:value-of select="$current_mapping/mapping_span/@strand"/></xsl:variable>
 
-<!-- Coordinates on the previous reference assembly -->
+<!-- Coordinates on the previous genome assembly -->
 <xsl:variable name="previous_mapping" select="/*/updatable_annotation/annotation_set[@type=$lrg_set_name]/mapping[@type='other_assembly' and contains(@coord_system,$previous_assembly)]"/>
 <xsl:variable name="previous_ref_start"><xsl:value-of select="$previous_mapping/@other_start"/></xsl:variable>
 <xsl:variable name="previous_ref_end"><xsl:value-of select="$previous_mapping/@other_end"/></xsl:variable>
@@ -370,7 +370,7 @@
         <xsl:with-param name="section_label">Updatable Annotation</xsl:with-param>
       </xsl:call-template> 
       <ul>
-        <li><a href="#set_1_anchor" class="menu_item" id="lrg_menu" data-toggle="tooltip" data-placement="left" title="LRG mapping to the current reference assembly"><xsl:value-of select="$lrg_id"/> mappings</a></li>
+        <li><a href="#set_1_anchor" class="menu_item" id="lrg_menu" data-toggle="tooltip" data-placement="left" title="LRG mapping to the current genome assembly"><xsl:value-of select="$lrg_id"/> mappings</a></li>
         <li><a href="#set_2_anchor" class="menu_item" id="ncbi_menu" data-toggle="tooltip" data-placement="left" title="NCBI annotations and LRG mappings to the RefSeqGene transcripts">NCBI annotation</a></li>
         <li><a href="#set_3_anchor" class="menu_item"  id="ensembl_menu" data-toggle="tooltip" data-placement="left" title="Ensembl annotations and LRG mappings to the Ensembl transcripts">Ensembl annotation</a></li>
       <xsl:if test="/*/updatable_annotation/annotation_set[@type=$community_set_name]">
@@ -379,7 +379,6 @@
             <xsl:attribute name="title">Other annotations provided by the gene <xsl:value-of select="$lrg_gene_name"/> community</xsl:attribute>
             Community annotation
           </a>
-          <span class="icon-group close-icon-0 lrg_green2"></span>
         </li>
       </xsl:if>
       </ul>
@@ -570,11 +569,15 @@
                         <!-- RefSeq and Ensembl transcripts -->
                         <td>
                         <xsl:if test="$nm_transcript">
-                          <xsl:value-of select="$nm_transcript/@accession" />
+                          <div><xsl:value-of select="$nm_transcript/@accession" /></div>
                         </xsl:if>
                         <xsl:if test="$ens_transcript">
+                          <xsl:variable name="lrg_tr_start" select="/*/fixed_annotation/transcript[@name=$tr_name]/coordinates/@start"/>
+                          <xsl:variable name="lrg_tr_end"   select="/*/fixed_annotation/transcript[@name=$tr_name]/coordinates/@end"/>
                           <xsl:for-each select="$ens_transcript">
-                            <br /><xsl:value-of select="@accession" />
+                            <xsl:if test="$lrg_tr_start= coordinates/@start and $lrg_tr_end = coordinates/@end">
+                              <div><xsl:value-of select="@accession" /></div>
+                            </xsl:if>
                           </xsl:for-each>
                         </xsl:if>
                         </td>
@@ -690,66 +693,67 @@
 <!-- DB XREF -->
 <xsl:template match="db_xref">
   
-  <strong><xsl:value-of select="@source"/>: </strong>  
-  <a>
-  <xsl:attribute name="class">icon-external-link</xsl:attribute>
-  <xsl:attribute name="target">_blank</xsl:attribute>
-  <xsl:choose>
-    <xsl:when test="@source='RefSeq'">
-      <xsl:attribute name="href">
-        <xsl:choose>
-          <xsl:when test="contains(@accession,'NP')"><xsl:value-of select="$ncbi_root_url"/>protein/<xsl:value-of select="@accession"/></xsl:when>
-          <xsl:otherwise><xsl:value-of select="$ncbi_url"/><xsl:value-of select="@accession"/></xsl:otherwise>
-        </xsl:choose>
+  <div>
+    <strong><xsl:value-of select="@source"/>: </strong>  
+    <a>
+    <xsl:attribute name="class">icon-external-link</xsl:attribute>
+    <xsl:attribute name="target">_blank</xsl:attribute>
+    <xsl:choose>
+      <xsl:when test="@source='RefSeq'">
+        <xsl:attribute name="href">
+          <xsl:choose>
+            <xsl:when test="contains(@accession,'NP')"><xsl:value-of select="$ncbi_root_url"/>protein/<xsl:value-of select="@accession"/></xsl:when>
+            <xsl:otherwise><xsl:value-of select="$ncbi_url"/><xsl:value-of select="@accession"/></xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source=$ensembl_set_name">
+        <xsl:attribute name="href">
+          <xsl:choose>
+            <xsl:when test="contains(@accession,'ENST')"><xsl:value-of select="$ensembl_root_url"/>Transcript/Summary?db=core;t=<xsl:value-of select="@accession"/></xsl:when>
+            <xsl:when test="contains(@accession,'ENSG')"><xsl:value-of select="$ensembl_root_url"/>Gene/Summary?db=core;g=<xsl:value-of select="@accession"/></xsl:when>
+            <xsl:when test="contains(@accession,'ENSP')"><xsl:value-of select="$ensembl_root_url"/>Transcript/ProteinSummary?db=core;protein=<xsl:value-of select="@accession"/></xsl:when>
+            <xsl:otherwise><xsl:value-of select="$ensembl_root_url"/><xsl:value-of select="@accession"/></xsl:otherwise>
+          </xsl:choose>
+        </xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='UniProtKB'">
+        <xsl:attribute name="href">http://www.uniprot.org/uniprot/<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='CCDS'">
+        <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>projects/CCDS/CcdsBrowse.cgi?REQUEST=ALLFIELDS&amp;DATA=<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <!--<xsl:when test="@source='GeneID'">
+        <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>sites/entrez?db=gene&amp;cmd=Retrieve&amp;dopt=Graphics&amp;list_uids=<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='HGNC'">
+        <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>-->
+      <xsl:when test="@source='MIM'">
+        <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>entrez/dispomim.cgi?id=<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='GI'">
+        <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>protein/<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='miRBase'">
+        <xsl:attribute name="href">http://www.mirbase.org/cgi-bin/mirna_entry.pl?acc=<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+      <xsl:when test="@source='RFAM'">
+        <xsl:attribute name="href">http://rfam.sanger.ac.uk/family?acc=<xsl:value-of select="@accession"/></xsl:attribute>
+      </xsl:when>
+    </xsl:choose>
+    <!--  Include any optional synonyms as tooltip text for the hyperlink -->
+    <xsl:if test="synonym">
+      <xsl:attribute name="title">Synonym:<xsl:text> </xsl:text>
+        <xsl:for-each select="synonym">
+          <xsl:value-of select="." />
+          <xsl:if test="position() != last()"><xsl:text>, </xsl:text></xsl:if>
+        </xsl:for-each>
       </xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source=$ensembl_set_name">
-      <xsl:attribute name="href">
-        <xsl:choose>
-          <xsl:when test="contains(@accession,'ENST')"><xsl:value-of select="$ensembl_root_url"/>Transcript/Summary?db=core;t=<xsl:value-of select="@accession"/></xsl:when>
-          <xsl:when test="contains(@accession,'ENSG')"><xsl:value-of select="$ensembl_root_url"/>Gene/Summary?db=core;g=<xsl:value-of select="@accession"/></xsl:when>
-          <xsl:when test="contains(@accession,'ENSP')"><xsl:value-of select="$ensembl_root_url"/>Transcript/ProteinSummary?db=core;protein=<xsl:value-of select="@accession"/></xsl:when>
-          <xsl:otherwise><xsl:value-of select="$ensembl_root_url"/><xsl:value-of select="@accession"/></xsl:otherwise>
-        </xsl:choose>
-      </xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='UniProtKB'">
-      <xsl:attribute name="href">http://www.uniprot.org/uniprot/<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='CCDS'">
-      <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>projects/CCDS/CcdsBrowse.cgi?REQUEST=ALLFIELDS&amp;DATA=<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <!--<xsl:when test="@source='GeneID'">
-      <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>sites/entrez?db=gene&amp;cmd=Retrieve&amp;dopt=Graphics&amp;list_uids=<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='HGNC'">
-      <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>-->
-    <xsl:when test="@source='MIM'">
-      <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>entrez/dispomim.cgi?id=<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='GI'">
-      <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>protein/<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='miRBase'">
-      <xsl:attribute name="href">http://www.mirbase.org/cgi-bin/mirna_entry.pl?acc=<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-    <xsl:when test="@source='RFAM'">
-      <xsl:attribute name="href">http://rfam.sanger.ac.uk/family?acc=<xsl:value-of select="@accession"/></xsl:attribute>
-    </xsl:when>
-  </xsl:choose>
-  <!--  Include any optional synonyms as tooltip text for the hyperlink -->
-  <xsl:if test="synonym">
-    <xsl:attribute name="title">Synonym:<xsl:text> </xsl:text>
-      <xsl:for-each select="synonym">
-        <xsl:value-of select="." />
-        <xsl:if test="position() != last()"><xsl:text>, </xsl:text></xsl:if>
-      </xsl:for-each>
-    </xsl:attribute>
-  </xsl:if>    
-  <xsl:value-of select="@accession"/>
-  </a>
-  
+    </xsl:if>    
+    <xsl:value-of select="@accession"/>
+    </a>
+  </div>
 </xsl:template>
    
 
@@ -777,7 +781,7 @@
     <xsl:choose>
       <xsl:when test="@type=$lrg_set_name">
         <span class="main_subsection"><xsl:value-of select="$lrg_id"/> mappings</span>
-        <span class="main_subsection_desc"> [ Mappings of <span class="lrg_blue"><xsl:value-of select="$lrg_id"/></span> to reference genome assemblies
+        <span class="main_subsection_desc"> [ Mappings of <span class="lrg_blue"><xsl:value-of select="$lrg_id"/></span> to genome assemblies
           <xsl:call-template name="assembly_colour">
             <xsl:with-param name="assembly"><xsl:value-of select="$current_assembly"/></xsl:with-param>
             <xsl:with-param name="dark_bg">1</xsl:with-param>
@@ -891,7 +895,7 @@
 <!-- REQUESTERS -->
 <xsl:template name="requesters_list">
   
-  <div style="margin:5px 10px">
+  <div style="margin:10px 5px 0px;">
     <xsl:choose>
       <xsl:when test="/lrg/updatable_annotation/annotation_set[@type=$requester_type]/source">
         <table class="table table-hover table-lrg bordered">
@@ -1091,7 +1095,7 @@
 <xsl:template name="requester_information">
 <!-- Add a contact section for each requester -->
   <br />
-  <div id="requester_div" class="oddDiv">
+  <div id="requester_div" class="section_div">
     
     <!-- Section header -->
     <xsl:call-template name="section_header">
@@ -1102,9 +1106,10 @@
       <xsl:with-param name="section_type">requester</xsl:with-param>
     </xsl:call-template>
   
-     <!-- Requesters list -->
-    <xsl:call-template name="requesters_list"></xsl:call-template>
-  
+    <!-- Requesters list -->
+    <div class="section_annotation_content">
+      <xsl:call-template name="requesters_list"></xsl:call-template>
+    </div>
   </div>
 </xsl:template>  
 
@@ -1112,7 +1117,7 @@
 <xsl:template match="fixed_annotation">
   <xsl:param name="lrg_id" />
   <br />
-  <div id="fixed_annotation_div" class="oddDiv">
+  <div id="fixed_annotation_div" class="section_div">
     
     <!-- Section header -->
     <xsl:call-template name="section_header">
@@ -1123,39 +1128,43 @@
       <xsl:with-param name="section_type">fixed</xsl:with-param>
     </xsl:call-template>
     
-    <!-- LRG GENOMIC SEQUENCE -->
-    <xsl:call-template name="genomic_sequence">
-      <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-    </xsl:call-template>
-
-    <!-- LRG TRANSCRIPTS -->
-    <a name="transcripts_anchor"/>
-    <div class="main_subsection main_subsection1 icon-next-page">
-      <span class="main_subsection"><xsl:value-of select="$lrg_id"/> transcript<xsl:if test="$count_tr &gt; 1">s</xsl:if></span>
-    </div>
-  
-    <!-- Alignment of transcripts -->
-    <xsl:if test="count(/*/fixed_annotation/transcript) &gt; 1">
-      <h4 style="margin-bottom:0px;margin-left:15px">Transcript alignment</h4>
-      <xsl:call-template name="transcript_alignment" />
-      <!-- Information block -->
-      <div class="seq_info_box_container clearfix">
-        <div class="seq_info_box left">
-          <div class="icon-info close-icon-5 seq_info_header">Information</div>
-          <div style="padding:8px">
-            Clicking on an exon in this diagram highlights the corresponding exon in the <span class="lrg_blue bold_font">Exon coordinates tables</span>, <span class="lrg_blue bold_font">Transcript sequence</span> and <span class="lrg_blue bold_font">Translated sequence</span> below.
-          </div>  
-        </div>
-      </div>
-    </xsl:if>
+    <div class="section_annotation_content">
     
-    <xsl:for-each select="transcript">
-      <xsl:call-template name="lrg_transcript">
+      <!-- LRG GENOMIC SEQUENCE -->
+      <xsl:call-template name="genomic_sequence">
         <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
       </xsl:call-template>
-    </xsl:for-each>  
 
-   </div>
+      <!-- LRG TRANSCRIPTS -->
+      <a name="transcripts_anchor"/>
+      <div class="main_subsection main_subsection1 icon-next-page">
+        <span class="main_subsection"><xsl:value-of select="$lrg_id"/> transcript<xsl:if test="$count_tr &gt; 1">s</xsl:if></span>
+      </div>
+    
+      <!-- Alignment of transcripts -->
+      <xsl:if test="count(/*/fixed_annotation/transcript) &gt; 1">
+        <h4 style="margin-bottom:0px;margin-left:15px">Transcript alignment</h4>
+        <xsl:call-template name="transcript_alignment" />
+        <!-- Information block -->
+        <div class="seq_info_box_container clearfix">
+          <div class="seq_info_box left">
+            <div class="icon-info close-icon-5 seq_info_header">Information</div>
+            <div style="padding:8px">
+              Clicking on an exon in this diagram highlights the corresponding exon in the <span class="lrg_blue bold_font">Exon coordinates tables</span>, <span class="lrg_blue bold_font">Transcript sequence</span> and <span class="lrg_blue bold_font">Translated sequence</span> below.
+            </div>  
+          </div>
+        </div>
+      </xsl:if>
+      
+      <xsl:for-each select="transcript">
+        <xsl:call-template name="lrg_transcript">
+          <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+        </xsl:call-template>
+      </xsl:for-each>  
+    
+    </div>
+    
+  </div>
 </xsl:template>
    
 
@@ -1198,11 +1207,11 @@
                 <xsl:choose>
                   <xsl:when test="$current_mapping/mapping_span/diff">
                       <td style="padding-right:0px"><span class="icon-alert close-icon-0 warning_colour"></span></td>
-                      <td>There are differences between this LRG genomic sequence and the Primary reference assembly (<xsl:value-of select="$current_assembly"/>). <a class="icon-next-page close-icon-2 smaller-icon" href="#assembly_mapping">See mapping information</a></td>
+                      <td>There are differences between this LRG genomic sequence and the Primary genome assembly (<xsl:value-of select="$current_assembly"/>). <a class="icon-next-page close-icon-2 smaller-icon" href="#assembly_mapping">See mapping information</a></td>
                   </xsl:when>
                   <xsl:otherwise>
                      <td style="padding-right:0px"><span class="icon-info close-icon-0 info_colour"></span></td>
-                     <td>The LRG genomic sequence is identical to <xsl:value-of select="/*/fixed_annotation/sequence_source"/> and to the Primary reference assembly (<xsl:value-of select="$current_assembly"/>).</td>
+                     <td>The LRG genomic sequence is identical to <xsl:value-of select="/*/fixed_annotation/sequence_source"/> and to the Primary genome assembly (<xsl:value-of select="$current_assembly"/>).</td>
                   </xsl:otherwise>
                 </xsl:choose>
               </tr></tbody></table>
@@ -1311,6 +1320,7 @@
           <td class="showhide">
             <xsl:call-template name="hide_button">
               <xsl:with-param name="div_id">sequence</xsl:with-param>
+              <xsl:with-param name="text_desc">genomic sequence</xsl:with-param>
             </xsl:call-template>
           </td>
         </tr>
@@ -1445,11 +1455,12 @@
       </tr>
 
     <xsl:if test="coding_region/*">
+      <xsl:variable name="protein_length" select="string-length(/*/fixed_annotation/transcript[@name = $transname]/coding_region[position()=1]/translation/sequence)"/>
       <tr>
         <td class="bold_font">CDS length:</td>
         <td>
           <xsl:call-template name="thousandify">
-            <xsl:with-param name="number" select="($cds_end - $cds_start + 1)"/>
+            <xsl:with-param name="number" select="($protein_length*3)+3"/>
           </xsl:call-template> nt
         </td>
       </tr>
@@ -1533,10 +1544,10 @@
           </xsl:if>
         </xsl:if>
         
-        <!-- Comments from the database (e.g. ENST, reference assembly) or from the NCBI (e.g. polyA) -->
+        <!-- Comments from the database (e.g. ENST, genome assembly) or from the NCBI (e.g. polyA) -->
         <xsl:if test="$transcript_comment">
           <xsl:for-each select="./comment">
-            <xsl:if test="not(contains(.,'Primary Reference Assembly'))">
+            <xsl:if test="not(contains(.,'Primary Genome Assembly'))">
               <tr>
                 <td style="padding-right:0px">
                 <xsl:choose>
@@ -1570,6 +1581,7 @@
                           <xsl:with-param name="div_id"><xsl:value-of select="$div_id"/></xsl:with-param>
                           <xsl:with-param name="link_text">Details</xsl:with-param>
                           <xsl:with-param name="show_as_button">1</xsl:with-param>
+                          <xsl:with-param name="small_button">1</xsl:with-param>
                         </xsl:call-template>
                         
                         <div style="display:none">
@@ -1610,9 +1622,9 @@
             </xsl:if>
           </xsl:for-each>
           
-          <!-- Reference assembly comment -->
+          <!-- Genome assembly comment -->
           <xsl:for-each select="./comment">
-            <xsl:if test="contains(.,'Primary Reference Assembly')">
+            <xsl:if test="contains(.,'Primary Genome Assembly')">
               <tr>
                 <td style="padding-right:0px">
                   <xsl:choose>
@@ -1801,6 +1813,7 @@
                 <td class="showhide">
                   <xsl:call-template name="hide_button">
                     <xsl:with-param name="div_id">cdna_<xsl:value-of select="$transname"/></xsl:with-param>
+                    <xsl:with-param name="text_desc">transcript sequence</xsl:with-param>
                   </xsl:call-template>
                 </td>
               </tr>
@@ -1814,6 +1827,7 @@
                     <xsl:with-param name="div_id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:with-param>
                     <xsl:with-param name="showhide_text">the transcript sequence <xsl:value-of select="$transname"/> in <b>FASTA</b> format </xsl:with-param>
                     <xsl:with-param name="show_as_button">1</xsl:with-param>
+                    <xsl:with-param name="small_button">1</xsl:with-param>
                   </xsl:call-template>
                 </td>
               </tr>
@@ -1877,6 +1891,7 @@
         <div style="padding-top:5px">
           <xsl:call-template name="hide_button">
             <xsl:with-param name="div_id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:with-param>
+            <xsl:with-param name="text_desc">FASTA sequence</xsl:with-param>
           </xsl:call-template>
         </div>
       
@@ -2006,13 +2021,6 @@
       
            <tr>
              <td class="showhide">
-               <xsl:call-template name="hide_button">
-                 <xsl:with-param name="div_id">translated_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
-               </xsl:call-template>
-             </td>
-           </tr>
-           <tr>
-             <td class="showhide">
                <a>
                  <xsl:attribute name="id">translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
                </a>
@@ -2021,6 +2029,7 @@
                  <xsl:with-param name="div_id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
                  <xsl:with-param name="showhide_text">the translated sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format</xsl:with-param>
                  <xsl:with-param name="show_as_button">1</xsl:with-param>
+                 <xsl:with-param name="small_button">1</xsl:with-param>
                </xsl:call-template>
              </td>
            </tr>
@@ -2046,12 +2055,7 @@
             </xsl:call-template>
      
           </table>
-           
-          <div style="padding:5px 0px">
-            <xsl:call-template name="hide_button">
-              <xsl:with-param name="div_id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
-            </xsl:call-template>
-          </div>
+
         </div>
       </div>
     
@@ -2076,7 +2080,7 @@
           </ul>
         </div>
       
-        <div style="padding-left:5px;margin:10px 0px 15px">
+        <div style="padding-left:5px;margin:0px 0px 15px">
           <a>
             <xsl:attribute name="href">javascript:show_content('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','the translated sequence <xsl:value-of select="$pepname"/> in FASTA format');</xsl:attribute>
             <xsl:call-template name="right_arrow_blue" />
@@ -2221,7 +2225,7 @@
 <xsl:template match="updatable_annotation">
   <xsl:param name="lrg_id" />
   <xsl:param name="lrg_gene_name" />
-  <div id="updatable_annotation_div" class="evenDiv">
+  <div id="updatable_annotation_div" class="section_div">
     
     <!-- Section header -->
     <xsl:call-template name="section_header">
@@ -2232,19 +2236,23 @@
       <xsl:with-param name="section_type">updatable</xsl:with-param>
     </xsl:call-template>
    
-  <xsl:for-each select="annotation_set[@type=$lrg_set_name or @type=$ncbi_set_name or @type=$ensembl_set_name or @type=$community_set_name] ">
-    <div class="meta_source">
-      <xsl:apply-templates select=".">
-        <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
-        <xsl:with-param name="setnum" select="position()" />
-      </xsl:apply-templates>
+    <div class="section_annotation_content">
+    
+    <xsl:for-each select="annotation_set[@type=$lrg_set_name or @type=$ncbi_set_name or @type=$ensembl_set_name or @type=$community_set_name] ">
+      <div class="meta_source">
+        <xsl:apply-templates select=".">
+          <xsl:with-param name="lrg_id"><xsl:value-of select="$lrg_id" /></xsl:with-param>
+          <xsl:with-param name="setnum" select="position()" />
+        </xsl:apply-templates>
+      </div>
+    </xsl:for-each>
+     
     </div>
-  </xsl:for-each>
   
   </div>
   
   <!-- Add the additional LSDB data -->
-  <div id="additional_data_div" class="evenDiv">
+  <div id="additional_data_div" class="section_div">
   
     <!-- Section header -->
     <xsl:call-template name="section_header">
@@ -2255,27 +2263,29 @@
       <xsl:with-param name="section_type">other_sources</xsl:with-param>
     </xsl:call-template>
 
-    <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
-    <xsl:variable name="lsdb_url">http://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
+    <div class="section_annotation_content">
 
-    <div style="margin-top:10px">
-      <xsl:attribute name="class">external_source</xsl:attribute>
-      <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
-      <span style="font-weight:bold;padding-left:5px">Website: </span>
-    <xsl:choose>
-      <xsl:when test="annotation_set[source/name!=$lsdb_list]">
-        <xsl:call-template name="url">
-          <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
-        </xsl:call-template>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:for-each select="annotation_set[source/name=$lsdb_list]">
+      <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
+      <xsl:variable name="lsdb_url">http://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
+
+      <div class="external_source">
+        <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
+        <span style="font-weight:bold;padding-left:5px">Website: </span>
+      <xsl:choose>
+        <xsl:when test="annotation_set[source/name!=$lsdb_list]">
           <xsl:call-template name="url">
-            <xsl:with-param name="url"><xsl:value-of select="source/url" /></xsl:with-param>
+            <xsl:with-param name="url"><xsl:value-of select="$lsdb_url" /></xsl:with-param>
           </xsl:call-template>
-        </xsl:for-each>
-      </xsl:otherwise>
-    </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:for-each select="annotation_set[source/name=$lsdb_list]">
+            <xsl:call-template name="url">
+              <xsl:with-param name="url"><xsl:value-of select="source/url" /></xsl:with-param>
+            </xsl:call-template>
+          </xsl:for-each>
+        </xsl:otherwise>
+      </xsl:choose>
+      </div>
     </div>
   </div>
 </xsl:template> 
@@ -2418,7 +2428,7 @@
           <div class="assembly_patch_haplotype_button">
             <xsl:call-template name="show_hide_button">
                <xsl:with-param name="div_id">current_haplo_mappings</xsl:with-param>
-              <xsl:with-param name="link_text">Mapping<xsl:if test="count($current_haplotypes)>1">s</xsl:if> to <xsl:value-of select="count($current_haplotypes)"/> haplotype<xsl:if test="count($current_haplotypes)>1">s</xsl:if> on <xsl:value-of select="$current_assembly"/></xsl:with-param>
+              <xsl:with-param name="link_text">Mapping<xsl:if test="count($current_haplotypes)>1">s</xsl:if> to <xsl:value-of select="count($current_haplotypes)"/> novel patch<xsl:if test="count($current_haplotypes)>1">es</xsl:if> on <xsl:value-of select="$current_assembly"/></xsl:with-param>
               <xsl:with-param name="show_as_button">2</xsl:with-param>
             </xsl:call-template>
           </div>
@@ -2442,7 +2452,7 @@
           <div class="assembly_patch_haplotype_button">
             <xsl:call-template name="show_hide_button">
               <xsl:with-param name="div_id">current_patch_mappings</xsl:with-param>
-              <xsl:with-param name="link_text">Mapping<xsl:if test="count($current_patches)>1">s</xsl:if> to <b><xsl:value-of select="count($current_patches)"/></b> fixed patch<xsl:if test="count($current_patches)>1">es</xsl:if> on <xsl:value-of select="$current_assembly"/></xsl:with-param>
+              <xsl:with-param name="link_text">Mapping<xsl:if test="count($current_patches)>1">s</xsl:if> to <b><xsl:value-of select="count($current_patches)"/></b> fix patch<xsl:if test="count($current_patches)>1">es</xsl:if> on <xsl:value-of select="$current_assembly"/></xsl:with-param>
               <xsl:with-param name="show_as_button">2</xsl:with-param>
             </xsl:call-template>
           </div>
@@ -2475,7 +2485,7 @@
           <div class="assembly_patch_haplotype_button">
             <xsl:call-template name="show_hide_button">
               <xsl:with-param name="div_id">previous_haplo_mappings</xsl:with-param>
-              <xsl:with-param name="link_text">Mapping<xsl:if test="count($previous_haplotypes)>1">s</xsl:if> to <xsl:value-of select="count($previous_haplotypes)"/> haplotype<xsl:if test="count($previous_haplotypes)>1">s</xsl:if> on <xsl:value-of select="$previous_assembly"/></xsl:with-param>
+              <xsl:with-param name="link_text">Mapping<xsl:if test="count($previous_haplotypes)>1">s</xsl:if> to <xsl:value-of select="count($previous_haplotypes)"/> novel patch<xsl:if test="count($previous_haplotypes)>1">es</xsl:if> on <xsl:value-of select="$previous_assembly"/></xsl:with-param>
               <xsl:with-param name="show_as_button">3</xsl:with-param>
             </xsl:call-template>
           </div>
@@ -2498,7 +2508,7 @@
           <div class="assembly_patch_haplotype_button">
             <xsl:call-template name="show_hide_button">
               <xsl:with-param name="div_id">previous_patch_mappings</xsl:with-param>
-              <xsl:with-param name="link_text">Mapping<xsl:if test="count($previous_patches)>1">s</xsl:if> to <xsl:value-of select="count($previous_patches)"/> fixed patch<xsl:if test="count($previous_patches)>1">es</xsl:if> on <xsl:value-of select="$previous_assembly"/></xsl:with-param>
+              <xsl:with-param name="link_text">Mapping<xsl:if test="count($previous_patches)>1">s</xsl:if> to <xsl:value-of select="count($previous_patches)"/> fix patch<xsl:if test="count($previous_patches)>1">es</xsl:if> on <xsl:value-of select="$previous_assembly"/></xsl:with-param>
               <xsl:with-param name="show_as_button">3</xsl:with-param>
             </xsl:call-template>
           </div>
@@ -2556,7 +2566,7 @@
   
   <!-- Type of mapping -->
   <xsl:choose>
-    <!-- Reference assembly -->
+    <!-- Genome assembly -->
     <xsl:when test="$region_name='X' or $region_name='Y' or $region_name='X' or number($region_name)">
       <xsl:call-template name="assembly_mapping">
         <xsl:with-param name="assembly"><xsl:value-of select="$coord_system"/></xsl:with-param>
@@ -2568,15 +2578,23 @@
     <!-- Patch and Haplotype -->
     <xsl:otherwise>
       <xsl:variable name="mapping_type">
-        <xsl:choose>
-          <xsl:when test="$type='patch'">Fix patch</xsl:when>
-          <xsl:otherwise>Haplotype</xsl:otherwise>
-        </xsl:choose>
+        <span class="dotted_underline" data-placement="bottom" data-toggle="tooltip">
+          <xsl:choose>
+            <xsl:when test="$type='patch'">
+              <xsl:attribute name="title">Fix patches represent changes to existing assembly sequences. These are generally error corrections (addressed by approaches such as base changes, component replacements/updates, switch point updates or tiling path changes) or assembly improvements, such as the extension of sequence into gaps.</xsl:attribute>
+              Fix patch
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:attribute name="title">Novel patches represent the addition of new alternate loci to the assembly. These are alternate sequence representations of sequence found on the chromosomes.</xsl:attribute>
+              Novel patch
+            </xsl:otherwise>
+          </xsl:choose>
+        </span>
       </xsl:variable>
       <xsl:call-template name="assembly_mapping">
-            <xsl:with-param name="assembly"><xsl:value-of select="$coord_system"/></xsl:with-param>
-            <xsl:with-param name="type"><xsl:value-of select="$mapping_type"/></xsl:with-param>
-          </xsl:call-template>    
+        <xsl:with-param name="assembly"><xsl:value-of select="$coord_system"/></xsl:with-param>
+        <xsl:with-param name="type"><xsl:copy-of select="$mapping_type"/></xsl:with-param>
+      </xsl:call-template>    
     </xsl:otherwise>
   </xsl:choose>
 
@@ -2609,7 +2627,7 @@
       <table class="table table-hover table-lrg bordered">
         <thead>
           <tr class="top_th">
-            <th class="split-header" colspan="4">Reference assembly 
+            <th class="split-header" colspan="4">Genome assembly 
               <xsl:call-template name="assembly_colour">
                 <xsl:with-param name="assembly"><xsl:value-of select="$assembly"/></xsl:with-param>
                 <xsl:with-param name="dark_bg">1</xsl:with-param>
@@ -2841,6 +2859,8 @@
     </div>
   </div>
 
+  <xsl:variable name="lrg_trs" select="/*/fixed_annotation/transcript"/>
+
   <div class="mapping">
     <div style="display:none">
       <xsl:attribute name="id">
@@ -2850,9 +2870,13 @@
         <thead>
            <tr class="top_th">
             <th class="split-header lrg_green2" colspan="2"><xsl:value-of select="$region_name"/> coordinates</th>
-            <th class="common_col border-left" rowspan="2">to</th>
             <th class="split-header lrg_blue" colspan="2"><xsl:value-of select="$lrg_id"/> genomic coordinates</th>
-            <th class="lrg_col border-left" rowspan="2">Corresponding<br />LRG exon</th>
+            <th class="split-header">
+              <xsl:attribute name="colspan">
+                <xsl:value-of select="count($lrg_trs)" />
+              </xsl:attribute>
+              Corresponding LRG exon
+            </th>
             <th class="lrg_col" rowspan="2">Differences</th>
           </tr>
           <tr>
@@ -2860,6 +2884,16 @@
             <th class="current_assembly_col">End</th>
             <th class="lrg_col">Start</th>
             <th class="lrg_col" style="border-right:none">End</th>
+          <xsl:for-each select="$lrg_trs">
+            <th class="lrg_col">
+              <xsl:if test="position()=last()">
+                <xsl:attribute name="style">border-right:1px solid #DDD</xsl:attribute>
+              </xsl:if>
+              <xsl:variable name="count_exon" select="count(exon)"/>
+              <xsl:value-of select="@name"/>
+              <span class="small-font"> (<xsl:value-of select="$count_exon"/> exon<xsl:if test="$count_exon &gt; 1">s</xsl:if>)</span>
+            </th>
+          </xsl:for-each>
           </tr>
         </thead>
         <tbody>
@@ -2873,32 +2907,32 @@
             <td class="text_right border_right">
               <xsl:call-template name="thousandify"><xsl:with-param name="number" select="@other_end"/></xsl:call-template>
             </td>
-            <td class="no_border_bottom"><span class="glyphicon glyphicon-circle-arrow-right dark_button_0"></span></td>
             <td class="text_right border_left">
               <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$lrg_start"/></xsl:call-template>
             </td>
             <td class="text_right border_right">
               <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$lrg_end"/></xsl:call-template>
             </td>
+            
+          <xsl:for-each select="$lrg_trs">
+            <xsl:variable name="lrg_matching_exon">
+              <xsl:for-each select="exon/coordinates[@coord_system=$lrg_coord_system and @start=$lrg_start and @end=$lrg_end]">
+                 exon <xsl:value-of select="../@label"/>
+              </xsl:for-each>
+            </xsl:variable>
+              
             <td class="border_right">
-              <xsl:variable name="lrg_matching_exon">
-                <xsl:for-each select="/*/fixed_annotation/transcript/exon/coordinates[@coord_system=$lrg_coord_system and @start=$lrg_start and @end=$lrg_end]">
-                  <a class="lrg_blue">
-                    <xsl:attribute name="href">#transcript_<xsl:value-of select="../../@name"/></xsl:attribute>
-                    <xsl:value-of select="../../@name"/>
-                  </a>: exon <xsl:value-of select="../@label"/>
-                  <xsl:if test="position()!=last()">, </xsl:if> 
-                </xsl:for-each>
-              </xsl:variable>
               <xsl:choose>
                 <xsl:when test="$lrg_matching_exon and $lrg_matching_exon!=''"><xsl:copy-of select="$lrg_matching_exon"/></xsl:when>
                 <xsl:otherwise>-</xsl:otherwise>
               </xsl:choose>
             </td>
-            <xsl:call-template name="diff_table">
-              <xsl:with-param name="genomic_mapping" select="0"/>
-              <xsl:with-param name="show_hgvs" select="0"/>
-            </xsl:call-template>
+          </xsl:for-each>
+          
+          <xsl:call-template name="diff_table">
+            <xsl:with-param name="genomic_mapping" select="0"/>
+             <xsl:with-param name="show_hgvs" select="0"/>
+          </xsl:call-template>
           </tr>      
     </xsl:for-each>
         </tbody>
@@ -2910,8 +2944,8 @@
 <!-- Display the strand value -->
 <xsl:template name="strand_label">
   <xsl:choose>
-    <xsl:when test="@strand=1" ><span class="icon-next-page smaller-icon close-icon-5">Forward</span></xsl:when>
-    <xsl:when test="@strand=-1"><span class="icon-previous-page smaller-icon close-icon-5">Reverse</span></xsl:when>
+    <xsl:when test="@strand=1" >Forward &#8594;</xsl:when>
+    <xsl:when test="@strand=-1">&#8592; Reverse</xsl:when>
     <xsl:otherwise><xsl:value-of select="@strand"/></xsl:otherwise>
   </xsl:choose>
 </xsl:template>
@@ -3131,6 +3165,7 @@
       <div style="padding-left:5px;margin:10px 0px">
         <xsl:call-template name="hide_button">
           <xsl:with-param name="div_id">exontable_<xsl:value-of select="$exons_id"/></xsl:with-param>
+          <xsl:with-param name="text_desc">exon table</xsl:with-param>
         </xsl:call-template>
       </div>
     </div>
@@ -3236,7 +3271,7 @@
         <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/>
         <xsl:variable name="exon_number" select="position()"/>
         
-        <!-- Current genomic reference assembly coordinates -->
+        <!-- Current genomic genome assembly coordinates -->
         <xsl:variable name="temp_lrg_current_ref_start">
           <xsl:choose>
             <xsl:when test="$current_ref_strand = 1">
@@ -3278,7 +3313,7 @@
         </xsl:variable>
         
         
-        <!-- Previous genomic reference assembly coordinates -->
+        <!-- Previous genomic assembly coordinates -->
         <xsl:variable name="temp_lrg_previous_ref_start">
           <xsl:choose>
             <xsl:when test="$previous_ref_strand = 1">
@@ -3338,7 +3373,7 @@
         <!-- Transcript-specific exon number -->
         <td class="border_right"><xsl:value-of select="$exon_number"/></td>
         
-        <!-- Current reference genomic coordinates -->
+        <!-- Current genome assembly coordinates -->
         <td>
           <xsl:call-template name="thousandify">
             <xsl:with-param name="number" select="$lrg_current_ref_start"/>
@@ -3350,7 +3385,7 @@
           </xsl:call-template>
         </td>
         
-        <!-- Previous reference genomic coordinates -->
+        <!-- Previous genome assembly coordinates -->
         <td>
           <xsl:call-template name="thousandify">
             <xsl:with-param name="number" select="$lrg_previous_ref_start"/>
@@ -3550,7 +3585,7 @@
         <xsl:variable name="peptide_end" select="coordinates[@coord_system = $peptide_coord_system]/@end"/>
         <xsl:variable name="exon_number" select="position()"/>
         
-        <!-- Genomic reference assembly coordinates -->
+        <!-- Genome assembly coordinates -->
         <xsl:variable name="coding_ref_start">
           <xsl:choose>
             <xsl:when test="$lrg_start &lt; $cds_start and $lrg_end &lt; $cds_start">
@@ -3579,7 +3614,7 @@
           </xsl:choose>
         </xsl:variable>
         
-        <!-- Current genomic reference assembly -->
+        <!-- Current genome assembly -->
         <xsl:variable name="temp_lrg_current_ref_start">
           <xsl:choose>
             <xsl:when test="$current_ref_strand = 1">
@@ -3620,7 +3655,7 @@
           </xsl:call-template>
         </xsl:variable>
         
-        <!-- Previous genomic reference assembly -->
+        <!-- Previous genome assembly -->
         <xsl:variable name="temp_lrg_previous_ref_start">
           <xsl:choose>
             <xsl:when test="$previous_ref_strand = 1">
@@ -3676,7 +3711,7 @@
         <xsl:choose>
           <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt; $cds_end">
         
-            <!-- Current genomic reference assembly coordinates -->
+            <!-- Current genome assembly coordinates -->
             <td>
               <xsl:call-template name="thousandify">
                 <xsl:with-param name="number" select="$lrg_current_ref_start"/>
@@ -3688,7 +3723,7 @@
               </xsl:call-template>
             </td>
             
-            <!-- Previous genomic reference assembly coordinates -->
+            <!-- Previous genome assembly coordinates -->
             <td>
               <xsl:call-template name="thousandify">
                 <xsl:with-param name="number" select="$lrg_previous_ref_start"/>
@@ -3815,7 +3850,7 @@
   <table class="table bordered table-lrg">
     <thead>
       <tr>
-        <th class="lrg_col" rowspan="2">Transcript ID</th>
+        <th class="common_col" rowspan="2">Transcript ID</th>
         <th class="split-header" colspan="2">
           <xsl:call-template name="assembly_colour">
             <xsl:with-param name="assembly"><xsl:value-of select="$current_assembly"/></xsl:with-param>
@@ -3827,7 +3862,7 @@
       <tr>
         <th class="border-left current_assembly_col">Start</th><th class="current_assembly_col">End</th>
         <th class="lrg_col">Start</th><th class="lrg_col border-right">End</th>
-        <th class="border-left">Length</th>
+        <th class="common_col border-left">Length</th>
       </tr>
     </thead>
     
@@ -3912,7 +3947,7 @@
     </xsl:choose>  
   </xsl:variable>
   
-  <!-- Genomic reference assembly coordinates -->
+  <!-- Genome assembly coordinates -->
   <xsl:variable name="temp_trans_ref_start">
     <xsl:call-template name="unprocessed_ref_coord">
       <xsl:with-param name="utr" select="$utr"/>
@@ -3975,7 +4010,7 @@
     <!-- Transcript name -->
     <td class="border_right"><xsl:value-of select="$id"/></td>
         
-    <!-- Reference genomic coordinates -->
+    <!-- Genome assembly coordinates -->
     <td>
       <xsl:call-template name="thousandify">
         <xsl:with-param name="number" select="$genomic_start"/>
@@ -4291,7 +4326,11 @@
  
     <div class="transcript_image clearfix">
       <xsl:attribute name="style">
-        <xsl:text>width:</xsl:text><xsl:value-of select="$image_width" /><xsl:text>px</xsl:text>
+        <xsl:text>width:</xsl:text><xsl:value-of select="$image_width+2" /><xsl:text>px</xsl:text>
+        <xsl:choose>
+          <xsl:when test="$only_5_prime_utr">;margin-right:3px</xsl:when>
+          <xsl:when test="$only_3_prime_utr">;margin-left:3px</xsl:when>
+        </xsl:choose>
       </xsl:attribute>
       
       <div>
@@ -4309,7 +4348,14 @@
         </xsl:attribute>
       </div>
     
-    <xsl:variable name="tooltip_colour"> &lt;span style="color:#88F;font-weight:bold"&gt;</xsl:variable>
+    
+    <xsl:variable name="tooltip_font_colour">
+      <xsl:choose>
+        <xsl:when test="$is_enst">#8F8</xsl:when>
+        <xsl:otherwise>#88F</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="tooltip_colour"> &lt;span style="color:<xsl:value-of select="$tooltip_font_colour" />;font-weight:bold"&gt;</xsl:variable>
     
     <xsl:for-each select="$transnode/exon">
       
@@ -4378,12 +4424,15 @@
           <xsl:if test="not($is_enst)">
             <xsl:attribute name="onclick">javascript:highlight_exon('<xsl:value-of select="$transname"/>','<xsl:value-of select="$exon_number"/>','<xsl:value-of select="$pepname"/>');showhide('exontable_<xsl:value-of select="$transname"/>',1);</xsl:attribute>
           </xsl:if>
-        <xsl:choose>
+
+        <!-- Exon types -->
+        <xsl:choose>  
           <!-- 5 prime UTR -->
           <xsl:when test="$lrg_start &lt; $cds_start">
       
             <xsl:choose>
-              <xsl:when test="$cds_start &lt; $lrg_end">
+              <!-- 5 prime UTR only -->
+              <xsl:when test="$cds_start &lt; $lrg_end and $cds_end &gt; $lrg_end">
                 <xsl:attribute name="class">exon_block exon_block_large</xsl:attribute>
                 <xsl:attribute name="style">
                   <xsl:text>left:</xsl:text>
@@ -4391,6 +4440,7 @@
                   <xsl:text>px</xsl:text>
                 </xsl:attribute>
              
+                <!-- 5 prime block -->
                 <xsl:variable name="tr_exon_nc_width_percent" select="($cds_start - $lrg_start + 1) div $seq_length"/>
                 <xsl:variable name="exon_nc_width">
                   <xsl:call-template name="exon_width">
@@ -4398,14 +4448,14 @@
                     <xsl:with-param name="image_width" select="$image_width" />
                   </xsl:call-template>
                 </xsl:variable>
-                  
                 <div>
                   <xsl:attribute name="class">exon_block exon_block_small exon_block_non_coding_5_prime<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
                   <xsl:attribute name="style">
                     <xsl:text>width:</xsl:text><xsl:value-of select="$exon_nc_width" /><xsl:text>px</xsl:text>
                   </xsl:attribute>
                 </div>
-                  
+                
+                <!-- coding block -->
                 <xsl:variable name="tr_exon_c_width_percent" select="($lrg_end - $cds_start + 1) div $seq_length"/>
                 <xsl:variable name="exon_c_width">
                   <xsl:call-template name="exon_width">
@@ -4413,7 +4463,6 @@
                     <xsl:with-param name="image_width" select="$image_width" />
                   </xsl:call-template>
                 </xsl:variable>
-                  
                 <div>
                   <xsl:attribute name="class">exon_block exon_block_medium exon_block_coding<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
                   <xsl:attribute name="style">
@@ -4421,6 +4470,64 @@
                   </xsl:attribute>
                 </div>
               </xsl:when>
+              
+              
+              <!-- 5 prime UTR and 3 prime UTR on the same exon -->
+              <xsl:when test="$cds_start &lt; $lrg_end and $cds_end &lt; $lrg_end">
+                <xsl:attribute name="class">exon_block exon_block_large</xsl:attribute>
+                <xsl:attribute name="style">
+                  <xsl:text>left:</xsl:text>
+                  <xsl:value-of select="$exon_pos_start" />
+                  <xsl:text>px</xsl:text>
+                </xsl:attribute>
+                
+                <!-- 5 prime block -->
+                <xsl:variable name="tr_exon_nc5_width_percent" select="($cds_start - $lrg_start + 1) div $seq_length"/>
+                <xsl:variable name="exon_nc5_width">
+                  <xsl:call-template name="exon_width">
+                    <xsl:with-param name="exon_width_percent" select="$tr_exon_nc5_width_percent" />
+                    <xsl:with-param name="image_width" select="$image_width" />
+                  </xsl:call-template>
+                </xsl:variable>
+                <div>
+                  <xsl:attribute name="class">exon_block exon_block_small exon_block_non_coding_5_prime<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
+                  <xsl:attribute name="style">
+                    <xsl:text>width:</xsl:text><xsl:value-of select="$exon_nc5_width" /><xsl:text>px</xsl:text>
+                  </xsl:attribute>
+                </div>
+                
+                <!-- coding block --> 
+                <xsl:variable name="tr_exon_c_width_percent" select="($cds_end - $cds_start + 1) div $seq_length"/>
+                <xsl:variable name="exon_c_width">
+                  <xsl:call-template name="exon_width">
+                    <xsl:with-param name="exon_width_percent" select="$tr_exon_c_width_percent" />
+                    <xsl:with-param name="image_width" select="$image_width" />
+                  </xsl:call-template>
+                </xsl:variable>
+                <div>
+                  <xsl:attribute name="class">exon_block exon_block_medium exon_block_coding<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
+                  <xsl:attribute name="style">
+                    <xsl:text>width:</xsl:text><xsl:value-of select="$exon_c_width" /><xsl:text>px</xsl:text>
+                  </xsl:attribute>
+                </div>
+                
+                <!-- 3 prime block -->
+                <xsl:variable name="tr_exon_nc3_width_percent" select="($lrg_end - $cds_end + 1) div $seq_length"/>
+                <xsl:variable name="exon_nc3_width">
+                  <xsl:call-template name="exon_width">
+                    <xsl:with-param name="exon_width_percent" select="$tr_exon_nc3_width_percent" />
+                    <xsl:with-param name="image_width" select="$image_width" />
+                  </xsl:call-template>
+                </xsl:variable>
+                <div>
+                  <xsl:attribute name="class">exon_block exon_block_small exon_block_non_coding_3_prime<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
+                  <xsl:attribute name="style">
+                    <xsl:text>width:</xsl:text><xsl:value-of select="$exon_nc3_width" /><xsl:text>px</xsl:text>
+                  </xsl:attribute>
+                </div>
+              </xsl:when>
+              
+              
               <!-- Fully non coding exon -->
               <xsl:otherwise>
                 <xsl:variable name="tr_exon_width_percent" select="($lrg_end - $lrg_start + 1) div $seq_length"/>
@@ -4430,7 +4537,6 @@
                     <xsl:with-param name="image_width" select="$image_width" />
                   </xsl:call-template>
                 </xsl:variable>
-                
                 <xsl:attribute name="class">exon_block exon_block_large exon_block_non_coding<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
                 <xsl:attribute name="style">
                   <xsl:text>left:</xsl:text>
@@ -4440,6 +4546,7 @@
                   <xsl:text>px</xsl:text>
                 </xsl:attribute>
               </xsl:otherwise>
+              
             </xsl:choose>
           </xsl:when>
           
@@ -4448,14 +4555,15 @@
       
             <xsl:choose>
               <xsl:when test="$cds_end &gt; $lrg_start">
-                
+                <!-- coding block -->
                 <xsl:attribute name="class">exon_block exon_block_large</xsl:attribute>
                 <xsl:attribute name="style">
                   <xsl:text>left:</xsl:text>
                   <xsl:value-of select="$exon_pos_start" />
                   <xsl:text>px</xsl:text>
                 </xsl:attribute>
-              
+                
+                <!-- coding block -->
                 <xsl:variable name="tr_exon_c_width_percent" select="($cds_end - $lrg_start + 1) div $seq_length"/>
                 <xsl:variable name="exon_c_width">
                   <xsl:call-template name="exon_width">
@@ -4463,7 +4571,6 @@
                     <xsl:with-param name="image_width" select="$image_width" />
                   </xsl:call-template>
                 </xsl:variable>
-                
                 <div>
                   <xsl:attribute name="class">exon_block exon_block_medium exon_block_coding<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
                   <xsl:attribute name="style">
@@ -4471,6 +4578,7 @@
                   </xsl:attribute>
                 </div>
                 
+                <!-- 3 prime block -->
                 <xsl:variable name="tr_exon_nc_width_percent" select="($lrg_end - $cds_end + 1) div $seq_length"/>
                 <xsl:variable name="exon_nc_width">
                   <xsl:call-template name="exon_width">
@@ -4478,7 +4586,6 @@
                     <xsl:with-param name="image_width" select="$image_width" />
                   </xsl:call-template>
                 </xsl:variable>
-                
                 <div>
                   <xsl:attribute name="class">exon_block exon_block_small exon_block_non_coding_3_prime<xsl:if test="$is_enst">_enst</xsl:if></xsl:attribute>
                   <xsl:attribute name="style">
@@ -4486,6 +4593,7 @@
                   </xsl:attribute>
                 </div>
               </xsl:when>
+              
               <!-- Fully non coding exon -->
               <xsl:otherwise>
                 <xsl:variable name="tr_exon_width_percent" select="($lrg_end - $lrg_start + 1) div $seq_length"/>
@@ -4505,6 +4613,7 @@
                   <xsl:text>px</xsl:text>
                 </xsl:attribute>
               </xsl:otherwise>
+              
             </xsl:choose>
           </xsl:when>
           
@@ -4534,6 +4643,7 @@
       </xsl:if>
     </xsl:for-each>
     </div>
+    
     <!-- Ruler -->
     <xsl:if test="not($is_alignment)">
       <xsl:call-template name="transcript_image_ruler">
@@ -4815,7 +4925,7 @@
     <div class="transcript_image_label_container_left" style="margin-left:0px">
       <div class="transcript_image_label" style="padding-left:5px">
         <xsl:value-of select="$lrg_id"/><xsl:value-of select="$transname"/>
-        <xsl:if test="$nm_tr">(<xsl:value-of select="$nm_tr[position() = 1]/@accession"/>)</xsl:if>
+        <xsl:if test="$nm_tr"> (<xsl:value-of select="$nm_tr[position() = 1]/@accession"/>)</xsl:if>
       </div>
       <div class="transcript_image_label" style="padding-left:5px">
         <xsl:value-of select="$enstname"/>
@@ -5053,6 +5163,21 @@
     <div class="left_annotation">
       <table class="lrg_table_content gene_annotation">
         <tbody>
+        
+        <xsl:variable name="hgnc_gene_symbol" select="symbol[@source='HGNC']/@name"/>
+        <xsl:choose>
+          <xsl:when test="$hgnc_gene_symbol">
+          <tr>
+            <td class="bold_font">HGNC Approved Symbol:</td>
+            <td><xsl:value-of select="$hgnc_gene_symbol"/></td>
+          </tr>
+          <tr>
+            <td class="bold_font">HGNC Approved Name:</td>
+            <td><xsl:value-of select="long_name[1]"/></td>
+          </tr>
+          </xsl:when>
+          
+          <xsl:otherwise>
           <tr>
             <td class="bold_font">Name:</td>
             <td>
@@ -5062,24 +5187,26 @@
               </xsl:for-each>
             </td>
           </tr>
+          </xsl:otherwise> 
+        </xsl:choose>
+        
+        <xsl:variable name="hgnc_xref_id" select="db_xref[@source='HGNC']/@accession"/>
+        <xsl:if test="$hgnc_xref_id">
+          <tr>
+            <td class="bold_font">HGNC Identifier:</td>
+            <td>
+              <a class="icon-external-link" target="_blank">
+                <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="$hgnc_xref_id"/></xsl:attribute>
+                <xsl:value-of select="$hgnc_xref_id"/>
+              </a>
+            </td>
+          </tr>
+        </xsl:if>
           
-          <xsl:variable name="hgnc_xref_id" select="db_xref[@source='HGNC']/@accession"/>
-          <xsl:if test="$hgnc_xref_id">
-            <tr>
-              <td class="bold_font">HGNC ID:</td>
-              <td>
-                <a class="icon-external-link" target="_blank">
-                  <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="$hgnc_xref_id"/></xsl:attribute>
-                  <xsl:value-of select="$hgnc_xref_id"/>
-                </a>
-              </td>
-            </tr>
-          </xsl:if>
-          
-          <xsl:variable name="ncbi_xref_id" select="db_xref[@source='GeneID']/@accession"/>
+        <xsl:variable name="ncbi_xref_id" select="db_xref[@source='GeneID']/@accession"/>
           <xsl:if test="$ncbi_xref_id">
             <tr>
-              <td class="bold_font">GeneID:</td>
+              <td class="bold_font">NCBI Gene Identifier:</td>
               <td>
                 <a class="icon-external-link" target="_blank">
                   <xsl:attribute name="href"><xsl:value-of select="$ncbi_root_url"/>sites/entrez?db=gene&amp;cmd=Retrieve&amp;dopt=Graphics&amp;list_uids=<xsl:value-of select="$ncbi_xref_id"/></xsl:attribute>
@@ -5092,7 +5219,7 @@
           <xsl:variable name="ens_xref_id" select="db_xref[@source=$ensembl_source_name]/@accession"/>
           <xsl:if test="$ens_xref_id">
             <tr>
-              <td class="bold_font">Ensembl ID:</td>
+              <td class="bold_font">Ensembl Gene Identifier:</td>
               <td>
                 <a class="icon-external-link" target="_blank">
                   <xsl:attribute name="href">
@@ -5150,7 +5277,7 @@
     </xsl:if>
           
           <tr>
-            <td class="bold_font">LRG coords:</td>
+            <td class="bold_font">LRG coordinates:</td>
             <td><xsl:value-of select="$lrg_start"/>-<xsl:value-of select="$lrg_end"/></td>
           </tr>
             
@@ -5308,12 +5435,14 @@
 
 
   <xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="lrg_end_a" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-   <xsl:variable name="lrg_start_b" select="coordinates[@coord_system = $lrg_set_name]/@start" />
-  <xsl:variable name="lrg_end_b" select="coordinates[@coord_system = $lrg_set_name]/@end" />
+  <xsl:variable name="lrg_end_a"   select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+  <xsl:variable name="lrg_start_b" select="coordinates[@coord_system = $lrg_set_name]/@start" />
+  <xsl:variable name="lrg_end_b"   select="coordinates[@coord_system = $lrg_set_name]/@end" />
   
   <xsl:variable name="lrg_start"><xsl:value-of select="$lrg_start_a"/><xsl:value-of select="$lrg_start_b"/></xsl:variable>
   <xsl:variable name="lrg_end"><xsl:value-of select="$lrg_end_a"/><xsl:value-of select="$lrg_end_b"/></xsl:variable>
+  
+  <xsl:variable name="lrg_tr_name" select="@fixed_id"/>
 
   <tr valign="top">
   <xsl:attribute name="class">trans_prot</xsl:attribute>
@@ -5331,10 +5460,10 @@
     </td>
     <td>
       <xsl:choose>
-       <xsl:when test="@fixed_id">
+       <xsl:when test="$lrg_tr_name">
          <a>
            <xsl:attribute name="href">#transcript_<xsl:value-of select="@fixed_id"/></xsl:attribute>
-           <xsl:value-of select="@fixed_id"/>
+           <xsl:value-of select="$lrg_tr_name"/>
          </a>
        </xsl:when>
        <xsl:otherwise>-</xsl:otherwise>
@@ -5347,12 +5476,19 @@
     <xsl:choose>
       <xsl:when test="(@source='RefSeq' and substring(@accession,1,2)='NM') or @source='CCDS'">
         <xsl:apply-templates select="."/>
-        <xsl:if test="position()!=last()">
-      <br/>
-        </xsl:if>
       </xsl:when>
     </xsl:choose>
-  </xsl:for-each>   
+  </xsl:for-each>  
+  <!-- Ensembl transcript as xref -->
+  <xsl:if test="$lrg_tr_name and @source='RefSeq'">
+    <xsl:variable name="lrg_tr_start" select="/*/fixed_annotation/transcript[@name=$lrg_tr_name]/coordinates/@start"/>
+    <xsl:variable name="lrg_tr_end"   select="/*/fixed_annotation/transcript[@name=$lrg_tr_name]/coordinates/@end"/>
+    <xsl:for-each select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $lrg_tr_name]">
+      <xsl:if test="$lrg_tr_start= coordinates/@start and $lrg_tr_end = coordinates/@end">
+        <div class="external_link"><strong>Ensembl: </strong><xsl:value-of select="@accession"/></div>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:if>  
     </td>
     <td>
   <xsl:if test="long_name">
@@ -5393,9 +5529,9 @@
   <xsl:variable name="ensembl_url"><xsl:value-of select="$ensembl_root_url"/>Transcript/ProteinSummary?db=core;protein=</xsl:variable>
 
   <xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="lrg_end_a" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-   <xsl:variable name="lrg_start_b" select="coordinates[@coord_system = $lrg_set_name]/@start" />
-  <xsl:variable name="lrg_end_b" select="coordinates[@coord_system = $lrg_set_name]/@end" />
+  <xsl:variable name="lrg_end_a"   select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+  <xsl:variable name="lrg_start_b" select="coordinates[@coord_system = $lrg_set_name]/@start" />
+  <xsl:variable name="lrg_end_b"   select="coordinates[@coord_system = $lrg_set_name]/@end" />
   
   <xsl:variable name="lrg_start"><xsl:value-of select="$lrg_start_a"/><xsl:value-of select="$lrg_start_b"/></xsl:variable>
   <xsl:variable name="lrg_end"><xsl:value-of select="$lrg_end_a"/><xsl:value-of select="$lrg_end_b"/></xsl:variable>
@@ -5445,9 +5581,6 @@
     <td>
   <xsl:for-each select="db_xref[(@source='RefSeq' and substring(@accession,1,2)='NP') or @source='GI' or @source='UniProtKB']">
     <xsl:apply-templates select="."/>
-    <xsl:if test="position()!=last()">
-      <br/>
-    </xsl:if>
   </xsl:for-each>   
     </td>
     <td>
@@ -5618,27 +5751,31 @@
                 </xsl:if>
                 Type
               </th>
-              <th title="Reference coordinates">
+              <th title="Genome coordinates">
                 <xsl:call-template name="assembly_colour_border">
                   <xsl:with-param name="assembly"><xsl:value-of select="$coordinate_system"/></xsl:with-param>
                 </xsl:call-template>
-                Reference coordinates
+                Genome coordinates
               </th>
-              <th title="Reference allele">
+              <th title="Genome allele">
                 <xsl:call-template name="assembly_colour_border">
                   <xsl:with-param name="assembly"><xsl:value-of select="$coordinate_system"/></xsl:with-param>
                 </xsl:call-template>
-                Reference allele
+                Genome allele
+                <span class="smaller-font">(<xsl:choose>
+                  <xsl:when test="@strand = 1">Forward strand &#8594;</xsl:when>
+                  <xsl:when test="@strand = -1">&#8592; Reverse strand</xsl:when>
+                </xsl:choose>)</span>
               </th>
               <th class="common_col"></th>
               <th class="lrg_col" title="LRG allele">LRG allele</th>
               <th class="lrg_col" title="LRG coordinates">LRG coordinates</th>
             <xsl:if test="$show_hgvs=1">
-              <th title="HGVS notation on genomic reference sequence">
+              <th title="HGVS notation on genome assembly sequence">
                 <xsl:call-template name="assembly_colour_border">
                   <xsl:with-param name="assembly"><xsl:value-of select="$coordinate_system"/></xsl:with-param>
                 </xsl:call-template>
-                Reference HGVS
+                Genomic HGVS <span class="smaller-font">(Forward strand &#8594;)</span>
               </th>
               <th class="lrg_col" title="HGVS notation on LRG sequence">LRG HGVS</th>
             </xsl:if>
@@ -5710,7 +5847,7 @@
                   </xsl:choose>
                 </xsl:variable> 
                   
-              <!--Reference genome HGVS -->
+              <!-- Genomic HGVS -->
               <td class="no_border_bottom border_left current_assembly_bg">
                 <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
                   <!--ID / Key -->
@@ -5733,6 +5870,7 @@
                   <xsl:text>lrg_</xsl:text><xsl:value-of select="@type"/>_<xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>_<xsl:value-of select="$hgvs_assembly"/>
                 </xsl:variable>
                 <xsl:call-template name="diff_hgvs_genomic_lrg">
+                  <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
                   <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
                   <xsl:with-param name="key"><xsl:value-of select="$lrgkey"/></xsl:with-param>
                 </xsl:call-template>
@@ -5829,7 +5967,7 @@
       <div style="float:right">
         <a class="vep_icon" data-toggle="tooltip" data-placement="bottom" target="_blank">
           <xsl:attribute name="href">
-            <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/>
+            <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>&amp;hgnc=</xsl:text><xsl:value-of select="$lrg_gene_name"/><xsl:text>&amp;strand=</xsl:text><xsl:value-of select="$strand"/>
           </xsl:attribute>
           <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
           <xsl:attribute name="title">Click on the link above to see the VEP output for <xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></xsl:attribute>
@@ -5843,6 +5981,7 @@
 
 <!-- HGVS genomic diff lrg -->
 <xsl:template name="diff_hgvs_genomic_lrg">
+  <xsl:param name="strand" />
   <xsl:param name="assembly" />
   <xsl:param name="key" />
 
@@ -5888,7 +6027,7 @@
       <div style="float:right">
         <a class="vep_icon vep_lrg" data-toggle="tooltip" data-placement="bottom" target="_blank">
           <xsl:attribute name="href">
-            <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/>
+            <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>&amp;hgnc=</xsl:text><xsl:value-of select="$lrg_gene_name"/><xsl:text>&amp;strand=</xsl:text><xsl:value-of select="$strand"/>
           </xsl:attribute>
           <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
           <xsl:attribute name="title">Click on the link above to see the VEP output for <xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></xsl:attribute>
@@ -6084,20 +6223,27 @@
   <xsl:param name="showhide_text"/>
   <xsl:param name="add_span"/>
   <xsl:param name="show_as_button"/>
+  <xsl:param name="small_button"/>
   <xsl:param name="default_open"/>
   
   <xsl:variable name="classes">
     <xsl:choose>
       <xsl:when test="$default_open">icon-collapse-open</xsl:when>
       <xsl:otherwise>icon-collapse-closed</xsl:otherwise>
-    </xsl:choose> close-icon-5 
+    </xsl:choose> close-icon-5
   </xsl:variable>
+  
+  
   
   <span title="Show/Hide data">
     <xsl:attribute name="class">
       <xsl:choose>
         <xsl:when test="$show_as_button">
-         btn btn-lrg btn-lrg<xsl:value-of select="$show_as_button"/><xsl:text> </xsl:text><xsl:value-of select="$classes"/>
+         btn btn-lrg
+         <xsl:choose>
+           <xsl:when test="$small_button"> btn-lrg-small </xsl:when>
+           <xsl:otherwise> btn-lrg-normal </xsl:otherwise>
+        </xsl:choose>btn-lrg<xsl:value-of select="$show_as_button"/><xsl:text> </xsl:text><xsl:value-of select="$classes"/>
         </xsl:when>
         <xsl:otherwise>show_hide_button <xsl:value-of select="$classes"/> <xsl:text> </xsl:text>
           <xsl:choose>
@@ -6136,18 +6282,19 @@
 
 <xsl:template name="hide_button">
   <xsl:param name="div_id" />
-  <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-closed rotate-icon-270 close-icon-0" style="padding-left:4px">
-    <xsl:attribute name="onclick">javascript:showhide('<xsl:value-of select="$div_id"/>');</xsl:attribute>Hide
-  </button>
+  <xsl:param name="text_desc" />
+  <span class="btn btn-lrg btn-lrg-small btn-lrg1 icon-collapse-closed rotate-icon-270 close-icon-0">
+    <xsl:attribute name="onclick">javascript:showhide('<xsl:value-of select="$div_id"/>');</xsl:attribute>Hide <xsl:value-of select="$text_desc"/>
+  </span>
 </xsl:template>
 
 <xsl:template name="clear_exon_highlights">
   <xsl:param name="transname" />
   <div style="margin-top:5px">
-    <button class="btn btn-lrg btn-lrg1" type="button">
+    <span class="btn btn-lrg btn-lrg-small btn-lrg1">
       <xsl:attribute name="onclick">javascript:clear_highlight('<xsl:value-of select="$transname"/>');</xsl:attribute>
       <span class="glyphicon glyphicon glyphicon-chevron-right"></span> Clear all the exon highlightings for the LRG transcript <xsl:value-of select="$transname"/>
-    </button>
+    </span>
   </div>
 </xsl:template>
 
@@ -6334,8 +6481,8 @@
         <xsl:attribute name="class"><xsl:value-of select="$classes"/> lrg_previous_assembly</xsl:attribute>
       </xsl:when>
     </xsl:choose>
-    <span class="subsection">Mapping to the <xsl:if test="contains($assembly,$current_assembly)">Primary </xsl:if>Reference Genome Assembly </span> <xsl:value-of select="$assembly"/>
-    <xsl:if test="$type"> - <span class="red"><xsl:value-of select="$type"/></span></xsl:if>
+    <span class="subsection">Mapping to the <xsl:if test="contains($assembly,$current_assembly)">Primary </xsl:if>Genome Assembly </span> <xsl:value-of select="$assembly"/>
+    <xsl:if test="$type"> - <span class="red"><xsl:copy-of select="$type"/></span></xsl:if>
   </h3>
 
 </xsl:template>
@@ -6352,11 +6499,6 @@
         <xsl:with-param name="showhide_text">the <b>Genoverse</b> genome browser</xsl:with-param>
         <xsl:with-param name="show_as_button">2</xsl:with-param>
         <xsl:with-param name="default_open">1</xsl:with-param>
-      </xsl:call-template>
-      <xsl:call-template name="label">
-        <xsl:with-param name="label"><xsl:value-of select="$current_assembly"/></xsl:with-param>
-        <xsl:with-param name="desc">Data represented on the <xsl:value-of select="$current_assembly"/> assembly</xsl:with-param>
-        <xsl:with-param name="is_ref">1</xsl:with-param>
       </xsl:call-template>
     </div>
   
@@ -6380,21 +6522,32 @@
             end       : <xsl:value-of select="$current_ref_end"/>,
             plugins   : [ 'controlPanel', 'karyotype', 'trackControls', 'resizer', 'focusRegion', 'fullscreen', 'tooltips', 'fileDrop' ],
             tracksLibrary: [
-               Genoverse.Track.File.BED.extend({
+              Genoverse.Track.extend({
+                name       : '<xsl:value-of select="$current_assembly"/>',
+                controller : Genoverse.Track.Controller.Sequence,
+                model      : Genoverse.Track.Model.Sequence.Ensembl,
+                view       : Genoverse.Track.View.Sequence,
+                resizable  : 'auto',
+                100000     : false
+              }),
+              Genoverse.Track.File.BED.extend({
                 name            : 'LRG',
                 url             : '<xsl:value-of select="$lrg_bed_url"/>',
                 resizable       : 'auto',
                 setFeatureColor : function (f) { f.color = '#090'; }
               }),
               Genoverse.Track.File.DIFF.extend({
-                name      : 'LRG differences',
+                name      : 'Sequence differences LRG vs <xsl:value-of select="$current_assembly"/>',
                 url       : '<xsl:value-of select="$lrg_diff_url"/>',
                 resizable : 'auto'
               }),
               Genoverse.Track.Gene.extend({
+                name      : 'Ensembl genes',
                 height : 25
               }),
-              Genoverse.Track.dbSNP
+              Genoverse.Track.dbSNP.extend({
+                name      : 'dbSNP variants'
+              })
             ],
             tracks    : [
               Genoverse.Track.Scalebar,
@@ -6413,7 +6566,7 @@
                 setFeatureColor : function (f) { f.color = '#090'; }
               }),
               Genoverse.Track.File.DIFF.extend({
-                name      : 'Sequence difference LRG vs <xsl:value-of select="$current_assembly"/>',
+                name      : 'Sequence differences LRG vs <xsl:value-of select="$current_assembly"/>',
                 url       : '<xsl:value-of select="$lrg_diff_url"/>',
                 resizable : 'auto'
               })

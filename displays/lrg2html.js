@@ -23,6 +23,8 @@ function showhide(id, only_show) {
   var div_id = "#"+id;
   var button_id = "#"+id+"_button";
   
+  $('[data-toggle="tooltip"]').tooltip( {html:true} );
+  
   if($(button_id).hasClass("icon-collapse-closed")) {
     $(button_id).removeClass("icon-collapse-closed").addClass("icon-collapse-open");
     $(div_id).show(150);
