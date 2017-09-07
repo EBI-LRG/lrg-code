@@ -113,11 +113,13 @@ sub write_output {
   if (-e $genes_file) {
     open F, "< $genes_file" or die $!;
     my $count_genes = 0;
+    my $count_all_genes = 0;
     my $id = 100000;
     while(<F>) {
       chomp $_;
       my $gene = $_;
       next if ($gene eq '' || $gene =~ /^\s/ || $gene =~ /^#/);
+      $count_all_genes ++;
       next if ($distinct_genes{$gene});
       
       $distinct_genes{$gene} = $id;
@@ -125,7 +127,7 @@ sub write_output {
       $id ++;
     }
     close(F);
-    print REPORTS "  <li>Genes from the data file: $count_genes</li>\n";
+    print REPORTS "  <li>Extra genes from the data file: $count_genes (out of $count_all_genes)</li>\n";
   }
   
   
