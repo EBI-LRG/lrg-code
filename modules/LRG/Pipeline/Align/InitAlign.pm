@@ -122,7 +122,7 @@ sub write_output {
       
       $distinct_genes{$gene} = $id;
       $count_genes ++;
-      $id += $count_genes;
+      $id ++;
     }
     close(F);
     print REPORTS "  <li>Genes from the data file: $count_genes</li>\n";
@@ -163,9 +163,11 @@ sub write_output {
           'data_files_dir' => $data_files_dir,
           'havana_file'    => $havana_file,
           'hgmd_file'      => $hgmd_file,
-          #'uniprot_file'   => $uniprot_file,
-          'lrg'            => $lrg_id
+          #'uniprot_file'   => $uniprot_file
        };
+    if ($lrg_id ne '') {
+      $gene_job->{'lrg'} = $lrg_id;
+    }
     if ($GENES_LENGTH{$gene} < $LENGTH) {
       push @jobs, $gene_job;
     } else {
