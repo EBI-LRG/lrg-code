@@ -4,7 +4,7 @@
   $title = 'Transcript alignments';
   
   if ($_GET['gene']) {
-    $gene_id = strtoupper($_GET['gene']);
+    $gene_id = $_GET['gene'];
     $title = "Gene $gene_id - $title";
   }
   
@@ -97,6 +97,9 @@ EOF;
   
   
   if ($gene_id != '') {
+    if(!@include("./$gene_id.html")) {
+      $gene_id = strtoupper($gene_id);
+    }
     include("./$gene_id.html");
   }
   else {
