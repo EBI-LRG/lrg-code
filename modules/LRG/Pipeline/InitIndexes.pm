@@ -30,12 +30,13 @@ sub write_output {
   $self->run_cmd("mv $index_dir/tmp_$lrg_list $ftp_dir/$lrg_list") if (-s "$index_dir/tmp_$lrg_list");
   print " done\n";
 
+  my $extra_id = 100000;
 
   # Parse the main and pending directories
   foreach my $status ("public","pending") {
     my $dh;
 
-    my $dir = "$new_xml_dir/$status";
+    my $dir = ($status eq 'public') ? $ftp_dir : "$ftp_dir/$status";
     # Open a directory handle
     opendir($dh,$dir);
     warn("Could not process directory $dir") unless (defined($dh));
@@ -51,7 +52,7 @@ sub write_output {
       my $in_ensembl = (`grep -w $lrg_id $index_dir/../$lrg_list`) ? 1 : 0;
 
       push @jobs, {
-        'id'               => $id,
+        'id'               => $extra_id+$id,
         'run_dir'          => $run_dir,
         'xml_file'         => $file,
         'xml_dir'          => $dir,
