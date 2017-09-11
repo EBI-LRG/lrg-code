@@ -1058,8 +1058,8 @@ sub partial_gene {
         foreach my $gene (@{$gene_sets}) {
             
             my $is_lrg_gene = 0; 
-            my $symbol = $gene->findNode('symbol');
-            $is_lrg_gene = 1 if ($symbol->data->{name} eq $lrg_gene_name);
+            my $symbol = $gene->findNode('symbol')->data->{name};
+            $is_lrg_gene = 1 if ($symbol eq $lrg_gene_name);
 
             next if ($is_lrg_gene == 0);
             
@@ -1090,7 +1090,8 @@ sub partial_gene {
         if ($is_partial == 1) {
           $self->{'check'}{$name}{'message'} .= "Partial gene/transcript/protein found for $source annotations\n";
           foreach my $gname (keys(%transcript_partial)) {
-            $self->{'check'}{$name}{'message'} .=  "\tPartial gene: $gname (".$transcript_partial{$gname}{partial}.")//";
+            my $partial_gene = ($transcript_partial{$gname}{partial}) ? ' ('.$transcript_partial{$gname}{partial}.')': '';
+            $self->{'check'}{$name}{'message'} .=  "\tPartial gene: $gname$partial_gene//";
             $self->{'check'}{$name}{'message'} .=  "\tPartial transcript(s): ".$transcript_partial{$gname}{tr}."//" if ($transcript_partial{$gname}{tr});
           }
           $passed = 0;
@@ -1190,7 +1191,7 @@ sub partial {
             
             if ($skip_gene) {
                 $passed = 0;
-                $self->{'check'}{$name}{'message'} .= "Indication of partial overlap for gene " . $gene->findNode('symbol')->content . " in $source is not consistent//";
+                $self->{'check'}{$name}{'message'} .= "Indication of partial overlap for gene " . $symbol->data()->{name} . " in $source is not consistent//";
             }
         }
     }  
