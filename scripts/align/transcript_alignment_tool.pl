@@ -349,7 +349,7 @@ foreach my $refseq_tr (@$refseq) {
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
 
   my $refseq_name = $refseq_tr->stable_id;
-  next unless ($refseq_name =~ /^N(M|P)_/);
+  next unless ($refseq_name =~ /^N(M|P|R)_/);
   
   my $refseq_exons = $refseq_tr->get_all_Exons;
   my $refseq_exon_count = scalar(@$refseq_exons);
@@ -381,7 +381,7 @@ foreach my $refseq_tr (@$refseq_gff3) {
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_import');
 
   my $refseq_name = $refseq_tr->stable_id;
-  next unless ($refseq_name =~ /^N(M|P)_/);
+  next unless ($refseq_name =~ /^N(M|P|R)_/);
   
   my $refseq_exons = $refseq_tr->get_all_Exons;
   my $refseq_exon_count = scalar(@$refseq_exons);
@@ -418,7 +418,7 @@ foreach my $cdna_tr (@$cdna_dna) {
       
       #next unless ($cdna_exon_evidence->db_name);
       #next unless ($cdna_exon_evidence->db_name =~ /refseq/i && $cdna_exon_evidence->display_id =~ /^(N|X)M_/);
-      next unless ($cdna_exon_evidence->display_id =~ /^(N|X)M_/);
+      next unless ($cdna_exon_evidence->display_id =~ /^N(M|R)_/);
       
       $cdna_name = $cdna_exon_evidence->display_id if ($cdna_name eq '');
       next if ($cdna_name !~ /^\w+/);
