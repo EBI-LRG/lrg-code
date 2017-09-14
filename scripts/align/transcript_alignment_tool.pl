@@ -39,6 +39,7 @@ my $havana_file_default  = 'hg38.bed';
 
 my $max_variants = 10;
 
+my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
 #$uniprot_file ||= $uniprot_file_default;
 
@@ -183,9 +184,11 @@ if (-e $transcript_score_file) {
   
   foreach my $query_result (split("\n",$query_results)) {
     my @result = split("\t", $query_result);
-    $transcript_score{$result[3]} = $result[11];
+    $transcript_score{$result[4]} = $result[12];
   }
 }
+
+my $ref_canonical_transcript = get_canonical_transcript($gene_name);
 
 
 my $gene_chr    = $ens_gene->slice->seq_region_name;
@@ -531,14 +534,14 @@ $html .= qq{
         <span class="icon-next-page smaller-icon close-icon-5"></span>Genoverse
       </button>
       
-      <!--Export URL selection -->
-      <button class="btn btn-lrg" onclick="export_transcripts_selection()" title="Export the URL containing the transcripts selection as parameters" data-toggle="tooltip" data-placement="right">
-        <span class="icon-link smaller-icon close-icon-5"></span>URL with transcripts selection
-      </button>
-      
       <!--Show/Hide pathogenic variants -->
       <button class="btn btn-lrg" id="button_pathogenic_variants" onclick="showhide_elements('button_pathogenic_variants','pathogenic_exon_label')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
         Hide pathogenic variant labels $html_pathogenic_label
+      </button>
+      
+      <!--Export URL selection -->
+      <button class="btn btn-lrg" onclick="export_transcripts_selection()" title="Export the URL containing the transcripts selection as parameters" data-toggle="tooltip" data-placement="right">
+        <span class="icon-link smaller-icon close-icon-5"></span>URL with transcripts selection
       </button>
 };
 
@@ -634,10 +637,12 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $highlight_row      = highlight_button($row_id,'left');
   my $blast_button       = blast_button($ens_tr);
   
+  my $biotype = get_biotype($tr_object->biotype);
+  my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   
   # First columns
   $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr">
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr" data-biotype="$data_biotype">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
@@ -675,7 +680,6 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $tr_name_label .= '</b>';
   }
   my $tr_orientation = get_strand($tr_object->strand);
-  my $biotype = get_biotype($tr_object->biotype);
   my $incomplete = is_incomplete($tr_object);
   my $tr_number = (split('-',$tr_name))[1];
   $exon_tab_list .= qq{
@@ -819,9 +823,18 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $blast_button  = blast_button($nm);
 
   my $nm_label = version_label($nm);
+  
+  my $display_status = ($nm =~ /^NR_/) ? 'hidden' : 'unhidden';
+  
+  my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
+  my $cdna_name   = ($cdna_object->external_name) ? $cdna_object->external_name : '-';
+  my $cdna_strand = $cdna_object->slice->strand;
+  my $cdna_orientation = get_strand($cdna_strand);
+  my $biotype = get_biotype($cdna_object->biotype);
+  my $data_biotype = 'is_pc'; #($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
 
   $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
+  <tr class="$display_status trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
@@ -832,12 +845,6 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     </td>
     <td class="extra_column fixed_col col5">$e_count</td>
   };
-  
-  my $cdna_object = $cdna_tr_exons_list{$nm}{'object'};
-  my $cdna_name   = ($cdna_object->external_name) ? $cdna_object->external_name : '-';
-  my $cdna_strand = $cdna_object->slice->strand;
-  my $cdna_orientation = get_strand($cdna_strand);
-  my $biotype = get_biotype($cdna_object->biotype);
   
   # cDNA lengths
   my $cdna_coding_start = $cdna_object->cdna_coding_start;
@@ -934,8 +941,11 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   my $highlight_row = highlight_button($row_id,'left');
   my $blast_button  = blast_button($o_ens_gene);
   
+  my $biotype = get_biotype($gene_object->biotype);
+  my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
+  
   $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene">
+  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
     <td class="fixed_col col1">$hide_row</td>
     <td class="fixed_col col2">$highlight_row</td>
     <td class="fixed_col col3">$blast_button</td>
@@ -946,7 +956,6 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   };
   
   my $gene_orientation = get_strand($gene_object->strand);
-  my $biotype = get_biotype($gene_object->biotype);
   $exon_tab_list .= qq{<td class="extra_column fixed_col col6">$o_gene_name</td><td class="extra_column fixed_col col7">$biotype</td><td class="extra_column fixed_col col8">$gene_orientation</td>};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -1073,12 +1082,12 @@ $html .= qq{
     </table>
   </div>
   <h3 class="icon-next-page smaller-icon">Show/hide rows</h3>
-  <div style="border-bottom:2px dotted #888;margin-bottom:10px"></div>};
+  <table><tbody>};
     
-my $max_per_line = 6;
+my $max_per_line = 7;
 
 # Ensembl transcripts
-$html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl');
+$html .= display_transcript_buttons(\%ens_rows_list, 'Ensembl', 1);
 
 # HAVANA
 $html .= display_transcript_buttons(\%havana_rows_list, 'HAVANA');
@@ -1098,13 +1107,29 @@ $html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
 # Ensembl genes
 $html .= display_transcript_buttons(\%gene_rows_list, 'Gene');
 
-$html .= qq{ 
-    <div class="clearfix" style="margin:10px 0px 60px">
-      <div style="float:left;font-weight:bold">All rows:</div>
-      <div style="float:left;margin-left:10px;padding-top:4px">
-        <button class="btn btn-lrg" onclick="javascript:showall();">Show all the rows</button>
+$html .= qq{
+    </tbody></table>
+    <div class="clearfix" style="margin:15px 10px 60px">
+      
+      <div style="float:left">
+        <button class="btn btn-lrg" onclick="javascript:showall();">Show <b>all</b> the entries</button>
+      </div>
+    
+      <!--Show/Hide non protein coding entries -->
+      <div style="float:left;margin-left:15px">
+        <button class="btn btn-lrg" id="button_protein_coding" onclick="showhide_elements_by_attrib('button_protein_coding','biotype','no_pc')" title="Show/Hide the non protein coding entries" data-toggle="tooltip" data-placement="right">
+          Hide <b>non protein coding</b> entries
+        </button>
+      </div>
+      
+      <!--Show/Hide NR transcript -->
+      <div style="float:left;margin-left:15px">
+        <button class="btn btn-lrg" id="button_nr_trans" onclick="showhide_elements_by_attrib('button_nr_trans','name','NR_')" title="Show/Hide the non coding RefSeq transcripts (NR_xxx)" data-toggle="tooltip" data-placement="right">
+          Show <b>NR RefSeq</b> transcripts
+        </button>
       </div>
     </div>
+      
 };
 
 
@@ -1374,6 +1399,22 @@ sub blast_button {
 #  return qq{<span class="$manual_class"$manual_border data-toggle="tooltip" data-placement="bottom" title="$manual_title annotation">$manual_label</span>};
 #}  
 
+sub get_canonical_transcript {
+  my $gene_name = shift;
+  my $cars_transcript;
+  if (-e $transcript_cars_file) {
+    my $gene_query = ($gene_name =~ /^ENSG\d+$/) ? $gene_name : $ens_gene->stable_id;
+    my $query_results = `grep $gene_query $transcript_cars_file`;
+    
+    foreach my $query_result (split("\n",$query_results)) {
+      my @result = split("\t", $query_result);
+      $cars_transcript = $result[5];
+      last;
+    }
+  }
+  return $cars_transcript;
+}
+
 sub get_tsl_html {
   my $transcript = shift;
   my $tr_type    = shift;
@@ -1418,7 +1459,7 @@ sub get_canonical_html {
   my $transcript   = shift;
   my $column_class = shift;
   
-  return '' unless($transcript->is_canonical);
+  return '' unless($transcript->stable_id eq $ref_canonical_transcript && $ref_canonical_transcript);
 
   return qq{<span class="flag canonical glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
 }
@@ -1571,15 +1612,12 @@ sub get_showhide_buttons {
   }
   
   return qq{
-       <div class="buttons_row">
-         <div class="buttons_row_title_left">$type rows:</div>
-         <div class="buttons_row_title_right">
-           <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,1);">Show all rows</button>
-           <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,0);">Hide all rows</button>
-           $hidden_ids
-         </div>
-         <div class="buttons_row_content">
-           <div style="margin-bottom:10px">\n};
+       <div class="buttons_row_title">$type rows:</div>
+       <div class="buttons_row_subtitle">
+             <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,1);">Show all rows</button>
+             <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,0);">Hide all rows</button>
+             $hidden_ids
+       </div>};
 }
 
 sub get_strand {
@@ -1616,8 +1654,17 @@ sub display_refseq_data {
 
     my $nm_label = version_label($nm);
     
+    my $display_status = ($nm =~ /^NR_/) ? 'hidden' : 'unhidden';
+    
+    my $refseq_object = $refseq_exons_list->{$nm}{'object'};
+    my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
+    my $refseq_strand = $refseq_object->slice->strand;
+    my $refseq_orientation = get_strand($refseq_strand);
+    my $biotype = get_biotype($refseq_object->biotype);
+    my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
+    
     $exon_tab_list .= qq{
-    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm">
+    <tr class="$display_status trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
       <td class="fixed_col col1">$hide_row</td>
       <td class="fixed_col col2">$highlight_row</td>
       <td class="fixed_col col3">$blast_button</td>
@@ -1629,12 +1676,6 @@ sub display_refseq_data {
       </td>
       <td class="extra_column fixed_col col5">$e_count</td>
     };
-    
-    my $refseq_object = $refseq_exons_list->{$nm}{'object'};
-    my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
-    my $refseq_strand = $refseq_object->slice->strand;
-    my $refseq_orientation = get_strand($refseq_strand);
-    my $biotype = get_biotype($refseq_object->biotype);
     
     # cDNA lengths
     my $cdna_coding_start = $refseq_object->cdna_coding_start;
@@ -1843,7 +1884,7 @@ sub display_bed_source_data {
         
         if (($coding_start > $exon_start && $coding_start > $coord) || 
             ($coding_end < $exon_start && $coding_end < $coord) || 
-            ($coding_start == $start && $coding_end == $end && $biotype ne 'protein_coding')) {
+            ($coding_start == $start && $coding_end == $end && $biotype ne 'protein coding')) {
           $is_coding  = " $source\_non_coding";
         }
         elsif ($coding_start > $exon_start || $coding_end < $coord) {
@@ -1870,6 +1911,7 @@ sub display_bed_source_data {
 sub display_transcript_buttons {
   my $rows_list = shift;
   my $source    = shift;
+  my $first_buttons_row = shift;
 
   my $tr_count = 0;
   my @tr_row_ids = (sort {$a <=> $b} keys(%{$rows_list}));
@@ -1879,22 +1921,24 @@ sub display_transcript_buttons {
   my $buttons_html = '';
   foreach my $row_id (@tr_row_ids) {
     if ($tr_count == $max_per_line) {
-      $buttons_html .= qq{</div><div style="margin-bottom:10px">};
       $tr_count = 0;
     }
     my $label = $rows_list->{$row_id}{'label'};
     my $class = $rows_list->{$row_id}{'class'};
+    my $class_init = ($label =~ /^NR_/) ? 'off' : $class;
     $buttons_html .= qq{<input type="hidden" id="button_color_$row_id" value="$class"/>};
-    $buttons_html .= qq{<button id="button_$row_id" class="btn btn-sm btn-non-lrg $class" onclick="showhide($row_id)">$label</button>};
+    $buttons_html .= qq{<button id="button_$row_id" class="btn btn-sm btn-non-lrg $class_init" onclick="showhide($row_id)">$label</button>};
     $tr_count ++;
   }
 
   my $first_row_id = $tr_row_ids[0];
   my $last_row_id  = $tr_row_ids[@tr_row_ids-1];
 
-  my $html  = get_showhide_buttons($source, $first_row_id, $last_row_id);
-     $html .= $buttons_html;
-     $html .= qq{</div></div><div style="clear:both"></div></div>};
+  my $border_top = ($first_buttons_row) ? ' buttons_row_first' : '';
+
+  my $html  = "<tr class=\"buttons_row$border_top\"><td class=\"buttons_col_left\">".get_showhide_buttons($source, $first_row_id, $last_row_id).'</td>';
+     $html .= "<td class=\"buttons_row_content\">$buttons_html</td></tr>";
+     #$html .= qq{</div></div><div style="clear:both"></div></div>};
 
   return $html;
 }

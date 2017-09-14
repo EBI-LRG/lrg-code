@@ -14,6 +14,26 @@ function showhide_elements(button_id,class_name) {
   }
 }
 
+function showhide_elements_by_attrib(button_id,attrib,value) {
+  var button_text = $("#"+button_id).html();
+  if (button_text.match(/show/i)) {
+    $("#"+button_id).html(button_text.replace('Show','Hide'));
+    $("tr[data-"+attrib+"^='"+value+"']").each(function (i, el) {
+      var tr_id = $(this).attr("id");
+      var id = tr_id.split('_')[1];
+      show_row(id);
+    });
+  }
+  else {
+    $("#"+button_id).html(button_text.replace('Hide','Show'));
+    $("tr[data-"+attrib+"^='"+value+"']").each(function (i, el) {
+      var tr_id = $(this).attr("id");
+      var id = tr_id.split('_')[1];
+      hide_row(id);
+    });
+  }
+}
+
 function showhide_id(button_id,id) {
   var button_text = $("#"+button_id).html();
   if (button_text.match(/show/i) || button_text.match(/\+/i)) {

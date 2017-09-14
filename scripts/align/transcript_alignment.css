@@ -597,7 +597,7 @@ th.coord {
 }
 
 .btn-non-lrg {
-  margin-left:5px;
+  margin:2px 5px 2px 0px;
   border:2px solid #CCC;
   cursor:pointer;
 	padding:0px 2px;
@@ -640,30 +640,30 @@ th.coord {
 }
 
 .buttons_row {
-  margin:10px 0px;
   border-bottom:2px dotted #888;
   padding:2px;
 }
-
-.buttons_row_title_left {
-  float:left;
-  font-weight:bold;
-  width:175px;
-  margin-bottom:10px;
+.buttons_row_first {
+  border-top:2px dotted #888;
 }
 
-.buttons_row_title_right {
-  float:left;
-  margin:0px 2px;
-  padding-top:2px
+.buttons_col_left {
+  width:250px;
+  border-right:2px dotted #888;
+  padding:8px;
+  vertical-align:top;
+}
+.buttons_row_title {
+  font-weight:bold;
+}
+.buttons_row_subtitle {
+  margin:5px 5px 0px;
+  padding-top:2px;
+  text-align:right;
 }
 
 .buttons_row_content {
-  float:left;
-  padding-top:2px;
-  padding-left:2px;
-  margin-bottom:10px;
-  border-left:2px dotted #888;
+  padding:4px;
 }
 
 

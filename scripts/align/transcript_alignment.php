@@ -98,9 +98,11 @@ EOF;
   
   if ($gene_id != '') {
     if(!@include("./$gene_id.html")) {
-      $gene_id = strtoupper($gene_id);
+      $gene_id_uc = strtoupper($gene_id);
+      if(!@include("./$gene_id_uc.html")) {
+        echo "<h3 style=\"padding-left:25px\">Alignment not found for the gene <span class=\"blue\">$gene_id</span>!</h3>";
+      }
     }
-    include("./$gene_id.html");
   }
   else {
     $array_length = count($select_list);
