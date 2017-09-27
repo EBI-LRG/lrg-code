@@ -41,6 +41,8 @@ my $max_variants = 10;
 
 my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
+my $transcript_cars_date  = '23rd August 2017 - e89';
+my $transcript_score_date = '23rd August 2017 - e89';
 #$uniprot_file ||= $uniprot_file_default;
 
 my $uniprot_url      = 'http://www.uniprot.org/uniprot';
@@ -1234,9 +1236,9 @@ $html .= qq{
           </tr>
           <tr class="bg2_legend">
             <td>
-              <span class="flag canonical glyphicon glyphicon-flag"></span>
+              <span class="flag canonical glyphicon glyphicon-star"></span>
             </td>
-            <td>Label to indicate the canonical transcript</td>
+            <td>Label to indicate the CARS transcript</td>
           </tr>
           <tr class="bg1_legend">
             <td>
@@ -1461,7 +1463,7 @@ sub get_canonical_html {
   
   return '' unless($transcript->stable_id eq $ref_canonical_transcript && $ref_canonical_transcript);
 
-  return qq{<span class="flag canonical glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
+  return qq{<span class="flag canonical glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="CARS transcript ($transcript_cars_date)"></span>};
 }
 
 sub get_trans_score_html {
@@ -1476,7 +1478,7 @@ sub get_trans_score_html {
   
   my $rank = ($score < 10) ? 0 : ($score < 20 ? 1 : 2);
   
-  return qq{<span class="flag trans_score trans_score_$rank"$border_colour data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">$score</span>};
+  return qq{<span class="flag trans_score trans_score_$rank"$border_colour data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl - $transcript_score_date | Scale from 0 (bad) to 27 (good)">$score</span>};
 }
 
 
