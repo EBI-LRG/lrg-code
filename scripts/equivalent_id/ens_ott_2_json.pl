@@ -4,14 +4,13 @@ use strict;
 #use Getopt::Long;
 use JSON;
 
-
-my $input_file = '/homes/lgil/projets/LRG/ens_ott_table_sorted_by_HGNC_symbol.txt';
 my $output_file = '/homes/lgil/projets/LRG/ens_ott_data.json';
-my $autocomplete_file = '/homes/lgil/projets/LRG/ens_ott_autocomple.json';
+my $autocomplete_file = '/homes/lgil/projets/LRG/ens_ott_autocomplete.json';
 
-my $havana_file = 'hg38.bed';
+my $input_file   = 'ens_ott_table_sorted_by_HGNC_symbol.txt';
+my $havana_file  = 'hg38.bed';
 my $gencode_file = 'gencode.annotation.gtf';
-my $data_dir  = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
+my $data_dir     = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
 
 my $first_line = 1;
 my $max_json_entries_per_line = 20;
@@ -69,7 +68,7 @@ close(G);
 
 # Ensembl data file
 my %ensembl_data;
-open E, "< $input_file" or die $!;
+open E, "< $data_dir/$input_file" or die $!;
 my %col;
 my %autocomplete;
 

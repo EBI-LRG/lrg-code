@@ -8,7 +8,7 @@ var fasta_url_prefix = 'http://rest.ensembl.org/sequence/id/';
 var fasta_url_suffix = '?content-type=text/x-fasta;type=cdna';
 
 var json_file      = './ens_ott_data.json';
-var json_file_auto = './ens_ott_autocomple.json';
+var json_file_auto = './ens_ott_autocomplete.json';
 
 var external_link_class = 'icon-ext';
 
