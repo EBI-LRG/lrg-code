@@ -190,8 +190,8 @@ if (-e $transcript_score_file) {
   }
 }
 
-my $ref_canonical_transcript = get_canonical_transcript($gene_name);
-
+my $ref_canonical_transcript = get_cars_transcript($gene_name);
+my $canonical_transcript     = get_canonical_transcript($gene_name);
 
 my $gene_chr    = $ens_gene->slice->seq_region_name;
 my $gene_start  = $ens_gene->start;
@@ -504,6 +504,8 @@ $html .= qq{
         // Drag and drop rows
         \$( "#sortable_rows" ).sortable({
           delay: 150, //Needed to prevent accidental drag when trying to select
+          revert: true,
+          cancel: ".transcript tbody tr:first-child",
           helper:function(e,item){
             var helper = \$('<tr/>');
             if (!item.hasClass('selected')) {
@@ -631,6 +633,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $tsl_html           = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
   my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $cars_html     = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $trans_score_html   = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
@@ -654,11 +657,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           <td class="$column_class" style="padding:0px" colspan="6">
             <table style="width:100%">
               <tr>
-                <td style="width:15px"></td>
+                <td style="width:15px;text-align:left">$canonical_html</td>
                 <td>
                   <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr_label</a>
                 </td>
-                <td style="width:15px;text-align:right">$canonical_html</td>
+                <td style="width:15px;text-align:right">$cars_html</td>
               </tr>
             </table>
           </td>
@@ -1238,27 +1241,33 @@ $html .= qq{
             <td>
               <span class="flag canonical glyphicon glyphicon-star"></span>
             </td>
-            <td>Label to indicate the CARS transcript</td>
+            <td>Label to indicate the canonical transcript</td>
           </tr>
           <tr class="bg1_legend">
+            <td>
+              <span class="flag cars glyphicon glyphicon-star"></span>
+            </td>
+            <td>Label to indicate the CARS transcript</td>
+          </tr>
+          <tr class="bg2_legend">
             <td>
                <span class="flag uniprot icon-target close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
             </td>
             <td>Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
             <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg2">
+          <tr class="bg1">
             <td>
               <span class="flag source_flag gff3">gff3</span>
             </td>
@@ -1417,6 +1426,22 @@ sub get_canonical_transcript {
   return $cars_transcript;
 }
 
+sub get_cars_transcript {
+  my $gene_name = shift;
+  my $cars_transcript;
+  if (-e $transcript_cars_file) {
+    my $gene_query = ($gene_name =~ /^ENSG\d+$/) ? $gene_name : $ens_gene->stable_id;
+    my $query_results = `grep $gene_query $transcript_cars_file`;
+    
+    foreach my $query_result (split("\n",$query_results)) {
+      my @result = split("\t", $query_result);
+      $cars_transcript = $result[5];
+      last;
+    }
+  }
+  return $cars_transcript;
+}
+
 sub get_tsl_html {
   my $transcript = shift;
   my $tr_type    = shift;
@@ -1459,11 +1484,18 @@ sub get_tsl_html {
 
 sub get_canonical_html {
   my $transcript   = shift;
-  my $column_class = shift;
+  
+  return '' unless($transcript->is_canonical);
+
+  return qq{<span class="flag canonical glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
+}
+
+sub get_cars_html {
+  my $transcript   = shift;
   
   return '' unless($transcript->stable_id eq $ref_canonical_transcript && $ref_canonical_transcript);
 
-  return qq{<span class="flag canonical glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="CARS transcript ($transcript_cars_date)"></span>};
+  return qq{<span class="flag cars glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="CARS transcript ($transcript_cars_date)"></span>};
 }
 
 sub get_trans_score_html {

@@ -10,7 +10,9 @@ my $autocomplete_file = '/homes/lgil/projets/LRG/ens_ott_autocomplete.json';
 my $input_file   = 'ens_ott_table_sorted_by_HGNC_symbol.txt';
 my $havana_file  = 'hg38.bed';
 my $gencode_file = 'gencode.annotation.gtf';
+my $cars_file    = 'canonicals_hgnc.txt';
 my $data_dir     = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
+
 
 my $first_line = 1;
 my $max_json_entries_per_line = 20;
@@ -32,6 +34,17 @@ while(<H>) {
 }
 close(H);
 
+# CARS file
+my %cars_data;
+open C, "< $data_dir/$cars_file" or die $!;
+while(<C>) {
+  chomp $_;
+  my @line = split("\t", $_);
+  next if ($line[12] ne 'NULL');
+  my $cars = $line[5];
+  $cars_data{$cars} = 1;
+}
+close(C);
 
 # Gencode data file
 my %gencode_data;
@@ -91,12 +104,14 @@ while(<E>) {
   my $hgnc   = $row[$col{'HGNC_SYMBOL'}];
   my $old_tr = $row[$col{'OLD_TRANSCRIPT_NAME'}];
   my $new_tr = $row[$col{'NEW_TRANSCRIPT_NAME'}];
+  
+  # Check if the transcript is mapped to a patch/haplotype (and skip it if so)
   if ($hgnc !~ /\w+/) {
     if ($old_tr && $old_tr =~ /^(\w+)-\d+$/) {
-      $hgnc = $1;
+      next; #$hgnc = $1;
     }
     elsif ($new_tr && $new_tr =~ /^(\w+)-\d+$/) {
-      $hgnc = $1;
+      next; #$hgnc = $1;
     }
   }
   my $ottt   = $row[$col{'OTT_ID'}];
@@ -182,10 +197,11 @@ foreach my $enst (keys(%ensts)) {
   }
 
   my %json_data = ( "enst" => $enst_v );
-  $json_data{"hgnc"}   = $hgnc if ($hgnc && $hgnc ne '');
-  #$json_data{"new_tr"} = $new_tr_name if ($new_tr_name);
-  $json_data{"ottt"}   = $ottt if ($ottt);
-  $json_data{"ottg"}   = $ottg if ($ottg);
+  $json_data{"hgnc"} = $hgnc if ($hgnc && $hgnc ne '');
+  $json_data{"ottt"} = $ottt if ($ottt);
+  $json_data{"ottg"} = $ottg if ($ottg);
+  $json_data{"cars"} = 1 if ($cars_data{$enst});
+  
   
   # Autocomplete data
   $autocomplete{$enst} = 1;

@@ -18,12 +18,12 @@ sub run {
   my $lrg_id         = $self->param('lrg_id');
   
   if ($lrg_id && $lrg_id ne '') {
-    #`perl $run_dir/lrg-code/scripts/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file -lrg $lrg_id`;
-    `perl $run_dir/lrg-code/scripts/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -lrg $lrg_id`;
+    #`perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file -lrg $lrg_id`;
+    `perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -lrg $lrg_id`;
   }
   else {
-     #`perl $run_dir/lrg-code/scripts/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file`;
-    `perl $run_dir/lrg-code/scripts/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file`;
+     #`perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file`;
+    `perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $align_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file`;
   }
 }
 1;

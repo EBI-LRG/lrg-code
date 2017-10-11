@@ -183,6 +183,12 @@ table.legend td {
 .canonical {
   border: none !important;
   padding:1px;
+  color: #09F;
+}
+
+.cars {
+  border: none !important;
+  padding:1px;
   color: #F00;
 }
 
@@ -753,6 +759,9 @@ table.transcript tr.bottom_row {
   display: flex;
   background-color: rgba(255,255,255,0.15);
 }
+table.transcript tbody tr:first-child {
+  cursor: default;
+}
 
 .gold table.transcript tr.bottom_row {
   height: 25px;
@@ -788,7 +797,7 @@ table.transcript tr.bottom_row {
 .scrolling {
   max-width: 1900px;
   overflow-x:scroll;  
-  margin-left:615px;/*610px;*/
+  margin-left:630px;/*610px;*/
   overflow-y:visible;
   margin-bottom:20px 0px;
   /*padding-bottom:1px;*/
@@ -815,7 +824,7 @@ table.transcript tr.bottom_row {
   line-height:50px;
 }
 .col4 { 
-  width:210px; 
+  width:225px; 
   left:90px;
 }
 th.col4 {
@@ -823,21 +832,21 @@ th.col4 {
 }
 .col5 {
   width:45px; 
-  left:300px;
+  left:315px;
   line-height:50px;
 }
 .col6 { 
   width:100px; 
-  left:345px;
+  left:360px;
   vertical-align: middle;
 }
 .col7 {
   width:150px; 
-  left:445px;
+  left:460px;
 }
 .col8 { 
   width:35px; 
-  left:595px;
+  left:610px;
   line-height:50px;
 }
 
