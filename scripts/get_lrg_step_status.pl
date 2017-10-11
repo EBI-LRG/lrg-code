@@ -118,6 +118,15 @@ my $stmt_date = qq{
     AND ls.lrg_step_id = ?
 };
 
+my $stmt_lrg_date = qq{
+  SELECT 
+    max(ls.status_date)
+  FROM 
+    $lrg_status_table ls
+  WHERE ls.lrg_id = ?
+  AND ls.lrg_step_id IS NOT NULL
+};
+
 my $stmt_step = qq{ SELECT lrg_step_id,description FROM lrg_step };
 
 my $stmt_current_step = qq{
@@ -127,11 +136,14 @@ my $stmt_current_step = qq{
     $lrg_status_table ls
   WHERE
     ls.lrg_id=?
+  AND 
+    ls.status_date = ?
 };
 
 my $sth_step = $db_adaptor->dbc->prepare($stmt_step);
 my $sth_lrg  = $db_adaptor->dbc->prepare($stmt);
 my $sth_date = $db_adaptor->dbc->prepare($stmt_date);
+my $sth_lrg_date = $db_adaptor->dbc->prepare($stmt_lrg_date);
 my $sth_current_step = $db_adaptor->dbc->prepare($stmt_current_step);
 
 
@@ -195,10 +207,13 @@ $sth_lrg->finish();
 
 # Current step
 foreach my $lrg (keys(%lrg_steps)) {
-  $sth_current_step->execute($lrg);
+  $sth_lrg_date->execute($lrg);
+  my $latest_date = ($sth_lrg_date->fetchrow_array)[0];
+  $sth_current_step->execute($lrg, $latest_date);
   my $current_step = ($sth_current_step->fetchrow_array)[0];
   $lrg_steps{$lrg}{'current'} = $current_step;
 }
+$sth_lrg_date->finish();
 $sth_current_step->finish();
 
 
