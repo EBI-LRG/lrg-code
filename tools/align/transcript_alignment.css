@@ -182,14 +182,14 @@ table.legend td {
 
 .canonical {
   border: none !important;
-  padding:1px;
-  color: #09F;
+  padding:1px 0px 1px 1px;
+  color: #D00;
 }
 
 .cars {
   border: none !important;
-  padding:1px;
-  color: #F00;
+  padding:1px 0px 1px 1px;
+  color: #D00;
 }
 
 .trans_score {

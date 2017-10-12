@@ -633,7 +633,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $tsl_html           = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
   my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $cars_html     = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $cars_html          = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $trans_score_html   = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
@@ -644,6 +644,14 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   
   my $biotype = get_biotype($tr_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
+  
+  my $width_left = my $width_right = '15px';
+  my $enst_td_style = '';
+  if ($canonical_html ne '' && $cars_html ne '') {
+    $width_left  = '0px';
+    $width_right = '32px';
+    $enst_td_style = ' style="text-align:right"';
+  }
   
   # First columns
   $exon_tab_list .= qq{
@@ -657,11 +665,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           <td class="$column_class" style="padding:0px" colspan="6">
             <table style="width:100%">
               <tr>
-                <td style="width:15px;text-align:left">$canonical_html</td>
-                <td>
+                <td style="width:$width_left"></td>
+                <td$enst_td_style>
                   <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr_label</a>
                 </td>
-                <td style="width:15px;text-align:right">$cars_html</td>
+                <td style="width:$width_right;text-align:right">$canonical_html$cars_html</td>
               </tr>
             </table>
           </td>
@@ -1239,7 +1247,7 @@ $html .= qq{
           </tr>
           <tr class="bg2_legend">
             <td>
-              <span class="flag canonical glyphicon glyphicon-star"></span>
+              <span class="flag canonical glyphicon glyphicon-tag"></span>
             </td>
             <td>Label to indicate the canonical transcript</td>
           </tr>
@@ -1487,7 +1495,7 @@ sub get_canonical_html {
   
   return '' unless($transcript->is_canonical);
 
-  return qq{<span class="flag canonical glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
+  return qq{<span class="flag canonical glyphicon glyphicon-tag" data-toggle="tooltip" data-placement="bottom" title="Canonical transcript"></span>};
 }
 
 sub get_cars_html {
@@ -1837,8 +1845,12 @@ sub display_bed_source_data {
     
     my $external_url = $source_url{$source}.$id;
     
+    my $biotype = get_biotype($tr_exons_list->{$id}{'biotype'});
+
+    my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
+    
     $exon_tab_list .= qq{
-    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$id">
+    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$id" data-biotype="$data_biotype">
       <td class="fixed_col col1">$hide_row</td>
       <td class="fixed_col col2">$highlight_row</td>
       <td class="fixed_col col3">$blast_button</td>
@@ -1849,8 +1861,6 @@ sub display_bed_source_data {
       </td>
       <td class="extra_column fixed_col col5">$e_count</td>
     };
-
-    my $biotype = get_biotype($tr_exons_list->{$id}{'biotype'});
 
     # Entry lengths
     my $start  = $tr_exons_list->{$id}{'start'};
