@@ -816,7 +816,10 @@ while (my $transcript = shift(@{$transcripts})) {
   # Transcript name
   my $name = $transcript->data()->{'name'};
 
-  # Check PolyA
+  # Cleanup comments
+  cleanup_comments($gene_id,$name);
+
+  # Check if PolyA sequence difference
   if ($warning =~ /polyA/i) {
     if (-e $warning_log && !-z $warning_log) {
       my $info = `grep -w $name $warning_log`;
@@ -830,9 +833,6 @@ while (my $transcript = shift(@{$transcripts})) {
       }
     }
   }
-  
-  # Cleanup comments
-  cleanup_comments($gene_id,$name);
 
   # Insert comment if exists (optional)
   my $tr_com_nodes = $transcript->findNodeArray('comment');
@@ -844,21 +844,20 @@ while (my $transcript = shift(@{$transcripts})) {
       my $tr_stmt = qq{ SELECT comment_id FROM lrg_comment WHERE gene_id=$gene_id AND name="$name" AND comment="$tr_comment"};
       next if (scalar (@{$db_adaptor->dbc->db_handle->selectall_arrayref($tr_stmt)}) != 0);
 
-      # Check polyA comment
-      if ($tr_comment =~ /$polya_comment_suffix/i) {
+      # Check polyA comment and if we already have a PolyA comment for this transcript
+      if ($tr_comment =~ /$polya_comment_suffix/i) {   
         my $comment_id = check_existing_polya_comment($name,$tr_comment);
         if (defined($comment_id)) {
           $tr_com_up_sth->bind_param(1,$tr_comment,SQL_VARCHAR);
           $tr_com_up_sth->bind_param(2,$comment_id,SQL_INTEGER);
           $tr_com_up_sth->execute();
+          next;
         }
       }
       # Add comment
-      else {
-        $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
-        $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
-        $tr_com_ins_sth->execute();
-      }
+      $tr_com_ins_sth->bind_param(1,$name,SQL_VARCHAR);
+      $tr_com_ins_sth->bind_param(2,$tr_comment,SQL_VARCHAR);
+      $tr_com_ins_sth->execute();
     }
   }
 }
@@ -1643,11 +1642,13 @@ sub check_existing_polya_comment {
         };
     $comment_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
   }
+print STDERR (defined($comment_id)) ? "PolyA found\n" : "PolyA NOT found\n";
   return (defined($comment_id)) ? $comment_id : undef;
 }
 
 sub get_polya_comment_sentence {
   my $refseq_id = shift;
+print STDERR "PolyA Comment sentence\n";
   return "$polya_comment_prefix $refseq_id $polya_comment_suffix";
 }
 
