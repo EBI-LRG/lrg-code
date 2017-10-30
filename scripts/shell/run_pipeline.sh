@@ -182,7 +182,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown "-skip_check requester" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #1 done" 
   echo_stderr  ""
@@ -199,7 +199,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} unknown 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} unknown "-skip_check requester" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #2 done"
   echo_stderr  ""
