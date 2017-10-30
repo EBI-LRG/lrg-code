@@ -183,9 +183,13 @@ echo_stderr  $comment
 
 echo_log "# ${lrg_id}"
 
-if [[ ${skip_extra_hc} ]]; then
+skip_checks='requester'
+
+if [[ ${skip_extra_hc} && ${skip_extra_hc} != 0 ]]; then
   echo_log "HealthChecks skipped: ${skip_extra_hc}"
+  skip_checks="requester ${skip_extra_hc}"
 fi
+
 
 rm -f ${warning_log}
 
@@ -262,7 +266,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-skip_check ${skip_extra_hc}" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-skip_check ${skip_checks}" 2> ${error_log}
   check_script_result
   echo_log  "> checking #1 done" 
   echo_log  ""
@@ -279,7 +283,7 @@ check_empty_file ${xml_dir}/${xml_file}.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_log  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} ${status} "-skip_check ${skip_extra_hc}" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file}.new ${assembly} ${status} "-skip_check ${skip_checks}" 2> ${error_log}
   check_script_result
   echo_log  "> checking #2 done"
   echo_log  ""
