@@ -48,14 +48,13 @@ my @lrg_xml_dirs = ($public, $pending, $stalled, 'failed', 'temp/new', "temp/$pu
 my %lrg_ftp_dirs = ( $public => '', $pending => $pending, $stalled => $stalled);
 
 $date =~ /^(\d{4})-(\d{2})-(\d{2})$/;
-my $formatted_date = "$3/$2/$1";
+my $formatted_date = qq{$3<span class="lrg_green2">/</span>$2<span class="lrg_green2">/</span>$1};
 
-my $succed_colour  = '#0B0';
-my $waiting_colour = '#00B';
-my $stopped_colour = '#ffa500.hide_button_x:before {
-    content: "×";
-}';
-my $failed_colour  = '#B00';
+my $succeed_colour = '#0A0';
+my $waiting_colour = '#00A';
+my $stopped_colour = '#ffa500';
+my $failed_colour  = '#A00';
+my $new_colour     = '#9051A0';
 
 my %report_types = ( 'succeed' => 'icon-approve',
                      'waiting' => 'icon-help',
@@ -78,7 +77,7 @@ my %main_error_types = ( 'partial_gene'         => 'Partial gene',
 
 my $abs_xml_dir = abs_path("$xml_dir");
 
-my $html_content = qq{<div style="padding-left:0px;padding-right:20px">};
+my $html_content = '';
 my $html_log_content = '';
 
 my %new_lrgs;
@@ -91,27 +90,36 @@ my $html_header = qq{
   <head>
     <title>LRG pipeline reports</title>
     <link type="text/css" rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
     <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
     <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="lrg.css" />
     <style type="text/css">
       body { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
-      
-      .report_header  { padding: 5px 15px }
-      .report_date    { background-color:#F0F0F0;color:#0E4C87;padding:0px 4px;font-weight:bold;border:1px solid #333 }
-      .summary_box    { border:1px solid #1A4468 }
-      .summary_header { background-color:#F0F0F0;color:#0E4C87;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
-      .missing_header { background-color:#D00;color:#FFF;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
+ 
+      .page_title    {font-size:28px;text-align:center;vertical-align:bottom}
+      .page_subtitle {font-size:24px;text-align:center;vertical-align:top;color:#FFF}
+
+      .missing_header { background-color:$failed_colour;color:#FFF;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
       .summary_clickable { cursor:pointer; }
-      .summary_clickable:hover, .summary_clickable:active { color:#48a726 }
+      .summary_clickable:hover, .summary_clickable:active { color:#9051A0 }
       
       table {border-collapse:collapse; }
-      table > thead > tr {background-color:#1A4468}
       
       table.table_small { margin-bottom:2px}
-      table.table_small > thead > tr > th {padding:2px 4px}
-      table.table_small > tbody > tr > td {padding:2px 4px}
+      table.table_small > thead > tr > th {padding:2px 6px; font-size:16px}
+      table.table_small > tbody > tr > td {padding:2px 6px}
+      table.table_small_right > tbody > tr > td {text-align:right}
       
-      tr.row_separator > td {border-bottom:2px dotted #1A4468}
+      table.table_results > thead > tr > th { font-size:16px }
+      table.table_failed > thead > tr > th  {border-bottom: 3px solid$failed_colour}
+      table.table_waiting > thead > tr > th {border-bottom: 3px solid$waiting_colour}
+      table.table_succeed > thead > tr > th {border-bottom: 3px solid$succeed_colour}
+      table.table_stopped > thead > tr > th {border-bottom: 3px solid$stopped_colour}
+      
+      table.table_new > thead > tr > th  {font-size:16px;border-bottom: 2px solid $new_colour}
+      
+      tr.row_separator > td {border-bottom:2px dotted #3C3F45}
       
       th {border-left:1px solid #DDD}
       
@@ -121,21 +129,32 @@ my $html_header = qq{
       }
       table.count {border:none}
       table.count td {border:none;text-align:right;padding:0px 0px 2px 0px}
-      .round_border { border:1px solid #0E4C87;border-radius:8px;padding:3px 4px }
-      .header_count { margin-top:5px;font-size:80% }
+      .date_format { font-size:34px;color:#FFF;vertical-align:middle }
+      .report_header { padding:6px 8px;color:#FFF;background-color: #3C3F45;margin-bottom:10px;margin-top:110px}
+      .header_count { margin-top:5px;font-size:14px;background-color:none;border:2px solid #FFF}
+      .header_count_failed  { border-color:$failed_colour }
+      .header_count_waiting { border-color:$waiting_colour }
+      .header_count_succeed { border-color:$succeed_colour }
+      .header_count_stopped { border-color:$stopped_colour }
       
       .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
       
-      .log_header { background-color:#DDD;padding:1px 2px;cursor:pointer;color:#1A4468 }
-      .log_header:hover, .log_header:active { color:#48a726 }
+      .log_header { background-color:#DDD;padding:1px 2px;cursor:pointer;color:#337ab7 }
+      .log_header:hover, .log_header:active { color:#9051A0 }
       
-      .succeed_font {color:$succed_colour}
-      .waiting_font {color:$waiting_colour}
-      .stopped_font {color:$stopped_colour}
-      .failed_font  {color:$failed_colour}
+      .succeed_bg {background-color:$succeed_colour}
+      .waiting_bg {background-color:$waiting_colour}
+      .stopped_bg {background-color:$stopped_colour}
+      .failed_bg  {background-color:$failed_colour}
+      .new_bg     {background-color:$new_colour}
+      
+      .section_annotation_icon_small { color:#FFF;margin-right:5px;padding:2px 5px !important}
       
       .popup { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
     </style>
+    
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="lrg2html.js"></script>
     <script type="text/javascript">
       var popup;
@@ -148,53 +167,80 @@ my $html_header = qq{
         popup.document.body.innerHTML = document.getElementById(lrg+'_log').innerHTML;
       }
       
-      function showhide_table(div_id) {
-        var div_obj    = document.getElementById(div_id);
-        var button_obj = document.getElementById("button_"+div_id);
-        
-        if(div_obj.className == "hidden") {
-          div_obj.className = "unhidden";
-          if (button_obj) {
-            button_obj.innerHTML = '<span class="glyphicon glyphicon-minus-sign"></span> Hide table';
-          }
-        }
-        else {
-          div_obj.className = "hidden";
-          if (button_obj) {
-            button_obj.innerHTML = '<span class="glyphicon glyphicon-plus-sign"></span> Show table';
-          }
+      function offsetAnchor() {
+        if(location.hash.length !== 0) {
+          window.scrollTo(window.scrollX, window.scrollY - 110);
         }
       }
-      </script>
+      
+      \$(document).ready(function(){
+        // This will capture hash changes while on the page
+        \$(window).on("hashchange",offsetAnchor);
+        // This is here so that when you enter the page with a hash,
+        // it can provide the offset in that case too. Having a timeout
+        // seems necessary to allow the browser to jump to the anchor first.
+        window.setTimeout(offsetAnchor, 0.1);
+      });
+    </script>
   </head>
   <body>
-    <div class="banner clearfix" id="top">
-      <div class="banner_left">
-        <h1>Summary reports of the LRG automated pipeline</h1>
+    <header>
+      <nav class="navbar navbar-default masterhead" role="navigation">
+        <div class="container clearfix">
+          <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 margin-top-5">
+            <a title=" Locus Reference Genomic home page" href="http://dev.lrg-sequence.org">
+              <img src="http://dev.lrg-sequence.org/images/lrg_logo.png">
+            </a>
+          </div>
+          <div class="col-xs-8 col-sm-8 col-md-8 col-lg-8" style="line-height:35px">
+            <div class="page_title lrg_blue margin-top-10">LRG automated pipeline</div>
+            <div class="page_subtitle">Summary reports</div>
+          </div>
+          <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 padding-left-0 padding-right-0" style="line-height:85px">
+             <div class="date_format">$formatted_date</div>
+          </div>
+        </div>
+      </nav>
+      <div class="clearfix">
+        <div class="sub-masterhead_blue"  style="float:left;width:5%"></div>
+        <div class="sub-masterhead_green" style="float:left;width:4%"></div>
+        <div class="sub-masterhead_blue"  style="float:left;width:91%"></div>
       </div>
-      <div class="banner_right" style="padding:10px">
-        <h1 class="report_date">$formatted_date</h1>
+    </header>
+
+    <div class="data_container container-extra">
+  
+      <div class="report_header">
+        <span class="bold_font lrg_blue padding-right-5">XML files location:</span> $abs_xml_dir/
       </div>
-    </div>
-    <div class="menu_title"></div>
-    <div class="report_header">
-      <div style="margin-bottom:20px">
-        <span class="round_border">
-          <span style="font-weight:bold">XML files location:</span> $abs_xml_dir/
-        </span>
-      </div>
-    
 };
 
 
 my $html_footer = qq{
-    </table>
+    </div>
+    <div class="wrapper-footer">
+      <footer class="footer">
+        <div class="col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
+          <span>Partners</span>
+        </div>
+        <div class="col-xs-6 text-right">
+          <a href="https://www.ebi.ac.uk"><img src="http://dev.lrg-sequence.org/images/EMBL-EBI_logo.png"></a>
+        </div>
+        <div class="col-xs-6 text-left">
+          <a href="https://www.ncbi.nlm.nih.gov"><img src="http://dev.lrg-sequence.org/images/NCBI_logo.png"></a>
+        </div>
+        <div class="col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
+          <p class="footer-end">Site maintained by <a href="https://www.ebi.ac.uk/" target="_blank">EMBL-EBI</a> | <a href="https://www.ebi.ac.uk/about/terms-of-use" target="_blank">Terms of Use</a></p>
+          <p>Copyright © LRG 2017</p>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>
 };
 
 my $html_table_header = qq{
-    <table class="table table-hover" style="margin-bottom:20px">
+    <table class="table table-hover table-lrg table-lrg-bold-left-col margin-bottom-20 table_results ###STATUS_CLASS###">
       <thead>
         <tr>
           <th>LRG</th>
@@ -271,30 +317,32 @@ foreach my $status (@pipeline_status_list) {
   my $status_icon = $report_types{$status};
   my $status_label = ($status eq 'waiting') ? "Tmp (waiting)" : ucfirst($status);
   $html_content .= qq{
-  <div class="section clearfix" style="background-color:#F0F0F0;margin-top:40px;margin-bottom:15px">
-    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3" style="padding: 0px 5px">
-      <h2 class="section $status_icon smaller-icon $status\_font">$status_label LRGs</h2> 
+  <div class="section_annotation clearfix section_annotation1 margin-top-25 margin-bottom-20" id="$status\_section">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix padding-left-0">
+      <div class="left">
+        <h2 class="$status_icon close-icon-0 section_annotation_icon $status\_bg"></h2>
+      </div>
+      <div class="left padding-left-15">
+        <h2>$status_label LRGs</h2>
+      </div>
     </div>
-    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2" style="padding: 5px 5px 0px">
-      <span class="label label-primary header_count">$lrg_count LRGs</span>
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-left-0 padding-right-0" style="padding-top:12px">
+      <span class="label header_count header_count_$status">$lrg_count LRGs</span>
     </div>
-    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 col-lg-offset-1 col-md-offset-1 col-sm-offset-1 col-xs-offset-1" style="padding: 0px 5px">
-      <a class="btn btn-lrg" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');"><span class="glyphicon glyphicon-minus-sign"></span> Hide table</a>
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:8px">
+      <a class="btn btn-lrg btn-lrg1" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');"><span class="glyphicon glyphicon-minus-sign"></span> Hide table</a>
     </div>
-    <div style="clear:both"></div>
   </div>
   <div id="$status\_lrg">
   };
   
+  my $status_table_header = $html_table_header;
   if ($status eq 'failed') {
-    my $failed_table_header =  $html_table_header;
-       $failed_table_header =~ s/<\/tr>/  <th>Error log<\/th>\n      <\/tr>/;
-    $html_content .= $failed_table_header;  
+    $status_table_header =~ s/<\/tr>/  <th>Error log<\/th>\n      <\/tr>/;
   }
-  else {
-    $html_content .= $html_table_header;
-  }
-
+  $status_table_header =~ s/###STATUS_CLASS###/table_$status/;
+  $html_content .= $status_table_header;
+ 
   foreach my $id (sort{ $a <=> $b } keys %{$lrgs_list{$status}}) {
 
     my $lrg_id     = $lrgs_list{$status}{$id}{'lrg_id'};
@@ -305,19 +353,19 @@ foreach my $status (@pipeline_status_list) {
     my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
   
     if ($lrgs_list{$status}{$id}{'log_found'}) {
-      $log_link = qq{<a class="btn btn-lrg" href="javascript:show_log_info('$lrg_id');">Show log</a>};
+      $log_link = qq{<a class="btn btn-lrg btn-lrg1" href="javascript:show_log_info('$lrg_id');">Show log</a>};
     }
     
     my $error_log_column = ($status eq 'failed') ? '<td>'.get_detailled_log_info($lrg_id,'error').'</td>' : '';
 
     $html_content .= qq{
       <tr id="$lrg_id">
-        <td style="font-weight:bold">$lrg_id</td>
+        <td>$lrg_id</td>
         <td>$lrg_status_html</td>
         <td>$comments</td>
         <td>$warnings</td>
         <td><a style="text-decoration:none;color:#000" href="javascript:alert('$abs_xml_dir/$lrg_path')">$lrg_path</a></td>
-        <td>$log_link</td>
+        <td style="text-align:center">$log_link</td>
         $error_log_column
       </tr>
     };
@@ -336,22 +384,57 @@ $html_content .= qq{\n</div>};
 # Summary table
 my $html_summary = qq{
 <div class="clearfix">
-  <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4" style="padding-left:0px">
-    <div class="summary_box">
-      <div class="summary_header">Summary information</div>
-      <div>
-        <table class="table table-hover table_small" style="width:100%">
-        <tr class="row_separator"><td class="left_col">Total number of LRGs</td><td class="right_col" style="text-align:right">$total_lrg_count</td></tr> 
+  <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4 padding-left-0">
+    <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_small_right" style="width:100%">
+      <thead>
+        <th colspan="2">Summary information</th>
+      </thead>
+      <tbody class="bordered-columns">
+        <tr class="row_separator"><td>Total number of LRGs</td><td>$total_lrg_count</td></tr> 
 };
 my $first_row = 1;
 foreach my $l_status (@lrg_status) {
   next if (!$lrg_counts{$l_status});
   my $count = $lrg_counts{$l_status};
-  my $separator = ($first_row == 1) ? ' line_separator' : '';
-  $first_row = 0;
-  $html_summary .= qq{        <tr><td class="left_col$separator">$l_status</td><td class="right_col$separator" style="text-align:right">$count</td></tr>};
+  my $separator = ($first_row == 1) ? ' class="line_separator"' : '';
+  if ($l_status eq 'new') {
+    $l_status = qq{<span style="color:$new_colour">$l_status</span>};
+    $count    = qq{<span style="color:$new_colour">$count</span>};
+  }
+  $first_row = 0; 
+  $html_summary .= qq{        <tr><td$separator>$l_status</td><td$separator>$count</td></tr>};
 }
-$html_summary .= qq{        </table>\n      </div>\n    </div>\n  </div>};
+$html_summary .= qq{      </tbody>\n        </table>\n  </div>};
+
+# Pipeline results
+$html_summary .= q{
+    <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4">
+      <table class="table table-hover table-lrg table-lrg-bold-left-col table_small" style="width:100%">
+        <thead>
+          <th colspan="2">Pipeline results</th>
+        </thead>
+        <tbody>
+};
+foreach my $status (@pipeline_status_list) {
+  next if (!$lrgs_list{$status});
+  
+  my $lrg_count = scalar(keys(%{$lrgs_list{$status}}));
+  my $status_icon = $report_types{$status};
+  my $status_label = ($status eq 'waiting') ? "Tmp (waiting)" : ucfirst($status);
+  $html_summary .= qq{
+    <tr>
+      <td>
+        <a href="#$status\_section">
+          <div class="clearfix">
+            <div class="left $status_icon close-icon-0 section_annotation_icon_small $status\_bg"></div>
+            <div class="left" style="line-height:24px;vertical-align:middle">$status_label LRGs</div>
+          </div>
+        </a>
+      </td>
+      <td style="text-align:right">$lrg_count</td>
+    </tr>};
+}
+$html_summary .= qq{      </tbody>\n        </table>\n  </div>};
 
 # New LRGs
 my $count_new_lrgs = scalar(keys(%new_lrgs));
@@ -364,27 +447,29 @@ if ($count_new_lrgs) {
   my $display_table  = '';
   
   if ($count_new_lrgs > $max_new_lrg) {
-    $summary_class  = qq{ summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')};
+    $summary_class  = qq{ class="summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')};
     $display_button = qq{<span id="$new_lrg_div_id\_button" class="glyphicon glyphicon-plus-sign"></span> };
-    $display_table  = ' class="hidden"';
+    $display_table  = ' style="display:none"';
   }
   
   $html_summary .= sprintf( q{
-    <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
-      <div class="summary_box">
-        <div class="summary_header%s">%sNew LRG%s (%s)</div>
-        <div id="%s" %s>
-          <table class="table table-hover table_small" style="width:%s">
-  } , $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table,'100%');
+    <div class="col-lg-2 col-md-2 col-sm-3 col-xs-3">
+      <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_new" style="width:%s">
+        <thead>
+          <th colspan="2"%s>%sNew LRG%s <span class="new_bg" style="border-radius:5px;padding:2px 6px">%s</span></th>
+        </thead>
+        <tbody id="%s" class="bordered-columns" %s>
+  } , '100%', $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table);
   
   foreach my $id (sort { $a <=> $b} keys(%new_lrgs)) {
     my $lrg_id = $new_lrgs{$id}{'lrg_id'};
     my $pipeline_status = $new_lrgs{$id}{'status'};
 
-    $html_summary .= qq{          <tr><td class="left_col"><a href="#$lrg_id">$lrg_id</a></td><td class="right_col">$pipeline_status</td></tr>};
+    $html_summary .= qq{          <tr><td><a href="#$lrg_id">$lrg_id</a></td><td>$pipeline_status</td></tr>};
   }
-  $html_summary .= qq{        </table>\n      </div>\n    </div>\n </div>};
+  $html_summary .= qq{      </tbody>\n        </table>\n  </div>};
 }
+
 
 # Missing file(s)
 if (-e "$reports_dir/$missing_file") {
@@ -393,17 +478,20 @@ if (-e "$reports_dir/$missing_file") {
      
     my @entries = sort(split("\n",$content));
     $html_summary .= qq{
-      <div class="col-lg-2 col-lg-offset-1 col-md-2 col-md-offset-1 col-sm-3 col-sm-offset-1 col-xs-3 col-xs-offset-1">
-        <div class="summary_box">
-          <div class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site"><span class="glyphicon glyphicon-warning-sign"></span> Missing LRG file(s)</div>
-          <div>
-            <table class="table table-hover table_small" style="width:100%">
+      <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+        <table class="table table-hover table-lrg table-lrg-bold-left-col table_small" style="width:100%">
+          <thead>
+            <th class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site">
+              <span class="glyphicon glyphicon-warning-sign"></span> Missing LRG file(s)
+            </th>
+          </thead>
+          <tbody class="bordered-columns">
     };
     foreach my $entry (@entries) {
       $entry =~ s/\.xml//g;
       $html_summary .= qq{<tr><td><b>$entry</b></td></tr>};
     }
-    $html_summary .= qq{</table></div></div></div>};
+    $html_summary .= qq{</tbody></table></div>};
   }
 }
 
@@ -423,7 +511,6 @@ my $div_style       = 'background-color:#3C3F45;padding:3px 6px;color:#FFF;margi
 my $div_style_left  = 'float:left;padding:2px 0px';
 my $div_style_right = 'float:right;margin-left:10px;padding:2px 8px 1px;border-radius:10px;color:#FFF';
 my $th_style        = 'padding:2px 6px;background-color:#3C3F45;font-weight:bold;color:#FFF;border-bottom:2px solid #78BE43';
-my $colour_new      = '#9051A0';
 open S, "> $reports_dir/$reports_sum" or die $!;
 print S qq{
   <div style="float:left">
@@ -450,7 +537,7 @@ foreach my $l_status (@lrg_status) {
   my $font    = 'font-weight:bold';
   my $bg      = 'background-color:'.$bg_color;
 
-  $font .= ";color:$colour_new" if ($l_status eq 'new');
+  $font .= ";color:$new_colour" if ($l_status eq 'new');
 
   my $left_style  = qq{style="$padding"};
   my $right_style = qq{style="text-align:right;$padding;$font"};
@@ -478,7 +565,7 @@ if (scalar(keys(%new_lrgs))) {
   <div style="float:left;margin-left:10px"> 
     <div style="$div_style">
       <div style="$div_style_left">New LRG(s):</div>
-      <div style="$div_style_right;background-color:$colour_new">$count_new</div>
+      <div style="$div_style_right;background-color:$new_colour">$count_new</div>
       <div style="clear:both"></div>
     </div>\n};
   print S qq{    <ul style="padding-bottom:s5px;margin-top:0px;margin-bottom:0px;font-weight:bold">\n};
@@ -535,9 +622,9 @@ sub get_detailled_log_info {
     $html = qq{
       $error_type
       <div class="log_header" onclick="javascript:showhide('$id')">
-        <span id="$id\_button" class="glyphicon glyphicon-plus-sign"></span> $label details
+        <span id="$id\_button" class="icon-collapse-closed close-icon-5">$label details</span>
       </div>
-      <div id="$id" class="hidden">
+      <div id="$id" style="display:none">
         <div style="border:1px solid #DDD;padding:4px 4px 2px">
         $content
       </div>
@@ -578,7 +665,7 @@ sub find_lrg_on_ftp {
       return ($status, $status_html);
     }
   }
-  return ('new', qq{<span class="blue">new</span>});
+  return ('new', qq{<span style="color:$new_colour">new</span>});
 }
 
 sub get_log_reports {
@@ -591,9 +678,15 @@ sub get_log_reports {
     my $content = `cat $log_file`;
        $content =~ s/\n$//;
        $content =~ s/\n/<br \/>/g;
-       $content =~ s/# $lrg_id<br \/>/<h2>$lrg_id<\/h2>/;
-       $content =~ s/# /<span style="font-weight:bold"># /g;
-       $content =~ s/\.\.\.<br \/>/\.\.\.<\/span><br \/>/g;
+       $content =~ s/# $lrg_id<br \/>/<h2>$lrg_id<\/h2>/;;
+       $content =~ s/# /<b># /g;
+       $content =~ s/\.\.\.<br \/>/\.\.\.<\/b><br \/>/g;
+    if ($content =~ /\s(\/\S+\/)lrg-code/) {
+      $content =~ s/$1//g;
+    }
+    if ($content =~ /\s(\/\S+)\/automated_pipeline/) {
+      $content =~ s/$1/\/\.\.\./g;
+    }
        
     $html = qq{<div id="$lrg_id\_log"><p style="font-family:Lucida Grande, Helvetica, Arial, sans-serif">$content</p></div>};
   }
