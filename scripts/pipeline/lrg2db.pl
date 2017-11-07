@@ -76,7 +76,7 @@ my $requester_type = 'requester';
 my $warning_log;
 if (defined($error_log)) {
   $warning_log = $error_log;
-  $warning_log =~ s/error_log/warning_log/;
+  $warning_log =~ s/error/warning/g;
 }
 
 
@@ -1642,7 +1642,6 @@ sub check_existing_polya_comment {
         };
     $comment_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
   }
-print STDERR (defined($comment_id)) ? "PolyA found\n" : "PolyA NOT found\n";
   return (defined($comment_id)) ? $comment_id : undef;
 }
 
