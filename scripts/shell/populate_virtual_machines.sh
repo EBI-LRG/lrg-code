@@ -11,14 +11,11 @@ if [[ -z ${input_dir} ]]; then
 fi
 
 json_file='lrg_index.json'
+step_json_file='step_index.json'
 json_dir='json_index'
 
 perldir=${LRGROOTDIR}/lrg-code/scripts/
 
-# Generate the progress status page and store it into the input_dir
-#bash ${perldir}/shell/get_lrg_step_status.sh ${input_dir}/curation-status/index.html 2
-# DEV version
-bash ${perldir}/shell/get_lrg_step_status_test.sh ${input_dir}/curation-status/index.html 2
 
 become ${WEBADMIN} bash << EOF
 
@@ -28,6 +25,8 @@ become ${WEBADMIN} bash << EOF
     rm -rf ./*
     cp -R ${input_dir}/* ./
     cp ${PUBFTP}/.lrg_index/${json_file} ./${json_dir}/
+    cp ${PUBFTP}/.lrg_index/${step_json_file} ./${json_dir}/
+    
     echo "Copy to the DEV website done"
   fi
   
@@ -37,6 +36,7 @@ become ${WEBADMIN} bash << EOF
     rm -rf ./*
     cp -R ${input_dir}/* ./
     cp ${PUBFTP}/.lrg_index/${json_file} ./${json_dir}/
+    cp ${PUBFTP}/.lrg_index/${step_json_file} ./${json_dir}/
   
     # PROD website
     scp -r ${FBWEBSITE}* ${WEBADMIN}@${PRODVM}:${PRODWEBSITE}/ 1> /dev/null
