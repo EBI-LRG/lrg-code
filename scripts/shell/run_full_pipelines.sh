@@ -2,7 +2,7 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-# e.g. lrg-code/scripts/shell/run_test_full_pipelines.sh LRGs.txt xml_dir new_dir tmp_dir
+# e.g. lrg-code/scripts/shell/run_full_pipelines.sh LRGs.txt xml_dir new_dir tmp_dir
 # With LRGs.txt like:
 # LRG_1	COL1A1	GRCh37	0
 # LRG_5	LEPRE1	GRCh37	1
