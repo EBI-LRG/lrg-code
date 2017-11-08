@@ -2,6 +2,8 @@
 var interval = 20;
 var max_tr_id = 18;
 
+var previous_assembly = 'GRCh37';
+
 var tr_img_classes = ["exon_block_coding", "exon_block_non_coding_5_prime", "exon_block_non_coding_3_prime", "exon_block_non_coding"];
 var tr_img_class_prefix = "selected_";
 
@@ -223,10 +225,14 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   }
   
   var cdnaobj = document.getElementById('cdna_exon_'+num);
+  var cdsobj = document.getElementById('cds_exon_'+num);
   var pepobj = document.getElementById('peptide_exon_'+pnum);
 
   if (cdnaobj) {
     exon_select = retrieve_exon_class(cdnaobj);
+  }
+  if (cdsobj) {
+    exon_select = retrieve_exon_class(cdsobj);
   }
 
   if(tableobj_left) {
@@ -239,6 +245,9 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
      
       if (cdnaobj && !no_gene_tr_highlight) {
         cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
+      }
+      if (cdsobj && !no_gene_tr_highlight) {
+        cdsobj.className = (cdsobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
       }
       if (pepobj) { 
         pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intron');
@@ -253,6 +262,9 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
 
       if (cdnaobj && !no_gene_tr_highlight) {
         cdnaobj.className = (cdnaobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
+      }
+      if (cdsobj && !no_gene_tr_highlight) {
+        cdsobj.className = (cdsobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
       }
       if (pepobj) { 
         pepobj.className = (pepobj.className.substr(0,1) == 'e' ? exon_select : 'intronselect');
@@ -414,7 +426,6 @@ function getElementsByIdStartsWith(selectorTag, prefix) {
 
 // function to edit the content of the page
 function edit_content (lrg_status) {
-  var external_icon = get_external_icon(lrg_status);
 
   var external_icon_class = "icon-external-link";
 
@@ -425,18 +436,18 @@ function edit_content (lrg_status) {
   $('.external_link').each(function(index) {
     // NCBI //
     var exp_ncbi = /(N[A-Z]_[0-9]+\.?[0-9]*)/g;
-    var new_ncbi_link = $(this).html().replace(exp_ncbi,"<a class=\""+external_icon_class+"\" href='http://www.ncbi.nlm.nih.gov/nuccore/$1' target='_blank'>$1</a>");
+    var new_ncbi_link = $(this).html().replace(exp_ncbi,"<a class=\""+external_icon_class+"\" onclick=\"external_link('$1','ncbi')\">$1</a>");
     $(this).html(new_ncbi_link);
   
     // Ensembl //
     // Transcript
     var exp_enst = /(ENST[0-9]+\.?[0-9]*)/g;
-    var new_enst_link = $(this).html().replace(exp_enst,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=$1' target='_blank'>$1</a>");
+    var new_enst_link = $(this).html().replace(exp_enst,"<a class=\""+external_icon_class+"\" onclick=\"external_link('$1','enst')\">$1</a>");
     $(this).html(new_enst_link);
     
     // Protein
     var exp_ensp = /(ENSP[0-9]+\.?[0-9]*)/g;
-    var new_ensp_link = $(this).html().replace(exp_ensp,"<a class=\""+external_icon_class+"\" href='http://www.ensembl.org/Homo_sapiens/Transcript/ProteinSummary?db=core;protein=$1' target='_blank'>$1</a>");
+    var new_ensp_link = $(this).html().replace(exp_ensp,"<a class=\""+external_icon_class+"\" onclick=\"external_link('$1','ensp')\">$1</a>");
     $(this).html(new_ensp_link);
   });
   
@@ -447,24 +458,36 @@ function edit_content (lrg_status) {
   });
   
   $('.internal_comment').each(function(index) {
-    var text2replace = ["Ensembl transcript","5'","3'","Primary Reference Assembly"];
+    var text2replace = ["RefSeq transcript", "Ensembl transcript"," 5'"," 3'","Primary Reference Assembly"];
     for (i = 0; i < text2replace.length; i++) {
       var re = new RegExp(text2replace[i], "g");
       var new_text = $(this).html().replace(re,"<span class=\"bold_font\">"+text2replace[i]+"</span>");
       $(this).html(new_text);
     }
+    var text2replace2 = /(PMID)\s([0-9]+)/ig;
+    var new_text2 = $(this).html().replace(text2replace2,"<a class=\""+external_icon_class+"\" onclick=\"external_link('$2','pmid')\">$1:$2</a>");
+    $(this).html(new_text2);
   });
   
 }
 
-// function to build the HTML code to display the external icon
-function get_external_icon (lrg_status) {
-  var src="img/external_link_green.png";
-  if (lrg_status != 0) {
-    src = "../"+src
+function external_link (symbol,type) {
+  var ext_url = '';
+  if (type == 'ncbi') {
+    ext_url = 'https://www.ncbi.nlm.nih.gov/nuccore/';
   }
-  return '<img src="'+src+'" class="external_link" alt="External link" title="External link" />';
+  else if (type == 'enst') {
+    ext_url = 'https://www.ensembl.org/Homo_sapiens/Transcript/Summary?db=core;t=';
+  }
+  else if (type == 'ensp') {
+    ext_url = 'https://www.ensembl.org/Homo_sapiens/Transcript/ProteinSummary?db=core;protein=';
+  }
+  else if (type == 'pmid') {
+    ext_url = 'https://www.ncbi.nlm.nih.gov/pubmed/';
+  }
+  window.open(ext_url+symbol,'_blank');
 }
+
 
 // function to replace the end of sentence by a return to a new line
 function format_note (){
@@ -480,7 +503,7 @@ function search_in_ensembl(lrg_id, lrg_status) {
 
   var filePath = 'lrgs_in_ensembl.txt';
   xmlhttp = new XMLHttpRequest();
-  xmlhttp.open("GET",filePath,false);
+  xmlhttp.open("GET",filePath,true);
   xmlhttp.send(null);
  
   var fileContent = xmlhttp.responseText;
@@ -488,7 +511,7 @@ function search_in_ensembl(lrg_id, lrg_status) {
   
   if (lrg_status == 0) { // Only for public LRGs
     
-    var ens_url  = 'http://www.ensembl.org/Homo_sapiens/LRG/';
+    var ens_url  = 'https://www.ensembl.org/Homo_sapiens/LRG/';
     var ens_link = ens_url+'Summary?lrg='+lrg_id;
     var var_link = ens_url+'Variation_LRG/Table?lrg='+lrg_id;  
     var phe_link = ens_url+'Phenotype?lrg='+lrg_id;
@@ -510,13 +533,120 @@ function search_in_ensembl(lrg_id, lrg_status) {
   }
   
   // Hide/Remove the VEP button if the LRG is not on the list
-  $(".vep_lrg").parent().html("");
+  $(".vep_lrg").html("");
 }
 
 
-function offsetAnchor() {
+function offsetAnchor(pixels) {
   if(location.hash.length !== 0) {
-    window.scrollTo(window.scrollX, window.scrollY - 110);
+    window.scrollTo(window.scrollX, window.scrollY - 160);
   }
 }
 
+
+function get_hgvs() {
+
+  var query_list = {};
+  $(".gen_diff_table>tbody>tr").each(function (index, row) {
+    //var line_id = $(row).attr('id');
+    var hgvs = $(row).attr('data-hgvs');
+    var assembly = $(row).attr('data-assembly');
+    if (hgvs && assembly) {
+      if (!query_list[assembly]){
+        query_list[assembly] = [];
+      } 
+      query_list[assembly].push(hgvs);
+    }
+  }); 
+  
+  $.each(query_list, function (assembly_item, hgvs_list) {
+    var hgvs_strings = '"'+hgvs_list.join('","')+'"';
+    
+    var post_query = JSON.stringify({ "ids" : hgvs_list, "fields" : ["hgvsc","id"] });
+
+    // 1 - Get HGVS and assembly and build the URL
+    var rest_url_root = 'rest';
+    if (assembly_item.match(previous_assembly)) {
+      rest_url_root = 'grch37.rest';
+    }
+    var rest_url = 'https://'+rest_url_root+'.ensembl.org/variant_recoder/human';
+    
+    $('td.hgvsc_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
+    $('td.var_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
+    
+    // 2 - Run Variant recorder call, parse results and display parsed data
+    $.ajax({
+      url: rest_url,
+      type: "POST",
+      data: JSON.stringify({ "ids" : hgvs_list, "fields" : ["hgvsc","id"] }),
+      contentType: "application/json; charset=utf-8",
+      success: function (data) {
+        //console.log(data);
+        parse_rest_results(assembly_item,data);
+      },
+      error: function (xhRequest, ErrorText, thrownError) {
+        $('.hgvsc_col_'+assembly_item.toLowerCase()).hide();
+        $('.var_col_'+assembly_item.toLowerCase()).hide();
+        //console.log('xhRequest: ' + xhRequest + "\n");
+        console.log('ErrorText: ' + ErrorText + "\n");
+        console.log('thrownError: ' + thrownError + "\n");
+      }
+    });
+    console.log("Ensembl REST query done to retrieve HGVS information on "+assembly_item);
+  });
+}
+
+// Parse results from the Ensembl REST call "variant_recoder" and display the data
+function parse_rest_results(assembly, data) {
+  if (!data.error) {
+    var re = new RegExp(':');
+    $.each(data,function (index, result) {
+      // Retrieve corresponding row
+      var hgvs_input = result.input;
+      var row_id = $('tr[data-hgvs="'+hgvs_input+'"]').attr('id');
+     
+      // Populate the HGVS transcript cell
+      var hgvsc_data = result.hgvsc;
+      var hgvcs_content = '';
+      $.each(hgvsc_data, function (id, hgvsc) {
+        var hgvsc_label = hgvsc.replace(re,"</span>:");
+        hgvcs_content += '<div><span class="bold_font">'+hgvsc_label+'</div>';
+      });
+      $('#'+row_id+'_hgvsc').html(hgvcs_content);
+      
+      // Populate the Co-located variant(s) cell
+      var variants = result.id;
+      var variant_root_url = 'www';
+      if (assembly.match(previous_assembly)) {
+        variant_root_url = previous_assembly.toLowerCase();
+      }
+      var variant_url = 'https://'+variant_root_url+'.ensembl.org/Homo_sapiens/Variation/Explore?v=';
+      var variants_content = '';
+      $.each(variants, function (id, variant) {
+        variants_content += '<div><a class="icon-external-link" href="'+variant_url+variant+'" target="_blank">'+variant+'</a></div>';
+      });
+      $('#'+row_id+'_var').html(variants_content);
+    });
+  }
+}
+
+
+function get_lrg_query () {
+
+  // Comes from the search page
+  var query = $('#search_id').val();
+
+  // Comes from an other page
+  if (!query || query.length==0) {
+    query = '*';
+  }
+  go_to_lrg_result_page(query)
+}
+
+function go_to_lrg_result_page (query) {
+
+  if (!query || query.length == 0) {
+    query='*';
+  }
+  window.open("http://dev.lrg-sequence.org/search/?query="+query,'_blank');
+}
