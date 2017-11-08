@@ -351,7 +351,7 @@ foreach my $status (@pipeline_status_list) {
     my $lrg_path   = $lrgs_list{$status}{$id}{'lrg_path'};
     my $log_link   = '';
     my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
-  
+
     if ($lrgs_list{$status}{$id}{'log_found'}) {
       $log_link = qq{<a class="btn btn-lrg btn-lrg1" href="javascript:show_log_info('$lrg_id');">Show log</a>};
     }
@@ -456,7 +456,7 @@ if ($count_new_lrgs) {
     <div class="col-lg-2 col-md-2 col-sm-3 col-xs-3">
       <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_new" style="width:%s">
         <thead>
-          <th colspan="2"%s>%sNew LRG%s <span class="new_bg" style="border-radius:5px;padding:2px 6px">%s</span></th>
+          <th colspan="2"%s>%sNew LRG%s <span class="new_bg margin-left-5" style="border-radius:5px;padding:2px 6px">%s</span></th>
         </thead>
         <tbody id="%s" class="bordered-columns" %s>
   } , '100%', $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table);
