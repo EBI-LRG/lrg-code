@@ -214,7 +214,9 @@ sub get_tag_version {
   $month++;
   $day = complete_with_2_numbers($mday);
   $month = complete_with_2_numbers($month);
-  return "release_$version\_$year$month$day";
+  my $release_version = "release_$version\_$year$month$day";
+  print STDERR "Release version: $release_version\n";
+  return $release_version;
 }
 
 sub complete_with_2_numbers {
