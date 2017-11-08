@@ -1,11 +1,19 @@
 #! perl -w
 
 use strict;
-#use Getopt::Long;
 use JSON;
+use Getopt::Long;
 
-my $output_file = '/homes/lgil/projets/LRG/ens_ott_data.json';
-my $autocomplete_file = '/homes/lgil/projets/LRG/ens_ott_autocomplete.json';
+my ($output_dir, $is_private);
+GetOptions(
+  'output_dir' => \$output_dir,
+  'private!'   => \$is_private,
+);
+
+$output_dir ||= '/homes/lgil/projets/LRG/lrg_head';
+
+my $output_file = ($is_private) ? 'ens_ott_data.json' : 'ens_ott_data_public.json';
+my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.json' :  'ens_ott_autocomplete_public.json';
 
 my $input_file   = 'ens_ott_table_sorted_by_HGNC_symbol.txt';
 my $havana_file  = 'hg38.bed';
@@ -23,16 +31,22 @@ my %refseq_info_list = ( 'cds_only' => 1, 'whole_transcript' => 2);
 
 # Havana update file
 my %havana_data;
-open H, "< $data_dir/$havana_file" or die $!;
-while(<H>) {
-  chomp $_;
-  my @line = split("\t", $_);
-  my $ott_id = $line[12];
-  my $hdate  = pop(@line);
-  my $date   = (split(';',$hdate))[0];
-  $havana_data{$ott_id} = $date;
+if ($is_private) {
+  open H, "< $data_dir/$havana_file" or die $!;
+  while(<H>) {
+    chomp $_;
+    my @line = split("\t", $_);
+    my $ottt_id = $line[12];
+    my $ottt_label = (split(/\./,$ottt_id))[0];
+    my $ottg  = $line[17];
+    my $gene  = $line[18];
+    my $hdate = pop(@line);
+    my $date  = (split(';',$hdate))[0];
+    
+    $havana_data{$ottt_label} = { 'id' => $ottt_id, 'date' => $date, 'gene' => $gene, 'ottg' => $ottg };
+  }
+  close(H);
 }
-close(H);
 
 # CARS file
 my %cars_data;
@@ -162,10 +176,11 @@ close(E);
 
 #### Generate the JSON files ####
 
-open JSON, "> $output_file" or die $!;
+open JSON, "> $output_dir/$output_file" or die $!;
 print JSON "[\n";
 my $count_json_entries = 0;
 my $json_line_content = '';
+my %ottt_with_enst;
 foreach my $enst (keys(%ensts)) {
 
   my $hgnc;
@@ -198,23 +213,27 @@ foreach my $enst (keys(%ensts)) {
 
   my %json_data = ( "enst" => $enst_v );
   $json_data{"hgnc"} = $hgnc if ($hgnc && $hgnc ne '');
-  $json_data{"ottt"} = $ottt if ($ottt);
-  $json_data{"ottg"} = $ottg if ($ottg);
   $json_data{"cars"} = 1 if ($cars_data{$enst});
   
+  if ($is_private) {
+    $json_data{"ottt"} = $ottt if ($ottt);
+    $json_data{"ottg"} = $ottg if ($ottg);
+  }
   
   # Autocomplete data
   $autocomplete{$enst} = 1;
   if ($hgnc && $hgnc ne '') {
     $autocomplete{$hgnc} = 1;
   }
-  if ($ottt) {
-    my $ottt_no_v = (split(/\./,$ottt))[0];
-    $autocomplete{$ottt_no_v} = 1;
-  }
-  if ($ottg) {
-    my $ottg_no_v = (split(/\./,$ottg))[0];
-    $autocomplete{$ottg_no_v} = 1;
+  if ($is_private) {
+    if ($ottt) {
+      my $ottt_no_v = (split(/\./,$ottt))[0];
+      $autocomplete{$ottt_no_v} = 1;
+    }
+    if ($ottg) {
+      my $ottg_no_v = (split(/\./,$ottg))[0];
+      $autocomplete{$ottg_no_v} = 1;
+    }
   }
   
   ## More specific data ##
@@ -243,11 +262,16 @@ foreach my $enst (keys(%ensts)) {
     $json_data{"tnames"} = [$old_tr_name,$new_tr_name];
   }
   
-  # Retrieve data from Havana hash
-  if ($ottt) {
-    my $ottt_label = (split(/\./, $ottt))[0];
-    if ($havana_data{$ottt_label}) {
-      $json_data{"ottt_date"} = $havana_data{$ottt_label};    
+  if ($is_private) {
+    # Retrieve data from Havana hash
+    if ($ottt) {
+      my $ottt_label = (split(/\./, $ottt))[0];
+      if ($havana_data{$ottt_label}) {
+        $json_data{"ottt_date"} = $havana_data{$ottt_label}{'date'};
+        $json_data{"ottt"}      = $havana_data{$ottt_label}{'id'};
+        
+        $ottt_with_enst{$ottt_label} = 1;
+      }
     }
   }
   
@@ -263,12 +287,48 @@ foreach my $enst (keys(%ensts)) {
   $json_line_content .= $json;
   $count_json_entries ++;
 }
+
+# Add new OTTT models
+if ($is_private) {
+  foreach my $ottt_label (keys(%havana_data)) {
+    next if ($ottt_with_enst{$ottt_label});
+    
+    my $hgnc = $havana_data{$ottt_label}{'gene'};
+    my $ottt = $havana_data{$ottt_label}{'id'};
+    my $ottg = $havana_data{$ottt_label}{'ottg'};
+    my %json_data = ("ottt"      => $ottt,
+                     "ottt_date" => $havana_data{$ottt_label}{'date'},
+                     "ottg"      => $ottg,
+                     "hgnc"      => $hgnc
+                    );
+    
+    # Autocomplete data           
+    $autocomplete{$hgnc} = 1;
+    $autocomplete{$ottt_label} = 1;
+    my $ottg_no_v = (split(/\./,$ottg))[0];
+    $autocomplete{$ottg_no_v} = 1;
+    
+    if ($count_json_entries == $max_json_entries_per_line) {
+      print JSON "$json_line_content,\n";
+      $json_line_content = '';
+      $count_json_entries = 0;
+    }
+    
+    my $json = encode_json \%json_data;
+    
+    $json_line_content .= ',' if ($json_line_content ne '');
+    $json_line_content .= $json;
+    $count_json_entries ++;
+      
+  }
+  
+}
 print JSON "$json_line_content" if ($json_line_content ne '');
 print JSON "\n]";
 close(JSON);
 
 
-open JSON2, "> $autocomplete_file" or die $!;
+open JSON2, "> $output_dir/$autocomplete_file" or die $!;
 print JSON2 "[\n";
 my $count_ac_entries = 0;
 my $ac_line_content = '';
