@@ -116,27 +116,40 @@ if (-e "$tmp_dir/$lrg_json") {
 }
 
 open JSON, "> $tmp_dir/$lrg_json" || die $!;
-print JSON "[\n";
-my $count_json_files = 0;
+print JSON "[";
+
 opendir($dh,$tmp_dir);
 warn("Could not process directory $tmp_dir") unless (defined($dh));
 # Loop over the files in the directory and open the JSON files
+my $count_json_entries = 0;
+my $max_json_entries_per_line = 100;
+my $json_line_content = '';
 while (my $file = readdir($dh)) {
   next unless ($file =~ m/\.json$/);
   next if ($file eq $lrg_json);
-  $count_json_files ++;
+
   open F, "< $tmp_dir/$file" || die $!;
   while (<F>) {
     chomp $_;
+    
+    if ($count_json_entries == $max_json_entries_per_line) {
+      print JSON "$json_line_content,\n";
+      $json_line_content = '';
+      $count_json_entries = 0;
+    }
+    
     my $json_data  = $_;
-       $json_data .= ',' if ($count_json_files < $nb_files);
-    print JSON "$json_data\n";   
+    
+    $json_line_content .= ',' if ($json_line_content ne '');
+    $json_line_content .= $json_data;
+    $count_json_entries ++; 
   }
   close(F);
   `rm -f $tmp_dir/$file`;
 }
 closedir($dh);
 
+print JSON "$json_line_content" if ($json_line_content ne '');
 print JSON "]";
 close(JSON);
 
