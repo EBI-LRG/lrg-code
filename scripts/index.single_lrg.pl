@@ -285,9 +285,11 @@ my %json_data = ( "id"     => $lrg_id,
                   "chr"    => $json_chr_name,
                   "start"  => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
                   "end"    => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
-                  "syn"    => \@json_syn,
                   "xref"   => \@json_xref,
                 );
+if (scalar(@json_syn) != 0) {
+  $json_data{"syn"} = \@json_syn;
+}
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
 print JSON $json;
