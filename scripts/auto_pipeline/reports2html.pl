@@ -101,8 +101,9 @@ my $html_header = qq{
       .page_subtitle {font-size:24px;text-align:center;vertical-align:top;color:#FFF}
 
       .missing_header { background-color:$failed_colour;color:#FFF;font-weight:bold;font-size:16px;text-align:center;padding:2px;border-bottom:1px solid #1A4468}
-      .summary_clickable { cursor:pointer; }
+      .summary_clickable { cursor:pointer;padding-top:1px !important;padding-bottom:1px !important; }
       .summary_clickable:hover, .summary_clickable:active { color:#9051A0 }
+      .summary_clickable:hover > .new_bg, .summary_clickable:active  > .new_bg { color:#FFF;background-color:#9051A0 }
       
       table {border-collapse:collapse; }
       
@@ -447,8 +448,8 @@ if ($count_new_lrgs) {
   my $display_table  = '';
   
   if ($count_new_lrgs > $max_new_lrg) {
-    $summary_class  = qq{ class="summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')};
-    $display_button = qq{<span id="$new_lrg_div_id\_button" class="glyphicon glyphicon-plus-sign"></span> };
+    $summary_class  = qq{ class="summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')"};
+    $display_button = qq{<span id="$new_lrg_div_id\_button" class="icon-collapse-closed smaller-icon close-icon-2" style="padding:0px;vertical-align:middle"></span> };
     $display_table  = ' style="display:none"';
   }
   
@@ -456,7 +457,7 @@ if ($count_new_lrgs) {
     <div class="col-lg-2 col-md-2 col-sm-3 col-xs-3">
       <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_new" style="width:%s">
         <thead>
-          <th colspan="2"%s>%sNew LRG%s <span class="new_bg margin-left-5" style="border-radius:5px;padding:2px 6px">%s</span></th>
+          <th colspan="2"%s>%s<span style="vertical-align:middle">New LRG%s</span><span class="label new_bg margin-left-10">%s</span></th>
         </thead>
         <tbody id="%s" class="bordered-columns" %s>
   } , '100%', $summary_class, $display_button, $plural, $count_new_lrgs, $new_lrg_div_id, $display_table);
