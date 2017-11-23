@@ -57,7 +57,7 @@ a.icon-external-link {
 }
 
 .lrg_left_arrow {
-  width:20px;
+  width:40px;
   text-align:center;
 }
 
@@ -227,8 +227,6 @@ table.lrg-diff>tbody>tr>td {
 
 .logo_div {
   padding-top:5px;
-  padding-bottom:5px;
-  line-height:70px;
 }
 .logo_div > a > img {
   margin-right:0px; 
@@ -309,7 +307,9 @@ div.left_side {
 }
 .subsection_box {
   margin: 10px 0px 15px;
-  border: 3px solid;
+  border-left: 3px solid;
+  border-right: 3px solid;
+  border-bottom: 3px solid;
 }
 .subsection_box1 {
   border-color: #1C9BCF;
@@ -324,9 +324,27 @@ div.left_side {
 }
 
 .section_content {
-  padding: 4px 0px;
+  padding: 8px;
   background-color: #F9F9F9;
 }
+.section_content_summary {
+  padding: 4px;
+  background-color: #F9F9F9;
+}
+
+.section_content_top_content {
+  font-size:18px;
+}
+.section_content_top_content > div {
+  padding:6px 0px 12px;
+}
+
+.seq_count {
+  background-color: #E0E0E0;
+  color: #333;
+  font-size:14px;
+}
+
 
 
 /** LRG buttons **/
@@ -471,6 +489,10 @@ div.right_annotation {
 }
 .section_annotation_icon2 {
   background-color: #78BE43;
+}
+.section_annotation_icon_top {
+  padding:5px 5px 5px 12px !important;
+  margin: -5px 0px !important;
 }
 .section_annotation_content {
   padding:5px 0px 10px 4px;
@@ -657,6 +679,7 @@ div.mapping { padding-left:25px; }
 
 div.status_banner {
   padding:0px;
+  border-bottom:1px solid #FFF
 }
 
 div.data_container {
@@ -668,13 +691,13 @@ div.data_container {
 
 div.status_title {
   text-align:center;
-	padding: 4px 5px;
+	padding: 3px 5px;
 	color:#FFF;
 	height:50px;
 	position:relative;
 }
 div.status_title > div:first-child {
-  font-size:20px;
+  font-size:24px;
 	font-weight:bold;
 	text-align:center;
 	margin-bottom:4px;
@@ -695,7 +718,7 @@ div.status_title_bottom {
 .status_progress {
   position:absolute;
   top:13px;
-  right:25px;
+  right:30px;
 }
 
 
@@ -706,10 +729,7 @@ div.status_title_bottom {
   line-height:30px;
   vertical-align:middle;
 }
-.search_record_input {
-  padding: 2px 6px;
-  border-color:#1C9BCF !important;
-}
+
 .search_record_button {
   line-height:30px;
 }
@@ -835,39 +855,29 @@ span.source_name {
 
 .exon_even {
   font-family: monospace;
-  color: #0000AA;
+  color: #00A;
   background: #FFF;
 }
 
 .exon_odd_select {
   font-family: monospace;
-  color: #000;
   background: #6495ED;
 }
 .exon_even_select {
   font-family: monospace;
-  color: #000;
   background: #CAE1FF;
 }
 
-.exontable {
+.exontable, .introntable {
   background: #FFF;
-  color: #000;
-}
-
-.introntable {
-  background: #FFF;
-  color: #000;
 }
 
 .exontableselect {
   background: #CAE1FF;
-  color: #000;
 }
 
 .introntableselect {
   background: #6495ED;
-  color: #000;
 }
 
 .utr {
@@ -980,6 +990,11 @@ div.lrg_transcript {
   color: #0E4C87;
   font-weight: bold;
 }
+.lrg_transcript_length {
+  background-color: #E0E0E0;
+  color: #333;
+  margin-left:10px;
+}
 
 table.lrg_table_content  {
   margin-left: 4px;
@@ -1049,7 +1064,7 @@ div.seq_info_box {
   text-align:left;
   font-weight:bold;
   padding:0px;
-  background-color:#3C3F45;
+  background-color:#E0E0E0;
   color:#FFF;
 }
 .seq_info_header>div{
@@ -1135,7 +1150,7 @@ div.top_upd_anno_link {
 
 .download_header {
   color:#FFF;
-  background-color:#E0E0E0;
+  background-color:#F9F9F9;
   margin-top:10px;
   padding:0px;
   text-align:left;
@@ -1164,6 +1179,7 @@ div.top_upd_anno_link {
   text-decoration:underline;
   text-decoration-color: #78BE43;
 }
+
 
 
 /** Transcript image **/
@@ -1259,6 +1275,7 @@ div.top_upd_anno_link {
 }
 .exon_block_coding_enst {
   background-color: #78BE43;
+  cursor:default;
 }
 .exon_block_non_coding_5_prime {
   border-left:1px solid #1C9BCF;
@@ -1271,6 +1288,7 @@ div.top_upd_anno_link {
   border-top:1px solid #78BE43;
   border-bottom:1px solid #78BE43;
   background-color:#FFF;
+  cursor:default;
 }
 .exon_block_non_coding_3_prime {
   border-right:1px solid #1C9BCF;
@@ -1283,6 +1301,7 @@ div.top_upd_anno_link {
   border-top:1px solid #78BE43;
   border-bottom:1px solid #78BE43;
   background-color:#FFF;
+  cursor:default;
 }
 .exon_block_non_coding {
   border: 1px solid #1C9BCF;
@@ -1291,6 +1310,7 @@ div.top_upd_anno_link {
 .exon_block_non_coding_enst {
   border: 1px solid #78BE43;
   background-color:#FFF;
+  cursor:default;
 }
 
 .exon_block_coding:hover,
@@ -1306,11 +1326,13 @@ div.top_upd_anno_link {
 .exon_block_coding_enst:hover,
 .exon_block_large:hover > .exon_block_coding_enst {
   background-color: #0D0;
+  cursor:default;
 }
 .exon_block_non_coding_enst:hover,
 .exon_block_large:hover > .exon_block_non_coding_5_prime_enst, 
 .exon_block_large:hover > .exon_block_non_coding_3_prime_enst {
   border-color: #0D0;
+  cursor:default;
 }
 
 .selected_exon_block_coding {
