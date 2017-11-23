@@ -13,7 +13,7 @@ GetOptions(
 $output_dir ||= '/homes/lgil/projets/LRG/lrg_head';
 
 my $output_file = ($is_private) ? 'ens_ott_data.json' : 'ens_ott_data_public.json';
-my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.json' :  'ens_ott_autocomplete_public.json';
+my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.txt' :  'ens_ott_autocomplete_public.txt';
 
 my $input_file   = 'ens_ott_table_sorted_by_HGNC_symbol.txt';
 my $havana_file  = 'hg38.bed';
@@ -23,8 +23,7 @@ my $data_dir     = '/nfs/production/panda/production/vertebrate-genomics/lrg/dat
 
 
 my $first_line = 1;
-my $max_json_entries_per_line = 20;
-my $max_ac_entries_per_line   = 50;
+my $max_json_entries_per_line = 100;
 
 my %ensts;
 my %refseq_info_list = ( 'cds_only' => 1, 'whole_transcript' => 2);
@@ -248,7 +247,7 @@ foreach my $enst (keys(%ensts)) {
     if ($ensembl_data{$enst}{'rseq'}) {
       my $refseq_data = $ensembl_data{$enst}{'rseq'};
       $json_data{"rseq"} = $refseq_data;
-      $json_data{"rseq_i"} = $ensembl_data{$enst}{'rseq_i'};
+      $json_data{"rseqi"} = $ensembl_data{$enst}{'rseq_i'};
       foreach my $refseq (@$refseq_data) {
         my $refseq_no_v  = (split(/\./,$refseq))[0];
         $autocomplete{$refseq_no_v} = 1;
@@ -257,8 +256,11 @@ foreach my $enst (keys(%ensts)) {
   }
   
   if ($old_tr_name || $new_tr_name) {
-    $old_tr_name = '' if (!$old_tr_name);
-    $new_tr_name = '' if (!$new_tr_name);
+    
+    $old_tr_name = ($old_tr_name) ? (($old_tr_name =~ /^0/) ? $old_tr_name : $old_tr_name + 0) : '';
+    
+    $new_tr_name = ($new_tr_name) ? (($new_tr_name =~ /^0/) ? $new_tr_name : $new_tr_name + 0) : '';
+    
     $json_data{"tnames"} = [$old_tr_name,$new_tr_name];
   }
   
@@ -328,27 +330,12 @@ print JSON "\n]";
 close(JSON);
 
 
-open JSON2, "> $output_dir/$autocomplete_file" or die $!;
-print JSON2 "[\n";
+open AUTO, "> $output_dir/$autocomplete_file" or die $!;
 my $count_ac_entries = 0;
 my $ac_line_content = '';
 foreach my $id (sort(keys(%autocomplete))) {
   next if ($id !~ /\w+/ || $id =~ /^\d+$/);
-  
-  if ($count_ac_entries == $max_ac_entries_per_line) {
-    print JSON2 "$ac_line_content,\n";
-    $ac_line_content = '';
-    $count_ac_entries = 0;
-  }
-  
-  my %json_data = ("id" => $id);
-  my $json = encode_json \%json_data;
-  $ac_line_content .= ',' if ($ac_line_content ne '');
-  $ac_line_content .= $json;
-  $count_ac_entries ++;
+  print AUTO "$id\n";
 }
-
-print JSON2 "$ac_line_content" if ($ac_line_content ne '');
-print JSON2 "\n]";
-close(JSON2);
+close(AUTO);
 

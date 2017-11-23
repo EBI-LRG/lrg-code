@@ -8,7 +8,7 @@ var fasta_url_prefix = 'http://rest.ensembl.org/sequence/id/';
 var fasta_url_suffix = '?content-type=text/x-fasta;type=cdna';
 
 var json_file      = './ens_ott_data.json';
-var json_file_auto = './ens_ott_autocomplete.json';
+var json_file_auto = './ens_ott_autocomplete.txt';
 
 var external_link_class = 'icon-ext';
 
@@ -23,7 +23,7 @@ var json_unique_keys = { 'enst' : 1,
                          'ottt' : 1
                        };
 
-var rseq_i_keys = { 1 : 'cds_only', 2 : 'whole_transcript'};
+var rseqi_keys = { 1 : 'cds_only', 2 : 'whole_transcript'};
 
 //
 // Methods //
@@ -84,7 +84,7 @@ function get_search_results (search_id) {
 
 // Function get data in array
 function get_data_in_array () {
-  var data_array = [];
+  /*var data_array = [];
   
   return $.getJSON( json_file_auto )
   .error(function (xhRequest, ErrorText, thrownError) {
@@ -102,8 +102,22 @@ function get_data_in_array () {
     }
     console.log("DATA ARRAY LENGTH: "+data_array.length);
     return data_array;
+  });*/
+  
+  return $.ajax({
+    url: json_file_auto,
+    dataType: "text"
+  })
+  .error(function (xhRequest, ErrorText, thrownError) {
+    console.log('xhRequest: ' + xhRequest + "\n");
+    console.log('ErrorText: ' + ErrorText + "\n");
+    console.log('thrownError: ' + thrownError + "\n");
+  })
+  .then(function(data) {
+    var data_array = data.split('\n');
+    console.log("DATA ARRAY LENGTH: "+data_array.length);
+    return data_array;
   });
-
 }
 
 // Function to display results
@@ -142,16 +156,16 @@ function display_results (results) {
     var old_tr_name = '-';
     var new_tr_name = '-';
     if (results[enst].tnames) {
-      old_tr_name = (results[enst].tnames[0] == '') ? old_tr_name : results[enst].tnames[0];
+      old_tr_name = (results[enst].tnames[0] == '') ? old_tr_name : results[enst].tnames[0].toString();
       old_tr_name = (old_tr_name.match(/^[0-9]+/)) ? symbol+"-"+old_tr_name : old_tr_name;
-      new_tr_name = (results[enst].tnames[1] == '') ? new_tr_name : results[enst].tnames[1];
+      new_tr_name = (results[enst].tnames[1] == '') ? new_tr_name : results[enst].tnames[1].toString();
       new_tr_name = (new_tr_name.match(/^[0-9]+/)) ? symbol+"-"+new_tr_name : new_tr_name;
     }
     
     var refseq = '-';
     if (results[enst].rseq) {
-      var refseq_info = results[enst].rseq_i;
-          refseq_info = (rseq_i_keys[refseq_info]) ? rseq_i_keys[refseq_info] : refseq_info;
+      var refseq_info = results[enst].rseqi;
+          refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
           refseq      = "<div>"+results[enst].rseq.join("</div><div>")+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
     }
 
