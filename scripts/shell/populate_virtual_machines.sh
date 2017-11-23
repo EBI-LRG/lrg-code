@@ -10,9 +10,15 @@ if [[ -z ${input_dir} ]]; then
   exit
 fi
 
-json_file='lrg_index.json'
-step_json_file='step_index.json'
-json_dir='json_index'
+indexes_dir='indexes'
+ftp_dir=${PUBFTP}/.lrg_index/
+files=('lrg_index.json' 'step_index.json' 'lrg_search_terms.txt')
+files_with_path=()
+
+for FILE in "${files[@]}"
+do
+  files_with_path+=("${ftp_dir}${FILE}")
+done
 
 perldir=${LRGROOTDIR}/lrg-code/scripts/
 
@@ -24,8 +30,10 @@ become ${WEBADMIN} bash << EOF
     cd ${DEVWEBSITE}
     rm -rf ./*
     cp -R ${input_dir}/* ./
-    cp ${PUBFTP}/.lrg_index/${json_file} ./${json_dir}/
-    cp ${PUBFTP}/.lrg_index/${step_json_file} ./${json_dir}/
+    
+    cp ${files_with_path[0]} ./${indexes_dir}/
+    cp ${files_with_path[1]} ./${indexes_dir}/
+    cp ${files_with_path[2]} ./${indexes_dir}/
     
     echo "Copy to the DEV website done"
   fi
@@ -35,8 +43,17 @@ become ${WEBADMIN} bash << EOF
     cd ${FBWEBSITE}
     rm -rf ./*
     cp -R ${input_dir}/* ./
-    cp ${PUBFTP}/.lrg_index/${json_file} ./${json_dir}/
-    cp ${PUBFTP}/.lrg_index/${step_json_file} ./${json_dir}/
+    
+    for FILE in "${files[@]}"
+    do
+      file_input=${PUBFTP}/.lrg_index/${FILE}
+  
+      if [ -e ${file_input} ];then
+        cp ${file_input} ./${indexes_dir}/
+      else
+        echo "File '${file_input}' not found. It can't be copied to the VMs."
+      fi
+    done
   
     # PROD website
     scp -r ${FBWEBSITE}* ${WEBADMIN}@${PRODVM}:${PRODWEBSITE}/ 1> /dev/null

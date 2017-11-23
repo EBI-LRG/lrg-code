@@ -34,6 +34,7 @@ sub default_options {
         lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
         lrg_index_json          => 'lrg_index.json',
         lrg_diff_file           => 'lrg_diff.txt',
+        lrg_search_file         => 'lrg_search_terms.txt',
         
         missing_file_name       => 'missing_files.txt',
         reports_file_name       => 'pipeline_reports.txt',
@@ -223,9 +224,10 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::FinishIndexes',
             -rc_name           => 'small',
             -parameters        => {
-               index_suffix   => $self->o('index_suffix'),
-               lrg_index_json => $self->o('lrg_index_json'),
-               lrg_diff_file  => $self->o('lrg_diff_file'),
+               index_suffix    => $self->o('index_suffix'),
+               lrg_index_json  => $self->o('lrg_index_json'),
+               lrg_diff_file   => $self->o('lrg_diff_file'),
+               lrg_search_file => $self->o('lrg_search_file'),
                @common_params
             },
             -input_ids         => [],

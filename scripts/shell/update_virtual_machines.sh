@@ -2,24 +2,18 @@
 . ~/.bashrc
 . ~/.lrgpaths
 
-
-output_file=$1 
-
-if [[ ! ${output_file} ]]; then
-  echo "No output file defined!"
-  exit
-fi
-
 perldir=${LRGROOTDIR}/lrg-code/scripts/
+indexes_dir='indexes'
+files=('lrg_index.json' 'step_index.json' 'lrg_search_terms.txt')
 
-# Copy the JSON LRG index
-json_file='lrg_index.json'
-json_input=${PUBFTP}/.lrg_index/${json_file}
-bash ${perldir}/shell/copy_files_to_website.sh ${json_input} json_index ${json_file}
+for FILE in "${files[@]}"
+do
+  file_input=${PUBFTP}/.lrg_index/${FILE}
+  
+  if [ -e ${file_input} ];then
+    bash ${perldir}/shell/copy_files_to_website.sh ${file_input} ${indexes_dir} ${FILE}
+  else
+    echo "File '${file_input}' not found. It can't be copied to the VMs."
+  fi
+done
 
-# Copy the LRG step JSON index
-step_json_file='step_index.json'
-step_json_input=${PUBFTP}/.lrg_index/${step_json_file}
-bash ${perldir}/shell/copy_files_to_website.sh ${step_json_input} json_index ${step_json_file}
-
-rm -f ${output_file}

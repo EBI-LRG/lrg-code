@@ -4,6 +4,7 @@ use strict;
 use LRG::LRG;
 use Getopt::Long;
 use Cwd;
+use JSON;
 
 my ($xml_dir,$tmp_dir,$index_dir,$default_assembly,$species,$taxo_id,$index_suffix,$help);
 GetOptions(
@@ -23,6 +24,7 @@ usage() if (defined($help));
 
 $tmp_dir ||= $index_dir;
 my $lrg_list = 'lrgs_in_ensembl.txt';
+my $lrg_term = 'lrg_search_terms.txt';
 my $lrg_json = 'lrg_index.json';
 my $lrg_diff = 'lrg_diff.txt';
 
@@ -115,6 +117,7 @@ if (-e "$tmp_dir/$lrg_json") {
   `rm -f $tmp_dir/$lrg_json`;
 }
 
+my %autocomplete;
 open JSON, "> $tmp_dir/$lrg_json" || die $!;
 print JSON "[";
 
@@ -143,6 +146,15 @@ while (my $file = readdir($dh)) {
     $json_line_content .= ',' if ($json_line_content ne '');
     $json_line_content .= $json_data;
     $count_json_entries ++; 
+    
+    # Get autocomplete data
+    my $json_obj = decode_json $json_data;
+    $autocomplete{$json_obj->{'id'}} = 1;
+    $autocomplete{$json_obj->{'symbol'}} = 1;
+    $autocomplete{$json_obj->{'status'}} = 1;
+    foreach my $term (@{$json_obj->{'terms'}}) {
+      $autocomplete{$term} = 1;
+    }
   }
   close(F);
   `rm -f $tmp_dir/$file`;
@@ -153,9 +165,18 @@ print JSON "$json_line_content" if ($json_line_content ne '');
 print JSON "]";
 close(JSON);
 
+
+## LRG SEARCH TERMS ##
+open TERMS, "> $tmp_dir/$lrg_term" || die $!;
+foreach my $term (sort(keys(%autocomplete))) {
+  print TERMS "$term\n";
+}
+close(TERMS);
+
 print " done\n";
 
 
+## DIFF ##
 # LRG sequence differences file
 print "Generating the LRG sequence differences file ...";
 
@@ -188,6 +209,9 @@ print "Moving the generated files ...";
 if ($tmp_dir ne $index_dir) {
   if (-s "$tmp_dir/$lrg_json") {
     `cp $tmp_dir/$lrg_json $index_dir/`;
+  }
+  if (-s "$tmp_dir/$lrg_term") {
+    `cp $tmp_dir/$lrg_term $index_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff") {
     `cp $tmp_dir/$lrg_diff $index_dir/`;

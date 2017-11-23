@@ -2,17 +2,19 @@ package LRG::Pipeline::FinishIndexes;
 
 use strict;
 use warnings;
+use JSON;
 
 use base ('Bio::EnsEMBL::Hive::Process');
 
 sub run {
   my $self = shift;
 
-  my $new_xml_dir    = $self->param('new_xml_dir');
-  my $ftp_dir        = $self->param('ftp_dir');
-  my $index_suffix   = $self->param('index_suffix');
-  my $lrg_index_json = $self->param('lrg_index_json');
-  my $lrg_diff_file  = $self->param('lrg_diff_file');
+  my $new_xml_dir     = $self->param('new_xml_dir');
+  my $ftp_dir         = $self->param('ftp_dir');
+  my $index_suffix    = $self->param('index_suffix');
+  my $lrg_index_json  = $self->param('lrg_index_json');
+  my $lrg_diff_file   = $self->param('lrg_diff_file');
+  my $lrg_search_file = $self->param('lrg_search_file');
 
   my $tmp_dir   = "$new_xml_dir/index";
   my $index_dir = "$ftp_dir/.lrg_index";
@@ -33,28 +35,56 @@ sub run {
     push(@json_files, $file);
   }
   closedir($dh);
-  
-  # Generate the JSON index file
-  my $nb_files = @json_files;
+
+  my %autocomplete;
   open JSON, "> $tmp_dir/$lrg_index_json" || die $!;
-  print JSON "[\n";
-  my $count_json_files = 0;
-  
+  print JSON "[";
   # Loop over the files in the directory and open the JSON files
+  my $count_json_entries = 0;
+  my $max_json_entries_per_line = 100;
+  my $json_line_content = '';
+
   foreach my $file (sort(@json_files)) {
-    $count_json_files ++;
+
     open F, "< $tmp_dir/$file" || die $!;
     while (<F>) {
       chomp $_;
+      
+      if ($count_json_entries == $max_json_entries_per_line) {
+        print JSON "$json_line_content,\n";
+        $json_line_content = '';
+        $count_json_entries = 0;
+      }
+      
       my $json_data  = $_;
-         $json_data .= ',' if ($count_json_files < $nb_files);
-      print JSON "$json_data\n";   
+      
+      $json_line_content .= ',' if ($json_line_content ne '');
+      $json_line_content .= $json_data;
+      $count_json_entries ++; 
+      
+      # Get autocomplete data
+      my $json_obj = decode_json $json_data;
+      $autocomplete{$json_obj->{'id'}} = 1;
+      $autocomplete{$json_obj->{'symbol'}} = 1;
+      $autocomplete{$json_obj->{'status'}} = 1;
+      foreach my $term (@{$json_obj->{'terms'}}) {
+        $autocomplete{$term} = 1;
+      }
     }
     close(F);
     `rm -f $tmp_dir/$file`;
   }
+
+  print JSON "$json_line_content" if ($json_line_content ne '');
   print JSON "]";
   close(JSON);
+
+  ## LRG SEARCH TERMS ##
+  open TERMS, "> $tmp_dir/$lrg_search_file" || die $!;
+  foreach my $term (sort(keys(%autocomplete))) {
+    print TERMS "$term\n";
+  }
+  close(TERMS);
   
   
   ## DIFF ##
@@ -94,6 +124,7 @@ sub run {
     `rm -f $index_dir/LRG_*_diff.txt`;   # Double check
     `mv $tmp_dir/$lrg_index_json $index_dir`;
     `mv $tmp_dir/$lrg_diff_file $index_dir`;
+    `mv $tmp_dir/$lrg_search_file $index_dir`;
   }
 }
 1;

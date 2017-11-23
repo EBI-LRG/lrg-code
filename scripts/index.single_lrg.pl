@@ -175,7 +175,7 @@ $add_fields->addNode('field',{'name' => 'status'})->content($status) if (defined
 my %synonyms;
 if ($data{'locus'}) {
   my $l_content = $data{'locus'}->content;
-  $synonyms{$l_content} = 1 if ($l_content ne $data{'hgnc'});
+  $synonyms{$l_content} = $l_content if ($l_content ne $data{'hgnc'});
 }
 # > Symbol
 my $symbols = $lrg->findNodeArraySingle('updatable_annotation/annotation_set/features/gene/symbol');
@@ -186,12 +186,13 @@ foreach my $symbol (@{$symbols}) {
   my $symbol_syn = $symbol->findNodeArraySingle('synonym');
   foreach my $synonym (@{$symbol_syn}) {
     my $syn_content = $synonym->content;
-    $synonyms{$syn_content} = 1 if ($syn_content ne $data{'hgnc'});
+    my $syn = (split(/\./, $syn_content))[0];
+    $synonyms{$syn} = 1 if ($syn_content ne $data{'hgnc'});
   }
 }
 
 # > Synonyms
-foreach my $syn (keys(%synonyms)) {
+foreach my $syn (values(%synonyms)) {
   $add_fields->addNode('field',{'name' => 'synonym'})->content($syn);
 }
 
@@ -270,9 +271,28 @@ $index_root_xml->printAll(1);
 
 
 ## JSON index data ##
-my @json_syn  = keys(%synonyms);
-my @json_xref = grep { $_ =~ /^NM_|NG_|ENST|ENSG/ } keys %{$cross_refs};
+my %json_terms;
 
+foreach my $syn (keys(%synonyms)) {
+  next if ($syn =~ /^\d+$/);
+  $json_terms{$syn} = $syn;
+}
+
+my @json_xref = grep { $_ =~ /^NM_|NG_|ENST|ENSG/ } keys %{$cross_refs};
+foreach my $xref (@json_xref) {
+  my $xref_label = (split(/\./,$xref))[0];
+  
+  next if ($xref_label =~ /^\d+$/);
+  
+  if ($json_terms{$xref_label} && $xref =~ /.+\.\d+$/) {
+      $json_terms{$xref_label} = $xref;
+  }
+  elsif (!$json_terms{$xref_label}) {
+    $json_terms{$xref_label} = $xref;
+  }
+}
+
+my @json_terms_list = values(%json_terms);
 my $json_assembly = lc('GRCh38');
 my $json_chr_name = $data{'assemblies'}{$json_assembly}{'chr_name'};
 if ($json_chr_name) {
@@ -285,10 +305,9 @@ my %json_data = ( "id"     => $lrg_id,
                   "chr"    => $json_chr_name,
                   "start"  => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
                   "end"    => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
-                  "xref"   => \@json_xref,
                 );
-if (scalar(@json_syn) != 0) {
-  $json_data{"syn"} = \@json_syn;
+if (scalar(@json_terms_list) != 0) {
+  $json_data{"terms"} = \@json_terms_list;
 }
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
