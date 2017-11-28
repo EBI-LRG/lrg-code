@@ -84,26 +84,7 @@ function get_search_results (search_id) {
 
 // Function get data in array
 function get_data_in_array () {
-  /*var data_array = [];
-  
-  return $.getJSON( json_file_auto )
-  .error(function (xhRequest, ErrorText, thrownError) {
-        console.log('xhRequest: ' + xhRequest + "\n");
-        console.log('ErrorText: ' + ErrorText + "\n");
-        console.log('thrownError: ' + thrownError + "\n");
-   })
-  .then(function(data) {
-    // Get the different searchable items
-    var data_list = {};
-    
-    for (var i in data) {
-      if (!data.hasOwnProperty(i)) continue;
-      data_array.push(data[i].id);
-    }
-    console.log("DATA ARRAY LENGTH: "+data_array.length);
-    return data_array;
-  });*/
-  
+
   return $.ajax({
     url: json_file_auto,
     dataType: "text"
@@ -172,13 +153,15 @@ function display_results (results) {
     var ens_link   = get_ens_link(enst);
     var fasta_link = get_fasta_link(enst);
     var ccds_link  = get_ccds_link(ccds);
+    
+    var is_cars = cars_flag(results[enst]);
 
     // HTML code
     var newrow = $('<tr/>');
     // HGNC Symbol
     newrow.append(newCell(get_hgnc_link(symbol)));
     // ENST ID;
-    newrow.append(newCell(ens_link+" "+fasta_link));
+    newrow.append(newCell(ens_link+' <div class="right">'+is_cars+fasta_link+'</div>'));
     // OTTG
     newrow.append(newCell(ottg));
     // OTTT
@@ -195,6 +178,17 @@ function display_results (results) {
   }
 }
 
+function cars_flag(res) {
+  if (res.cars) {
+    c_flag = $('<span></span>');
+    c_flag.addClass('cars_flag glyphicon glyphicon-star');
+    c_flag.attr("title", "CARS transcript");
+    return c_flag[0].outerHTML;
+  }
+  else {
+    return '';
+  }
+}
 
 function newCell(content) {
   return $("<td></td>").html(content);
