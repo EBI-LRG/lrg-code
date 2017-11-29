@@ -23,10 +23,16 @@ die("Index directory (-index_dir) needs to be specified!") unless (defined($inde
 usage() if (defined($help));
 
 $tmp_dir ||= $index_dir;
+
+my $current_assembly  = 'GRCh38';
+my $previous_assembly = 'GRCh37';
+
 my $lrg_list = 'lrgs_in_ensembl.txt';
 my $lrg_term = 'lrg_search_terms.txt';
 my $lrg_json = 'lrg_index.json';
-my $lrg_diff = 'lrg_diff.txt';
+my $lrg_diff_prefix   = "lrg_diff_";
+my $lrg_diff_current  = "$lrg_diff_prefix$current_assembly.txt";
+my $lrg_diff_previous = "$lrg_diff_prefix$previous_assembly.txt";
 
 my $extra_options  = '';
    $extra_options .= " -default_assembly $default_assembly" if (defined($default_assembly));
@@ -178,29 +184,33 @@ print " done\n";
 
 ## DIFF ##
 # LRG sequence differences file
-print "Generating the LRG sequence differences file ...";
+print "Generating the LRG sequence differences files ...";
 
-if (-e "$tmp_dir/$lrg_diff") {
-  `rm -f $tmp_dir/$lrg_diff`;
+if (-e "$tmp_dir/$lrg_diff_current") {
+  `rm -f $tmp_dir/$lrg_diff_current`;
+}
+if (-e "$tmp_dir/$lrg_diff_previous") {
+  `rm -f $tmp_dir/$lrg_diff_current`;
 }
 
-open DIFF, "> $tmp_dir/$lrg_diff" || die $!;
-my $count_diff_files = 0;
-opendir($dh,$tmp_dir);
-warn("Could not process directory $tmp_dir") unless (defined($dh));
-# Loop over the files in the directory and open the DIFF txt files
-while (my $file = readdir($dh)) {
-  next unless ($file =~ m/\d+_diff\.txt$/);
-  $count_diff_files ++;
-  open F, "< $tmp_dir/$file" || die $!;
-  while (<F>) {
-    print DIFF "$_";
+foreach my $assembly ($current_assembly,$previous_assembly) {
+  open DIFF, "> $tmp_dir/$lrg_diff_prefix$assembly.txt" || die $!;
+  my $count_diff_files = 0;
+  opendir($dh,$tmp_dir);
+  warn("Could not process directory $tmp_dir") unless (defined($dh));
+  # Loop over the files in the directory and open the DIFF txt files
+  while (my $file = readdir($dh)) {
+    next unless ($file =~ m/\d+_diff_$assembly\.txt$/);
+    $count_diff_files ++;
+    open F, "< $tmp_dir/$file" || die $!;
+    while (<F>) {
+      print DIFF "$_";
+    }
+    close(F);
   }
-  close(F);
+  closedir($dh);
+  close(DIFF);
 }
-closedir($dh);
-close(DIFF);
-
 print " done\n";
 
 
@@ -213,13 +223,16 @@ if ($tmp_dir ne $index_dir) {
   if (-s "$tmp_dir/$lrg_term") {
     `cp $tmp_dir/$lrg_term $index_dir/`;
   }
-  if (-s "$tmp_dir/$lrg_diff") {
-    `cp $tmp_dir/$lrg_diff $index_dir/`;
+  if (-s "$tmp_dir/$lrg_diff_current") {
+    `cp $tmp_dir/$lrg_diff_current $index_dir/`;
+  }
+  if (-s "$tmp_dir/$lrg_diff_previous") {
+    `cp $tmp_dir/$lrg_diff_previous $index_dir/`;
   }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
 }
 `rm -f $tmp_dir/LRG_*$index_suffix.json`;
-`rm -f $tmp_dir/LRG_*_diff.txt`;
+#`rm -f $tmp_dir/LRG_*_diff_*.txt`;
 
 print " done\n";
 

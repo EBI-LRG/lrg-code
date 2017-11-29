@@ -33,7 +33,7 @@ sub default_options {
 
         lrg_in_ensembl          => 'lrgs_in_ensembl.txt',
         lrg_index_json          => 'lrg_index.json',
-        lrg_diff_file           => 'lrg_diff.txt',
+        lrg_diff_prefix         => 'lrg_diff_',
         lrg_search_file         => 'lrg_search_terms.txt',
         
         missing_file_name       => 'missing_files.txt',
@@ -48,6 +48,7 @@ sub default_options {
 
         skip_lrgs_hc_file       => $self->o('pipeline_root_dir').'lrgs_skip_healthchecks.conf',
 
+        assemblies              => ['GRCh37','GRCh38'],
         assembly                => 'GRCh38',
         index_assembly          => 'GRCh37',
         index_suffix            => '_index',     
@@ -226,8 +227,9 @@ sub pipeline_analyses {
             -parameters        => {
                index_suffix    => $self->o('index_suffix'),
                lrg_index_json  => $self->o('lrg_index_json'),
-               lrg_diff_file   => $self->o('lrg_diff_file'),
+               lrg_diff_prefix => $self->o('lrg_diff_prefix'),
                lrg_search_file => $self->o('lrg_search_file'),
+               assemblies      => $self->o('assemblies'),
                @common_params
             },
             -input_ids         => [],

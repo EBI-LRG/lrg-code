@@ -13,8 +13,9 @@ sub run {
   my $ftp_dir         = $self->param('ftp_dir');
   my $index_suffix    = $self->param('index_suffix');
   my $lrg_index_json  = $self->param('lrg_index_json');
-  my $lrg_diff_file   = $self->param('lrg_diff_file');
+  my $lrg_diff_prefix = $self->param('lrg_diff_prefix');
   my $lrg_search_file = $self->param('lrg_search_file');
+  my $assemblies      = $self->param('assemblies');
 
   my $tmp_dir   = "$new_xml_dir/index";
   my $index_dir = "$ftp_dir/.lrg_index";
@@ -89,33 +90,25 @@ sub run {
   
   ## DIFF ##
   # Get the DIFF single files
-  my $dh2;
-  my @diff_files;
-  opendir($dh2,$tmp_dir);
-  warn("Could not process directory $tmp_dir") unless (defined($dh2));
-  while (my $file = readdir($dh2)) {
-    next unless ($file =~ m/\d+_diff\.txt$/);
-    push(@diff_files, $file);
-  }
-  closedir($dh2);
-  
-  # Generate LRG sequence differences file
-  open DIFF, "> $tmp_dir/$lrg_diff_file" || die $!;
-  opendir($dh,$tmp_dir);
-  warn("Could not process directory $tmp_dir") unless (defined($dh));
-  
-  # Loop over the files in the directory and open the DIFF txt files
-  while (my $file = readdir($dh)) {
-    next unless ($file =~ m/\d+_diff\.txt$/);
-    open F, "< $tmp_dir/$file" || die $!;
-    while (<F>) {
-      print DIFF "$_";
+  foreach my $assembly (@$assemblies) {
+    open DIFF, "> $tmp_dir/$lrg_diff_prefix$assembly.txt" || die $!;
+    
+    opendir($dh,$tmp_dir);
+    warn("Could not process directory $tmp_dir") unless (defined($dh));
+    
+    # Loop over the files in the directory and open the DIFF txt files
+    while (my $file = readdir($dh)) {
+      next unless ($file =~ m/\d+_diff_$assembly\.txt$/);
+      open F, "< $tmp_dir/$file" || die $!;
+      while (<F>) {
+        print DIFF "$_";
+      }
+      close(F);
     }
-    close(F);
+    closedir($dh);
+    close(DIFF);
   }
-  closedir($dh);
-  close(DIFF);
-
+  
 
   # Remove LRG individual json files from the new directory
   # Move the global json index file to the new directory
@@ -123,7 +116,9 @@ sub run {
     `rm -f $index_dir/LRG_*_index.json`; # Double check
     `rm -f $index_dir/LRG_*_diff.txt`;   # Double check
     `mv $tmp_dir/$lrg_index_json $index_dir`;
-    `mv $tmp_dir/$lrg_diff_file $index_dir`;
+    foreach my $assembly (@$assemblies) {
+      `mv $tmp_dir/$lrg_diff_prefix$assembly.txt $index_dir`;
+    }
     `mv $tmp_dir/$lrg_search_file $index_dir`;
   }
 }

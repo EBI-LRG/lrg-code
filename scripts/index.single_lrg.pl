@@ -26,7 +26,7 @@ $taxo_id ||= 9606;
 $default_assembly ||= 'GRCh37';
 $new_assembly = 'GRCh38';
 $index_suffix ||= '_index';
-$diff_suffix  ||= '_diff';
+$diff_suffix  ||= '_diff_';
 
 my %data;
 
@@ -116,20 +116,17 @@ foreach my $set (@$asets) {
         my $mapping_span = $coord->findNode('mapping_span');
         $data{'assemblies'}{$a_version}{'chr_strand'} = $mapping_span->data->{strand};
 
-        if ($assembly =~ /^$new_assembly/i) {
-          my $mapping_span = $coord->findNode('mapping_span');
-          my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
-          foreach my $diff (@{$mapping_diff}) {
-            my $diff_start = $diff->data->{other_start};
-            my $diff_end   = $diff->data->{other_end};
-            $data{'diff'}{"$diff_start-$diff_end"}{'assembly'} = $A_version;
-            $data{'diff'}{"$diff_start-$diff_end"}{'chr'}      = $coord->data->{other_name};
-            $data{'diff'}{"$diff_start-$diff_end"}{'start'}    = $diff_start;
-            $data{'diff'}{"$diff_start-$diff_end"}{'end'}      = $diff_end;
-            $data{'diff'}{"$diff_start-$diff_end"}{'type'}     = $type_label{$diff->data->{type}} ? $type_label{$diff->data->{type}} : $diff->data->{type};
-            $data{'diff'}{"$diff_start-$diff_end"}{'ref'}      = $diff->data->{other_sequence};
-            $data{'diff'}{"$diff_start-$diff_end"}{'alt'}      = $diff->data->{lrg_sequence};
-          }
+        my $mapping_diff = $mapping_span->findNodeArraySingle('diff');
+        foreach my $diff (@{$mapping_diff}) {
+          my $diff_start = $diff->data->{other_start};
+          my $diff_end   = $diff->data->{other_end};
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'assembly'} = $A_version;
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'chr'}      = $coord->data->{other_name};
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'start'}    = $diff_start;
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'end'}      = $diff_end;
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'type'}     = $type_label{$diff->data->{type}} ? $type_label{$diff->data->{type}} : $diff->data->{type};
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'ref'}      = $diff->data->{other_sequence};
+          $data{'diff'}{$a_version}{"$diff_start-$diff_end"}{'alt'}      = $diff->data->{lrg_sequence};
         }
       }
     }
@@ -302,9 +299,10 @@ if ($json_chr_name) {
 my %json_data = ( "id"     => $lrg_id,  
                   "symbol" => $data{'hgnc'},
                   "status" => $status,
-                  "chr"    => $json_chr_name,
-                  "start"  => $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
-                  "end"    => $data{'assemblies'}{$json_assembly}{'chr_end'} + 0,   # Force number for the JSON data
+                  "coord"  => [$json_chr_name,
+                               $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
+                               $data{'assemblies'}{$json_assembly}{'chr_end'} + 0   # Force number for the JSON data
+                              ]
                 );
 if (scalar(@json_terms_list) != 0) {
   $json_data{"terms"} = \@json_terms_list;
@@ -316,23 +314,25 @@ close(JSON);
 `chmod 664 $tmp_dir/$lrg_id$index_suffix.json`;
 
 ## LRG diff data ##
-if ($data{'diff'}) {
-  open DIFF, "> $tmp_dir/$lrg_id$diff_suffix.txt" || die $!;
-  foreach my $diff (sort(keys(%{$data{'diff'}}))) {
-    my $chr   = $data{'diff'}{$diff}{'chr'};
-    my $start = $data{'diff'}{$diff}{'start'};
-    my $end   = $data{'diff'}{$diff}{'end'};
-    my $type  = $data{'diff'}{$diff}{'type'};
-    my $ref   = $data{'diff'}{$diff}{'ref'};
-    my $alt   = $data{'diff'}{$diff}{'alt'};
-    my $asm   = $data{'diff'}{$diff}{'assembly'};
-    my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt);
+foreach my $assembly ($new_assembly, $default_assembly) {
+  my $assembly_lc = lc($assembly);
+  if ($data{'diff'}{$assembly_lc}) {
+    open DIFF, "> $tmp_dir/$lrg_id$diff_suffix$assembly.txt" || die $!;
+    foreach my $diff (sort(keys(%{$data{'diff'}{$assembly_lc}}))) {
+      my $chr   = $data{'diff'}{$assembly_lc}{$diff}{'chr'};
+      my $start = $data{'diff'}{$assembly_lc}{$diff}{'start'};
+      my $end   = $data{'diff'}{$assembly_lc}{$diff}{'end'};
+      my $type  = $data{'diff'}{$assembly_lc}{$diff}{'type'};
+      my $ref   = $data{'diff'}{$assembly_lc}{$diff}{'ref'};
+      my $alt   = $data{'diff'}{$assembly_lc}{$diff}{'alt'};
+      my $asm   = $data{'diff'}{$assembly_lc}{$diff}{'assembly'};
+      my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt);
 
-    print DIFF "$lrg_id\t$chr\t$start\t$end\t$type\t$ref\t$alt\t$asm\t$hgvs\n";
+      print DIFF "$lrg_id\t$chr\t$start\t$end\t$type\t$ref\t$alt\t$asm\t$hgvs\n";
+    }
+    close(DIFF);
   }
-  close(DIFF);
 }
-
 
 ## Methods ##
 
