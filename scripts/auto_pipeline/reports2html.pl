@@ -209,7 +209,7 @@ my $html_header = qq{
       </div>
     </header>
 
-    <div class="data_container container-extra">
+    <div class="data_container container-extra" style="padding-top:0px">
   
       <div class="report_header">
         <span class="bold_font lrg_blue padding-right-5">XML files location:</span> $abs_xml_dir/
@@ -331,7 +331,7 @@ foreach my $status (@pipeline_status_list) {
       <span class="label header_count header_count_$status">$lrg_count LRGs</span>
     </div>
     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:8px">
-      <a class="btn btn-lrg btn-lrg1" id="button_$status\_lrg" href="javascript:showhide_table('$status\_lrg');"><span class="glyphicon glyphicon-minus-sign"></span> Hide table</a>
+      <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-open close-icon-5" id="$status\_lrg_button" onclick="javascript:showhide_button('$status\_lrg','table');">Hide table</button>
     </div>
   </div>
   <div id="$status\_lrg">
