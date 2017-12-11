@@ -44,16 +44,9 @@ become ${WEBADMIN} bash << EOF
     rm -rf ./*
     cp -R ${input_dir}/* ./
     
-    for FILE in "${files[@]}"
-    do
-      file_input=${PUBFTP}/.lrg_index/${FILE}
-  
-      if [ -e ${file_input} ];then
-        cp ${file_input} ./${indexes_dir}/
-      else
-        echo "File '${file_input}' not found. It can't be copied to the VMs."
-      fi
-    done
+    cp ${files_with_path[0]} ./${indexes_dir}/
+    cp ${files_with_path[1]} ./${indexes_dir}/
+    cp ${files_with_path[2]} ./${indexes_dir}/
   
     # PROD website
     scp -r ${FBWEBSITE}* ${WEBADMIN}@${PRODVM}:${PRODWEBSITE}/ 1> /dev/null
