@@ -2,6 +2,7 @@
 
 use strict;
 use LRG::LRG;
+use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 use Getopt::Long;
 use Cwd;
 use JSON;
@@ -326,7 +327,7 @@ foreach my $assembly ($new_assembly, $default_assembly) {
       my $ref   = $data{'diff'}{$assembly_lc}{$diff}{'ref'};
       my $alt   = $data{'diff'}{$assembly_lc}{$diff}{'alt'};
       my $asm   = $data{'diff'}{$assembly_lc}{$diff}{'assembly'};
-      my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt);
+      my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt,$data{'chr_strand'});
 
       print DIFF "$lrg_id\t$chr\t$start\t$end\t$type\t$ref\t$alt\t$asm\t$hgvs\n";
     }
@@ -354,17 +355,25 @@ sub get_cross_refs {
 }
 
 sub get_hgvs {
-  my ($chr,$start,$end,$type,$ref_al,$alt_al) = @_;
+  my ($chr,$start,$end,$type,$ref_al,$alt_al,$strand) = @_;
   my $hgvs = '';
+  
+  my $ref_seq = $ref_al;
+  my $alt_seq = $alt_al;
+  
+  if ($strand == -1) {
+    reverse_comp(\$ref_seq);
+    reverse_comp(\$alt_seq);
+  }
 
   if ($type eq 'mismatch') {
-    $hgvs = "$chr:g.$start$ref_al>$alt_al";
+    $hgvs = "$chr:g.$start$ref_seq>$alt_seq";
   }
   elsif ($type eq 'deletion') {
-    $hgvs = "$chr:g.$start\_$end"."del$ref_al";
+    $hgvs = "$chr:g.$start\_$end"."del$ref_seq";
   }
   elsif ($type eq 'insertion') {
-    $hgvs = "$chr:g.$start\_$end"."ins$alt_al";
+    $hgvs = "$chr:g.$start\_$end"."ins$alt_seq";
   }
   return $hgvs;
 }
