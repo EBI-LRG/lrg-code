@@ -317,6 +317,10 @@ foreach my $status (@pipeline_status_list) {
   my $lrg_count = scalar(keys(%{$lrgs_list{$status}}));
   my $status_icon = $report_types{$status};
   my $status_label = ($status eq 'waiting') ? "Tmp (waiting)" : ucfirst($status);
+  my $button_type  = ($status eq 'succeed') ? 'closed' : 'open';
+  my $button_text  = ($status eq 'succeed') ? 'Show' : 'Hide';
+  my $div_display  = ($status eq 'succeed') ? ' style="display:none"' : '';
+  
   $html_content .= qq{
   <div class="section_annotation clearfix section_annotation1 margin-top-25 margin-bottom-20" id="$status\_section">
     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix padding-left-0">
@@ -331,10 +335,10 @@ foreach my $status (@pipeline_status_list) {
       <span class="label header_count header_count_$status">$lrg_count LRGs</span>
     </div>
     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:8px">
-      <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-open close-icon-5" id="$status\_lrg_button" onclick="javascript:showhide_button('$status\_lrg','table');">Hide table</button>
+      <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-$button_type close-icon-5" id="$status\_lrg_button" onclick="javascript:showhide_button('$status\_lrg','table');">$button_text table</button>
     </div>
   </div>
-  <div id="$status\_lrg">
+  <div id="$status\_lrg"$div_display>
   };
   
   my $status_table_header = $html_table_header;
