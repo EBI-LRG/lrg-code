@@ -339,6 +339,27 @@ div.left_side {
   padding:6px 0px 12px;
 }
 
+.info_box {
+  background-color:#EEE;
+}
+.info_box_title {
+  background-color:#E0E0E0;
+}
+.info_box_title_left {
+  padding:8px 0px 8px 8px;
+  background-color:#3C3F45;
+  color:#FFF;
+}
+.info_box_title_right {
+  padding:8px;
+}
+.info_box_content {
+  padding:0px 8px 8px;
+}
+.info_box_content > ul {
+  margin: 10px 0px;
+}
+
 .seq_count {
   background-color: #E0E0E0;
   color: #333;
@@ -430,9 +451,6 @@ div.left_side {
 .annotation_set {
   margin-bottom: 75px;
   padding:0px 5px;
-}
-.annotation_set_ext{
-  border-left:6px solid #3C3F45;
 }
 
 .annotation_set_sub_section {
@@ -1024,6 +1042,12 @@ table.gene_annotation>tbody>tr>td {
   padding:4px;
 }
 
+div.gene_annotation {
+  border-left: 8px solid #E0E0E0;
+  margin-top: -5px;
+  padding-top: 5px;
+}
+
 .lrg_current_assembly_color {
   color: #78BE43 !important;
 }  
@@ -1123,7 +1147,8 @@ div.top_upd_anno_link {
   background-color:#E0E0E0;
   font-size:0.9em;
   text-align:right;
-  margin-left:-5px
+  margin-left:-5px;
+  margin-top:5px;
 }
 
 .hgvs > span { vertical-align:middle; }
