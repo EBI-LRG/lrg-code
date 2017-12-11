@@ -232,7 +232,7 @@ if ($tmp_dir ne $index_dir) {
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
 }
 `rm -f $tmp_dir/LRG_*$index_suffix.json`;
-#`rm -f $tmp_dir/LRG_*_diff_*.txt`;
+`rm -f $tmp_dir/LRG_*_diff_*.txt`;
 
 print " done\n";
 
