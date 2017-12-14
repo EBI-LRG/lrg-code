@@ -23,7 +23,7 @@ if [[ -z ${annotation_test} ]] ; then
   annotation_test=0
 fi
 
-skip_hc_options="fixed mapping polya main" # all: all of these options
+skip_hc_options="fixed mapping polya main partial partial_gene" # all: all of these options
 
 report_file=${tmp_dir}/pipeline_reports.txt
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
@@ -88,10 +88,13 @@ function end_of_script {
     if [[ ${skip_hc} =~ 'main' ]] ; then
       comment="${comment} - Main HealthChecks skipped for this LRG"
     fi
+    if [[ ${skip_hc} =~ 'partial' ]] ; then
+      comment="${comment} - 'Partial' HealthChecks skipped for this LRG"
+    fi
     if [[ ${warning} == 'polyA' ]] ; then
       comment="${comment} - WARNING: at least one of the NCBI transcripts has a polyA sequence"
     fi
-    if [[ ! ${skip_hc} =~ 'main' ]] ; then
+    if [[ ! ${skip_hc} =~ 'main' && ! ${skip_hc} =~ 'partial_gene' ]] ; then
       is_partial=`perl ${perldir}/pipeline/check.lrg.pl -xml_file ${xmlfile} -check partial_gene`
       if [[ -n ${is_partial} ]] ; then
         comment="${comment} - Partial gene/transcript/protein found"
@@ -116,6 +119,10 @@ echo_stderr  $comment >&2
 echo_stderr  "#|  ${lrg_id}  |#" >&2
 echo_stderr  $comment >&2
 
+skip_check_hc=''
+skip_check_hc_1='requester'
+skip_check_hc_2='requester'
+skip_check_hc_3=''
 
 # Check the correct terms for HealthChecks skip options
 if [[ ${skip_hc} ]] ; then
@@ -139,8 +146,20 @@ if [[ ${skip_hc} ]] ; then
         fi
         exit 1
       fi
+      if [[ $i =~ 'partial' ]]; then
+        if [[ ${skip_check_hc} != '' ]]; then
+          skip_check_hc="${skip_check_hc},"
+        fi
+         skip_check_hc="${skip_check_hc}$i"
+      fi
     done
   fi
+fi
+
+if [[ ${skip_check_hc} != '' ]]; then
+  skip_check_hc_1="${skip_check_hc_1},${skip_check_hc}"
+  skip_check_hc_2="${skip_check_hc_2},${skip_check_hc}"
+  skip_check_hc_3="\"-skip_check ${skip_check_hc}\""
 fi
 
 
@@ -182,7 +201,7 @@ fi
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #1 ... " >&2
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown "-skip_check requester" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml ${assembly} unknown "-skip_check ${skip_check_hc_1}" 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #1 done" 
   echo_stderr  ""
@@ -199,7 +218,8 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.new "Annotations done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #2 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} unknown "-skip_check requester" 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.new ${assembly} unknown "-skip_check ${skip_check_hc_2}"
+   2> ${error_log}
   check_script_result
   echo_stderr  "> checking #2 done"
   echo_stderr  ""
@@ -232,7 +252,7 @@ check_empty_file ${xml_dir}/${lrg_id}.xml.exp "Extracting done"
 if [[ ! ${skip_hc} =~ 'main' ]] ; then
   echo_stderr  "# Check data file #3 ... "
   rm -f ${error_log}
-  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} unknown 2> ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${lrg_id}.xml.exp ${assembly} unknown ${skip_check_hc_3} 2> ${error_log}
   check_script_result
   echo_stderr  "> checking #3 done"
   echo_stderr  ""

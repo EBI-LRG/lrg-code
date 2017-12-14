@@ -31,7 +31,7 @@ if [[ -z ${skip_extra_hc} ]] ; then
   skip_extra_hc=0
 fi
 
-skip_hc_options="fixed mapping polya main" # all: all of these options
+skip_hc_options="fixed mapping polya main partial partial_gene" # all: all of these options
 
 log_file=${tmp_dir}/log/log_${lrg_id}.txt
 error_log=${tmp_dir}/error/error_log_${lrg_id}.txt
@@ -117,6 +117,9 @@ function end_of_script {
     if [[ ${skip_hc} =~ 'main' ]] ; then
       comment="${comment}Main HealthChecks skipped for this LRG;"
     fi
+    if [[ ${skip_hc} =~ 'partial' ]] ; then
+      comment="${comment} - 'Partial' HealthChecks skipped for this LRG"
+    fi
     # Warnings
     if [[ ${warning} =~ 'polyA' ]] ; then
       comment_warning="${comment_warning}At least one of the NCBI transcripts has a polyA sequence;"
@@ -124,7 +127,7 @@ function end_of_script {
     if [[ ${warning} =~ 'fixed' ]] ; then
       comment_warning="${comment_warning}The fixed section of the LRG is different from the EBI FTP site;"
     fi
-    if [[ ! ${skip_hc} =~ 'main' ]] ; then
+    if [[ ! ${skip_hc} =~ 'main' && ! ${skip_hc} =~ 'partial_gene' ]] ; then
       is_partial=`perl ${perldir}/pipeline/check.lrg.pl -xml_file ${file_path} -check partial_gene`
       if [[ -n ${is_partial} && ${status} != 'public' ]] ; then
         comment="${comment}Partial gene/transcript/protein found;"
@@ -219,7 +222,6 @@ if [[ ${skip_hc} ]] ; then
     done
   fi
 fi
-
 
 # Preliminary test: compare fixed section with existing LRG entry
 if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
