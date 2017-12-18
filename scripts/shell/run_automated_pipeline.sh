@@ -31,7 +31,7 @@ if [[ -z ${skip_extra_hc} ]] ; then
   skip_extra_hc=0
 fi
 
-skip_hc_options="fixed mapping polya main partial partial_gene" # all: all of these options
+skip_hc_options="fixed mapping polya main" # all: all of these options
 
 log_file=${tmp_dir}/log/log_${lrg_id}.txt
 error_log=${tmp_dir}/error/error_log_${lrg_id}.txt
@@ -190,7 +190,7 @@ skip_checks='requester'
 
 if [[ ${skip_extra_hc} && ${skip_extra_hc} != 0 ]]; then
   echo_log "HealthChecks skipped: ${skip_extra_hc}"
-  skip_checks="requester ${skip_extra_hc}"
+  skip_checks="requester,${skip_extra_hc}"
 fi
 
 

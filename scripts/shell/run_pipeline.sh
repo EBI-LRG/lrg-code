@@ -23,7 +23,7 @@ if [[ -z ${annotation_test} ]] ; then
   annotation_test=0
 fi
 
-skip_hc_options="fixed mapping polya main partial partial_gene" # all: all of these options
+skip_hc_options="fixed mapping polya main compare_main_mapping partial partial_gene" # all: all of these options
 
 report_file=${tmp_dir}/pipeline_reports.txt
 error_log=${tmp_dir}/error_log_${lrg_id}.txt
