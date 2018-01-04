@@ -104,7 +104,7 @@ my $query = qq{
       c.contact_id = lc.contact_id AND c.is_requester=1
     )
   WHERE
-    l.name NOT LIKE 'NCBI RefSeqGene' AND (
+    l.name NOT LIKE 'NCBI RefSeq' AND (
       g.lrg_id IN ('%s') OR
       g.symbol IN ('%s')
     )

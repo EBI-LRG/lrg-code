@@ -111,7 +111,7 @@ if (defined($list_lsdbs)) {
         WHERE
             lg.gene_id = $gene_id AND
             (
-                l.name NOT LIKE 'NCBI RefSeqGene' AND
+                l.name NOT LIKE 'NCBI RefSeq' AND
                 l.name NOT LIKE 'LRG' AND
                 l.name NOT LIKE 'Ensembl'
             )
@@ -222,7 +222,7 @@ $stmt = qq{
     WHERE
         lr.gene_id = $gene_id
     ORDER BY
-        (l.name = 'NCBI RefSeqGene') ASC,
+        (l.name = 'NCBI RefSeq') ASC,
         l.name ASC
 };
 $sth = $db_adaptor->dbc->prepare($stmt);
@@ -437,13 +437,13 @@ while ($sth->fetch()) {
         $coords = coords_node($lrg_id,$e_lrg_start,$e_lrg_end,1);
         $exon->addExisting($coords);
 
-        # Add cDNA coordinates if defined
+        #\A0Add cDNA coordinates if defined
         if (defined($e_cdna_start) && defined($e_cdna_end)) {
           $coords = coords_node("${lrg_id}${t_name}",$e_cdna_start,$e_cdna_end);
           $exon->addExisting($coords);
         }
 
-        # Add peptide coordinates if defined
+        #\A0Add peptide coordinates if defined
         $ep_sth->execute($e_id);
         $ep_sth->bind_columns(\$e_peptide_name,\$e_peptide_start,\$e_peptide_end);
         while ($ep_sth->fetch()) {

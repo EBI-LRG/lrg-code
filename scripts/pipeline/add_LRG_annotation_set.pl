@@ -35,7 +35,7 @@ my $date = sprintf("\%d-\%02d-%02d",($year+1900),($mon+1),$mday);
 die("You need to specify an LRG xml file with the -xmlfile option") unless ($option{xmlfile});
 die(sprintf("XML file '\%s' does not exist",$option{xmlfile})) unless (-e $option{xmlfile});
 
-my $refseq_label = 'NCBI RefSeqGene';
+my $refseq_label = 'NCBI RefSeq';
 
 # Load the XML file
 my $xmla = LRG::API::XMLA::XMLAdaptor->new();

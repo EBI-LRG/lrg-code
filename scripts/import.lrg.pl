@@ -528,8 +528,8 @@ while (my $lrg_id = shift(@lrg_ids)) {
         next;
       }
 
-      if ($annotation{'NCBI RefSeqGene'}) {
-        $refseq_annotation = $annotation{'NCBI RefSeqGene'};
+      if ($annotation{'NCBI RefSeq'}) {
+        $refseq_annotation = $annotation{'NCBI RefSeq'};
         $refseq_genes = $refseq_annotation->feature->gene();
         foreach my $gene (@$refseq_genes) {
           $refseq_transcripts = $gene->transcript;

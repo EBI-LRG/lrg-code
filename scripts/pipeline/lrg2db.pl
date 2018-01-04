@@ -930,7 +930,7 @@ sub parse_annotation_set {
     my $source = $annotation_set->findNode('source') or error_msg("Could not find any source for annotation_set in $xmlfile");
     my $source_name = $source->findNode('name')->content;
 
-    return undef if ($source_name !~ /LRG/ && $source_name !~ /NCBI\sRefSeqGene/ && $source_name !~ /Ensembl/);
+    return undef if ($source_name !~ /LRG/ && $source_name !~ /NCBI\sRefSeq/ && $source_name !~ /Ensembl/);
 
     $annotation_set_type = lc((split(' ',$source_name))[0]) if (!$annotation_set_type);
 
