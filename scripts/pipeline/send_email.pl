@@ -161,7 +161,7 @@ sub send_lrg_email {
 
     # Copy of the email sent to the LRG internal mailing list
     unless ($no_lrg_email) {
-      my $lrg_subject = "Test - $subject";#"Copy - $subject";
+      my $lrg_subject = "Copy - $subject";
       my $lrg_message = "Copy of the automatic email sent to $name about $lrg_id:<br /><br />$message";
       my $lrg_email_obj = LRG::LRGEmail->new($lrg_email,$lrg_subject,$lrg_message);
          $lrg_email_obj->send;
