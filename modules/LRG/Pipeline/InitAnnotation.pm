@@ -39,8 +39,6 @@ sub write_output {
   make_path $reports_dir or die "Reports directory '$reports_dir' doesn't exist!" unless (-d $reports_dir);
   die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
   
-  my %global_skip_hc = ('fixed' => 1, 'mapping' => 1, 'polya' => 1, 'main' => 1);
-  
   my $skip_lrgs_hc = get_lrgs_skip_hc($skip_lrgs_hc_file);
 
   my $dh;
@@ -148,6 +146,8 @@ sub write_output {
 sub get_lrgs_skip_hc {
   my $hc_file = shift;
   my %lrgs_list;
+  
+  my %global_skip_hc = ('fixed' => 1, 'mapping' => 1, 'polya' => 1, 'main' => 1);
   
   if (-e $hc_file) {
     open HC, "< $hc_file" or die "Can't open the file '$hc_file'";
