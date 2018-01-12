@@ -36,7 +36,7 @@ perl ${script_lrg_list} -assembly GRCh37${xmldir}
 perl ${script_tr_list} -assembly GRCh38${xmldir} ${tmpdir}
 
 # LRG transcript xrefs
-perl ${script_tr_xref}
+perl ${script_tr_xref_list}
 
 # LRG proteins
 perl ${script_pr_list}
