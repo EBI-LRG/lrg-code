@@ -137,7 +137,14 @@ function display_results (results) {
     var old_tr_name = '-';
     var new_tr_name = '-';
     if (results[enst].tnames) {
-      old_tr_name = (results[enst].tnames[0] == '') ? old_tr_name : results[enst].tnames[0].toString();
+      var tmp_old_tr_name = results[enst].tnames[0].toString();
+      if (tmp_old_tr_name.match(/^[0-9]$/)) {
+        tmp_old_tr_name = "0"+tmp_old_tr_name;
+      }
+      if (tmp_old_tr_name.match(/^[0-9]{2}$/)) {
+        tmp_old_tr_name = "0"+tmp_old_tr_name;
+      }
+      old_tr_name = (results[enst].tnames[0] == '') ? old_tr_name : tmp_old_tr_name;
       old_tr_name = (old_tr_name.match(/^[0-9]+/)) ? symbol+"-"+old_tr_name : old_tr_name;
       new_tr_name = (results[enst].tnames[1] == '') ? new_tr_name : results[enst].tnames[1].toString();
       new_tr_name = (new_tr_name.match(/^[0-9]+/)) ? symbol+"-"+new_tr_name : new_tr_name;

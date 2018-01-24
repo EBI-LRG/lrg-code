@@ -52,6 +52,7 @@ my %cars_data;
 open C, "< $data_dir/$cars_file" or die $!;
 while(<C>) {
   chomp $_;
+  next if ($_ =~ /^#/ | $_ eq '');
   my @line = split("\t", $_);
   next if ($line[12] ne 'NULL');
   my $cars = $line[5];
@@ -132,10 +133,10 @@ while(<E>) {
   if ($ccds && $ccds =~ /^CCDS(\d+\.?\d+)$/) {
     $ccds = $1;
   }
-  if ($old_tr && $old_tr =~ /^$hgnc-(\d+)$/) {
+  if ($old_tr && $old_tr =~ /^$hgnc-(\d{3})$/) {
     $old_tr = $1;
   }
-  if ($new_tr && $new_tr =~ /^$hgnc-(\d+)$/) {
+  if ($new_tr && $new_tr =~ /^$hgnc-(\d{3})$/) {
     $new_tr = $1;
   }
   
@@ -256,10 +257,10 @@ foreach my $enst (keys(%ensts)) {
   }
   
   if ($old_tr_name || $new_tr_name) {
+  
+    $old_tr_name = ($old_tr_name) ? ($old_tr_name =~ /^\d{3}$/ ? $old_tr_name + 0 : $old_tr_name) : '';
     
-    $old_tr_name = ($old_tr_name) ? (($old_tr_name =~ /^0/) ? $old_tr_name : $old_tr_name + 0) : '';
-    
-    $new_tr_name = ($new_tr_name) ? (($new_tr_name =~ /^0/) ? $new_tr_name : $new_tr_name + 0) : '';
+    $new_tr_name = ($new_tr_name) ? ($new_tr_name =~ /^\d{3}$/ ? $new_tr_name + 0 : $new_tr_name) : '';
     
     $json_data{"tnames"} = [$old_tr_name,$new_tr_name];
   }
