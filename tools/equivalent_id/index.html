@@ -3,14 +3,20 @@
   <title>Identifier equivalent</title>
   
   <!-- CSS -->
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"/>
-  <link rel="stylesheet" href="http://dev.lrg-sequence.org/css/ebi-visual-custom.css"/>
-  <link rel="stylesheet" href="http://dev.lrg-sequence.org/css/lrg.css"/>
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"/>
+  <!--<link rel="stylesheet" href="http://dev.lrg-sequence.org/css/ebi-visual-custom.css"/>-->
+  <link rel="stylesheet" href="../ebi-visual-custom.css"/>
+  <!--<link rel="stylesheet" href="http://dev.lrg-sequence.org/css/lrg.css"/>-->
+  <link rel="stylesheet" href="../lrg.css"/>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.min.css"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato|Lato:700|Open+Sans:400,400i,700"/> 
   
   <style>
+  .container_padding {
+    padding-left:5px;
+    padding-right:5px;
+  }
   .txt_right {
     text-align:right;
   }
@@ -43,7 +49,6 @@
     vertical-align:middle;
   }
   .fa_button {
-    float:right;
     padding:2px 4px;
     color:#FFF;
     border-radius:0.25em;
@@ -53,6 +58,42 @@
      color:#FFF;
      background-color: #78BE43;
   }
+  
+  .cars_flag {
+    padding-left:2px;
+    padding-right:2px;
+    cursor: help;
+    color: #D00;
+    font-size: 15px;
+    vertical-align: middle;
+  }
+  
+  .cars_version_container {
+    float:right;
+    margin-top:25px;
+    border: 1px solid #CCC;
+    border-radius: 5px;
+    padding: 4px 6px;
+  }
+  
+  .to_sort { 
+  background:url('../img/sortable.png') no-repeat right center !important;
+  cursor:pointer;
+  padding-right:25px;
+}
+
+.sorttable_sorted { 
+  background:url('../img/sort_desc.png') no-repeat right center !important;
+  cursor:pointer;
+  padding-right:25px;
+}
+
+.sorttable_sorted_reverse { 
+  background:url('../img/sort_asc.png') no-repeat right center !important;
+  cursor:pointer;
+  padding-right:25px;
+}
+  
   </style>
   
   <!-- Javascript / Jquery -->
@@ -60,7 +101,8 @@
   <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <script src="./js/search_results.js"></script>
-  <script src="http://dev.lrg-sequence.org/js/sorttable.js"></script>
+  <script src="./js/sorttable.js"></script>
+  <!--<script src="http://dev.lrg-sequence.org/js/sorttable.js"></script>-->
 
   <script type="text/javascript">
     window.onload = function () {
@@ -84,6 +126,7 @@
       $('#temp_loader').hide();
       $('#search_form').show(500);
     }
+    
 
     // Toggle tooltip
     $(document).ready(function(){
@@ -93,14 +136,25 @@
       $('button').focus(function() {
         this.blur();
       });
+      
+      jQuery.get('./ens_ott_cars_info.txt', function(data) {
+         $("#cars_info").html(data);
+      });
     });
 
   </script>
 
 </head>
 <body>
-  <div class="container">
-    <h2>Identifier equivalent</h2>
+  <div class="container container_padding">
+    <div class="clearfix">
+      <h2 class="left">Identifier equivalent</h2>
+      <div class="cars_version_container">
+        <span class="cars_flag glyphicon glyphicon-star" style="vertical-align:baseline;cursor:default"></span>
+        <span class="bold_font">CARS version: </span>
+        <span id="cars_info"></span>
+      </div>
+    </div>
   
     <!-- Search form -->
     <div id="search_form" class="clearfix margin-top-20">
@@ -136,7 +190,7 @@
           <span class="right icon-help tiny-icon close-icon-0 margin-right-10" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Sort by gene symbol (external link)"></span>
         </th>
         <th class="to_sort">
-          <span>Ensembl Tr.</span>
+          <span>Ensembl Transcript</span>
           <span class="right icon-help tiny-icon close-icon-0 margin-right-10" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Sort by Ensembl transcript and retrieve the corresponding FASTA sequence"></span>
         </th>
         <th class="to_sort">
@@ -144,7 +198,7 @@
           <span class="right icon-help tiny-icon close-icon-0 margin-right-10" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Sort by HAVANA gene"></span>
         </th>
         <th class="to_sort">
-          <span>Havana Tr.</span>
+          <span>Havana Transcript</span>
           <span class="right icon-help tiny-icon close-icon-0 margin-right-10" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Sort by HAVANA transcript"></span>
         </th>
         <th class="to_sort">
