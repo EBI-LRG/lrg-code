@@ -5,6 +5,8 @@ use Bio::EnsEMBL::ApiVersion;
 use Getopt::Long;
 use LWP::Simple;
 use HTTP::Tiny;
+use JSON;
+use POSIX;
 
 my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_download, $hgmd_file, $help);
 GetOptions(
@@ -25,14 +27,13 @@ usage() if ($help);
 usage("You need to give a gene name as argument of the script (HGNC or ENS), using the option '-gene'.")  if (!$gene_name);
 usage("You need to give an output file name as argument of the script , using the option '-outputfile'.") if (!$gene_name);
 
-#usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana, UniProt) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
 usage("You need to give a directory containing the extra data files (e.g. HGMD, Havana) , using the option '-data_file_dir'.") if (!$data_file_dir && !-d $data_file_dir);
 
 #usage("Uniprot file '$uniprot_file' not found") if ($uniprot_file && !-f "$data_file_dir/$uniprot_file");
 usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f "$data_file_dir/$hgmd_file");
 
 my $registry = 'Bio::EnsEMBL::Registry';
-my $species  = 'human';
+my $species  = 'homo_sapiens';
 my $html;
 #my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
 my $havana_file_default  = 'hg38.bed';
@@ -40,8 +41,17 @@ my $havana_file_default  = 'hg38.bed';
 my $max_variants = 10;
 
 my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
+my $transcript_cars_info  = $data_file_dir.'/cars/cars_info.json';
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
-my $transcript_cars_date  = '23rd August 2017 - e89';
+
+my $transcript_cars_date  = 'NA';
+if (-e $transcript_cars_info) {
+  my $json_text = `cat $transcript_cars_info`;
+  my $data = decode_json($json_text);
+  $transcript_cars_date = $data->{'Date'}.' - '.$data->{'Release'};
+}
+
+#my $transcript_cars_date  = 'January 2018 - e92';
 my $transcript_score_date = '23rd August 2017 - e89';
 #$uniprot_file ||= $uniprot_file_default;
 
@@ -277,6 +287,18 @@ foreach my $tr (@$ens_tr) {
     $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'evidence'}   = $evidence_count;
     $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'pathogenic'} = $pathogenic_variants;
     
+    my $exon_coding_start = $exon->coding_region_start($tr);
+    my $exon_coding_end   = $exon->coding_region_end($tr);
+    
+    if ($exon_coding_start && $exon_coding_start > $start) {
+      $exons_list{$exon_coding_start} ++;
+      $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'exon_coding_start'} = $exon_coding_start;
+    }
+    if ($exon_coding_end && $exon_coding_end < $end) {
+      $exons_list{$exon_coding_end} ++;
+      $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'exon_coding_end'} = $exon_coding_end;
+    }
+    
     if (scalar(keys(%$pathogenic_variants)) != 0) {
       $ens_tr_exons_list{$tr_name}{'has_pathogenic'} += scalar(keys(%$pathogenic_variants));
     }
@@ -349,7 +371,8 @@ if ($data_file_dir && -e "$data_file_dir/$havana_file") {
 my $refseq = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
 
 foreach my $refseq_tr (@$refseq) {
-  next if ($refseq_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+  my $refseq_strand = $refseq_tr->slice->strand;
+  next if ($refseq_strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
   next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
 
@@ -367,10 +390,58 @@ foreach my $refseq_tr (@$refseq) {
     my $start = $refseq_exon->seq_region_start;
     my $end   = $refseq_exon->seq_region_end;
     
+    $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
+    
+    my $exon_coding_start = ($refseq_strand == 1) ? $refseq_exon->coding_region_start($refseq_tr) : $refseq_exon->coding_region_end($refseq_tr);
+    my $exon_coding_end   = ($refseq_strand == 1) ? $refseq_exon->coding_region_end($refseq_tr)   : $refseq_exon->coding_region_start($refseq_tr);
+    
+    my $exon_tr_coord_coding_start = $exon_coding_start;
+    my $exon_tr_coord_coding_end = $exon_coding_end;
+    
+    my $coding_exon_length = 0;
+    if ($exon_coding_start && $exon_coding_end) {
+      if ($exon_coding_start > $exon_coding_end) {
+        $coding_exon_length = $exon_coding_start - $exon_coding_end + 1;
+      }
+      else {
+        $coding_exon_length = $exon_coding_end - $exon_coding_start + 1;
+      }
+    }
+    
+    my $slice_start = ($refseq_strand == 1) ? $start - $refseq_exon->start : $end + $refseq_exon->start;
+    
+    my $use_length = 0;
+    if ($exon_coding_start) {
+      if ($refseq_strand == 1) {
+        $exon_coding_start += $slice_start;
+      }
+      else {
+        $exon_coding_start = $slice_start - $exon_coding_start;
+      }
+    }
+    if ($exon_coding_end) {
+      if ($refseq_strand == 1) {
+        $exon_coding_end += $slice_start ;
+      }
+      else {
+        $exon_coding_end = $slice_start - $exon_coding_end;
+      }
+    }
+    
+    $exon_coding_start ||= 0;
+    $exon_coding_end   ||= 0;
+    if ($exon_coding_start && $exon_coding_start > $start) {
+      $exons_list{$exon_coding_start} ++;
+      $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_coding_start'} = $exon_coding_start;
+    }
+    if ($exon_coding_end && $exon_coding_end < $end) {
+      $exons_list{$exon_coding_end} ++;
+      $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_coding_end'} = $exon_coding_end;
+    }
+    
     $exons_list{$start} ++;
     $exons_list{$end} ++;
     
-    $refseq_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
   }
 }
 
@@ -412,6 +483,7 @@ foreach my $refseq_tr (@$refseq_gff3) {
 #------#
 my $cdna_dna = $cdna_dna_a->fetch_all_by_Slice($gene_slice);
 foreach my $cdna_tr (@$cdna_dna) {
+my $cdna_strand = $cdna_tr->slice->strand;
   next if ($cdna_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
   my $cdna_name = '';
@@ -466,12 +538,12 @@ foreach my $o_gene (@$o_genes) {
 #####     DISPLAY DATA     #####
 ################################
 
-my $tsl_default_bgcolour = '#002366';
-my %tsl_colour = ( '1'   => '#080',
-                   '2'   => '#EE7600',
-                   '3'   => '#EE7600',
-                   '4'   => '#800',
-                   '5'   => '#800'
+my $tsl_default_bgcolour = 'tsl_d';
+my %tsl_colour_class = ( '1'   => 'tsl_a',
+                         '2'   => 'tsl_b',
+                         '3'   => 'tsl_b',
+                         '4'   => 'tsl_c',
+                         '5'   => 'tsl_c',
                  );
 
 my $coord_span = scalar(keys(%exons_list));
@@ -539,7 +611,7 @@ $html .= qq{
       </button>
       
       <!--Show/Hide pathogenic variants -->
-      <button class="btn btn-lrg" id="button_pathogenic_variants" onclick="showhide_elements('button_pathogenic_variants','pathogenic_exon_label')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
+      <button class="btn btn-lrg" id="button_pathogenic_variants" onclick="showhide_elements('button_pathogenic_variants','pathogenic_exon_tag')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
         Hide pathogenic variant labels $html_pathogenic_label
       </button>
       
@@ -557,19 +629,25 @@ my $exon_tab_list = qq{
   <table class="exon_table">
     <thead>
       <tr>
-        <th class="rowspan2 fixed_col col1" rowspan="2" title="Hide rows">-</th>
-        <th class="rowspan2 fixed_col col2" rowspan="2" title="Highlight rows">hl</th>
-        <th class="rowspan2 fixed_col col3" rowspan="2" title="Blast the sequence">Blast</th>
+        <th class="rowspan2 fixed_col col1" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Hide rows / Highlight rows / Blast the sequence">
+          <span class="helptip_label">Opt</span>
+        </th>
         <th class="rowspan2 fixed_col col4" rowspan="2">Transcript</th>
-        <th class="rowspan2 fixed_col col5" rowspan="2" title="Number of exons">Ex.</th>
-        <th class="rowspan2 fixed_col col6" rowspan="2">Name<div class="transcript_length_header">(length)</div></th>
-        <th class="rowspan2 fixed_col col7" rowspan="2">Biotype<div class="transcript_length_header">(Coding length)</div></th>
-        <th class="rowspan2 fixed_col col8" rowspan="2" title="Strand">Str.</th>
-        <th class="rowspan1" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
+        <th class="rowspan2 fixed_col col5" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Number of exons">
+          <span class="helptip_label">#e</span>
+        </th>
+        <th class="rowspan2 fixed_col col6" rowspan="2">Name<div class="tr_length_header">(length)</div></th>
+        <th class="rowspan2 fixed_col col7" rowspan="2">Biotype<div class="tr_length_header">(Coding length)</div></th>
+        <th class="rowspan2 fixed_col col8" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Strand">
+          <span class="helptip_label">S</span>
+        </th>
+        <th class="rowspan1 coords_cell" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
         <th class="rowspan2" rowspan="2">CCDS</th>
         <th class="rowspan2" rowspan="2">RefSeq transcript</th>
         <th class="rowspan2" rowspan="2">HGMD</th>
-        <th class="rowspan2" rowspan="2" title="Highlight rows">hl</th>
+        <th class="rowspan2" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Highlight rows">
+          <span class="helptip_label">hl</span>
+        </th>
       </tr>
       <tr>
         <th></th>
@@ -600,8 +678,9 @@ my $row_id = 1;
 my $row_id_prefix = 'tr_';
 my $bg = 'bg1';
 my $min_exon_evidence = 1;
-my $end_of_row = qq{</td><td class="extra_column"></td><td class="extra_column"></td><td class="extra_column">####HGMD####</td><td>####HIGHLIGHT####</td></tr>\n};
+my $end_of_row = qq{</td><td class="extra_col"></td><td class="extra_col"></td><td class="extra_col">####HGMD####</td><td>####HIGHLIGHT####</td></tr>\n};
 
+my @sorted_list_of_exon_coords = (sort {$a <=> $b} keys(%exons_list));
 
 #----------------------------#
 # Display ENSEMBL transcript #
@@ -610,7 +689,8 @@ my %ens_rows_list;
 foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list{$a}{'count'}} keys(%ens_tr_exons_list)) {
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
-  my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};;
+  my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
+  my $tr_strand  = $tr_object->strand;
   
   my $column_class = ($tr_object->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
@@ -637,10 +717,6 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $trans_score_html   = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
-
-  my $hide_row           = hide_button($row_id);
-  my $highlight_row      = highlight_button($row_id,'left');
-  my $blast_button       = blast_button($ens_tr);
   
   my $biotype = get_biotype($tr_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
@@ -650,26 +726,26 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   if ($canonical_html ne '' && $cars_html ne '') {
     $width_left  = '0px';
     $width_right = '32px';
-    $enst_td_style = ' style="text-align:right"';
+    $enst_td_style = ' class="text-right"';
   }
+  
+  my $first_col = build_first_col($ens_tr,$row_id);
   
   # First columns
   $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr" data-biotype="$data_biotype">
-    <td class="fixed_col col1">$hide_row</td>
-    <td class="fixed_col col2">$highlight_row</td>
-    <td class="fixed_col col3">$blast_button</td>
-    <td class="$column_class transcript_column fixed_col col4">
+  <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr" data-biotype="$data_biotype">
+    $first_col
+    <td class="$column_class tr_col fixed_col col4">
       <table class="transcript" style="width:100%;text-align:center">
         <tr>
           <td class="$column_class" style="padding:0px" colspan="6">
-            <table style="width:100%">
+            <table class="enst_tr">
               <tr>
                 <td style="width:$width_left"></td>
                 <td$enst_td_style>
                   <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr_label</a>
                 </td>
-                <td style="width:$width_right;text-align:right">$canonical_html$cars_html</td>
+                <td style="width:$width_right">$canonical_html$cars_html</td>
               </tr>
             </table>
           </td>
@@ -683,7 +759,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
         </tr>
       </table>
     </td>
-    <td class="extra_column fixed_col col5">$e_count</td>
+    <td class="extra_col fixed_col col5">$e_count</td>
   };
   
   my $tr_name = $tr_object->external_name;
@@ -692,13 +768,13 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $tr_name_label  =~ s/-/-<b>/;
     $tr_name_label .= '</b>';
   }
-  my $tr_orientation = get_strand($tr_object->strand);
+  my $tr_orientation = get_strand($tr_strand);
   my $incomplete = is_incomplete($tr_object);
   my $tr_number = (split('-',$tr_name))[1];
   $exon_tab_list .= qq{
-    <td class="extra_column fixed_col col6" sorttable_customkey="$tr_number">$tr_name_label<div class="transcript_length">($cdna_length)</div></td>
-    <td class="extra_column fixed_col col7">$biotype$incomplete<div class="transcript_length">($cdna_coding_length)</div></td>
-    <td class="extra_column fixed_col col8">$tr_orientation</td>
+    <td class="extra_col fixed_col col6" sorttable_customkey="$tr_number">$tr_name_label<div class="tr_length">($cdna_length)</div></td>
+    <td class="extra_col fixed_col col7">$biotype$incomplete<div class="tr_length">($cdna_coding_length)</div></td>
+    <td class="extra_col fixed_col col8">$tr_orientation</td>
   };
   
 
@@ -726,14 +802,19 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   }
   
   # Exon columns
-  my $exon_number = ($tr_object->strand == 1) ? 1 : $e_count;
+  my $exon_number = ($tr_strand == 1) ? 1 : $e_count;
   my $exon_start;
   my $exon_end;
   my $colspan = 1;
-  foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    my $is_partial = '';
+  
+  my $start_index = 0;
+  my $end_index = 0;
+  for (my $i=0; $i < scalar(@sorted_list_of_exon_coords); $i++) {
+    my $coord = $sorted_list_of_exon_coords[$i];
+    my $left_utr_span  = 0;
+    my $right_utr_span = 0;
+    my $few_evidence = '';
     my $is_coding  = ' coding';
-    my $few_evidence = ''; 
     if ($exon_start and !$ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
       next;
@@ -741,11 +822,13 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     # Exon start found
     elsif (!$exon_start && $ens_tr_exons_list{$ens_tr}{'exon'}{$coord}) {
       $exon_start = $coord;
+      $start_index = $i;
       next;
     }
     # Exon end found
     elsif ($exon_start and $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
+      $end_index = $i;
     }
     
     my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
@@ -758,24 +841,26 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
 
       my $exon_obj = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'};
 
+      my $left_utr_end    = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_coding_start'};
+      my $right_utr_start = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_coding_end'};
+
       if(! $exon_obj->coding_region_start($tr_object)) {
         $is_coding = ' non_coding';
       }
-      else {
-        my $coding_start = $exon_obj->coding_region_start($tr_object);
-        my $coding_end   = $exon_obj->coding_region_end($tr_object);
-
-        $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+      elsif ($left_utr_end || $right_utr_start){
+        ($left_utr_span,$right_utr_span) =  @{get_UTR_span($left_utr_end,$right_utr_start,$start_index,$end_index,$colspan,$tr_strand,\@sorted_list_of_exon_coords)};
+  
+        $is_coding  .= ' partial';
       }
       
       my $phase_start = $exon_obj->phase;
       my $phase_end   = $exon_obj->end_phase;
       
-      $few_evidence = ' few_evidence' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
+      $few_evidence = ' few_ev' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $exon_tab_list .= display_exon("$has_exon$is_coding$few_evidence$is_partial",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name,$phase_start,$phase_end);
+      $exon_tab_list .= display_exon('enst',"$has_exon$is_coding$few_evidence",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name,$tr_strand,$phase_start,$phase_end,$left_utr_end,$right_utr_start,$left_utr_span,$right_utr_span);
 
-      if ($tr_object->strand == 1) { $exon_number++; }
+      if ($tr_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
       $colspan = 1;
@@ -787,10 +872,10 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   }
   my $ccds_display   = (scalar @ccds)   ? display_extra_ids(\@ccds) : '-';
   my $refseq_display = (scalar @refseq) ? display_extra_ids(\@refseq).$refseq_button : '-';
-  $exon_tab_list .= qq{</td><td class="extra_column">$ccds_display};
-  $exon_tab_list .= qq{</td><td class="extra_column">$refseq_display};
-  $exon_tab_list .= qq{</td><td class="extra_column">-};
-  $exon_tab_list .= qq{</td><td>}.highlight_button($row_id, 'right');
+  $exon_tab_list .= qq{</td><td class="extra_col">$ccds_display};
+  $exon_tab_list .= qq{</td><td class="extra_col">$refseq_display};
+  $exon_tab_list .= qq{</td><td class="extra_col">-};
+  $exon_tab_list .= qq{</td><td>}.highlight_button($row_id, 'r');
   $exon_tab_list .= qq{</td></tr>\n};
   $row_id++;
 }  
@@ -831,10 +916,6 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = $cdna_attrib;
   
-  my $hide_row      = hide_button($row_id);
-  my $highlight_row = highlight_button($row_id,'left');
-  my $blast_button  = blast_button($nm);
-
   my $nm_label = version_label($nm);
   
   my $display_status = ($nm =~ /^NR_/) ? 'hidden' : 'unhidden';
@@ -846,17 +927,17 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $biotype = get_biotype($cdna_object->biotype);
   my $data_biotype = 'is_pc'; #($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
 
+  my $first_col = build_first_col($nm,$row_id);
+
   $exon_tab_list .= qq{
-  <tr class="$display_status trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
-    <td class="fixed_col col1">$hide_row</td>
-    <td class="fixed_col col2">$highlight_row</td>
-    <td class="fixed_col col3">$blast_button</td>
+  <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
+    $first_col
     <td class="$column_class first_column fixed_col col4">
       <div>
-        <a href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
+        <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
       </div>
     </td>
-    <td class="extra_column fixed_col col5">$e_count</td>
+    <td class="extra_col fixed_col col5">$e_count</td>
   };
   
   # cDNA lengths
@@ -866,9 +947,9 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $cdna_length        = thousandify($cdna_object->length).' bp';
   
   $exon_tab_list .= qq{
-    <td class="extra_column fixed_col col6" sorttable_customkey="10000">$cdna_name<div class="transcript_length">($cdna_length)</div></td>
-    <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
-    <td class="extra_column fixed_col col8">$cdna_orientation</td>
+    <td class="extra_col fixed_col col6" sorttable_customkey="10000">$cdna_name<div class="tr_length">($cdna_length)</div></td>
+    <td class="extra_col fixed_col col7">$biotype<div class="tr_length">($cdna_coding_length)</div></td>
+    <td class="extra_col fixed_col col8">$cdna_orientation</td>
   };
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -889,7 +970,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $exon_start;
   my $colspan = 1;
   foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-    my $is_coding  = ' coding';
+    my $is_coding  = ' coding_cdna';
 
     if ($exon_start and !$cdna_tr_exons_list{$nm}{'exon'}{$exon_start}{$coord}) {
       $colspan ++;
@@ -921,7 +1002,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       my $phase_start = $exon_obj->phase;
       my $phase_end   = $exon_obj->end_phase;
       
-      $exon_tab_list .= display_exon("$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$phase_start,$phase_end,$identity_score);
+      $exon_tab_list .= display_exon('cdna',"$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$cdna_strand,$phase_start,$phase_end,0,0,0,0,$identity_score);
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -950,26 +1031,22 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
   my $column_class = 'gene';
   
-  my $hide_row      = hide_button($row_id);
-  my $highlight_row = highlight_button($row_id,'left');
-  my $blast_button  = blast_button($o_ens_gene);
-  
   my $biotype = get_biotype($gene_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   
+  my $first_col = build_first_col($o_ens_gene,$row_id);
+  
   $exon_tab_list .= qq{
-  <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
-    <td class="fixed_col col1">$hide_row</td>
-    <td class="fixed_col col2">$highlight_row</td>
-    <td class="fixed_col col3">$blast_button</td>
+  <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
+    $first_col
     <td class="$column_class first_column fixed_col col4">
       <a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name
     </td>
-    <td class="extra_column fixed_col col5">-</td>
+    <td class="extra_col fixed_col col5">-</td>
   };
   
   my $gene_orientation = get_strand($gene_object->strand);
-  $exon_tab_list .= qq{<td class="extra_column fixed_col col6">$o_gene_name</td><td class="extra_column fixed_col col7">$biotype</td><td class="extra_column fixed_col col8">$gene_orientation</td>};
+  $exon_tab_list .= qq{<td class="extra_col fixed_col col6">$o_gene_name</td><td class="extra_col fixed_col col7">$biotype</td><td class="extra_col fixed_col col8">$gene_orientation</td>};
   
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $gene_rows_list{$row_id}{'label'} = $o_ens_gene;
@@ -1020,7 +1097,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
         $exon_tab_list .= qq{</td><td>};
-        $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
       }
       $ended = 1 if ($coord == $last_exon);
       $colspan = 0;
@@ -1034,7 +1111,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     # Gene end partially matches end coordinates
     elsif ($ended == 2) {
       $exon_tab_list .= qq{</td><td>};
-      $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
       $exon_tab_list .= qq{</td><td>};
       $ended = 1;
       next;
@@ -1048,7 +1125,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
           $colspan ++ if (!$is_first_exon_partial);
           my $html_colspan = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
           $exon_tab_list .= qq{</td><td$html_colspan>};
-          $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+          $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
         }
         $ended = 2;
         $colspan = 0;
@@ -1057,7 +1134,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       else {
         $colspan ++;
         $exon_tab_list .= ($colspan > 1) ? qq{</td><td colspan="$colspan">} : qq{</td><td>};
-        $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
         $exon_tab_list .= qq{</td><td>} if ($coord != $bigger_exon_coord);
 
         $ended = 1;
@@ -1074,7 +1151,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     my $colspan_html = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
     $exon_tab_list .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene' ) {
-      $exon_tab_list .= qq{<div class="$has_gene" onclick="javascript:show_hide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list .= qq{<div class="$has_gene" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
       $colspan = 1;
     }
     # No data
@@ -1124,19 +1201,19 @@ $html .= qq{
     </tbody></table>
     <div class="clearfix" style="margin:15px 10px 60px">
       
-      <div style="float:left">
+      <div class="left">
         <button class="btn btn-lrg" onclick="javascript:showall();">Show <b>all</b> the entries</button>
       </div>
     
       <!--Show/Hide non protein coding entries -->
-      <div style="float:left;margin-left:15px">
+      <div class="left" style="margin-left:15px">
         <button class="btn btn-lrg" id="button_protein_coding" onclick="showhide_elements_by_attrib('button_protein_coding','biotype','no_pc')" title="Show/Hide the non protein coding entries" data-toggle="tooltip" data-placement="right">
           Hide <b>non protein coding</b> entries
         </button>
       </div>
       
       <!--Show/Hide NR transcript -->
-      <div style="float:left;margin-left:15px">
+      <div class="left" style="margin-left:15px">
         <button class="btn btn-lrg" id="button_nr_trans" onclick="showhide_elements_by_attrib('button_nr_trans','name','NR_')" title="Show/Hide the non coding RefSeq transcripts (NR_xxx)" data-toggle="tooltip" data-placement="right">
           Show <b>NR RefSeq</b> transcripts
         </button>
@@ -1163,218 +1240,7 @@ if ($gene_name !~ /^ENS(G|T)\d{11}/) {
 }
 
 
-#--------#  
-# Legend #
-#--------#  
-my $nb_exon_evidence = $min_exon_evidence+1;
-my $tsl1 = $tsl_colour{1};
-my $tsl2 = $tsl_colour{2};
-my $tsl4 = $tsl_colour{4};
 $html .= qq{ 
-      <div class="legend_container clearfix">
-        <div style="background-color:#336;color:#FFF;font-weight:bold;padding:2px 5px;margin-bottom:2px">Legend</div>
-      
-        <!-- Transcript -->
-        <div class="legend_column">
-        <table class="legend">
-          <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
-          <tr class="bg1_legend">
-            <td class="gold first_column"></td>
-            <td>Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td>
-          </tr>
-          <tr class="bg2_legend">
-            <td class="ens first_column"></td><td>Label the <b>Ensembl transcripts</b> (not merged with Havana)</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td class="havana first_column"></td><td>Label the <b>HAVANA transcripts</b></td>
-          </tr>
-          <tr class="bg2_legend">
-            <td class="cdna first_column"></td><td>Label the <b>RefSeq transcripts cDNA</b> data</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td class="nm first_column"></td><td>Label the <b>RefSeq transcripts</b></td>
-          </tr>
-          <tr class="bg2_legend">
-            <td class="gff3 first_column"></td><td>Label the <b>RefSeq transcripts</b> from the <b>GFF3 import</b></td>
-          </tr>
-          <tr class="bg1_legend">
-            <td class="gene first_column"></td><td>Label the <b>Ensembl genes</b></td>
-          </tr>
-          
-          <!-- Other -->
-          <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-          <!--<tr class="bg2_legend">
-            <td>
-              <span class="manual">M</span>
-              <span class="not_manual">A</span>
-            </td>
-            <td>Label for the type of annotation: manual (M) or automated (A)</td>
-          </tr>-->
-          <tr class="bg1_legend">
-            <td>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl" style="background-color:$tsl1" title="Transcript Support Level = 1"><div>1</div></div>
-              </div>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl" style="background-color:$tsl2" title="Transcript Support Level = 2"><div>2</div></div>
-              </div>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl" style="background-color:$tsl4" title="Transcript Support Level = 4"><div>4</div></div>
-              </div>
-            </td>
-            <td>Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
-          </tr>
-          <tr class="bg2_legend">
-            <td>
-              <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
-              </div>
-              <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
-              </div>
-              <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
-              </div>
-            </td>
-            <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td>
-              <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
-              <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
-            </td>
-            <td>Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
-          </tr>
-          <tr class="bg2_legend">
-            <td>
-              <span class="flag canonical glyphicon glyphicon-tag"></span>
-            </td>
-            <td>Label to indicate the canonical transcript</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td>
-              <span class="flag cars glyphicon glyphicon-star"></span>
-            </td>
-            <td>Label to indicate the CARS transcript</td>
-          </tr>
-          <tr class="bg2_legend">
-            <td>
-               <span class="flag uniprot icon-target close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
-            </td>
-            <td>Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td>
-              <span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
-            </td>
-            <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
-          </tr>
-          <tr class="bg2_legend">
-            <td>
-              <span class="flag source_flag cdna">cdna</span>
-            </td>
-            <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
-          </tr>
-          <tr class="bg1">
-            <td>
-              <span class="flag source_flag gff3">gff3</span>
-            </td>
-            <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
-          </tr>
-          
-        </table>
-        </div>
-       
-        <!-- Exons -->
-        <div class="legend_column" style="margin-left:10px">
-          <table class="legend">
-            <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
-            
-            <!-- Coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
-            <tr class="bg1_legend">
-              <td><div class="exon coding">#</div></td>
-              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            <tr class="bg2_legend">
-              <td><div class="exon havana_coding">#</div></td>
-              <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            <tr class="bg1_legend">
-              <td><div class="exon coding_np">#</div></td>
-              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>not identical</b></td>
-            </tr>
-            <tr class="bg2_legend">
-              <td><div class="exon coding_unknown">#</div></td>
-              <td style="padding-left:5px">Coding exon. We don't know whether the sequence is identical or different with the reference</td>
-            </tr>
-            
-            <!-- Partially coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
-            <tr class="bg1_legend">
-              <td><div class="exon coding partial">#</div></td>
-              <td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            <tr class="bg2_legend">
-              <td><div class="exon havana_coding partial">#</div></td>
-              <td style="padding-left:5px">The Havana exon is partially coding. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            
-            <!-- Non coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
-            <tr class="bg1_legend">
-              <td><div class="exon non_coding">#</div></td>
-              <td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            <tr class="bg2_legend">
-              <td><div class="exon havana_non_coding">#</div></td>
-              <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
-            </tr>
-            <tr class="bg1_legend">
-              <td><div class="exon non_coding_unknown">#</div></td>
-              <td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td>
-            </tr>
-            
-            <!-- Low evidences -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences <span style="color:#AFA">(only for Ensembl transcripts)</span></small></td></tr>
-            <tr class="bg1_legend">
-              <td><div class="exon coding few_evidence">#</div></td>
-              <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
-            </tr>
-            <tr class="bg2_legend">
-              <td><div class="exon coding few_evidence partial">#</div></td>
-              <td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
-            </tr>
-            <tr class="bg1_legend">
-              <td><div class="exon non_coding few_evidence">#</div></td>
-              <td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
-            </tr>
-            
-            <!-- Gene -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Gene</small></td></tr>
-            <tr class="bg2_legend">
-              <td><div class="exon gene_exon">></div></td>
-              <td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td>
-            </tr>
-            <tr class="bg1_legend">
-              <td><div class="exon gene_exon partial">></div></td>
-              <td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td>
-            </tr>
-            
-            <!-- Other -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-            <tr class="bg2_legend">
-              <td><div class="none"></div></td>
-              <td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td>
-            </tr>
-            <tr class="bg1_legend">
-              <td><div class="no_exon"></div></td>
-              <td style="padding-left:5px">No exon coordinates match the start AND the end coordinates at this location</td>
-            </tr>
-          </table>
-        </div>
-      </div>
-    </div>
   </body>
 </html>  
 };
@@ -1388,21 +1254,36 @@ close(OUT);
 sub hide_button {
   my $id = shift;
   
-  return qq{<div id="button_$id\_x" class="icon-close smaller-icon close-icon-0 hide_button_x" onclick="showhide($id)" title="Hide this row"></div>};
+  return qq{<div id="button_$id\_x" class="icon-close smaller-icon close-icon-0 left" onclick="showhide($id)" title="Hide this row"></div>};
 }
 
 sub highlight_button {
   my $id   = shift;
   my $type = shift;
   
-  return qq{<input type="checkbox" class="highlight_row" id="highlight_$id\_$type" name="$id" onclick="javascript:highlight_row('$id','$type');" title="Highlight this row"/>};
+  return qq{<div><input type="checkbox" class="hl_row" id="hl_$id\_$type" name="$id" onclick="javascript:hl_row('$id','$type');" title="Highlight this row"/></div>};
 }
 
 sub blast_button {
   my $id  = shift;
   my $url = $blast_url.$id;
-  return qq{<div class="blast_div"><button class="btn btn-lrg btn-sm" onclick="window.open('$url','_blank')">BLAST</button></div>};
+  return qq{<div><button class="btn btn-lrg btn-sm icon-research close-icon-0" style="margin-right:0px" onclick="window.open('$url','_blank')" title="Run Blast"></button></div>};
 
+}
+
+
+sub build_first_col {
+  my $id     = shift;
+  my $row_id = shift;
+  #<td class="fixed_col col1">$hide_row</td>
+  #<td class="fixed_col col2">$hl_row</td>
+  #<td class="fixed_col col3">$blast_button</td>-->
+  
+  my $hide_row      = hide_button($row_id);
+  my $hl_row = highlight_button($row_id,'l');
+  my $blast_button  = blast_button($id);
+  
+   return qq{<td class="fixed_col col1"><div class="row_btns clearfix">$hide_row$hl_row$blast_button</div></td>};
 }
 
 #sub get_manual_html {
@@ -1480,11 +1361,11 @@ sub get_tsl_html {
   # HTML
   return '' if ($level eq '0' || $level !~ /^\d+$/);
  
-  my $bg_colour     = ($tsl_colour{$level}) ? $tsl_colour{$level} : $tsl_default_bgcolour;
-  my $border_colour = ($tr_type eq 'gold') ? qq{ ;border-color:#555} : '';
+  my $bg_colour_class = ($tsl_colour_class{$level}) ? $tsl_colour_class{$level} : $tsl_default_bgcolour;
+  my $border_colour   = ($tr_type eq 'gold') ? " tsl_border" : '';
   return qq{
   <div class="tsl_container">
-    <div class="tsl" style="background-color:$bg_colour$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">
+    <div class="tsl $bg_colour_class$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">
       <div>$level</div>
     </div>  
   </div>};
@@ -1592,7 +1473,7 @@ sub get_pathogenic_html {
 sub get_source_html {
   my $source   = shift;
   
-  return qq{<span class="flag source_flag $source" title="Same coordinates in the RefSeq $source import">$source</span>};
+  return qq{<span class="flag source_flag $source" data-toggle="tooltip" data-placement="bottom" title="Same coordinates in the RefSeq $source import">$source</span>};
 }
 
 sub get_biotype {
@@ -1665,7 +1546,7 @@ sub get_showhide_buttons {
 sub get_strand {
   my $strand = shift;
   
-  return ($strand == 1) ? '<span class="icon-next-page close-icon-0 forward_strand" title="Forward strand"></span>' : '<span class="icon-previous-page close-icon-0 reverse_strand" title="Reverse strand"></span>';
+  return ($strand == 1) ? '<span class="icon-next-page close-icon-0 fwd_strand" title="Forward strand"></span>' : '<span class="icon-previous-page close-icon-0 rev_strand" title="Reverse strand"></span>';
 
 }
 
@@ -1683,10 +1564,6 @@ sub display_refseq_data {
     my $e_count = scalar(keys(%{$refseq_exons})); 
     my $column_class = ($refseq_import eq $gff_attrib) ? $gff_attrib : 'nm';
     
-    my $hide_row      = hide_button($row_id);
-    my $highlight_row = highlight_button($row_id,'left');
-    my $blast_button  = blast_button($nm);
-    
     my $labels = '';
     if ($refseq_import eq $ref_seq_attrib && $compare_nm_data{$nm}) {
       foreach my $source (sort(keys(%{$compare_nm_data{$nm}}))) {
@@ -1698,6 +1575,8 @@ sub display_refseq_data {
     
     my $display_status = ($nm =~ /^NR_/) ? 'hidden' : 'unhidden';
     
+    my $first_col = build_first_col($nm,$row_id);
+    
     my $refseq_object = $refseq_exons_list->{$nm}{'object'};
     my $refseq_name   = ($refseq_object->external_name) ? $refseq_object->external_name : '-';
     my $refseq_strand = $refseq_object->slice->strand;
@@ -1706,17 +1585,15 @@ sub display_refseq_data {
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
     
     $exon_tab_list .= qq{
-    <tr class="$display_status trans_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
-      <td class="fixed_col col1">$hide_row</td>
-      <td class="fixed_col col2">$highlight_row</td>
-      <td class="fixed_col col3">$blast_button</td>
+    <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
+      $first_col
       <td class="$column_class first_column fixed_col col4">
         <div>
           <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
         </div>
         <div class="nm_details">$labels</div>
       </td>
-      <td class="extra_column fixed_col col5">$e_count</td>
+      <td class="extra_col fixed_col col5">$e_count</td>
     };
     
     # cDNA lengths
@@ -1726,9 +1603,9 @@ sub display_refseq_data {
     my $cdna_length        = thousandify($refseq_object->length).' bp';
   
     $exon_tab_list .= qq{
-      <td class="extra_column fixed_col col6" sorttable_customkey="10000">$refseq_name<div class="transcript_length">($cdna_length)</div></td>
-      <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($cdna_coding_length)</div></td>
-      <td class="extra_column fixed_col col8">$refseq_orientation</td>
+      <td class="extra_col fixed_col col6" sorttable_customkey="10000">$refseq_name<div class="tr_length">($cdna_length)</div></td>
+      <td class="extra_col fixed_col col7">$biotype<div class="tr_length">($cdna_coding_length)</div></td>
+      <td class="extra_col fixed_col col8">$refseq_orientation</td>
     };
   
     $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -1748,9 +1625,14 @@ sub display_refseq_data {
     my $exon_number = ($refseq_strand == 1) ? 1 : $e_count;
     my $exon_start;
     my $colspan = 1;
-    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
-      my $is_coding  = ' coding_unknown';
-      my $is_partial = '';
+    my $start_index = 0;
+    my $end_index = 0;
+    for (my $i=0; $i < scalar(@sorted_list_of_exon_coords); $i++) {
+      my $coord = $sorted_list_of_exon_coords[$i];
+      my $left_utr_span  = 0;
+      my $right_utr_span = 0;
+      my $few_evidence = '';
+      my $is_coding  = ' coding_refseq';
       
       if ($exon_start and !$refseq_exons->{$exon_start}{$coord}) {
         $colspan ++;
@@ -1759,11 +1641,13 @@ sub display_refseq_data {
       # Exon start found
       elsif (!$exon_start && $refseq_exons->{$coord}) {
         $exon_start = $coord;
+        $start_index = $i;
         next;
       }
        # Exon end found
       elsif ($exon_start and $refseq_exons->{$exon_start}{$coord}) {
         $colspan ++;
+        $end_index = $i;
       }
       
       my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
@@ -1773,21 +1657,25 @@ sub display_refseq_data {
       my $colspan_html = ($colspan == 1) ? '' : qq{ colspan="$colspan"};
       $exon_tab_list .= qq{</td><td$colspan_html>}; 
       if ($exon_start) {
+      
         my $exon_obj = $refseq_exons->{$exon_start}{$coord}{'exon_obj'};
       
+        my $left_utr_end    = $refseq_exons->{$exon_start}{$coord}{'exon_coding_start'};
+        my $right_utr_start = $refseq_exons->{$exon_start}{$coord}{'exon_coding_end'};
+
         if(! $exon_obj->coding_region_start($refseq_object)) {
-          $is_coding = ' non_coding_unknown';
+          $is_coding = ' non_coding_refseq';
         }
-        elsif ($exon_obj->coding_region_start($refseq_object) > $exon_start) {
-          my $coding_start = $exon_obj->coding_region_start($refseq_object);
-          my $coding_end   = $exon_obj->coding_region_end($refseq_object);
-          $is_partial = ' partial' if ($coding_start > $exon_start || $coding_end < $coord);
+        elsif ($left_utr_end || $right_utr_start){
+          ($left_utr_span,$right_utr_span) =  @{get_UTR_span($left_utr_end,$right_utr_start,$start_index,$end_index,$colspan,$refseq_strand,\@sorted_list_of_exon_coords)};
+
+          $is_coding  .= ' partial';
         }
         
         my $phase_start = $exon_obj->phase;
         my $phase_end   = $exon_obj->end_phase;
 
-        $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$phase_start,$phase_end);
+        $exon_tab_list .= display_exon('refseq',"$has_exon$is_coding",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$refseq_strand,$phase_start,$phase_end,$left_utr_end,$right_utr_start,$left_utr_span,$right_utr_span);
         if ($refseq_strand == 1) { $exon_number++; }
         else { $exon_number--; }
         $exon_start = undef;
@@ -1812,10 +1700,6 @@ sub display_bed_source_data {
 
     my $e_count = $tr_exons_list->{$id}{'count'};
     
-    my $hide_row      = hide_button($row_id);
-    my $highlight_row = highlight_button($row_id,'left');
-    my $blast_button  = blast_button($id);
-    
     my $column_class = $source;
     my $strand = $tr_exons_list->{$id}{'strand'};
     my $orientation = get_strand($strand);
@@ -1836,12 +1720,12 @@ sub display_bed_source_data {
       $enst = qq{
         <div class="$source\_enst">
           $enst
-          <button class="btn btn-lrg btn-xs" onclick="javascript:highlight_enst(['$ensts'],'$suffix');" title="$button_title">hl</button>
+          <button class="btn btn-lrg btn-xs" onclick="javascript:hl_enst(['$ensts'],'$suffix');" title="$button_title">hl</button>
         </div>
       };
-      
-      
     }
+    
+    my $first_col = build_first_col($id,$row_id);
     
     my $external_url = $source_url{$source}.$id;
     
@@ -1850,16 +1734,14 @@ sub display_bed_source_data {
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
     
     $exon_tab_list .= qq{
-    <tr class="unhidden trans_row $bg" id="$row_id_prefix$row_id" data-name="$id" data-biotype="$data_biotype">
-      <td class="fixed_col col1">$hide_row</td>
-      <td class="fixed_col col2">$highlight_row</td>
-      <td class="fixed_col col3">$blast_button</td>
+    <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$id" data-biotype="$data_biotype">
+      $first_col
       <td class="$column_class first_column fixed_col col4">
         <div$date>
           <a class="$source\_link" href="$external_url" target="_blank">$id</a>
         </div>$enst
       </td>
-      <td class="extra_column fixed_col col5">$e_count</td>
+      <td class="extra_col fixed_col col5">$e_count</td>
     };
 
     # Entry lengths
@@ -1874,9 +1756,9 @@ sub display_bed_source_data {
 
     
     $exon_tab_list .= qq{
-      <td class="extra_column fixed_col col6" sorttable_customkey="10000">-<div class="transcript_length">($length)</div></td>
-      <td class="extra_column fixed_col col7">$biotype<div class="transcript_length">($coding_length)</div></td>
-      <td class="extra_column fixed_col col8">$orientation</td>
+      <td class="extra_col fixed_col col6" sorttable_customkey="10000">-<div class="tr_length">($length)</div></td>
+      <td class="extra_col fixed_col col7">$biotype<div class="tr_length">($coding_length)</div></td>
+      <td class="extra_col fixed_col col8">$orientation</td>
     };
     
     $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
@@ -1897,9 +1779,14 @@ sub display_bed_source_data {
     my $exon_number = ($strand == 1) ? 1 : $e_count;
     my $exon_start;
     my $colspan = 1;
-    foreach my $coord (sort {$a <=> $b} keys(%exons_list)) {
+    my $start_index = 0;
+    my $end_index = 0;
+    for (my $i=0; $i < scalar(@sorted_list_of_exon_coords); $i++) {
+      my $coord = $sorted_list_of_exon_coords[$i];
+      my $left_utr_span  = 0;
+      my $right_utr_span = 0;
+      my $few_evidence = '';
       my $is_coding = " $source\_coding";
-      my $is_partial = '';
       
       if ($exon_start and !$tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}) {
         $colspan ++;
@@ -1908,11 +1795,13 @@ sub display_bed_source_data {
       # Exon start found
       elsif (!$exon_start && $tr_exons_list->{$id}{'exon'}{$coord}) {
         $exon_start = $coord;
+        $start_index = $i;
         next;
       }
        # Exon end found
       elsif ($exon_start and $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}) {
         $colspan ++;
+        $end_index = $i;
       }
       
       my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
@@ -1926,16 +1815,21 @@ sub display_bed_source_data {
         my $phase_start = $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}{'frame'};
         my $phase_end   = '';
         
+        my $left_utr_end    = $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}{'exon_coding_start'};
+        my $right_utr_start = $tr_exons_list->{$id}{'exon'}{$exon_start}{$coord}{'exon_coding_end'};
+        
         if (($coding_start > $exon_start && $coding_start > $coord) || 
             ($coding_end < $exon_start && $coding_end < $coord) || 
             ($coding_start == $start && $coding_end == $end && $biotype ne 'protein coding')) {
           $is_coding  = " $source\_non_coding";
         }
-        elsif ($coding_start > $exon_start || $coding_end < $coord) {
-          $is_partial = ' partial';
-        }
+        elsif ($left_utr_end || $right_utr_start){
+          ($left_utr_span,$right_utr_span) =  @{get_UTR_span($left_utr_end,$right_utr_start,$start_index,$end_index,$colspan,$strand,\@sorted_list_of_exon_coords)};
+
+          $is_coding  .= ' partial';
+      }
         
-        $exon_tab_list .= display_exon("$has_exon$is_coding$is_partial",$gene_chr,$exon_start,$coord,$exon_number,'',$id,'-',$phase_start,$phase_end);
+        $exon_tab_list .= display_exon($source,"$has_exon$is_coding",$gene_chr,$exon_start,$coord,$exon_number,'',$id,'-',$strand,$phase_start,$phase_end,$left_utr_end,$right_utr_start,$left_utr_span,$right_utr_span);
         if ($strand == 1) { $exon_number++; }
         else { $exon_number--; }
         $exon_start = undef;
@@ -1989,53 +1883,87 @@ sub display_transcript_buttons {
 
 
 sub display_exon {
-  my $classes     = shift;
-  my $e_chr       = shift;
-  my $e_start     = shift;
-  my $e_end       = shift;
-  my $e_number    = shift;
-  my $e_stable_id = shift;
-  my $e_tr        = shift;
-  my $e_tr_name   = shift;
-  my $phase_start = shift;
-  my $phase_end   = shift;
-  my $e_extra     = shift;
+  my $source          = shift;
+  my $classes         = shift;
+  my $e_chr           = shift;
+  my $e_start         = shift;
+  my $e_end           = shift;
+  my $e_number        = shift;
+  my $e_stable_id     = shift;
+  my $e_tr            = shift;
+  my $e_tr_name       = shift;
+  my $e_strand        = shift;
+  my $phase_start     = shift;
+  my $phase_end       = shift;
+  my $left_utr_end    = shift;
+  my $right_utr_start = shift;
+  my $left_utr_span   = shift;
+  my $right_utr_span  = shift;
+  my $e_extra         = shift;
   
   $e_extra ||= '';
+  $left_utr_span ||= 0;
+  $right_utr_span ||= 0;
 
   my $e_length  = ($e_start <= $e_end) ? ($e_end - $e_start + 1) : ($e_start - $e_end + 1);
      $e_length  = thousandify($e_length);
      $e_length .= ' bp';
 
   my $e_tr_id = (split(/\./,$e_tr))[0];
-  my $show_hide_info_params  = "event,'$e_tr_id','$e_number','$e_chr:$e_start-$e_end','$e_length'";
-     $show_hide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
-     $show_hide_info_params .= ",'$phase_start','$phase_end'";
+  my $showhide_info_params  = "event,'$e_tr_id','$e_number','$e_chr:$e_start-$e_end','$e_length'";
+     $showhide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
+     $showhide_info_params .= ",'$phase_start','$phase_end'";
 
   my $title = "$e_tr";
      $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
      $title .= " | $e_length";
-     if ($phase_start ne '-1' && $phase_end !~ /^-?\d$/) {
-    
-       $title .= " | Frame: $phase_start";
-     }
-     elsif ($phase_start =~ /^\d$/ || $phase_end =~ /^\d$/) {
-       my $phase_start_content = ($phase_start eq '-1') ? '-' : "$phase_start";
-       my $phase_end_content   = ($phase_end eq '-1')   ? '-' : "$phase_end";
-       $title .= " | Phase: $phase_start_content;$phase_end_content";
-     }
-     else {
-       $title .= " | No phase data";
-     }
+     
+   # UTR info
+  if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
+    if ($left_utr_end && $left_utr_end > $e_start &&  $left_utr_end < $e_end) {
+      if ($e_strand == 1) {
+        my $non_coding_length = $left_utr_end - $e_start + 1;
+        $title .= " | Coding starts at $non_coding_length"."bp";
+      }
+      else {
+        my $coding_length = $e_end - $left_utr_end + 1;
+        $title .= " | Coding stops at $coding_length"."bp";
+      }
+    }
+    if ($right_utr_start && $right_utr_start < $e_end &&  $right_utr_start > $e_start) {
+      if ($e_strand == 1) {
+        my $coding_length = $right_utr_start - $e_start + 1;
+        $title .= " | Coding stops at $coding_length"."bp";
+      }
+      else {
+        my $non_coding_length = $e_end - $right_utr_start + 1;
+        $title .= " | Coding starts at $non_coding_length"."bp";
+      }
+    }
+  }
+  
+  # Exon phase   
+  if ($phase_start ne '-1' && $phase_end !~ /^-?\d$/) { 
+    $title .= " | Frame: $phase_start";
+  }
+  elsif ($phase_start =~ /^\d$/ || $phase_end =~ /^\d$/) {
+    my $phase_start_content = ($phase_start eq '-1') ? '-' : "$phase_start";
+    my $phase_end_content   = ($phase_end eq '-1')   ? '-' : "$phase_end";
+    $title .= " | Phase: $phase_start_content;$phase_end_content";
+  }
+  else {
+    $title .= " | No phase data";
+  }
+  
 
   my $pathogenic_variants = '';
   if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}) {
     my @variants = keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}});
     my $pathogenic = scalar(@variants);
     if ($pathogenic) {
-      $pathogenic_variants = qq{<div class="pathogenic_exon_label icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
+      $pathogenic_variants = qq{<div class="pathogenic_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
       $title .= " | $pathogenic pathogenic variants";
-      $show_hide_info_params .= ",'$pathogenic'";
+      $showhide_info_params .= ",'$pathogenic'";
       if ($pathogenic <= $max_variants) {
         my @variants_allele;
         foreach my $var (@variants) {
@@ -2046,15 +1974,30 @@ sub display_exon {
           $var_allele .= '-'.$allele if ($allele);
           push @variants_allele, $var_allele;
         }
-        $show_hide_info_params .= ",'".join(':',@variants_allele)."'";
+        $showhide_info_params .= ",'".join(':',@variants_allele)."'";
       }
+    }
+  }
+
+  # UTR display
+  my $partial_display = '';
+  if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
+    my $coding_span = 100 - $left_utr_span - $right_utr_span;
+    if ($left_utr_span) {
+      my $few_evidence_left = ($classes =~ /few_ev/) ? ' few_ev_l' : '';
+      $partial_display .= qq{ <div class="partial_utr_l partial_utr_$source$few_evidence_left" style="width:$left_utr_span%"></div>};
+    }
+    if ($right_utr_span) {
+      my $few_evidence_right = ($classes =~ /few_ev/) ? ' few_ev_r' : '';
+      $partial_display .= qq{ <div class="partial_utr_r partial_utr_$source$few_evidence_right" style="width:$right_utr_span%"></div>};
     }
   }
 
   return qq{
     <div class="sub_exon"></div>
-    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:show_hide_info($show_hide_info_params)" onmouseover="javascript:highlight_exons('$e_start\_$e_end')" onmouseout="javascript:highlight_exons('$e_start\_$e_end',1)">
-      $e_number$e_extra
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:showhide_info($showhide_info_params)" onmouseover="javascript:hl_exons('$e_start\_$e_end')" onmouseout="javascript:hl_exons('$e_start\_$e_end',1)">
+      <div class="e_label e_label_$source">$e_number$e_extra</div>
+      $partial_display
     </div>
     <div class="sub_exon clearfix">$pathogenic_variants</div>
   };
@@ -2146,7 +2089,7 @@ sub end_of_row {
   my $tr = shift;
   
   my $hgmd_flag = ($tr) ? check_if_in_hgmd_file($tr) : '-';
-  my $highlight_button = highlight_button($id, 'right');
+  my $highlight_button = highlight_button($id, 'r');
   
   my $html = $end_of_row;
      $html =~ s/####HGMD####/$hgmd_flag/;
@@ -2205,7 +2148,6 @@ sub get_pathogenic_variants {
   }
   
   return $pathogenic_variants{"$start-$end"};
-  
 }
 
 
@@ -2259,7 +2201,21 @@ sub bed2hash {
         
     $tr_length += $exon_sizes[$i];
     $hash_data{'exon'}{$start}{$end}{'frame'} = $exon_frames[$i];
-        
+    
+    if ($tr_c_start) {
+      my $exon_coding_start = ($tr_c_start > $start) ? ($tr_c_start < $end ? $tr_c_start : undef) : $start;
+      my $exon_coding_end   = ($tr_c_end < $end) ? ($tr_c_end > $start ? $tr_c_end : undef) : $end;
+      
+      if ($exon_coding_start && $exon_coding_start > $start) {
+        $exons_list{$exon_coding_start} ++;
+        $hash_data{'exon'}{$start}{$end}{'exon_coding_start'} = $exon_coding_start;
+      }
+      if ($exon_coding_end && $exon_coding_end < $end) {
+        $exons_list{$exon_coding_end} ++;
+        $hash_data{'exon'}{$start}{$end}{'exon_coding_end'} = $exon_coding_end;
+      }
+    }
+     
     $exons_list{$start} ++;
     $exons_list{$end} ++;
   }
@@ -2274,6 +2230,44 @@ sub bed2hash {
   }
   
   return \%hash_data;
+}
+
+sub get_UTR_span {
+  my $left_utr_end    = shift;
+  my $right_utr_start = shift;
+  my $start_index     = shift;
+  my $end_index       = shift;
+  my $colspan         = shift;
+  my $strand          = shift;
+  my $sorted_list_of_exon_coords = shift;
+  
+  my $left_utr_colspan  = 0;
+  my $right_utr_colspan = 0;
+  
+  my $left_utr_span  = 0;
+  my $right_utr_span = 0;
+        
+  if ($left_utr_end) {
+    $left_utr_colspan = 1;
+    for (my $j=$start_index+1; $j <= $end_index; $j++) {
+      if ($left_utr_end > $sorted_list_of_exon_coords->[$j] ) {
+        $left_utr_colspan ++;
+      }
+    }
+    $left_utr_span = ceil(($left_utr_colspan/$colspan)*100);
+  }
+  
+  if ($right_utr_start) {
+    $right_utr_colspan = 1;
+    for (my $k=$start_index+1; $k <= $end_index; $k++) {
+      if ($sorted_list_of_exon_coords->[$k] <= $right_utr_start) {
+        $right_utr_colspan ++;
+      }
+    }
+    $right_utr_colspan = $colspan - $right_utr_colspan;
+    $right_utr_span = ceil(($right_utr_colspan/$colspan)*100);
+  }
+  return [$left_utr_span,$right_utr_span]; 
 }
 
 sub version_label {
