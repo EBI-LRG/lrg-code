@@ -13,12 +13,44 @@
   <head>
     <title>$title</title>
       
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-      
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css"/>
+    
+    <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
+    <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
+    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-      
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    
+    <script type="text/javascript" src="transcript_alignment.js"></script>
+    <script type="text/javascript" src="sorttable.js"></script>
+    <script>
+      \$(document).ready(function(){
+        // Popups
+        \$('[data-toggle="tooltip"]').tooltip();
+        // Drag and drop rows
+        \$( "#sortable_rows" ).sortable({
+          delay: 150, //Needed to prevent accidental drag when trying to select
+          revert: true,
+          cancel: ".transcript tbody tr:first-child",
+          helper:function(e,item){
+            var helper = \$('<tr/>');
+            if (!item.hasClass('selected')) {
+              item.addClass('selected').siblings().removeClass('selected');
+            }
+            var elements = item.parent().children('.selected').clone();
+            item.data('multidrag', elements).siblings('.selected').remove();
+            return helper.append(elements);
+          },
+          stop: function (e, info) {
+            info.item.after(info.item.data('multidrag')).remove();
+          }
+        });
+      });
+    </script>
+
     <script>
       $( function() {
         var availableGenes = [
@@ -73,7 +105,7 @@ EOF;
         <form style="margin-bottom:0px">\n
 EOF;
   $space = '        ';
-  echo "<select name=\"gene\" onchange='this.form.submit()'>\n";
+  echo "<select class=\"green_border\" name=\"gene\" onchange='this.form.submit()'>\n";
   echo "<option value=\"\">-</option>\n";
   $count_items = 0;
   $max_items_per_line = 50;
@@ -96,15 +128,15 @@ EOF;
         <noscript><input type=\"submit\" value=\"Submit\"></noscript>
       </form>
     </div>
-    <div style="float:left;;color:#FFF;margin-left:10px">
+    <div class="left" style="color:#FFF;margin-left:10px">
      | or Search:
     </div>
     <div style="float:left;margin-left:10px">
       <form class="form-inline" style="margin-bottom:0px">
         <div class="form-group">
-          <input id="autogene" class="form-control ui-autocomplete-input" style="width:100px;height:22px;padding:2px 4px;" name="gene" autocomplete="off" onkeydown="javascript: if (event.keyCode==13) submit();">
+          <input id="autogene" class="form-control ui-autocomplete-input green_border" style="width:100px;height:22px;padding:2px 4px;" name="gene" autocomplete="off" onkeydown="javascript: if (event.keyCode==13) submit();">
         </div>
-        <button class="btn btn-default btn-xs" type="submit">Submit</button>
+        <button class="btn btn-lrg-sm btn-xs" type="submit">Submit</button>
       </form>
     </div>
     <div style="clear:both"></div>
@@ -118,8 +150,13 @@ EOF;
       if(!@include("./$gene_id_uc.html")) {
         echo "<h3 style=\"padding-left:25px\">Alignment not found for the gene <span class=\"blue\">$gene_id</span>!</h3>";
       }
+      else {
+        echo get_legend();
+      }
     }
-    echo get_legend();
+    else {
+      echo get_legend();
+    }
   }
   else {
     $array_length = count($select_list);
@@ -157,7 +194,7 @@ function get_legend() {
       <!-- Transcript -->
       <div class="legend_column">
         <table class="legend">
-          <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Transcript</th></tr>
+          <tr><th colspan="2">Transcript</th></tr>
           <tr class="bg1_legend">
             <td class="gold first_column"></td>
             <td>Label the <b>Ensembl transcripts</b> which have been <b>merged</b> with the Havana transcripts</td>
@@ -182,24 +219,18 @@ function get_legend() {
           </tr>
           
           <!-- Other -->
-          <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
-          <!--<tr class="bg2_legend">
-            <td>
-              <span class="manual">M</span>
-              <span class="not_manual">A</span>
-            </td>
-            <td>Label for the type of annotation: manual (M) or automated (A)</td>
-          </tr>-->
+          <tr class="bg1_legend"><td colspan="2"></td></tr>
+          <tr><th colspan="2">Other transcript info</th></tr>
           <tr class="bg1_legend">
             <td>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl $tsl1" title="Transcript Support Level = 1"><div>1</div></div>
+              <div class="tsl_container" style="margin-bottom:7px">
+                <div class="tsl $tsl1 dark_border" title="Transcript Support Level = 1"><div>1</div></div>
               </div>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl $tsl2" title="Transcript Support Level = 2"><div>2</div></div>
+              <div class="tsl_container" style="margin-bottom:7px">
+                <div class="tsl $tsl2 dark_border" title="Transcript Support Level = 2"><div>2</div></div>
               </div>
-              <div class="tsl_container" style="margin-bottom:5px">
-                <div class="tsl $tsl3" title="Transcript Support Level = 4"><div>4</div></div>
+              <div class="tsl_container" style="margin-bottom:4px">
+                <div class="tsl $tsl4 dark_border" title="Transcript Support Level = 4"><div>4</div></div>
               </div>
             </td>
             <td>Label for the <a class="external" href="http://www.ensembl.org/Help/Glossary?id=492" target="_blank"><b>Transcript Support Level</b></a> (from UCSC)</td>
@@ -207,21 +238,21 @@ function get_legend() {
           <tr class="bg2_legend">
             <td>
               <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
+                <span class="tr_score tr_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
               </div>
               <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
+                <span class="tr_score tr_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
               </div>
               <div style="margin-bottom:3px">
-                <span class="trans_score trans_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
+                <span class="tr_score tr_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
               </div>
             </td>
             <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
           </tr>
           <tr class="bg1_legend">
             <td>
-              <span class="flag appris" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
-              <span class="flag appris" title="APRRIS ALTERNATIVE1">A1</span>
+              <span class="flag appris dark_border" style="margin-right:2px" title="APRRIS PRINCIPAL1">P1</span>
+              <span class="flag appris dark_border" title="APRRIS ALTERNATIVE1">A1</span>
             </td>
             <td>Label to indicate the <a class="external" href="http://www.ensembl.org/Homo_sapiens/Help/Glossary?id=521" target="_blank">APPRIS attribute</a></td>
           </tr>
@@ -239,13 +270,13 @@ function get_legend() {
           </tr>
           <tr class="bg2_legend">
             <td>
-               <span class="flag uniprot icon-target close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
+               <span class="flag uniprot_flag icon-target close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
             </td>
             <td>Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
           </tr>
           <tr class="bg1_legend">
             <td>
-              <span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
+              <span class="flag pathogenic icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
             <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
@@ -257,7 +288,7 @@ function get_legend() {
           </tr>
           <tr class="bg1">
             <td>
-              <span class="flag source_flag gff3">gff3</span>
+              <span class="flag source_flag gff3 dark_border">gff3</span>
             </td>
             <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
           </tr>
@@ -268,10 +299,11 @@ function get_legend() {
         <!-- Exons -->
         <div class="legend_column" style="margin-left:10px">
           <table class="legend">
-            <tr><th colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:2px">Exon</th></tr>
+            <tr><th colspan="2">Exon</th></tr>
             
             <!-- Coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Coding</small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Coding</td></tr>
             <tr class="bg1_legend">
               <td><div class="exon coding">#</div></td>
               <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b></td>
@@ -295,12 +327,13 @@ function get_legend() {
             
             
             <!-- Partially coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Partially coding</small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Partially coding</td></tr>
             <tr class="bg1_legend">
               <td>
                 <div class="exon coding partial">
-                  <div class="exon_label exon_label_enst">#</div>
-                  <div class="partial_utr_left partial_utr_enst" style="width:$partial_width%"></div>
+                  <div class="e_label e_label_enst">#</div>
+                  <div class="partial_utr_l partial_utr_enst" style="width:$partial_width%"></div>
                 </div>
               </td>
               <td style="padding-left:5px">The exon is partially coding. The exon and reference sequences are <b>identical</b></td>
@@ -308,8 +341,8 @@ function get_legend() {
             <tr class="bg2_legend">
               <td>
                 <div class="exon havana_coding partial">
-                  <div class="exon_label exon_label_havana">#</div>
-                  <div class="partial_utr_left partial_utr_havana" style="width:$partial_width%"></div>
+                  <div class="e_label e_label_havana">#</div>
+                  <div class="partial_utr_l partial_utr_havana" style="width:$partial_width%"></div>
                 </div>
               </td>
               <td style="padding-left:5px">The Havana exon is partially coding. The exon and reference sequences are <b>identical</b></td>
@@ -317,61 +350,69 @@ function get_legend() {
             <tr class="bg1_legend">
               <td>
                 <div class="exon coding_refseq partial">
-                  <div class="exon_label exon_label_refseq">#</div>
-                  <div class="partial_utr_left partial_utr_refseq" style="width:$partial_width%"></div>
+                  <div class="e_label e_label_refseq">#</div>
+                  <div class="partial_utr_l partial_utr_refseq" style="width:$partial_width%"></div>
                 </div>
               </td>
               <td style="padding-left:5px">The RefSeq exon is partially coding. We don't know whether the sequence is identical or different with the reference</td>
             </tr>
             
             <!-- Non coding -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Non coding</small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Non coding</td></tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding"><div class="exon_label exon_label_enst">#</div></div></td>
+              <td><div class="exon non_coding"><div class="e_label e_label_enst">#</div></div></td>
               <td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td>
             </tr>
             <tr class="bg2_legend">
-              <td><div class="exon havana_non_coding"><div class="exon_label exon_label_havana">#</div></div></td>
+              <td><div class="exon havana_non_coding"><div class="e_label e_label_havana">#</div></div></td>
               <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
             </tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding_refseq"><div class="exon_label exon_label_refseq">#</div></div></td>
+              <td><div class="exon non_coding_refseq"><div class="e_label e_label_refseq">#</div></div></td>
               <td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td>
             </tr>
             
             <!-- Low evidences -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Low evidences <span style="color:#AFA">(only for Ensembl transcripts)</span></small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Low evidences <span style="color:#AFA">(only for Ensembl transcripts)</span></td></tr>
             <tr class="bg1_legend">
-              <td><div class="exon coding few_evidence"><div class="exon_label exon_label_enst">#</div></div></td>
+              <td><div class="exon coding few_ev"><div class="e_label e_label_enst">#</div></div></td>
               <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             <tr class="bg2_legend">
               <td>
-                <div class="exon coding few_evidence partial">
-                  <div class="exon_label exon_label_enst">#</div>
-                  <div class="partial_utr_left few_evidence_left" style="width:$partial_width%"></div>
+                <div class="exon coding few_ev partial">
+                  <div class="e_label e_label_enst">#</div>
+                  <div class="partial_utr_l partial_utr_enst few_ev_l" style="width:$partial_width%"></div>
                 </div>
               </td>
               <td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding few_evidence"><div class="exon_label exon_label_enst">#</div></div></td>
+              <td><div class="exon non_coding few_ev"><div class="e_label e_label_enst">#</div></div></td>
               <td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             
             <!-- Gene -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Gene</small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Gene</td></tr>
             <tr class="bg2_legend">
-              <td><div class="exon gene_exon">></div></td>
+              <td><div class="exon gene_exon"><span class="icon-next-page close-icon-0 smaller-icon" style="top:6px"></span></div></td>
               <td style="padding-left:5px">The gene overlaps completely between the coordinate and the next coordinate (next block), with the orientation</td>
             </tr>
             <tr class="bg1_legend">
-              <td><div class="exon gene_exon partial">></div></td>
+              <td>
+                <div class="exon gene_exon partial_overlap">
+                  <span class="icon-next-page close-icon-0 smaller-icon" style="top:6px"></span>
+                </div>
+              </td>
               <td style="padding-left:5px">The gene overlaps partially between the coordinate and the next coordinate (next block), with the orientation</td>
             </tr>
             
             <!-- Other -->
-            <tr><td colspan="2" style="background-color:#336;color:#FFF;text-align:center;padding:1px"><small>Other</small></td></tr>
+            <tr class="bg1_legend"><td colspan="2"></td></tr>
+            <tr><td colspan="2" class="subheader">Other</td></tr>
             <tr class="bg2_legend">
               <td><div class="none"></div></td>
               <td style="padding-left:5px">Before the first exon of the transcript OR after the last exon of the transcript</td>

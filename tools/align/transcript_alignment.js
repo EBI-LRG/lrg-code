@@ -1,6 +1,25 @@
 var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
-var ENS_VAR_LINK='http://www.ensembl.org/Homo_sapiens/Variation/Explore?v=';
+
+var EXT_LINKS = {
+  'ensv'    : 'https://www.ensembl.org/Homo_sapiens/Variation/Explore?v=',
+  'enst'    : 'https://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=',
+  'ensg'    : 'https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=',
+  'havana'  : 'http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=',
+  'refseq'  : 'http://www.ncbi.nlm.nih.gov/nuccore/',
+  'cdna'    : 'http://www.ncbi.nlm.nih.gov/nuccore/',
+  'ccds'    : 'http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=',
+  'uniprot' : 'http://www.uniprot.org/uniprot/'
+};
+
+function get_ext_link(type,id) {
+  if (EXT_LINKS[type]) {
+    window.open(EXT_LINKS[type]+id,'_blank');
+  }
+  else {
+    alert("No URL available for this link!");
+  }
+}
 
 function showhide_elements(button_id,class_name) {
   var button_text = $("#"+button_id).html();
@@ -287,15 +306,33 @@ function getElementsStartsWithId( id, tag ) {
   return elements;
 }
 
+
+function go2blast(id) {
+  window.open('http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
+}
+
 function compact_expand(column_count) {
   var compact = "Compact";
   var expand  = "Expand";
   var button_text = $("#compact_expand_text").html();
+  var icon_left   = $('#compact_expand_icon_l');
+  var icon_middle = $('#compact_expand_icon_m');
+  var icon_right  = $('#compact_expand_icon_r');
+  var icon_class_prefix = 'glyphicon-arrow-';
+  var icon_middle_expand = 'glyphicon-menu-hamburger';
+  var icon_middle_compact = 'glyphicon-option-vertical';
   if (button_text.match(compact)) {
     button_text = button_text.replace(compact,expand);
+    icon_left.switchClass(icon_class_prefix+'right', icon_class_prefix+'left');
+    icon_middle.switchClass(icon_middle_expand, icon_middle_compact);
+    icon_right.switchClass(icon_class_prefix+'left', icon_class_prefix+'right');
+    
   }
   else {
     button_text = button_text.replace(expand,compact);
+    icon_left.switchClass(icon_class_prefix+'left', icon_class_prefix+'right');
+    icon_middle.switchClass(icon_middle_compact, icon_middle_expand);
+    icon_right.switchClass(icon_class_prefix+'right', icon_class_prefix+'left');
   }
   $("#compact_expand_text").html(button_text);
   
@@ -398,7 +435,7 @@ function showhide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,phase_s
           if (var_detail[2]) {
             pat_allele = ' <b>'+var_detail[2]+'</b>';
           }
-          popup_content += "<li><a class=\"external\" href=\""+ENS_VAR_LINK+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
+          popup_content += "<li><a class=\"external\" href=\""+EXT_LINKS['ensv']+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
         });
         popup_content += "</ul></div>";
       }

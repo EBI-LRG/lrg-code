@@ -152,11 +152,6 @@ my $genomic_region_url = "http://www.ensembl.org/Homo_sapiens/Location/View?db=c
 my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=###ENSG###';
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
-my %source_url = ( 
-                   'havana'  => 'http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=',
-                   #'uniprot' => 'http://www.uniprot.org/uniprot/',
-                 );
-
 
 my $gtex_url = 'http://www.gtexportal.org/home/gene/';
 my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
@@ -558,7 +553,7 @@ $html .= qq{
 <html>
   <head>
     <title>Gene $gene_name</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
     <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
@@ -592,7 +587,7 @@ $html .= qq{
           }
         });
       });
-    </script>
+    </script>-->
   </head>
   <body onload="hide_all_but_selection()">
     <div class="content">
@@ -602,7 +597,10 @@ $html .= qq{
 
       <!-- Compact/expand button -->
       <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">
-        <span class="icon-menu smaller-icon close-icon-5"></span><span id="compact_expand_text">Compact the coordinate columns</span>
+        <span class="compact_expand_icon">
+          <span id="compact_expand_icon_l" class="glyphicon glyphicon-arrow-right"></span><span id="compact_expand_icon_m" class="glyphicon glyphicon-menu-hamburger"></span><span id="compact_expand_icon_r" class="glyphicon glyphicon-arrow-left"></span>
+        </span> 
+        <span id="compact_expand_text">Compact the coordinate columns</span>
       </button>
 
       <!--Genoverse -->
@@ -650,7 +648,7 @@ my $exon_tab_list = qq{
         </th>
       </tr>
       <tr>
-        <th></th>
+        <th style="background-color:#FFF;border:none"></th>
 };
 
 foreach my $exon_coord (sort(keys(%exons_list))) {
@@ -687,6 +685,7 @@ my @sorted_list_of_exon_coords = (sort {$a <=> $b} keys(%exons_list));
 #----------------------------#
 my %ens_rows_list;
 foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list{$a}{'count'}} keys(%ens_tr_exons_list)) {
+  my $tr_source = 'enst';
   my $e_count = scalar(keys(%{$ens_tr_exons_list{$ens_tr}{'exon'}}));
   
   my $tr_object = $ens_tr_exons_list{$ens_tr}{'object'};
@@ -714,7 +713,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $cars_html          = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $trans_score_html   = get_trans_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tr_score_html   = get_tr_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
   
@@ -722,7 +721,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   
   my $width_left = my $width_right = '15px';
-  my $enst_td_style = '';
+  my $enst_td_style = ' class="text-center"';
   if ($canonical_html ne '' && $cars_html ne '') {
     $width_left  = '0px';
     $width_right = '32px';
@@ -736,14 +735,14 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$ens_tr" data-biotype="$data_biotype">
     $first_col
     <td class="$column_class tr_col fixed_col col4">
-      <table class="transcript" style="width:100%;text-align:center">
+      <table class="transcript">
         <tr>
           <td class="$column_class" style="padding:0px" colspan="6">
             <table class="enst_tr">
               <tr>
                 <td style="width:$width_left"></td>
                 <td$enst_td_style>
-                  <a$a_class href="http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=$ens_tr" target="_blank">$ens_tr_label</a>
+                  <a$a_class onclick="javascript:get_ext_link('$tr_source','$ens_tr')">$ens_tr_label</a>
                 </td>
                 <td style="width:$width_right">$canonical_html$cars_html</td>
               </tr>
@@ -752,7 +751,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
         </tr>
         <tr class="bottom_row">
           <td class="small_cell">$tsl_html</td>
-          <td class="medium_cell">$trans_score_html</td>
+          <td class="medium_cell">$tr_score_html</td>
           <td class="medium_cell">$appris_html</td>
           <td class="medium_cell">$uniprot_score_html</td>
           <td class="large_cell">$pathogenic_html</td>
@@ -778,14 +777,14 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   };
   
 
-  my @ccds   = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
-  my @refseq = map { qq{<a class="external" href="http://www.ncbi.nlm.nih.gov/nuccore/$_" target="blank">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
+  my @ccds   = map { qq{<a class="external" onclick="javascript:get_ext_link('ccds','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
+  my @refseq = map { qq{<a class="external" onclick="javascript:get_ext_link('refseq','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
   my $refseq_button = '';
 
   if (scalar(@refseq)) {
     my @nm_list = keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
     my $nm_ids = "['".join("','",@nm_list)."']";
-    $refseq_button = qq{ <button class="btn btn-lrg btn-xs" id='button_$row_id\_$nm_list[0]' onclick="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button>};
+    $refseq_button = qq{<div style="margin-top:2px"><button class="btn btn-lrg-xs btn-xs" id='button_$row_id\_$nm_list[0]' onclick="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button></div>};
   }
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $ens_rows_list{$row_id}{'label'} = $ens_tr_label;
@@ -858,7 +857,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       
       $few_evidence = ' few_ev' if ($ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'evidence'} <= $min_exon_evidence && $has_exon eq 'exon');
       my $exon_stable_id = $ens_tr_exons_list{$ens_tr}{'exon'}{$exon_start}{$coord}{'exon_obj'}->stable_id;
-      $exon_tab_list .= display_exon('enst',"$has_exon$is_coding$few_evidence",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name,$tr_strand,$phase_start,$phase_end,$left_utr_end,$right_utr_start,$left_utr_span,$right_utr_span);
+      $exon_tab_list .= display_exon($tr_source,"$has_exon$is_coding$few_evidence",$gene_chr,$exon_start,$coord,$exon_number,$exon_stable_id,$ens_tr,$tr_name,$tr_strand,$phase_start,$phase_end,$left_utr_end,$right_utr_start,$left_utr_span,$right_utr_span);
 
       if ($tr_strand == 1) { $exon_number++; }
       else { $exon_number--; }
@@ -912,7 +911,8 @@ my %cdna_rows_list;
 foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$a}{'count'}} keys(%cdna_tr_exons_list)) {
 
   next if ($compare_nm_data{$nm}{$cdna_attrib});
-
+  my $tr_source = 'cdna';
+  
   my $e_count = scalar(keys(%{$cdna_tr_exons_list{$nm}{'exon'}})); 
   my $column_class = $cdna_attrib;
   
@@ -934,7 +934,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     $first_col
     <td class="$column_class first_column fixed_col col4">
       <div>
-        <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
+        <a class="cdna_link" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
       </div>
     </td>
     <td class="extra_col fixed_col col5">$e_count</td>
@@ -1002,7 +1002,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       my $phase_start = $exon_obj->phase;
       my $phase_end   = $exon_obj->end_phase;
       
-      $exon_tab_list .= display_exon('cdna',"$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$cdna_strand,$phase_start,$phase_end,0,0,0,0,$identity_score);
+      $exon_tab_list .= display_exon($tr_source,"$has_exon$is_coding$identity",$gene_chr,$exon_start,$coord,$exon_number,'',$nm,'-',$cdna_strand,$phase_start,$phase_end,0,0,0,0,$identity_score);
       if ($cdna_strand == 1) { $exon_number++; }
       else { $exon_number--; }
       $exon_start = undef;
@@ -1040,7 +1040,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
     $first_col
     <td class="$column_class first_column fixed_col col4">
-      <a class="white" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$o_ens_gene" target="_blank">$o_ens_gene</a>$hgnc_name
+      <a class="white" onclick="javascript:get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a>$hgnc_name
     </td>
     <td class="extra_col fixed_col col5">-</td>
   };
@@ -1054,7 +1054,8 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   
   my $gene_start  = $overlapping_genes_list{$o_ens_gene}{'start'};
   my $gene_end    = $overlapping_genes_list{$o_ens_gene}{'end'};
-  my $gene_strand = ($gene_object->strand == 1) ? '>' : '<';
+  my $gene_strand = ($gene_object->strand == 1) ? 'icon-next-page' : 'icon-previous-page';
+     $gene_strand = qq{<span class="$gene_strand close-icon-0 smaller-icon"></span>};
   
   my $first_exon;
   my $last_exon;
@@ -1097,7 +1098,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
         $exon_tab_list .= qq{</td><td>};
-        $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
       }
       $ended = 1 if ($coord == $last_exon);
       $colspan = 0;
@@ -1111,7 +1112,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     # Gene end partially matches end coordinates
     elsif ($ended == 2) {
       $exon_tab_list .= qq{</td><td>};
-      $exon_tab_list .= qq{<div class="exon gene_exon partial" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
       $exon_tab_list .= qq{</td><td>};
       $ended = 1;
       next;
@@ -1166,10 +1167,12 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
 # Selection
 $html .= qq{
-  <div class="scrolling">
-      $exon_tab_list
-      </tbody>
-    </table>
+  <div class="e_table_container">
+    <div class="scrolling">
+        $exon_tab_list
+        </tbody>
+      </table>
+    </div>
   </div>
   <h3 class="icon-next-page smaller-icon">Show/hide rows</h3>
   <table><tbody>};
@@ -1267,7 +1270,7 @@ sub highlight_button {
 sub blast_button {
   my $id  = shift;
   my $url = $blast_url.$id;
-  return qq{<div><button class="btn btn-lrg btn-sm icon-research close-icon-0" style="margin-right:0px" onclick="window.open('$url','_blank')" title="Run Blast"></button></div>};
+  return qq{<div><button class="btn btn-lrg-xs btn-sm icon-research close-icon-0" style="margin-right:0px" onclick="go2blast('$id')" title="Run Blast"></button></div>};
 
 }
 
@@ -1362,7 +1365,7 @@ sub get_tsl_html {
   return '' if ($level eq '0' || $level !~ /^\d+$/);
  
   my $bg_colour_class = ($tsl_colour_class{$level}) ? $tsl_colour_class{$level} : $tsl_default_bgcolour;
-  my $border_colour   = ($tr_type eq 'gold') ? " tsl_border" : '';
+  my $border_colour   = ($tr_type eq 'gold') ? " dark_border" : '';
   return qq{
   <div class="tsl_container">
     <div class="tsl $bg_colour_class$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript Support Level = $level">
@@ -1387,7 +1390,7 @@ sub get_cars_html {
   return qq{<span class="flag cars glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="CARS transcript ($transcript_cars_date)"></span>};
 }
 
-sub get_trans_score_html {
+sub get_tr_score_html {
   my $transcript   = shift;
   my $column_class = shift;
   
@@ -1395,11 +1398,11 @@ sub get_trans_score_html {
   
   my $score = $transcript_score{$transcript->stable_id};
   
-  my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
   
   my $rank = ($score < 10) ? 0 : ($score < 20 ? 1 : 2);
   
-  return qq{<span class="flag trans_score trans_score_$rank"$border_colour data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl - $transcript_score_date | Scale from 0 (bad) to 27 (good)">$score</span>};
+  return qq{<span class="flag tr_score tr_score_$rank$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl - $transcript_score_date | Scale from 0 (bad) to 27 (good)">$score</span>};
 }
 
 
@@ -1415,9 +1418,9 @@ sub get_appris_html {
      $appris =~ /^(\w).+(\d+)$/;
   my $appris_label = $1.$2;
   
-  my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
   
-  return qq{<span class="flag appris"$border_colour data-toggle="tooltip" data-placement="bottom" title="APPRIS $appris">$appris_label</span>};
+  return qq{<span class="flag appris$border_colour" data-toggle="tooltip" data-placement="bottom" title="APPRIS $appris">$appris_label</span>};
 }
 
 
@@ -1449,12 +1452,10 @@ sub get_uniprot_score_html {
     
     return '' unless ($uniprot_score);
     
-    my $border_colour = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+    my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
   
     return qq{
-    <a href="$uniprot_url/$uniprot_id" target="_blank">
-      <span class="flag uniprot_flag icon-target close-icon-2 smaller-icon"$border_colour data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>
-    </a>};
+    <span onclick="javascript:get_ext_link('uniprot','$uniprot_id')" class="flag uniprot_flag icon-target close-icon-2 smaller-icon$border_colour" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>};
   }
   else {
     return '';
@@ -1535,8 +1536,8 @@ sub get_showhide_buttons {
   }
   
   return qq{
-       <div class="buttons_row_title">$type rows:</div>
-       <div class="buttons_row_subtitle">
+       <div class="btn_row_title">$type rows:</div>
+       <div class="btn_row_subtitle">
              <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,1);">Show all rows</button>
              <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,0);">Hide all rows</button>
              $hidden_ids
@@ -1559,6 +1560,8 @@ sub display_refseq_data {
   foreach my $nm (sort {$refseq_exons_list->{$b}{'count'} <=> $refseq_exons_list->{$a}{'count'}} keys(%{$refseq_exons_list})) {
 
     next if ($refseq_import eq $gff_attrib && $compare_nm_data{$nm}{$gff_attrib});
+
+    my $tr_source = 'refseq';
 
     my $refseq_exons = $refseq_exons_list->{$nm}{'exon'};
     my $e_count = scalar(keys(%{$refseq_exons})); 
@@ -1589,7 +1592,7 @@ sub display_refseq_data {
       $first_col
       <td class="$column_class first_column fixed_col col4">
         <div>
-          <a class="white" href="http://www.ncbi.nlm.nih.gov/nuccore/$nm" target="_blank">$nm_label</a>
+          <a class="white" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
         <div class="nm_details">$labels</div>
       </td>
@@ -1727,8 +1730,6 @@ sub display_bed_source_data {
     
     my $first_col = build_first_col($id,$row_id);
     
-    my $external_url = $source_url{$source}.$id;
-    
     my $biotype = get_biotype($tr_exons_list->{$id}{'biotype'});
 
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
@@ -1738,7 +1739,7 @@ sub display_bed_source_data {
       $first_col
       <td class="$column_class first_column fixed_col col4">
         <div$date>
-          <a class="$source\_link" href="$external_url" target="_blank">$id</a>
+          <a class="$source\_link" onclick="javascript:get_ext_link('$source','$id')">$id</a>
         </div>$enst
       </td>
       <td class="extra_col fixed_col col5">$e_count</td>
@@ -1849,7 +1850,7 @@ sub display_bed_source_data {
 sub display_transcript_buttons {
   my $rows_list = shift;
   my $source    = shift;
-  my $first_buttons_row = shift;
+  my $first_btn_row = shift;
 
   my $tr_count = 0;
   my @tr_row_ids = (sort {$a <=> $b} keys(%{$rows_list}));
@@ -1872,10 +1873,10 @@ sub display_transcript_buttons {
   my $first_row_id = $tr_row_ids[0];
   my $last_row_id  = $tr_row_ids[@tr_row_ids-1];
 
-  my $border_top = ($first_buttons_row) ? ' buttons_row_first' : '';
+  my $border_top = ($first_btn_row) ? ' btn_row_first' : '';
 
-  my $html  = "<tr class=\"buttons_row$border_top\"><td class=\"buttons_col_left\">".get_showhide_buttons($source, $first_row_id, $last_row_id).'</td>';
-     $html .= "<td class=\"buttons_row_content\">$buttons_html</td></tr>";
+  my $html  = "<tr class=\"btn_row$border_top\"><td class=\"btn_col_left\">".get_showhide_buttons($source, $first_row_id, $last_row_id).'</td>';
+     $html .= "<td class=\"btn_row_content\">$buttons_html</td></tr>";
      #$html .= qq{</div></div><div style="clear:both"></div></div>};
 
   return $html;
