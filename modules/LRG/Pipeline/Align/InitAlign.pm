@@ -168,7 +168,7 @@ sub write_output {
           #'uniprot_file'   => $uniprot_file
        };
     if ($lrg_id ne '') {
-      $gene_job->{'lrg'} = $lrg_id;
+      $gene_job->{'lrg_id'} = $lrg_id;
     }
     if ($GENES_LENGTH{$gene} < $LENGTH) {
       push @jobs, $gene_job;
