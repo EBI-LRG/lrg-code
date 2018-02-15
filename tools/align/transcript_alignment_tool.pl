@@ -55,10 +55,9 @@ if (-e $transcript_cars_info) {
 my $transcript_score_date = '23rd August 2017 - e89';
 #$uniprot_file ||= $uniprot_file_default;
 
-my $uniprot_url      = 'http://www.uniprot.org/uniprot';
-my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
-
-my $http = HTTP::Tiny->new();
+#my $uniprot_url      = 'http://www.uniprot.org/uniprot';
+#my $uniprot_rest_url = $uniprot_url.'/?query=####ENST####+AND+reviewed:yes+AND+organism:9606&columns=id,annotation%20score&format=tab';
+#my $http = HTTP::Tiny->new();
 
 if ($data_file_dir && -d $data_file_dir) {
   $havana_file = $havana_file_default if (!$havana_file);
@@ -153,6 +152,9 @@ my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
 
+my $zenbu_region_url = 'http://fantom.gsc.riken.jp/zenbu/gLyphs/#config=vUkkXIOCGt2kD3uEPDWgkD;loc=hg38::chr##CHR##:##START##..##END##+';
+my $sstar_url = 'http://fantom.gsc.riken.jp/5/sstar/EntrezGene:';
+
 my $gtex_url = 'http://www.gtexportal.org/home/gene/';
 my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
 my $ncbi_jira_url = "https://ncbijira.ncbi.nlm.nih.gov/issues/?jql=text%20~%20%22###LRG###%22";
@@ -211,31 +213,41 @@ $genomic_region_url =~ s/##CHR##/$gene_chr/;
 $genomic_region_url =~ s/##START##/$gene_start/;
 $genomic_region_url =~ s/##END##/$gene_end/;
 
+$zenbu_region_url =~ s/##CHR##/$gene_chr/;
+$zenbu_region_url =~ s/##START##/$gene_start/;
+$zenbu_region_url =~ s/##END##/$gene_end/;
+
 $evidence_url =~ s/###ENSG###/$gene_name/;
 
 foreach my $xref (@{$ens_gene->get_all_DBEntries}) {
   my $dbname = $xref->dbname;
   if ($dbname eq $GI_dbname) {
-    $rsg_url = "http://www.ncbi.nlm.nih.gov/gene/".$xref->primary_id;
+    my $xref_id = $xref->primary_id;
+    $rsg_url = "http://www.ncbi.nlm.nih.gov/gene/$xref_id";
+    $sstar_url .= $xref_id;
     last;
   }
 }
 
-
-my %external_links = ( 
-                      'GTEx'       => $gtex_url.$gene_name,
-                      'LOVD'       => $lovd_url, 
-                      'RefSeqGene' => $rsg_url,
-                      'UCSC'       => $ucsc_url,
-                      'GRC region' => $genomic_region_url,
-                      'CCDS Gene'  => $ccds_gene_url,
-                      'Evidence'   => $evidence_url
+my $max_external_links_per_line = 4;
+my %external_links = ( 'Ensembl'         => { 'Evidence'   => $evidence_url,
+                                              'GRC region' => $genomic_region_url
+                                            },
+                       'NCBI'            => { 'RefSeqGene' => $rsg_url,
+                                              'CCDS Gene'  => $ccds_gene_url
+                                            },
+                       'Other resources' => { 'GTEx'       => $gtex_url.$gene_name,
+                                              'LOVD'       => $lovd_url,
+                                              'UCSC'       => $ucsc_url,
+                                              'ZENBU'      => $zenbu_region_url,
+                                              'SSTAR'      => $sstar_url
+                                            }
                      );
 if ($lrg_id) {
   $ncbi_jira_url =~ s/###LRG###/$lrg_id/;
   
-  $external_links{$lrg_id} = $lrg_url;
-  $external_links{'NCBI JIRA'} = $ncbi_jira_url;
+  $external_links{'LRG'}{$lrg_id} = $lrg_url;
+  $external_links{'NCBI'}{'NCBI JIRA'} = $ncbi_jira_url;
 }
 
 #--------------------#
@@ -609,7 +621,7 @@ $html .= qq{
       </button>
       
       <!--Show/Hide pathogenic variants -->
-      <button class="btn btn-lrg" id="button_pathogenic_variants" onclick="showhide_elements('button_pathogenic_variants','pathogenic_exon_tag')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
+      <button class="btn btn-lrg" id="button_pathog_variants" onclick="showhide_elements('button_pathog_variants','pathog_exon_tag')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
         Hide pathogenic variant labels $html_pathogenic_label
       </button>
       
@@ -627,23 +639,23 @@ my $exon_tab_list = qq{
   <table class="exon_table">
     <thead>
       <tr>
-        <th class="rowspan2 fixed_col col1" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Hide rows / Highlight rows / Blast the sequence">
+        <th class="rspan2 fixed_col col1" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Hide rows / Highlight rows / Blast the sequence">
           <span class="helptip_label">Opt</span>
         </th>
-        <th class="rowspan2 fixed_col col4" rowspan="2">Transcript</th>
-        <th class="rowspan2 fixed_col col5" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Number of exons">
+        <th class="rspan2 fixed_col col4" rowspan="2">Transcript</th>
+        <th class="rspan2 fixed_col col5" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Number of exons">
           <span class="helptip_label">#e</span>
         </th>
-        <th class="rowspan2 fixed_col col6" rowspan="2">Name<div class="tr_length_header">(length)</div></th>
-        <th class="rowspan2 fixed_col col7" rowspan="2">Biotype<div class="tr_length_header">(Coding length)</div></th>
-        <th class="rowspan2 fixed_col col8" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Strand">
+        <th class="rspan2 fixed_col col6" rowspan="2">Name<div class="tr_length_header">(length)</div></th>
+        <th class="rspan2 fixed_col col7" rowspan="2">Biotype<div class="tr_length_header">(Coding length)</div></th>
+        <th class="rspan2 fixed_col col8" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Strand">
           <span class="helptip_label">S</span>
         </th>
-        <th class="rowspan1 coords_cell" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
-        <th class="rowspan2" rowspan="2">CCDS</th>
-        <th class="rowspan2" rowspan="2">RefSeq transcript</th>
-        <th class="rowspan2" rowspan="2">HGMD</th>
-        <th class="rowspan2" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Highlight rows">
+        <th class="rspan1 coords_cell" rowspan="1" colspan="$coord_span"><small>Coordinates</small></th>
+        <th class="rspan2" rowspan="2">CCDS</th>
+        <th class="rspan2" rowspan="2">RefSeq transcript</th>
+        <th class="rspan2" rowspan="2">HGMD</th>
+        <th class="rspan2" rowspan="2" data-toggle="tooltip" data-placement="bottom" title="Highlight rows">
           <span class="helptip_label">hl</span>
         </th>
       </tr>
@@ -655,7 +667,7 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
   
   my $exon_coord_label = thousandify($exon_coord);
   
-  $exon_tab_list .= qq{        <th class="rowspan1 coord" id="coord_$exon_number" title="$exon_coord_label" onclick="alert('Genomic coordinate $gene_chr:$exon_coord')">};
+  $exon_tab_list .= qq{<th class="rspan1 coord" id="coord_$exon_number" title="$gene_chr:$exon_coord_label" onclick="display_coord('coord_$exon_number')">};
   $exon_tab_list .= $exon_coord_label;
   $exon_tab_list .= qq{</th>};
 
@@ -698,28 +710,34 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
      $ens_tr_label = version_label($ens_tr_label);
   
   # cDNA lengths
-  my $cdna_coding_start = $tr_object->cdna_coding_start;
-  my $cdna_coding_end   = $tr_object->cdna_coding_end;
+  my $cdna_coding_start  = $tr_object->cdna_coding_start;
+  my $cdna_coding_end    = $tr_object->cdna_coding_end;
   my $cdna_coding_length = ($cdna_coding_start && $cdna_coding_end) ? thousandify($cdna_coding_end - $cdna_coding_start + 1).' bp' : 'NA';
   my $cdna_length        = thousandify($tr_object->length).' bp';
   
-  my $tr_ext_name        = $tr_object->external_name;
-  my $manual_class       = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-  my $manual_label       = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
-  my $manual_border      = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
+  my $tr_ext_name   = $tr_object->external_name;
+  my $manual_class  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
+  my $manual_label  = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
+  my $manual_border = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
   
-  #my $manual_html        = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $tsl_html           = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
-  my $appris_html        = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $canonical_html     = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $cars_html          = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $tr_score_html   = get_tr_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  my $pathogenic_html    = ($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) ? get_pathogenic_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}) : '';
+  #my $manual_html   = get_manual_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tsl_html       = get_tsl_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);  
+  my $appris_html    = get_appris_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $canonical_html = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $cars_html      = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $tr_score_html  = get_tr_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  #my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  
+  my $pathogenic_count = $ens_tr_exons_list{$ens_tr}{'has_pathogenic'};
+  my $pathogenic_html  = ($pathogenic_count) ? get_pathogenic_html($pathogenic_count) : '';
+  
+  my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'large_cell'  : 'medium_cell';
+  my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'medium_cell' : 'large_cell';
   
   my $biotype = get_biotype($tr_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   
+  # Not used anymore
   my $width_left = my $width_right = '15px';
   my $enst_td_style = ' class="text-center"';
   if ($canonical_html ne '' && $cars_html ne '') {
@@ -727,6 +745,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     $width_right = '32px';
     $enst_td_style = ' class="text-right"';
   }
+  #######
   
   my $first_col = build_first_col($ens_tr,$row_id);
   
@@ -738,7 +757,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       <table class="transcript">
         <tr>
           <td class="$column_class" style="padding:0px" colspan="6">
-            <table class="enst_tr">
+            <a$a_class onclick="javascript:get_ext_link('$tr_source','$ens_tr')">$ens_tr_label</a>
+            <!--<table class="enst_tr">
               <tr>
                 <td style="width:$width_left"></td>
                 <td$enst_td_style>
@@ -746,15 +766,15 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
                 </td>
                 <td style="width:$width_right">$canonical_html$cars_html</td>
               </tr>
-            </table>
+            </table>-->
           </td>
         </tr>
         <tr class="bottom_row">
           <td class="small_cell">$tsl_html</td>
           <td class="medium_cell">$tr_score_html</td>
           <td class="medium_cell">$appris_html</td>
-          <td class="medium_cell">$uniprot_score_html</td>
-          <td class="large_cell">$pathogenic_html</td>
+          <td class="$canonical_td_class">$canonical_html$cars_html</td>
+          <td class="$pathogenic_td_class">$pathogenic_html</td>
         </tr>
       </table>
     </td>
@@ -1027,7 +1047,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
   # HGNC symbol
   my @hgnc_list = grep {$_->dbname eq 'HGNC'} $gene_object->display_xref;
-  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<br /><small>('.$hgnc_list[0]->display_id.')</small>' : '';
+  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<div class="col4_subtitle">('.$hgnc_list[0]->display_id.')</div>' : '';
 
   my $column_class = 'gene';
   
@@ -1231,15 +1251,18 @@ $html .= qq{
 #----------------#
 if ($gene_name !~ /^ENS(G|T)\d{11}/) {
   $html .= qq{<h2 class="icon-next-page smaller-icon">External links to $gene_name</h2>\n};
-  $html .= qq{<table>\n};
-  
-  foreach my $external_db (sort keys(%external_links)) {
-    my $url = $external_links{$external_db};
-       $url =~ s/####/$gene_name/g;
-    my $url_label = (length($url) > $MAX_LINK_LENGTH) ? substr($url,0,$MAX_LINK_LENGTH)."..." : $url;
-    $html .= qq{  <tr class="bg2" style="border-bottom:2px solid #FFF"><td style="padding:4px 5px 4px 2px;font-weight:bold">$external_db:</td><td style="padding:4px"><a class="external" href="$url" target="_blank">$url_label</a></td></tr>\n};
+  $html .= qq{<table class="external_links">};
+  foreach my $external_src (sort keys(%external_links)) {
+    $html .= qq{<tr><td class="bold_font">$external_src: </td><td><div class="clearfix">};
+    
+    foreach my $external_db (sort keys(%{$external_links{$external_src}})) {
+      my $url = $external_links{$external_src}{$external_db};
+        $url =~ s/####/$gene_name/g;
+      $html .= qq{<div class="left"><a class="btn btn-ext" href="$url" target="_blank">$external_db</a></div>};
+    }
+    $html .= qq{</div></td></tr>};
   }
-  $html .= qq{</table>\n};
+  $html .= qq{</table>};
 }
 
 
@@ -1424,49 +1447,49 @@ sub get_appris_html {
 }
 
 
-sub get_uniprot_score_html {
-  my $transcript   = shift;
-  my $column_class = shift;
-  
-  return '' unless $transcript->biotype eq 'protein_coding';
-  
-  my $enst = $transcript->stable_id;
-  
-  my $uniprot_id;
-  my $uniprot_result;
-  my $uniprot_score;
-  
-  my $rest_url = $uniprot_rest_url;
-     $rest_url =~ s/####ENST####/$enst/;
-     
-  my $response = $http->get($rest_url, {});
-  
-  if (length $response->{content}) {
-    my @content = split("\n", $response->{content});
-    my ($uniprot_id, $uniprot_result) = split("\t",$content[1]);
-    
-    return '' unless ($uniprot_id && $uniprot_result && $uniprot_result ne '');
-    
-    $uniprot_result =~ /^(\d+)/;
-    $uniprot_score = $1;
-    
-    return '' unless ($uniprot_score);
-    
-    my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
-  
-    return qq{
-    <span onclick="javascript:get_ext_link('uniprot','$uniprot_id')" class="flag uniprot_flag icon-target close-icon-2 smaller-icon$border_colour" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>};
-  }
-  else {
-    return '';
-  }
-}
+#sub get_uniprot_score_html {
+#  my $transcript   = shift;
+#  my $column_class = shift;
+#  
+#  return '' unless $transcript->biotype eq 'protein_coding';
+#  
+#  my $enst = $transcript->stable_id;
+#  
+#  my $uniprot_id;
+#  my $uniprot_result;
+#  my $uniprot_score;
+#  
+#  my $rest_url = $uniprot_rest_url;
+#     $rest_url =~ s/####ENST####/$enst/;
+#     
+#  my $response = $http->get($rest_url, {});
+#  
+#  if (length $response->{content}) {
+#    my @content = split("\n", $response->{content});
+#    my ($uniprot_id, $uniprot_result) = split("\t",$content[1]);
+#    
+#    return '' unless ($uniprot_id && $uniprot_result && $uniprot_result ne '');
+#    
+#    $uniprot_result =~ /^(\d+)/;
+#    $uniprot_score = $1;
+#    
+#    return '' unless ($uniprot_score);
+#    
+#    my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
+#  
+#    return qq{
+#    <span onclick="javascript:get_ext_link('uniprot','$uniprot_id')" class="flag uniprot_flag icon-target close-icon-2 smaller-icon$border_colour" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>};
+#  }
+#  else {
+#    return '';
+#  }
+#}
 
 
 sub get_pathogenic_html {
   my $data = shift;
   
-  return qq{<span class="flag pathogenic icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">$data</span>};
+  return qq{<span class="flag pathog icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">$data</span>};
   
 }
 
@@ -1594,7 +1617,7 @@ sub display_refseq_data {
         <div>
           <a class="white" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
-        <div class="nm_details">$labels</div>
+        <div class="col4_subtitle">$labels</div>
       </td>
       <td class="extra_col fixed_col col5">$e_count</td>
     };
@@ -1701,6 +1724,8 @@ sub display_bed_source_data {
   
   foreach my $id (sort {$tr_exons_list->{$b}{'count'} <=> $tr_exons_list->{$a}{'count'}} keys(%$tr_exons_list)) {
 
+    my $id_label = version_label($id);
+
     my $e_count = $tr_exons_list->{$id}{'count'};
     
     my $column_class = $source;
@@ -1733,13 +1758,14 @@ sub display_bed_source_data {
     my $biotype = get_biotype($tr_exons_list->{$id}{'biotype'});
 
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
+   
     
     $exon_tab_list .= qq{
     <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$id" data-biotype="$data_biotype">
       $first_col
       <td class="$column_class first_column fixed_col col4">
         <div$date>
-          <a class="$source\_link" onclick="javascript:get_ext_link('$source','$id')">$id</a>
+          <a class="$source\_link" onclick="javascript:get_ext_link('$source','$id')">$id_label</a>
         </div>$enst
       </td>
       <td class="extra_col fixed_col col5">$e_count</td>
@@ -1763,7 +1789,7 @@ sub display_bed_source_data {
     };
     
     $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
-    $rows_list{$row_id}{'label'} = $id;
+    $rows_list{$row_id}{'label'} = $id_label;
     $rows_list{$row_id}{'class'} = $source;
     
     my %exon_set_match;
@@ -1877,7 +1903,6 @@ sub display_transcript_buttons {
 
   my $html  = "<tr class=\"btn_row$border_top\"><td class=\"btn_col_left\">".get_showhide_buttons($source, $first_row_id, $last_row_id).'</td>';
      $html .= "<td class=\"btn_row_content\">$buttons_html</td></tr>";
-     #$html .= qq{</div></div><div style="clear:both"></div></div>};
 
   return $html;
 }
@@ -1908,7 +1933,6 @@ sub display_exon {
 
   my $e_length  = ($e_start <= $e_end) ? ($e_end - $e_start + 1) : ($e_start - $e_end + 1);
      $e_length  = thousandify($e_length);
-     $e_length .= ' bp';
 
   my $e_tr_id = (split(/\./,$e_tr))[0];
   my $showhide_info_params  = "event,'$e_tr_id','$e_number','$e_chr:$e_start-$e_end','$e_length'";
@@ -1917,7 +1941,7 @@ sub display_exon {
 
   my $title = "$e_tr";
      $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
-     $title .= " | $e_length";
+     $title .= " | $e_length bp";
      
    # UTR info
   if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
@@ -1962,7 +1986,7 @@ sub display_exon {
     my @variants = keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}});
     my $pathogenic = scalar(@variants);
     if ($pathogenic) {
-      $pathogenic_variants = qq{<div class="pathogenic_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
+      $pathogenic_variants = qq{<div class="pathog_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
       $title .= " | $pathogenic pathogenic variants";
       $showhide_info_params .= ",'$pathogenic'";
       if ($pathogenic <= $max_variants) {
@@ -1996,12 +2020,13 @@ sub display_exon {
 
   return qq{
     <div class="sub_exon"></div>
-    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:showhide_info($showhide_info_params)" onmouseover="javascript:hl_exons('$e_start\_$e_end')" onmouseout="javascript:hl_exons('$e_start\_$e_end',1)">
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:showhide_info($showhide_info_params)">
       <div class="e_label e_label_$source">$e_number$e_extra</div>
       $partial_display
     </div>
     <div class="sub_exon clearfix">$pathogenic_variants</div>
   };
+  #onmouseover="javascript:hl_exons('$e_start\_$e_end')" onmouseout="javascript:hl_exons('$e_start\_$e_end',1)"
 }
 
 

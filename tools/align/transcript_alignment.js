@@ -12,6 +12,20 @@ var EXT_LINKS = {
   'uniprot' : 'http://www.uniprot.org/uniprot/'
 };
 
+/* Highlight the similar exons (same genomic coordinates)*/
+$(document).ready(function(){
+  $('.exon')
+    .mouseover(function(){
+      var exon_coord = $(this).attr('data-name');      
+      $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'#BAF4F4');
+    })
+    .mouseout(function(){
+      var exon_coord = $(this).attr('data-name');
+      $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'transparent');
+    });
+});
+
+
 function get_ext_link(type,id) {
   if (EXT_LINKS[type]) {
     window.open(EXT_LINKS[type]+id,'_blank');
@@ -19,6 +33,16 @@ function get_ext_link(type,id) {
   else {
     alert("No URL available for this link!");
   }
+}
+
+function go2blast(id) {
+  window.open('http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
+}
+
+function display_coord(coord_id) {
+  var coord_comma = $('#'+coord_id).attr('title');
+  var coord = coord_comma.split(',').join('');
+  alert("Genomic coordinates: "+coord);
 }
 
 function showhide_elements(button_id,class_name) {
@@ -273,27 +297,6 @@ function hl_row(row_id,type) {
 }
 
 
-// Highlight exons
-function hl_exons(param,hide) {
-
-  var divs = document.getElementsByClassName('exon');
-
-  for (var id=0; id<=divs.length; id++) {
-    if (divs[id]) {
-      var td = divs[id].parentNode;
-      if (divs[id].getAttribute('data-name') == param) {
-        if (hide) {
-          td.style.backgroundColor = 'transparent';
-        }
-        else {
-          td.style.backgroundColor = '#BAF4F4';
-        }
-      }
-    }
-  }
-}
-
-
 function getElementsStartsWithId( id, tag ) {
   var children = document.body.getElementsByTagName(tag);
   var elements = [], child;
@@ -306,10 +309,6 @@ function getElementsStartsWithId( id, tag ) {
   return elements;
 }
 
-
-function go2blast(id) {
-  window.open('http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
-}
 
 function compact_expand(column_count) {
   var compact = "Compact";
@@ -414,7 +413,7 @@ function showhide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,phase_s
         popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
       }
     }  
-    popup_content += '<div><b>Size:</b> '+exon_length+'</div>';
+    popup_content += '<div><b>Length:</b> '+exon_length+' bp</div>';
     if (ens_pathogenic_var) {
       popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
       if (ens_pathogenic_variant_list) {

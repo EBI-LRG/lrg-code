@@ -218,9 +218,9 @@ function get_legend() {
             <td class="gene first_column"></td><td>Label the <b>Ensembl genes</b></td>
           </tr>
           
-          <!-- Other -->
+          <!-- Other labels -->
           <tr class="bg1_legend"><td colspan="2"></td></tr>
-          <tr><th colspan="2">Other transcript info</th></tr>
+          <tr><th colspan="2">Other labels</th></tr>
           <tr class="bg1_legend">
             <td>
               <div class="tsl_container" style="margin-bottom:7px">
@@ -270,23 +270,17 @@ function get_legend() {
           </tr>
           <tr class="bg2_legend">
             <td>
-               <span class="flag uniprot_flag icon-target close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: 5 out of 5">5</span>
-            </td>
-            <td>Label to indicate the <a class="external" href="http://www.uniprot.org/help/annotation_score" target="_blank">UniProt annotation score</a> (1 to 5) of the translated protein</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td>
-              <span class="flag pathogenic icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
+              <span class="flag pathog icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
             <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg1">
+          <tr class="bg2_legend">
             <td>
               <span class="flag source_flag gff3 dark_border">gff3</span>
             </td>

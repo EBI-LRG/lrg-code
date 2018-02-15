@@ -57,10 +57,10 @@ th {
 th:first-child { border-left: 1px solid #3C3F45 }
 th:last-child  { border-right: 1px solid #3C3F45 }
 
-th.rowspan1{
+th.rspan1{
   height:24px;
 }
-th.rowspan2{
+th.rspan2{
   height:50px;
 }
 
@@ -86,6 +86,19 @@ table.enst_tr > tr > td:first-child {
 table.enst_tr > tr > td:nth-child(3) {
   width:15px;
   text-align:right;
+}
+
+table.external_links {
+  background-color: #EEE;
+}
+table.external_links > tbody > tr:not(:last-child) {
+  border-bottom: 1px solid #FFF;
+}
+table.external_links > tbody > tr > td {
+  padding:8px;
+}
+table.external_links > tbody > tr > td:first-child {
+  font-weight:bold;
 }
 
 a {
@@ -259,7 +272,7 @@ table.legend td.subheader {
 
 .cars {
   border: none !important;
-  padding:1px 0px 1px 1px;
+  padding:1px 0px 1px 4px;
   color: #D00;
 }
 
@@ -290,7 +303,7 @@ table.legend td.subheader {
   background-color:#FFF;
 }
 
-.pathogenic {
+.pathog {
   padding:1px;
   color: #FFF;
   background-color:#555;
@@ -305,22 +318,22 @@ table.legend td.subheader {
 }
 
 .source_flag {
-  padding:1px;
+  padding:1px 2px;
   margin-right:4px;
 }
 .source_flag:before {
   content: "+";
 }
 
-.pathogenic_exon_tag {
+.pathog_exon_tag {
   float:right;
-  /*height:10px;*/
   max-width:50px;
   font-size:8px;
   padding:0px 2px;
   background-color:#555;
   color:#FFF;
   position:relative;
+  white-space: nowrap;
   z-index:10;
 }
 
@@ -358,7 +371,7 @@ th.coord {
 
 .gold, .gold:hover, .gold:active {
   background-color:gold;
-  color:#333
+  color:#333;
 }
 .ens, .ens:hover, .ens:active {
   background-color:#336;
@@ -651,7 +664,7 @@ th.coord {
 }
 
 .identity{
-  font-size:0.7em;
+  font-size:0.65em;
   padding-left:5px
 }
 
@@ -750,12 +763,36 @@ th.coord {
 	text-decoration: none;
 }
 
+.btn-ext, .btn-ext:focus {
+	background-color: #FFF;
+	border-color: #48a726;
+	color: #48a726;
+	padding:2px 6px; /*padding:0px 2px;*/
+	margin-right:10px;
+	white-space:nowrap;
+	vertical-align:middle;
+	text-decoration:none;
+}
+.btn-ext:hover {
+	background-color: #ebf9e6;
+	color: #48a726;
+	text-decoration: none;
+}
+.btn-ext:active {
+  outline: none;
+  background-color: #48a726;
+	border-color: #FFF;
+	color: #FFF;
+	text-decoration: none;
+}
+
+
 .btn-non-lrg {
-  margin:2px 5px 2px 0px;
+  margin:2px;
   border:2px solid #CCC;
   cursor:pointer;
 	padding:2px 6px; /*padding:0px 2px;*/
-	margin-right:5px;
+	margin-right:1px;
 	white-space:nowrap;
 	vertical-align:middle;
 }
@@ -792,16 +829,16 @@ th.coord {
 }
 
 .btn_row {
-  border-bottom:2px dotted #888;
+  border-bottom:1px dotted #888;
   padding:2px;
 }
 .btn_row_first {
-  border-top:2px dotted #888;
+  border-top:1px dotted #888;
 }
 
 .btn_col_left {
   width:250px;
-  border-right:2px dotted #888;
+  border-right:1px dotted #888;
   padding:8px;
   vertical-align:top;
 }
@@ -865,13 +902,6 @@ input[type=checkbox].hl_row {
   margin-top:0px;
   height:50px;
   vertical-align:middle;
-}
-
-.nm_details {
-  margin-top:1px;
-}
-.nm_details:after {
-  clear:both;
 }
 
 div.left_div {
@@ -963,10 +993,9 @@ table.transcript tbody tr:first-child {
 .scrolling {
   max-width: 1900px;
   overflow-x:scroll;  
-  margin-left:575px;/*610px;*/
+  margin-left:535px;/*610px;*/
   overflow-y:visible;
   margin-bottom:20px 0px;
-  /*padding-bottom:1px;*/
 }
 
 .tr_col {
@@ -978,7 +1007,7 @@ table.transcript tbody tr:first-child {
   height:50px;
 }
 .col1 { 
-  width:70px; 
+  width:65px; 
   left:10px;
   line-height:50px;
 }
@@ -993,29 +1022,38 @@ table.transcript tbody tr:first-child {
   line-height:50px;
 }*/
 .col4 { 
-  width:220px; 
-  left:80px;
+  width:205px; 
+  left:75px;
 }
 th.col4 {
   line-height:50px;
 }
+.col4_subtitle {
+  margin-top:4px;
+  text-align:center;
+  font-size:85%;
+}
+.col4_subtitle:after {
+  clear:both;
+}
+
 .col5 {
-  width:35px; 
-  left:300px;
+  width:30px; 
+  left:280px;
   line-height:50px;
 }
 .col6 { 
   width:95px; 
-  left:335px;
+  left:310px;
   vertical-align: middle;
 }
 .col7 {
-  width:130px; 
-  left:430px;
+  width:120px; 
+  left:405px;
 }
 .col8 { 
-  width:30px; 
-  left:560px;
+  width:25px; 
+  left:525px;
   line-height:50px;
   z-index:30;
 }
