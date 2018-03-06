@@ -325,7 +325,6 @@ function compact_expand(column_count) {
     icon_left.switchClass(icon_class_prefix+'right', icon_class_prefix+'left');
     icon_middle.switchClass(icon_middle_expand, icon_middle_compact);
     icon_right.switchClass(icon_class_prefix+'left', icon_class_prefix+'right');
-    
   }
   else {
     button_text = button_text.replace(expand,compact);
@@ -337,12 +336,14 @@ function compact_expand(column_count) {
   
   for (var id=1; id<=column_count; id++) {
     var column_id = "#coord_"+id;
-    if ($(column_id).html() == $(column_id).attr("title")) {
+    var title = $(column_id).attr("title");
+    var coord = (title.split(':'))[1];
+    if ($(column_id).html() == coord) {
       var id_label = (id < 10 && column_count >= 10) ? "0"+id : id;
       $(column_id).html(id_label);
     }
     else {
-      $(column_id).html($(column_id).attr("title"));
+      $(column_id).html(coord);
     }
   }
 }
