@@ -152,8 +152,9 @@ my $evidence_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Evidence?db=core;g=
 my $blast_url = 'http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence=';
 my $ccds_gene_url = 'https://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=GENE&DATA=####&ORGANISM=9606&BUILDS=CURRENTBUILDS';
 
-my $zenbu_region_url = 'http://fantom.gsc.riken.jp/zenbu/gLyphs/#config=vUkkXIOCGt2kD3uEPDWgkD;loc=hg38::chr##CHR##:##START##..##END##+';
+my $zenbu_region_url = 'http://fantom.gsc.riken.jp/zenbu/gLyphs/#config=NVkH3LIXMZ0ohBbpjgjjsD;loc=hg38::chr##CHR##:##START##..##END##+';
 my $sstar_url = 'http://fantom.gsc.riken.jp/5/sstar/EntrezGene:';
+my $uniprot_url = 'http://www.uniprot.org/uniprot/';
 
 my $gtex_url = 'http://www.gtexportal.org/home/gene/';
 my $lrg_url  = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
@@ -230,6 +231,7 @@ foreach my $xref (@{$ens_gene->get_all_DBEntries}) {
 }
 
 my $max_external_links_per_line = 4;
+my %uniprot_ids;
 my %external_links = ( 'Ensembl'         => { 'Evidence'   => $evidence_url,
                                               'GRC region' => $genomic_region_url
                                             },
@@ -271,6 +273,12 @@ foreach my $tr (@$ens_tr) {
   if ($tr->translation) {
     foreach my $xref (@{$tr->translation->get_all_DBEntries}) {
       my $dbname = $xref->dbname;
+      
+      if ($dbname =~ /^UniProt.*Swiss/i) {
+      print "UniXref: $dbname | ".$xref->display_id." | $tr_name\n";
+        $uniprot_ids{$xref->display_id} = 1;
+      }
+      
       next if (!$external_db{$dbname});
       $ens_tr_exons_list{$tr_name}{$dbname}{$xref->display_id} = 1;
     }
@@ -1252,6 +1260,14 @@ $html .= qq{
 if ($gene_name !~ /^ENS(G|T)\d{11}/) {
   $html .= qq{<h2 class="icon-next-page smaller-icon">External links to $gene_name</h2>\n};
   $html .= qq{<table class="external_links">};
+  
+  # UniProt Xrefs
+  if (%uniprot_ids) {
+    foreach my $uni_id (sort(keys(%uniprot_ids))) {
+      $external_links{'UniProt'}{$uni_id} = $uniprot_url.$uni_id;
+    }
+  }
+  
   foreach my $external_src (sort keys(%external_links)) {
     $html .= qq{<tr><td class="bold_font">$external_src: </td><td><div class="clearfix">};
     
