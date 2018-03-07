@@ -344,16 +344,10 @@ th.coord {
 }
 
 
-.first_column {
+.first_col {
   text-align:center;
   border:1px solid #FFF;
   padding:1px 2px;
-}
-
-.transcript_column {
-  text-align:center;
-  border:1px solid #FFF;
-  padding:0px;
 }
 
 .extra_col {
@@ -756,11 +750,8 @@ th.coord {
 	text-decoration: none;
 }
 .btn-lrg:focus, .btn-lrg-sm:focus, .btn-lrg-xs:focus {
-  outline: none;
+  color: #FFF;
   background-color: #48a726;
-	border-color: #FFF;
-	color: #FFF;
-	text-decoration: none;
 }
 
 .btn-ext, .btn-ext:focus {

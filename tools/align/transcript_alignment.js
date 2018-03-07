@@ -1,14 +1,17 @@
 var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
 
+var ENS_WEB_ROOT  = 'https://www.ensembl.org/Homo_sapiens/';
+var NCBI_WEB_ROOT = 'http://www.ncbi.nlm.nih.gov/';
+
 var EXT_LINKS = {
-  'ensv'    : 'https://www.ensembl.org/Homo_sapiens/Variation/Explore?v=',
-  'enst'    : 'https://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=',
-  'ensg'    : 'https://www.ensembl.org/Homo_sapiens/Gene/Summary?g=',
+  'ensv'    : ENS_WEB_ROOT+'Variation/Explore?v=',
+  'enst'    : ENS_WEB_ROOT+'Transcript/Summary?t=',
+  'ensg'    : ENS_WEB_ROOT+'Gene/Summary?g=',
   'havana'  : 'http://vega.sanger.ac.uk/Homo_sapiens/Transcript/Summary?t=',
-  'refseq'  : 'http://www.ncbi.nlm.nih.gov/nuccore/',
-  'cdna'    : 'http://www.ncbi.nlm.nih.gov/nuccore/',
-  'ccds'    : 'http://www.ncbi.nlm.nih.gov/CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=',
+  'refseq'  : NCBI_WEB_ROOT+'nuccore/',
+  'cdna'    : NCBI_WEB_ROOT+'nuccore/',
+  'ccds'    : NCBI_WEB_ROOT+'CCDS/CcdsBrowse.cgi?REQUEST=CCDS&DATA=',
   'uniprot' : 'http://www.uniprot.org/uniprot/'
 };
 
@@ -26,6 +29,124 @@ $(document).ready(function(){
 });
 
 
+/* Create and display Exon popups */
+$(document).on('click', '.exon', function (e) {
+
+  if (!e) var e = window.event;
+  var posX = e.pageX;
+  var posY = e.pageY;
+
+  var tr_label = $(this).closest('tr').data('name');
+  var tr_id    = tr_label.split('.')[0];
+  var params   = $(this).data('params');
+  var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,ens_pathogenic_var,ens_pathogenic_variant_list] = params.split('|');
+  var content = $(this).data('name').replace('_', '-');
+  var coords = $('#gene_coord').data('chr')+':'+content;
+
+  var exon_popup = '';
+  var exon_popup_id = "exon_popup_"+tr_id+"_"+exon_id;
+  
+  if (document.getElementById(exon_popup_id)) {
+    exon_popup = document.getElementById(exon_popup_id);
+  }
+  else {
+    // Popup Div
+    exon_popup = document.createElement('div');
+    exon_popup.id = exon_popup_id;
+    exon_popup.className = "exon_popup";
+    
+    // Header
+    exon_popup_header = document.createElement('div');
+    exon_popup_header.className = "exon_popup_header clearfix";
+    
+    exon_popup_header_left = document.createElement('div');
+    exon_popup_header_left.innerHTML = tr_label;
+    exon_popup_header_left.className = "exon_popup_header_title";
+    exon_popup_header.appendChild(exon_popup_header_left);
+    
+    exon_popup_header_right = document.createElement('div');
+    exon_popup_header_right.className = "icon-close smaller-icon close-icon-0 hide_popup_button";
+    exon_popup_header_right.title="Hide this popup";
+    exon_popup_header_right.onclick = function() { hide_popup(exon_popup_id); };
+    exon_popup_header.appendChild(exon_popup_header_right);
+    
+    exon_popup.appendChild(exon_popup_header);
+    
+    // Body
+    exon_popup_body = document.createElement('div');
+    exon_popup_body.className = "exon_popup_body";
+    var popup_content = "";
+
+    if (tr_id.substr(0,4) != 'ENSG') {
+      popup_content += "<b>Exon</b> #"+exon_id+"<br />";
+    }
+    if (ens_exon_id && ens_exon_id != '') {
+      popup_content += '<div><b>Ensembl exon:</b> <a class="external" href="'+ENS_WEB_ROOT+'Transcript/Exons?t='+tr_id+'" target="_blank">'+ens_exon_id+'</a></div>';
+    }
+    popup_content += '<div><b>Coords:</b> <a class="external" href="'+ENS_WEB_ROOT+'Location/View?r='+coords+'" target="_blank">'+coords+'</a></div>';
+    // Phase
+    if (phase_start != null && phase_end != null) {
+      if (phase_start.match(/^\d$/) && !phase_end.match(/^\d$/)) {
+        popup_content += '<div><b>Frame:</b> '+phase_start+'</div>';
+      }
+      else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
+        if (phase_start == -1) {
+          phase_start = '-';
+        }
+        if (phase_end == -1) {
+          phase_end = '-';
+        }
+        popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
+      }
+    }  
+    popup_content += '<div><b>Length:</b> '+exon_length+' bp</div>';
+    
+    // Pathogenic variant(s)
+    if (ens_pathogenic_var) {
+      popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
+      if (ens_pathogenic_variant_list) {
+        var ens_var_id = exon_popup_id+"_variant";
+        var ens_var_button_id = "button_"+ens_var_id;
+        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+        popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
+        popup_content += "<ul>"; 
+        var list = ens_pathogenic_variant_list.split(":");
+        $.each(list, function( index, value ) {
+          var var_detail = value.split('-');
+          var var_id = var_detail[0];
+          var ref_allele = '';
+          var pat_allele = '';
+          if (var_detail[1]) {
+            ref_allele = ' (ref: '+var_detail[1]+')';
+          }
+          if (var_detail[2]) {
+            pat_allele = ' <b>'+var_detail[2]+'</b>';
+          }
+          popup_content += "<li><a class=\"external\" href=\""+EXT_LINKS['ensv']+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
+        });
+        popup_content += "</ul></div>";
+      }
+      popup_content += '</div>';
+    }
+    
+    exon_popup_body.innerHTML = popup_content;
+    exon_popup.appendChild(exon_popup_body);
+    
+    document.body.appendChild(exon_popup);
+    
+    exon_popup.style.top = posY;
+    exon_popup.style.left = posX;
+    $('#'+exon_popup_id).draggable();
+  }
+  
+  if ($('#'+exon_popup_id).css('display') == 'none') {
+    exon_popup.style.top = posY;
+    exon_popup.style.left = posX;
+    $('#'+exon_popup_id).show();
+  }
+});
+
+
 function get_ext_link(type,id) {
   if (EXT_LINKS[type]) {
     window.open(EXT_LINKS[type]+id,'_blank');
@@ -36,13 +157,14 @@ function get_ext_link(type,id) {
 }
 
 function go2blast(id) {
-  window.open('http://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
+  window.open('https://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
 }
 
 function display_coord(coord_id) {
   var coord_comma = $('#'+coord_id).attr('title');
+  var chr = $('#gene_coord').data('chr'); 
   var coord = coord_comma.split(',').join('');
-  alert("Genomic coordinates: "+coord);
+  alert("Genomic coordinates: "+chr+':'+coord);
 }
 
 function showhide_elements(button_id,class_name) {
@@ -237,6 +359,12 @@ function show_hide_in_between_rows(row_id,tr_names) {
   }
 }
 
+
+function hide_popup (id) {
+  $("#"+id).hide();
+}
+
+
 function hl_enst(enst_list,suffix) {
 
   $.each(enst_list, function (index, enst) {
@@ -336,8 +464,7 @@ function compact_expand(column_count) {
   
   for (var id=1; id<=column_count; id++) {
     var column_id = "#coord_"+id;
-    var title = $(column_id).attr("title");
-    var coord = (title.split(':'))[1];
+    var coord = $(column_id).attr("title");
     if ($(column_id).html() == coord) {
       var id_label = (id < 10 && column_count >= 10) ? "0"+id : id;
       $(column_id).html(id_label);
@@ -350,121 +477,6 @@ function compact_expand(column_count) {
 
 function isEven(n) { return (n % 2 == 0); }
 function isOdd(n)  { return (n % 2 == 1); }
-
-function showhide_info (e,ens_id,exon_id,content,exon_length,ens_exon_id,phase_start,phase_end,ens_pathogenic_var,ens_pathogenic_variant_list) {
-  var exon_popup = '';
-  var exon_popup_id = "exon_popup_"+ens_id+"_"+exon_id;
-  if (document.getElementById(exon_popup_id)) {
-    exon_popup = document.getElementById(exon_popup_id);
-  }
-  else {
-    exon_popup = document.createElement('div');
-    exon_popup.id = exon_popup_id;
-    exon_popup.className = "hidden exon_popup";
-    
-    $('#'+exon_popup_id).attr("data-role","popup");
-    
-    //$('#'+exon_popup_id).append();
-    
-    // Header
-    exon_popup_header = document.createElement('div');
-    exon_popup_header.className = "exon_popup_header";
-    
-    exon_popup_header_left = document.createElement('div');
-    exon_popup_header_left.innerHTML = ens_id;
-    exon_popup_header_left.className = "exon_popup_header_title";
-    exon_popup_header.appendChild(exon_popup_header_left);
-    
-    exon_popup_header_right = document.createElement('div');
-    exon_popup_header_right.className = "icon-close smaller-icon close-icon-0 hide_popup_button";
-    exon_popup_header_right.title="Hide this popup";
-    exon_popup_header_right.onclick = function() { showhide_info(e,ens_id,exon_id,content,exon_length); };
-    exon_popup_header.appendChild(exon_popup_header_right);
-    
-    exon_popup_header_clear = document.createElement('div');
-    exon_popup_header_clear.className = "exon_popup_header_clear";
-    exon_popup_header.appendChild(exon_popup_header_clear);
-    
-    exon_popup.appendChild(exon_popup_header);
-    
-    // Body
-    exon_popup_body = document.createElement('div');
-    exon_popup_body.className = "exon_popup_body";
-    var popup_content = "";
-
-    if (ens_id.substr(0,4) != 'ENSG') {
-      popup_content += "<b>Exon</b> #"+exon_id+"<br />";
-    }
-    if (ens_exon_id && ens_exon_id != '') {
-      popup_content += '<div><b>Ensembl exon:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Transcript/Exons?t='+ens_id+'" target="_blank">'+ens_exon_id+'</a></div>';
-    }
-    popup_content += '<div><b>Coords:</b> <a class="external" href="http://www.ensembl.org/Homo_sapiens/Location/View?r='+content+'" target="_blank">'+content+'</a></div>';
-    // Phase
-    if (phase_start != null && phase_end != null) {
-      if (phase_start.match(/^\d$/) && !phase_end.match(/^\d$/)) {
-        popup_content += '<div><b>Frame:</b> '+phase_start+'</div>';
-      }
-      else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
-        if (phase_start == -1) {
-          phase_start = '-';
-        }
-        if (phase_end == -1) {
-          phase_end = '-';
-        }
-        popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
-      }
-    }  
-    popup_content += '<div><b>Length:</b> '+exon_length+' bp</div>';
-    if (ens_pathogenic_var) {
-      popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
-      if (ens_pathogenic_variant_list) {
-        var ens_var_id = exon_popup_id+"_variant";
-        var ens_var_button_id = "button_"+ens_var_id;
-        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
-        popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
-        popup_content += "<ul>"; 
-        var list = ens_pathogenic_variant_list.split(":");
-        $.each(list, function( index, value ) {
-          var var_detail = value.split('-');
-          var var_id = var_detail[0];
-          var ref_allele = '';
-          var pat_allele = '';
-          if (var_detail[1]) {
-            ref_allele = ' (ref: '+var_detail[1]+')';
-          }
-          if (var_detail[2]) {
-            pat_allele = ' <b>'+var_detail[2]+'</b>';
-          }
-          popup_content += "<li><a class=\"external\" href=\""+EXT_LINKS['ensv']+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
-        });
-        popup_content += "</ul></div>";
-      }
-      '</div>';
-    }
-    
-    popup_content += '';
-    
-    exon_popup_body.innerHTML = popup_content;
-    exon_popup.appendChild(exon_popup_body);
-    
-    document.body.appendChild(exon_popup);
-  }
-  
-  if ($('#'+exon_popup_id).hasClass("hidden")) {
-    $('#'+exon_popup_id).switchClass('hidden','unhidden_popup',0);
-    
-    if (!e) var e = window.event;
-    var posX = e.pageX;
-    var posY = e.pageY;
-    
-    exon_popup.style.top = posY;
-    exon_popup.style.left = posX;
-    $('#'+exon_popup_id).draggable();
-  }
-  else {
-    $('#'+exon_popup_id).switchClass('unhidden_popup','hidden',0);
-  }
-}
 
 
 function export_transcripts_selection () {

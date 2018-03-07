@@ -274,8 +274,8 @@ foreach my $tr (@$ens_tr) {
     foreach my $xref (@{$tr->translation->get_all_DBEntries}) {
       my $dbname = $xref->dbname;
       
+      # Get UniProt IDs
       if ($dbname =~ /^UniProt.*Swiss/i) {
-      print "UniXref: $dbname | ".$xref->display_id." | $tr_name\n";
         $uniprot_ids{$xref->display_id} = 1;
       }
       
@@ -565,7 +565,7 @@ my $coord_span = scalar(keys(%exons_list));
 my $o_gene_start = $ens_gene->start;
 my $o_gene_end   = $ens_gene->end;
 my $gene_coord = "chr$gene_chr:".$o_gene_start.'-'.$o_gene_end;
-$gene_coord .= ($gene_strand == 1) ? ' [forward strand]' : ' [reverse strand]';
+my $gene_coord_strand = ($gene_strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 
 
 my $html_pathogenic_label = get_pathogenic_html('#');
@@ -611,8 +611,9 @@ $html .= qq{
   </head>
   <body onload="hide_all_but_selection()">
     <div class="content">
-      <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">($gene_coord on <span class="blue">$assembly</span>)</span></h1>
+      <h1>Exons list for the gene <a class="external" href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=$gene_stable_id" target="_blank">$gene_name</a> <span class="sub_title">(<span id="gene_coord" data-chr="$gene_chr">$gene_coord</span> $gene_coord_strand on <span class="blue">$assembly</span>)</span></h1>
       <h2 class="icon-next-page smaller-icon">Using the Ensembl & RefSeq & cDNA RefSeq exons (using Ensembl <span class="blue">v.$ens_db_version</span>)</h2>
+
       <div id="exon_popup" class="hidden exon_popup"></div>
 
       <!-- Compact/expand button -->
@@ -675,7 +676,7 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
   
   my $exon_coord_label = thousandify($exon_coord);
   
-  $exon_tab_list .= qq{<th class="rspan1 coord" id="coord_$exon_number" title="$gene_chr:$exon_coord_label" onclick="display_coord('coord_$exon_number')">};
+  $exon_tab_list .= qq{<th class="rspan1 coord" id="coord_$exon_number" title="$exon_coord_label" onclick="display_coord('coord_$exon_number')">};
   $exon_tab_list .= $exon_coord_label;
   $exon_tab_list .= qq{</th>};
 
@@ -960,7 +961,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   $exon_tab_list .= qq{
   <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
     $first_col
-    <td class="$column_class first_column fixed_col col4">
+    <td class="$column_class first_col fixed_col col4">
       <div>
         <a class="cdna_link" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
       </div>
@@ -1067,7 +1068,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   $exon_tab_list .= qq{
   <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
     $first_col
-    <td class="$column_class first_column fixed_col col4">
+    <td class="$column_class first_col fixed_col col4">
       <a class="white" onclick="javascript:get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a>$hgnc_name
     </td>
     <td class="extra_col fixed_col col5">-</td>
@@ -1126,7 +1127,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       # Gene start partially matches coordinates
       if ($is_first_exon_partial == 1) {
         $exon_tab_list .= qq{</td><td>};
-        $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" data-name="$exon_start\_$coord" data-params="">$gene_strand</div>};
       }
       $ended = 1 if ($coord == $last_exon);
       $colspan = 0;
@@ -1140,7 +1141,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     # Gene end partially matches end coordinates
     elsif ($ended == 2) {
       $exon_tab_list .= qq{</td><td>};
-      $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list .= qq{<div class="exon gene_exon partial_overlap" data-name="$exon_start\_$coord" data-params="">$gene_strand</div>};
       $exon_tab_list .= qq{</td><td>};
       $ended = 1;
       next;
@@ -1154,7 +1155,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
           $colspan ++ if (!$is_first_exon_partial);
           my $html_colspan = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
           $exon_tab_list .= qq{</td><td$html_colspan>};
-          $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+          $exon_tab_list .= qq{<div class="exon gene_exon" data-name="$exon_start\_$coord" data-params="">$gene_strand</div>};
         }
         $ended = 2;
         $colspan = 0;
@@ -1163,7 +1164,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
       else {
         $colspan ++;
         $exon_tab_list .= ($colspan > 1) ? qq{</td><td colspan="$colspan">} : qq{</td><td>};
-        $exon_tab_list .= qq{<div class="exon gene_exon" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+        $exon_tab_list .= qq{<div class="exon gene_exon" data-name="$exon_start\_$coord" data-params="">$gene_strand</div>};
         $exon_tab_list .= qq{</td><td>} if ($coord != $bigger_exon_coord);
 
         $ended = 1;
@@ -1180,7 +1181,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
     my $colspan_html = ($colspan > 1) ? qq{ colspan="$colspan"} : '';
     $exon_tab_list .= qq{</td><td$colspan_html>}; 
     if ($has_gene eq 'gene' ) {
-      $exon_tab_list .= qq{<div class="$has_gene" onclick="javascript:showhide_info(event,'$o_ens_gene','$exon_start','$gene_chr:$exon_start-$coord')">$gene_strand</div>};
+      $exon_tab_list .= qq{<div class="$has_gene" data-name="$exon_start\_$coord" data-params="">$gene_strand</div>};
       $colspan = 1;
     }
     # No data
@@ -1629,7 +1630,7 @@ sub display_refseq_data {
     $exon_tab_list .= qq{
     <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
       $first_col
-      <td class="$column_class first_column fixed_col col4">
+      <td class="$column_class first_col fixed_col col4">
         <div>
           <a class="white" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
@@ -1779,7 +1780,7 @@ sub display_bed_source_data {
     $exon_tab_list .= qq{
     <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$id" data-biotype="$data_biotype">
       $first_col
-      <td class="$column_class first_column fixed_col col4">
+      <td class="$column_class first_col fixed_col col4">
         <div$date>
           <a class="$source\_link" onclick="javascript:get_ext_link('$source','$id')">$id_label</a>
         </div>$enst
@@ -1951,10 +1952,10 @@ sub display_exon {
      $e_length  = thousandify($e_length);
 
   my $e_tr_id = (split(/\./,$e_tr))[0];
-  my $showhide_info_params  = "event,'$e_tr_id','$e_number','$e_chr:$e_start-$e_end','$e_length'";
-     $showhide_info_params .= ($e_stable_id) ? ",'$e_stable_id'" : ",''";
-     $showhide_info_params .= ",'$phase_start','$phase_end'";
-
+  my $showhide_info_params  = "$e_number|$e_length";
+     $showhide_info_params .= ($e_stable_id) ? "|$e_stable_id" : "|";
+     $showhide_info_params .= "|$phase_start|$phase_end";
+     
   my $title = "$e_tr";
      $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
      $title .= " | $e_length bp";
@@ -2004,7 +2005,7 @@ sub display_exon {
     if ($pathogenic) {
       $pathogenic_variants = qq{<div class="pathog_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
       $title .= " | $pathogenic pathogenic variants";
-      $showhide_info_params .= ",'$pathogenic'";
+      $showhide_info_params .= "|$pathogenic";
       if ($pathogenic <= $max_variants) {
         my @variants_allele;
         foreach my $var (@variants) {
@@ -2015,7 +2016,7 @@ sub display_exon {
           $var_allele .= '-'.$allele if ($allele);
           push @variants_allele, $var_allele;
         }
-        $showhide_info_params .= ",'".join(':',@variants_allele)."'";
+        $showhide_info_params .= "|".join(':',@variants_allele);
       }
     }
   }
@@ -2033,10 +2034,11 @@ sub display_exon {
       $partial_display .= qq{ <div class="partial_utr_r partial_utr_$source$few_evidence_right" style="width:$right_utr_span%"></div>};
     }
   }
-
+  $showhide_info_params =~ s/'//g;
+  
   return qq{
     <div class="sub_exon"></div>
-    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" onclick="javascript:showhide_info($showhide_info_params)">
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" data-params="$showhide_info_params">
       <div class="e_label e_label_$source">$e_number$e_extra</div>
       $partial_display
     </div>
