@@ -36,6 +36,10 @@ close(C);
 
 my $first_line = 1;
 my $max_json_entries_per_line = 100;
+my $enst_prefix = 'ENST0000';
+my $ottt_prefix = 'OTTHUMT0000';
+my $ottg_prefix = 'OTTHUMG0000';
+my $rseq_prefix = 'N';
 
 my %ensts;
 my %refseq_info_list = ( 'cds_only' => 1, 'whole_transcript' => 2);
@@ -54,7 +58,7 @@ if ($is_private) {
     my $hdate = pop(@line);
     my $date  = (split(';',$hdate))[0];
     
-    $havana_data{$ottt_label} = { 'id' => $ottt_id, 'date' => $date, 'gene' => $gene, 'ottg' => $ottg };
+    $havana_data{$ottt_label} = { 'id' => $ottt_id, 'date' => $date, 'gene' => $gene, 'og' => $ottg };
   }
   close(H);
 }
@@ -92,12 +96,12 @@ while(<G>) {
   if (%info) {
     my $enst = (split(/\./, $info{'transcript_id'}))[0];
     $gencode_data{$enst} = {
-      'gname'  => $info{'gene_name'},
-      #'ensg'  => $info{'gene_id'},
-      'enst_v' => $info{'transcript_id'},
-      'tname'  => $info{'transcript_name'},
-      'ottt'   => $info{'havana_transcript'},
-      'ottg'   => $info{'havana_gene'}
+      'gname' => $info{'gene_name'},
+      #'ensg' => $info{'gene_id'},
+      'enst_v'=> $info{'transcript_id'},
+      'tname' => $info{'transcript_name'},
+      'ot'    => $info{'havana_transcript'},
+      'og'    => $info{'havana_gene'}
     };
     $ensts{$enst} = 1;
   }
@@ -153,27 +157,32 @@ while(<E>) {
   }
   
   my @refseq_data = ();
+  my @filtered_refseq_data = ();
+  my @truncated_refseq_data = ();
   my $refseq_info;
   if ($row[9] and $row[9] ne '') {
     @refseq_data = split(':',$row[9]);
     $refseq_info = pop(@refseq_data);
+    @filtered_refseq_data = grep {/^N\w_/} @refseq_data;
+    @truncated_refseq_data = map {(my $s = $_) =~ s/$rseq_prefix//i; $s } @filtered_refseq_data;
     $refseq_info = $refseq_info_list{$refseq_info} if ($refseq_info_list{$refseq_info});
   }
   
-  $ensembl_data{$enst} = { "hgnc"   => $hgnc,
+  $ensembl_data{$enst} = { "g"      => $hgnc,
                            "enst_v" => $enst_v,
                            "old_tr" => $old_tr,
                            "new_tr" => $new_tr,
                          };
   if ($ottt) {
-    $ensembl_data{$enst}{"ottt"} = $ottt;
+    $ensembl_data{$enst}{"ot"} = $ottt;
   }  
   if ($ccds) {
     $ensembl_data{$enst}{"ccds"} = $ccds;
   }
-  if (scalar(@refseq_data)!=0) {
-    $ensembl_data{$enst}{"rseq"} = \@refseq_data;
-    $ensembl_data{$enst}{"rseq_i"} = $refseq_info;
+  if (scalar(@filtered_refseq_data)!=0) {
+    $ensembl_data{$enst}{"refseq"}    = \@truncated_refseq_data;
+    $ensembl_data{$enst}{"refseq_ac"} = \@filtered_refseq_data;
+    $ensembl_data{$enst}{"refseq_i"}  = $refseq_info;
   }
   
   $ensts{$enst} = 1;
@@ -205,8 +214,8 @@ foreach my $enst (keys(%ensts)) {
   if ($gencode_data{$enst}) {
     $hgnc        = $gencode_data{$enst}{'gname'};
     $enst_v      = $gencode_data{$enst}{'enst_v'};
-    $ottt        = $gencode_data{$enst}{'ottt'};
-    $ottg        = $gencode_data{$enst}{'ottg'};
+    $ottt        = $gencode_data{$enst}{'ot'};
+    $ottg        = $gencode_data{$enst}{'og'};
     $new_tr_name = $gencode_data{$enst}{'tname'};
     if ($new_tr_name =~ /^$hgnc-(\d+)$/) {
       $new_tr_name = $1;
@@ -214,22 +223,13 @@ foreach my $enst (keys(%ensts)) {
   }
   elsif ($ensembl_data{$enst}) {
   
-    $hgnc        = $ensembl_data{$enst}{'hgnc'};
+    $hgnc        = $ensembl_data{$enst}{'g'};
     $enst_v      = $ensembl_data{$enst}{'enst_v'};
-    $ottt        = $gencode_data{$enst}{'ottt'} if ($gencode_data{$enst}{'ottt'});
+    $ottt        = $gencode_data{$enst}{'ot'} if ($gencode_data{$enst}{'ot'});
     $new_tr_name = $ensembl_data{$enst}{'new_tr'};
     if ($new_tr_name && $new_tr_name =~ /^$hgnc-(\d+)$/) {
       $new_tr_name = $1;
     }
-  }
-
-  my %json_data = ( "enst" => $enst_v );
-  $json_data{"hgnc"} = $hgnc if ($hgnc && $hgnc ne '');
-  $json_data{"cars"} = 1 if ($cars_data{$enst});
-  
-  if ($is_private) {
-    $json_data{"ottt"} = $ottt if ($ottt);
-    $json_data{"ottg"} = $ottg if ($ottg);
   }
   
   # Autocomplete data
@@ -248,6 +248,24 @@ foreach my $enst (keys(%ensts)) {
     }
   }
   
+  # JSON data
+  $enst_v =~ s/$enst_prefix//i;
+  my %json_data = ( "et" => $enst_v );
+  $json_data{"g"} = $hgnc if ($hgnc && $hgnc ne '');
+  $json_data{"cars"} = 1 if ($cars_data{$enst});
+  
+  if ($is_private) {
+    if ($ottt) {
+      my $ottt_id = $ottt;
+      $ottt_id =~ s/$ottt_prefix//i;
+      $json_data{"ot"} = $ottt_id;
+    }
+    if ($ottg) {
+      $ottg =~ s/$ottg_prefix//i;
+      $json_data{"og"} = $ottg;
+    }
+  }
+  
   ## More specific data ##
   
   # Retrieve data from Ensembl hash
@@ -255,14 +273,16 @@ foreach my $enst (keys(%ensts)) {
   if ($ensembl_data{$enst}) {
     $old_tr_name = $ensembl_data{$enst}{'old_tr'} if ($ensembl_data{$enst}{'old_tr'});
     if ($ensembl_data{$enst}{'ccds'}) {
-      $json_data{"ccds"} = $ensembl_data{$enst}{'ccds'};
+      $json_data{"cs"} = $ensembl_data{$enst}{'ccds'};
     }
-    if ($ensembl_data{$enst}{'rseq'}) {
-      my $refseq_data = $ensembl_data{$enst}{'rseq'};
-      $json_data{"rseq"} = $refseq_data;
-      $json_data{"rseqi"} = $ensembl_data{$enst}{'rseq_i'};
-      foreach my $refseq (@$refseq_data) {
-        my $refseq_no_v  = (split(/\./,$refseq))[0];
+    if ($ensembl_data{$enst}{'refseq'}) {
+      my $refseq_data = $ensembl_data{$enst}{'refseq'};
+      $json_data{"rs"} = $refseq_data;
+      $json_data{"rsi"} = $ensembl_data{$enst}{'refseq_i'};
+      
+      my $refseq_ac = $ensembl_data{$enst}{'refseq_ac'};
+      foreach my $refseq (@$refseq_ac) {
+        my $refseq_no_v = (split(/\./,$refseq))[0];
         $autocomplete{$refseq_no_v} = 1;
       }
     }
@@ -270,11 +290,11 @@ foreach my $enst (keys(%ensts)) {
   
   if ($old_tr_name || $new_tr_name) {
   
-    $old_tr_name = ($old_tr_name) ? ($old_tr_name =~ /^\d{3}$/ ? $old_tr_name + 0 : $old_tr_name) : '';
+    $old_tr_name = ($old_tr_name) ? ($old_tr_name =~ /^\d{3}$/ ? $old_tr_name + 0 : $old_tr_name) : 0;
     
-    $new_tr_name = ($new_tr_name) ? ($new_tr_name =~ /^\d{3}$/ ? $new_tr_name + 0 : $new_tr_name) : '';
+    $new_tr_name = ($new_tr_name) ? ($new_tr_name =~ /^\d{3}$/ ? $new_tr_name + 0 : $new_tr_name) : 0;
     
-    $json_data{"tnames"} = [$old_tr_name,$new_tr_name];
+    $json_data{"t"} = [$old_tr_name,$new_tr_name];
   }
   
   if ($is_private) {
@@ -282,8 +302,10 @@ foreach my $enst (keys(%ensts)) {
     if ($ottt) {
       my $ottt_label = (split(/\./, $ottt))[0];
       if ($havana_data{$ottt_label}) {
-        $json_data{"ottt_date"} = $havana_data{$ottt_label}{'date'};
-        $json_data{"ottt"}      = $havana_data{$ottt_label}{'id'};
+        my $ottt_id = $havana_data{$ottt_label}{'id'};
+        $ottt_id =~ s/$ottt_prefix//i;
+        $json_data{"otd"} = $havana_data{$ottt_label}{'date'};
+        $json_data{"ot"}  = $ottt_id;
         
         $ottt_with_enst{$ottt_label} = 1;
       }
@@ -310,18 +332,22 @@ if ($is_private) {
     
     my $hgnc = $havana_data{$ottt_label}{'gene'};
     my $ottt = $havana_data{$ottt_label}{'id'};
-    my $ottg = $havana_data{$ottt_label}{'ottg'};
-    my %json_data = ("ottt"      => $ottt,
-                     "ottt_date" => $havana_data{$ottt_label}{'date'},
-                     "ottg"      => $ottg,
-                     "hgnc"      => $hgnc
-                    );
+    my $ottg = $havana_data{$ottt_label}{'og'};
     
     # Autocomplete data           
     $autocomplete{$hgnc} = 1;
     $autocomplete{$ottt_label} = 1;
     my $ottg_no_v = (split(/\./,$ottg))[0];
     $autocomplete{$ottg_no_v} = 1;
+    
+    # JSON content
+    $ottt =~ s/$ottt_prefix//i;
+    $ottg =~ s/$ottg_prefix//i;
+    my %json_data = ("ot"  => $ottt,
+                     "otd" => $havana_data{$ottt_label}{'date'},
+                     "og"  => $ottg,
+                     "g"   => $hgnc
+                    );
     
     if ($count_json_entries == $max_json_entries_per_line) {
       print JSON "$json_line_content,\n";
@@ -334,7 +360,6 @@ if ($is_private) {
     $json_line_content .= ',' if ($json_line_content ne '');
     $json_line_content .= $json;
     $count_json_entries ++;
-      
   }
   
 }

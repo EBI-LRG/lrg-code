@@ -13,15 +13,21 @@ var json_file_auto = './ens_ott_autocomplete.txt';
 var external_link_class = 'icon-ext';
 
 var table_id = "#search_results";
+var table_tbody;
 
-var json_keys = { 'ENST'    : 'enst',
-                  'OTTHUMT' : 'ottt',
-                  'OTTHUMG' : 'ottg',
+var json_keys = { 'ENST'    : 'et',
+                  'OTTHUMT' : 'ot',
+                  'OTTHUMG' : 'og',
                   //'N(M|R)_': 'refseq'
                 };
-var json_unique_keys = { 'enst' : 1,
-                         'ottt' : 1
+var json_unique_keys = { 'et' : 1,
+                         'ot' : 1
                        };
+
+var enst_prefix = 'ENST0000';
+var ottt_prefix = 'OTTHUMT0000';
+var ottg_prefix = 'OTTHUMG0000';
+var rseq_prefix = 'N';
 
 var rseqi_keys = { 1 : 'cds_only', 2 : 'whole_transcript'};
 
@@ -116,7 +122,10 @@ function display_results (results) {
   $("#search_count").html(result_count + " " + result_term);
   $("#search_count").show(400);
   
-  $(table_id + " > tbody").empty();
+  if (!table_tbody) {
+    table_tbody = $(table_id + " > tbody");
+  }
+  table_tbody.empty();
   
   // Sort the results by LRG ID (using the numeric part of the LRG ID)
   var result_keys = Object.keys(results);
@@ -125,43 +134,47 @@ function display_results (results) {
 
   var link_separator = '<span>-</span>';
 
-  for (i in result_keys) {
-    var enst   = result_keys[i];
-    var symbol = results[enst].hgnc;
-    var ottg   = (results[enst].ottg) ? results[enst].ottg : '-';
-    var ottt   = (results[enst].ottt) ? results[enst].ottt : '-';
-        ottt  += (results[enst].ottt_date) ? "<div class=\"small txt_right\">"+results[enst].ottt_date+"</div>" : '';   
-    var ccds   = (results[enst].ccds) ? results[enst].ccds : '-';
+  var rows_list = [];
+
+  for (var i=0; i < result_keys.length; i++) {
+    var id     = result_keys[i];
+    var entry  = results[id];
+    var enst   = enst_prefix+id;
+    var symbol = entry.g;
+    var ottg   = (entry.og) ? ottg_prefix+entry.og : '-';
+    var ottt   = (entry.ot) ? ottt_prefix+entry.ot : '-';
+        ottt  += (entry.otd) ? "<div class=\"small txt_right\">"+entry.otd+"</div>" : '';   
+    var ccds   = (entry.cs) ? entry.cs : '-';
         ccds   = (ccds.match(/^[0-9]+/)) ? "CCDS"+ccds : ccds;
     
     var old_tr_name = '-';
     var new_tr_name = '-';
-    if (results[enst].tnames) {
-      var tmp_old_tr_name = results[enst].tnames[0].toString();
-      if (tmp_old_tr_name.match(/^[0-9]$/)) {
+    if (entry.t) {
+      var tmp_old_tr_name = entry.t[0].toString();
+      if (tmp_old_tr_name.match(/^[0-9]$/) && tmp_old_tr_name != "0") {
+        tmp_old_tr_name = "00"+tmp_old_tr_name;
+      }
+      if (tmp_old_tr_name.match(/^[0-9]{2}$/) && tmp_old_tr_name != "0") {
         tmp_old_tr_name = "0"+tmp_old_tr_name;
       }
-      if (tmp_old_tr_name.match(/^[0-9]{2}$/)) {
-        tmp_old_tr_name = "0"+tmp_old_tr_name;
-      }
-      old_tr_name = (results[enst].tnames[0] == '') ? old_tr_name : tmp_old_tr_name;
+      old_tr_name = (entry.t[0] == 0) ? '-' : tmp_old_tr_name;
       old_tr_name = (old_tr_name.match(/^[0-9]+/)) ? symbol+"-"+old_tr_name : old_tr_name;
-      new_tr_name = (results[enst].tnames[1] == '') ? new_tr_name : results[enst].tnames[1].toString();
+      new_tr_name = (entry.t[1] == 0) ? '-' : entry.t[1].toString();
       new_tr_name = (new_tr_name.match(/^[0-9]+/)) ? symbol+"-"+new_tr_name : new_tr_name;
     }
     
     var refseq = '-';
-    if (results[enst].rseq) {
-      var refseq_info = results[enst].rseqi;
+    if (entry.rs) {
+      var refseq_info = entry.rsi;
           refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
-          refseq      = "<div>"+results[enst].rseq.join("</div><div>")+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
+          refseq      = "<div>"+rseq_prefix+entry.rs.join("</div><div>"+rseq_prefix)+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
     }
 
     var ens_link   = get_ens_link(enst);
     var fasta_link = get_fasta_link(enst);
     var ccds_link  = get_ccds_link(ccds);
     
-    var is_cars = cars_flag(results[enst]);
+    var is_cars = cars_flag(entry);
 
     // HTML code
     var newrow = $('<tr/>');
@@ -181,8 +194,11 @@ function display_results (results) {
     newrow.append(newCell(new_tr_name));
     // RefSeq ID
     newrow.append(newCell(refseq));
-    $(table_id + " > tbody").append(newrow);
+    
+    rows_list.push(newrow);
+    //$(table_id + " > tbody").append(newrow);
   }
+  table_tbody.append(rows_list);
 }
 
 function cars_flag(res) {
@@ -310,6 +326,19 @@ function getObjects (obj_parent, obj, key, val, objects, regex) {
   if (!regex) {
     // Specific regex for the sequence identifiers, with a version, e.g. NM_000088.3
     if (val.match(/^(NM_|NR_|ENST|OTTHUMG|OTTHUMT)\d+$/)) {
+      // For OTT IDs
+      if (val.match(enst_prefix)) {
+        val = val.replace(enst_prefix,'');
+      }
+      else if (val.match(ottt_prefix)) {
+        val = val.replace(ottt_prefix,'');
+      }
+      else if (val.match(ottg_prefix)) {
+        val = val.replace(ottg_prefix,'');
+      }
+      else if (val.match(rseq_prefix)) {
+        val = val.replace(rseq_prefix,'');
+      }
       regex = new RegExp("^"+val+"\.*", "i");
     }
     // Wild card character associated with other characters
@@ -325,26 +354,29 @@ function getObjects (obj_parent, obj, key, val, objects, regex) {
   
   for (var i in obj) {
     if (!obj.hasOwnProperty(i)) continue;
+    
     if (typeof obj[i] == 'object') {
       objects = getObjects(obj, obj[i], key, val, objects, regex);
     }
     // if key matches and value matches or if key matches and value is not passed (eliminating the case where key matches but passed value does not)
     else if ((i == key && (obj[i] == val || regex.test(obj[i])))) {
-      objects[obj.enst] = obj;
+      objects[obj.et] = obj;
       if (json_unique_keys[i]) {
         return objects;
       }
+      break;
     } 
     // only add if the object is not already in the array
     else if ((obj[i] == val || regex.test(obj[i])) && key == ''){
       // Data fetched from an array
       if (Object.keys(obj)[0] == 0) {
-        objects[obj_parent.enst] = obj_parent;
+        objects[obj_parent.et] = obj_parent;
       }
       // Data fetched from a key/value
       else {
-        objects[obj.enst] = obj;
+        objects[obj.et] = obj;
       }
+      break;
     }
   }
   return objects;
@@ -361,6 +393,7 @@ function sortByKey(array, key) {
 function wait_for_results() {
   $("#search_header").show();
   $(table_id).show();
-  $(table_id + " > tbody").empty();
-  $(table_id + " > tbody").append('<tr><td colspan="8"><div class="wait"></div><div class="loader"></div></td></tr>');
+  table_tbody = $(table_id + " > tbody");
+  table_tbody.empty();
+  table_tbody.append('<tr><td colspan="8"><div class="wait"></div><div class="loader"></div></td></tr>');
 }
