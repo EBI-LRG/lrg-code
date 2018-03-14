@@ -389,7 +389,7 @@ $html_content .= qq{\n</div>};
 # Summary table
 my $html_summary = qq{
 <div class="clearfix">
-  <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4 padding-left-0">
+  <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 padding-left-0">
     <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_small_right" style="width:100%">
       <thead>
         <th colspan="2">Summary information</th>
@@ -413,7 +413,7 @@ $html_summary .= qq{      </tbody>\n        </table>\n  </div>};
 
 # Pipeline results
 $html_summary .= q{
-    <div class="col-lg-3 col-md-3 col-sm-4 col-xs-4">
+    <div class="col-lg-3 col-md-4 col-sm-4 col-xs-4">
       <table class="table table-hover table-lrg table-lrg-bold-left-col table_small" style="width:100%">
         <thead>
           <th colspan="2">Pipeline results</th>
@@ -458,7 +458,7 @@ if ($count_new_lrgs) {
   }
   
   $html_summary .= sprintf( q{
-    <div class="col-lg-2 col-md-2 col-sm-3 col-xs-3">
+    <div class="col-lg-2 col-md-3 col-sm-3 col-xs-3">
       <table class="table table-hover table-lrg table-lrg-bold-left-col table_small table_new" style="width:%s">
         <thead>
           <th colspan="2"%s>%s<span style="vertical-align:middle">New LRG%s</span><span class="label new_bg margin-left-10">%s</span></th>
@@ -483,7 +483,7 @@ if (-e "$reports_dir/$missing_file") {
      
     my @entries = sort(split("\n",$content));
     $html_summary .= qq{
-      <div class="col-lg-1 col-md-1 col-sm-1 col-xs-1">
+      <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2">
         <table class="table table-hover table-lrg table-lrg-bold-left-col table_small" style="width:100%">
           <thead>
             <th class="missing_header" title="Missing LRG files in the NCBI dump, compared to the LRG files on the LRG FTP site">
