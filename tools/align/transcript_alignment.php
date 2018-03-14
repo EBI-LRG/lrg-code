@@ -238,16 +238,16 @@ function get_legend() {
           <tr class="bg2_legend">
             <td>
               <div style="margin-bottom:3px">
-                <span class="tr_score tr_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">0</span>
+                <span class="tr_score tr_score_0" title="Transcript score from Ensembl | Scale from 0 (bad) to 31 (good)">0</span>
               </div>
               <div style="margin-bottom:3px">
-                <span class="tr_score tr_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">12</span>
+                <span class="tr_score tr_score_1" title="Transcript score from Ensembl | Scale from 0 (bad) to 31 (good)">12</span>
               </div>
               <div style="margin-bottom:3px">
-                <span class="tr_score tr_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 27 (good)">27</span>
+                <span class="tr_score tr_score_2" title="Transcript score from Ensembl | Scale from 0 (bad) to 31 (good)">31</span>
               </div>
             </td>
-            <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 27 (good)</td>
+            <td>Label for the <b>Ensembl Transcript Score</b></a><br />Scale from 0 (bad) to 31 (good)</td>
           </tr>
           <tr class="bg1_legend">
             <td>

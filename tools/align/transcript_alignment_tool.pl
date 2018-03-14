@@ -1442,7 +1442,7 @@ sub get_tr_score_html {
   
   my $rank = ($score < 10) ? 0 : ($score < 20 ? 1 : 2);
   
-  return qq{<span class="flag tr_score tr_score_$rank$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl - $transcript_score_date | Scale from 0 (bad) to 27 (good)">$score</span>};
+  return qq{<span class="flag tr_score tr_score_$rank$border_colour" data-toggle="tooltip" data-placement="bottom" title="Transcript score from Ensembl - $transcript_score_date | Scale from 0 (bad) to 31 (good)">$score</span>};
 }
 
 
