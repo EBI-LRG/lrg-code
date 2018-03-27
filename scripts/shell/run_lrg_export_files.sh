@@ -12,6 +12,11 @@ if [[ $2 ]]; then
   tmpdir="-tmp_dir $2"
 fi
 
+report_dir="${LRGROOTDIR}/tmp"
+if [[ $3 ]]; then
+  report_dir="$3s"
+fi
+
 script_dir=${LRGROOTDIR}/lrg-code/scripts
 
 script_lrg_list=${script_dir}/get_lrg_list.pl
@@ -19,25 +24,59 @@ script_tr_list=${script_dir}/get_lrg_transcript_list.pl
 script_tr_xref_list=${script_dir}/get_lrg_transcript_xrefs.pl
 script_pr_list=${script_dir}/get_lrg_protein_list.pl
 
-#### GRCh37 ####
+farm_report_file="${report_dir}/report_export_file_"
 
-# LRGs list
-perl ${script_lrg_list} -assembly GRCh37${xmldir}
+if [ -d $report_dir ]; then
 
-# LRG transcripts list
-perl ${script_tr_list} -assembly GRCh37${xmldir} ${tmpdir}
+  #### GRCh37 ####
 
-#### GRCh38 ####
+  # LRGs list
+  if [ -e "${farm_report_file}lrg_GRCh37.out" ]; then
+    rm -f "${farm_report_file}lrg_GRCh37.*"
+  fi
+  bsub -J LRG_37 -o ${farm_report_file}lrg_GRCh37.out -e ${farm_report_file}lrg_GRCh37.err \
+  perl ${script_lrg_list} -assembly GRCh37 ${xmldir}
 
-# LRGs list
-perl ${script_lrg_list} -assembly GRCh37${xmldir}
+  # LRG transcripts list
+  if [ -e "${farm_report_file}tr_GRCh37.out" ]; then
+    rm -f "${farm_report_file}tr_GRCh37.*"
+  fi
+  bsub -J LRG_tr_37 -o ${farm_report_file}tr_GRCh37.out -e ${farm_report_file}tr_GRCh37.err \
+  perl ${script_tr_list} -assembly GRCh37 ${xmldir} ${tmpdir}
 
-# LRG transcripts list
-perl ${script_tr_list} -assembly GRCh38${xmldir} ${tmpdir}
+  #### GRCh38 ####
 
-# LRG transcript xrefs
-perl ${script_tr_xref_list}
+  # LRGs list
+   if [ -e "${farm_report_file}lrg_GRCh38.out" ]; then
+    rm -f "${farm_report_file}lrg_GRCh38.*"
+  fi
+  bsub -J LRG_38 -o ${farm_report_file}lrg_GRCh38.out -e ${farm_report_file}lrg_GRCh38.err \
+  perl ${script_lrg_list} -assembly GRCh38 ${xmldir}
 
-# LRG proteins
-perl ${script_pr_list}
+  # LRG transcripts list
+  if [ -e "${farm_report_file}tr_GRCh38.out" ]; then
+    rm -f "${farm_report_file}tr_GRCh38.*"
+  fi
+  bsub -J LRG_tr_38 -o ${farm_report_file}tr_GRCh38.out -e ${farm_report_file}tr_GRCh38.err \
+  perl ${script_tr_list} -assembly GRCh38 ${xmldir} ${tmpdir}
+
+  # LRG transcript xrefs
+  if [ -e "${farm_report_file}tr_xref.out" ]; then
+    rm -f "${farm_report_file}tr_xref.*"
+  fi
+  bsub -J LRG_tr_xref -o ${farm_report_file}tr_xref.out -e ${farm_report_file}tr_xref.err \
+  perl ${script_tr_xref_list}
+
+  # LRG proteins
+  if [ -e "${farm_report_file}pr.out" ]; then
+    rm -f "${farm_report_file}pr.*"
+  fi
+  bsub -J LRG_pr -o ${farm_report_file}pr.out -e ${farm_report_file}pr.err \
+  perl ${script_pr_list}
+  
+else
+
+  echo "Can't find the report directory '$report_dir' to run the list of scripts on the farm. Scripts failed!"
+  
+fi
 
