@@ -19,6 +19,7 @@ $tmp_dir  ||= './';
 
 my $pending_dir = "$xml_dir/pending";
 my %pendings;
+my %lrg_files;
 
 my $f_name      = "list_LRGs_$assembly.txt";
 my $output_file = "$tmp_dir/$f_name";
@@ -49,7 +50,12 @@ print LIST "# Last modified: $time\n# LRG_ID\tHGNC_SYMBOL\tLRG_STATUS\tCHROMOSOM
 opendir($dh,$xml_dir);
 warn("Could not process directory $xml_dir") unless (defined($dh));
 my @public_files = readdir($dh);
-@public_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @public_files;
+foreach my $file (@public_files) {
+  if ($file =~ m/^LRG\_([0-9]+)\.xml$/) {
+    $lrg_files{$1} = $file;
+  }
+}
+#@public_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @public_files;
 # Close the dir handle
 closedir($dh);
 $dh = undef;
@@ -60,23 +66,32 @@ $dh = undef;
 opendir($dh,$pending_dir);
 warn("Could not process directory $pending_dir") unless (defined($dh));
 my @pending_files = readdir($dh);
-@pending_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @pending_files;
-foreach my $p (@pending_files) {
-  $pendings{$p} = 1;
+foreach my $file (@pending_files) {
+  if ($file =~ m/^LRG\_([0-9]+)\.xml$/) {
+    $lrg_files{$1} = $file;
+    $pendings{$1} = 1;
+  }
 }
+#@pending_files = grep {$_ =~ m/^LRG\_[0-9]+\.xml$/} @pending_files;
+#foreach my $p (@pending_files) {
+#  $pendings{$p} = 1;
+#}
 # Close the dir handle
 closedir($dh);
+$dh = undef;
 
 
-my @files = (@public_files,@pending_files);
-@files = sort { (split /_|\./, $a)[1] <=> (split /_|\./, $b)[1] } @files;
+#my @files = (@public_files,@pending_files);
+#@files = sort { (split /_|\./, $a)[1] <=> (split /_|\./, $b)[1] } @files;
 
 # Loop over the files in the directory and store the file names of LRG XML files
-foreach my $file (@files) {
-  next if ($file !~ m/^LRG\_[0-9]+\.xml$/);
+#foreach my $file (@files) {
+#  next if ($file !~ m/^LRG\_[0-9]+\.xml$/);
+foreach my $lrg_id (sort { $a <=> $b } keys(%lrg_files)) {
+  my $file = $lrg_files{$lrg_id};
   #print "FILE: $file\n";
-  my $file_path = ($pendings{$file}) ? "$pending_dir/$file" : "$xml_dir/$file";
-  my $status    = ($pendings{$file}) ? 'pending' : 'public';
+  my $file_path = ($pendings{$lrg_id}) ? "$pending_dir/$file" : "$xml_dir/$file";
+  my $status    = ($pendings{$lrg_id}) ? 'pending' : 'public';
   my $lrg = LRG::LRG::newFromFile($file_path) or die "ERROR: Could not load the index file $file!";
   
   my ($hgnc,$chr,$start,$end,$strand);
