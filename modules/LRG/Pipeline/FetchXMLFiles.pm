@@ -1,4 +1,4 @@
-package LRG::Pipeline::ExtractXMLFiles;
+package LRG::Pipeline::FetchXMLFiles;
 
 use strict;
 use warnings;
