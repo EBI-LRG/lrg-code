@@ -242,7 +242,7 @@ if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
 fi
 
 # Test the mapping: compare global mapping with existing LRG entry
-if [[ ! ${skip_hc} =~ 'mapping' ]] && [[ ${skip_extra_hc} != 'compare_main_mapping' ]]; then
+if [[ ${skip_hc} !~ 'mapping' ]] && [[ ${skip_extra_hc} !~ 'compare_main_mapping' ]]; then
   echo_log  "# Mapping check: compare global mapping with existing LRG entry ... "
   rm -f ${error_log}
   bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check compare_main_mapping" 2> ${error_log}
