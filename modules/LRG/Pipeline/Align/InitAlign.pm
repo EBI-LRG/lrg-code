@@ -61,7 +61,7 @@ sub write_output {
     closedir($dh);
   }
   
-  $self->run_cmd("rm -f $align_dir/*.html");
+  $self->run_cmd("rm -f $align_dir/*/*.html");
 
   open REPORTS, "> $reports_dir/$reports_file" or die $!;
 

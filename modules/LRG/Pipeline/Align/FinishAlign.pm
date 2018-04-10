@@ -16,7 +16,7 @@ sub run {
   my $align_url     = $self->param('align_url');
   my $date          = LRG::LRG::date();
 
-  my $nb_files = `ls -l $align_dir/*.html | wc -l`;
+  my $nb_files = `ls -l $align_dir/*/*.html | wc -l`;
   chomp $nb_files;
 
   # Send email
