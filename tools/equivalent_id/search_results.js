@@ -91,20 +91,23 @@ function get_search_results (search_id) {
 // Function get data in array
 function get_data_in_array () {
 
-  return $.ajax({
+  var xhr = $.ajax({
     url: json_file_auto,
-    dataType: "text"
-  })
-  .error(function (xhRequest, ErrorText, thrownError) {
-    console.log('xhRequest: ' + xhRequest + "\n");
-    console.log('ErrorText: ' + ErrorText + "\n");
-    console.log('thrownError: ' + thrownError + "\n");
-  })
-  .then(function(data) {
-    var data_array = data.split('\n');
-    console.log("DATA ARRAY LENGTH: "+data_array.length);
-    return data_array;
+    dataType: "text",
+    error: function (xhRequest, ErrorText, thrownError) {
+      console.log('xhRequest: ' + xhRequest + "\n");
+      console.log('ErrorText: ' + ErrorText + "\n");
+      console.log('thrownError: ' + thrownError + "\n");
+    },
+    success: function(data) {
+      var data_array = data.split('\n');
+      var timestamp = xhr.getResponseHeader("Last-Modified").split(' ');
+      console.log("DATA ARRAY LENGTH: "+data_array.length+" | "+timestamp[1]+" "+timestamp[2]+" "+timestamp[3]+" "+timestamp[4]);
+      $('#timestamp_info').html(timestamp[1]+" "+timestamp[2]+" "+timestamp[3]+"<span class=\"small_date\">["+timestamp[4]+"]</span>");
+      return data_array;
+    }
   });
+  return xhr;
 }
 
 // Function to display results
@@ -204,7 +207,7 @@ function display_results (results) {
 function cars_flag(res) {
   if (res.cars) {
     c_flag = $('<span></span>');
-    c_flag.addClass('cars_flag glyphicon glyphicon-star');
+    c_flag.addClass('flag red_flag glyphicon glyphicon-star');
     c_flag.attr("title", "CARS transcript");
     return c_flag[0].outerHTML;
   }

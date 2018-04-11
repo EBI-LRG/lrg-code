@@ -59,40 +59,53 @@
      background-color: #78BE43;
   }
   
-  .cars_flag {
+  .flag {
     padding-left:2px;
     padding-right:2px;
     cursor: help;
-    color: #D00;
     font-size: 15px;
-    vertical-align: middle;
+    vertical-align:baseline;
+    cursor:default;
   }
+  .red_flag   { color: #D00;  }
+  .green_flag { color: green; }
   
-  .cars_version_container {
+  .version_info_container {
     float:right;
-    margin-top:25px;
+    margin-top:20px;
     border: 1px solid #CCC;
     border-radius: 5px;
-    padding: 4px 6px;
+    padding: 2px 4px;
+  }
+  table.version_info {
+    border-bottom: none;
+  }
+  table.version_info > tbody > tr > td {
+    padding: 3px 4px;
+  }
+  
+  .small_date {
+    padding-left:10px;
+    font-size: 0.9em;
   }
   
   .to_sort { 
-  background:url('../img/sortable.png') no-repeat right center !important;
-  cursor:pointer;
-  padding-right:25px;
-}
+    background:url('../img/sortable.png') no-repeat right center !important;
+    cursor:pointer;
+    padding-right:25px;
+  }
 
-.sorttable_sorted { 
-  background:url('../img/sort_desc.png') no-repeat right center !important;
-  cursor:pointer;
-  padding-right:25px;
-}
+  .sorttable_sorted { 
+    background:url('../img/sort_desc.png') no-repeat right center !important;
+    cursor:pointer;
+    padding-right:25px;
+  }
 
-.sorttable_sorted_reverse { 
-  background:url('../img/sort_asc.png') no-repeat right center !important;
-  cursor:pointer;
-  padding-right:25px;
-}
+  .sorttable_sorted_reverse { 
+    background:url('../img/sort_asc.png') no-repeat right center !important;
+    cursor:pointer;
+    padding-right:25px;
+  }
   
   </style>
   
@@ -149,10 +162,19 @@
   <div class="container container_padding">
     <div class="clearfix">
       <h2 class="left">Identifier equivalent</h2>
-      <div class="cars_version_container">
-        <span class="cars_flag glyphicon glyphicon-star" style="vertical-align:baseline;cursor:default"></span>
-        <span class="bold_font">CARS version: </span>
-        <span id="cars_info"></span>
+      <div class="version_info_container">
+        <table class="version_info">
+          <tr>
+            <td><span class="red_flag glyphicon glyphicon-star"></span></td>
+            <td><span class="bold_font" style="width:105px">CARS version: </span></td>
+            <td><span id="cars_info"></span></td>
+          </tr>
+          <tr>
+            <td><span class="green_flag glyphicon glyphicon-refresh"></span></td>
+            <td><span class="bold_font" style="width:105px">Last update: </span></td>
+            <td><span id="timestamp_info"></span></td>
+          </tr>
+        </table>
       </div>
     </div>
   
