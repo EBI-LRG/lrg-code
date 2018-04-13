@@ -91,23 +91,24 @@ function get_search_results (search_id) {
 // Function get data in array
 function get_data_in_array () {
 
-  var xhr = $.ajax({
+  return $.ajax({
     url: json_file_auto,
-    dataType: "text",
-    error: function (xhRequest, ErrorText, thrownError) {
-      console.log('xhRequest: ' + xhRequest + "\n");
-      console.log('ErrorText: ' + ErrorText + "\n");
-      console.log('thrownError: ' + thrownError + "\n");
-    },
-    success: function(data) {
-      var data_array = data.split('\n');
-      var timestamp = xhr.getResponseHeader("Last-Modified").split(' ');
-      console.log("DATA ARRAY LENGTH: "+data_array.length+" | "+timestamp[1]+" "+timestamp[2]+" "+timestamp[3]+" "+timestamp[4]);
-      $('#timestamp_info').html(timestamp[1]+" "+timestamp[2]+" "+timestamp[3]+"<span class=\"small_date\">["+timestamp[4]+"]</span>");
-      return data_array;
-    }
+    dataType: "text"
+  })
+  .error(function (xhRequest, ErrorText, thrownError) {
+    console.log('xhRequest: ' + xhRequest + "\n");
+    console.log('ErrorText: ' + ErrorText + "\n");
+    console.log('thrownError: ' + thrownError + "\n");
+  })
+  .then(function(data, status,xhr) {
+    // Timestamp
+    var timestamp = xhr.getResponseHeader("Last-Modified").split(' ');
+    $('#timestamp_info').html(timestamp[1]+" "+timestamp[2]+" "+timestamp[3]+"<span class=\"small_date\">["+timestamp[4]+"]</span>");
+    // Data
+    var data_array = data.split('\n');
+    console.log("DATA ARRAY LENGTH: "+data_array.length + " | "+ timestamp[1]+" "+timestamp[2]+" "+timestamp[3] + " - " +timestamp[4]);
+    return data_array;
   });
-  return xhr;
 }
 
 // Function to display results
@@ -140,66 +141,74 @@ function display_results (results) {
   var rows_list = [];
 
   for (var i=0; i < result_keys.length; i++) {
-    var id     = result_keys[i];
-    var entry  = results[id];
-    var enst   = enst_prefix+id;
-    var symbol = entry.g;
-    var ottg   = (entry.og) ? ottg_prefix+entry.og : '-';
-    var ottt   = (entry.ot) ? ottt_prefix+entry.ot : '-';
-        ottt  += (entry.otd) ? "<div class=\"small txt_right\">"+entry.otd+"</div>" : '';   
-    var ccds   = (entry.cs) ? entry.cs : '-';
-        ccds   = (ccds.match(/^[0-9]+/)) ? "CCDS"+ccds : ccds;
-    
-    var old_tr_name = '-';
-    var new_tr_name = '-';
-    if (entry.t) {
-      var tmp_old_tr_name = entry.t[0].toString();
-      if (tmp_old_tr_name.match(/^[0-9]$/) && tmp_old_tr_name != "0") {
-        tmp_old_tr_name = "00"+tmp_old_tr_name;
-      }
-      if (tmp_old_tr_name.match(/^[0-9]{2}$/) && tmp_old_tr_name != "0") {
-        tmp_old_tr_name = "0"+tmp_old_tr_name;
-      }
-      old_tr_name = (entry.t[0] == 0) ? '-' : tmp_old_tr_name;
-      old_tr_name = (old_tr_name.match(/^[0-9]+/)) ? symbol+"-"+old_tr_name : old_tr_name;
-      new_tr_name = (entry.t[1] == 0) ? '-' : entry.t[1].toString();
-      new_tr_name = (new_tr_name.match(/^[0-9]+/)) ? symbol+"-"+new_tr_name : new_tr_name;
+    var id = result_keys[i];
+    var enst   = '-';
+    if (id != "undefined") {
+        enst = enst_prefix+id;
     }
+    var main_entry = results[id];
     
-    var refseq = '-';
-    if (entry.rs) {
-      var refseq_info = entry.rsi;
-          refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
-          refseq      = "<div>"+rseq_prefix+entry.rs.join("</div><div>"+rseq_prefix)+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
+    // Mainly designed for the entries without ENST attached/defined
+    for (var j=0; j < main_entry.length; j++) {
+      var entry = main_entry[j];
+      
+      var symbol = entry.g;
+      var ottg   = (entry.og) ? ottg_prefix+entry.og : '-';
+      var ottt   = (entry.ot) ? ottt_prefix+entry.ot : '-';
+          ottt  += (entry.otd) ? "<div class=\"small txt_right\">"+entry.otd+"</div>" : '';   
+      var ccds   = (entry.cs) ? entry.cs : '-';
+          ccds   = (ccds.match(/^[0-9]+/)) ? "CCDS"+ccds : ccds;
+    
+      var old_tr_name = '-';
+      var new_tr_name = '-';
+      if (entry.t) {
+        var tmp_old_tr_name = entry.t[0].toString();
+        if (tmp_old_tr_name.match(/^[0-9]$/) && tmp_old_tr_name != "0") {
+          tmp_old_tr_name = "00"+tmp_old_tr_name;
+        }
+        if (tmp_old_tr_name.match(/^[0-9]{2}$/) && tmp_old_tr_name != "0") {
+          tmp_old_tr_name = "0"+tmp_old_tr_name;
+        }
+        old_tr_name = (entry.t[0] == 0) ? '-' : tmp_old_tr_name;
+        old_tr_name = (old_tr_name.match(/^[0-9]+/)) ? symbol+"-"+old_tr_name : old_tr_name;
+        new_tr_name = (entry.t[1] == 0) ? '-' : entry.t[1].toString();
+        new_tr_name = (new_tr_name.match(/^[0-9]+/)) ? symbol+"-"+new_tr_name : new_tr_name;
+      }
+    
+      var refseq = '-';
+      if (entry.rs) {
+        var refseq_info = entry.rsi;
+            refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
+            refseq      = "<div>"+rseq_prefix+entry.rs.join("</div><div>"+rseq_prefix)+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
+      }
+
+      var ens_link   = (enst == '-') ? enst : get_ens_link(enst);
+      var fasta_link = get_fasta_link(enst);
+      var ccds_link  = get_ccds_link(ccds);
+    
+      var is_cars = cars_flag(entry);
+
+      // HTML code
+      var newrow = $('<tr/>');
+      // HGNC Symbol
+      newrow.append(newCell(get_hgnc_link(symbol)));
+      // ENST ID;
+      newrow.append(newCell(ens_link+' <div class="right">'+is_cars+fasta_link+'</div>'));
+      // OTTG
+      newrow.append(newCell(ottg));
+      // OTTT
+      newrow.append(newCell(ottt));
+      // CCDS
+      newrow.append(newCell(ccds_link));
+      // Old transcript name
+      newrow.append(newCell(old_tr_name));
+      // New transcript name
+      newrow.append(newCell(new_tr_name));
+      // RefSeq ID
+      newrow.append(newCell(refseq));
+    
+      rows_list.push(newrow);
     }
-
-    var ens_link   = get_ens_link(enst);
-    var fasta_link = get_fasta_link(enst);
-    var ccds_link  = get_ccds_link(ccds);
-    
-    var is_cars = cars_flag(entry);
-
-    // HTML code
-    var newrow = $('<tr/>');
-    // HGNC Symbol
-    newrow.append(newCell(get_hgnc_link(symbol)));
-    // ENST ID;
-    newrow.append(newCell(ens_link+' <div class="right">'+is_cars+fasta_link+'</div>'));
-    // OTTG
-    newrow.append(newCell(ottg));
-    // OTTT
-    newrow.append(newCell(ottt));
-    // CCDS
-    newrow.append(newCell(ccds_link));
-    // Old transcript name
-    newrow.append(newCell(old_tr_name));
-    // New transcript name
-    newrow.append(newCell(new_tr_name));
-    // RefSeq ID
-    newrow.append(newCell(refseq));
-    
-    rows_list.push(newrow);
-    //$(table_id + " > tbody").append(newrow);
   }
   table_tbody.append(rows_list);
 }
@@ -363,7 +372,10 @@ function getObjects (obj_parent, obj, key, val, objects, regex) {
     }
     // if key matches and value matches or if key matches and value is not passed (eliminating the case where key matches but passed value does not)
     else if ((i == key && (obj[i] == val || regex.test(obj[i])))) {
-      objects[obj.et] = obj;
+      if (!objects[obj.et]) {
+        objects[obj.et] = [];
+      }
+      objects[obj.et].push(obj);
       if (json_unique_keys[i]) {
         return objects;
       }
@@ -373,11 +385,17 @@ function getObjects (obj_parent, obj, key, val, objects, regex) {
     else if ((obj[i] == val || regex.test(obj[i])) && key == ''){
       // Data fetched from an array
       if (Object.keys(obj)[0] == 0) {
-        objects[obj_parent.et] = obj_parent;
+        if (!objects[obj_parent.et]) {
+          objects[obj_parent.et] = [];
+        }
+        objects[obj_parent.et].push(obj_parent);
       }
       // Data fetched from a key/value
       else {
-        objects[obj.et] = obj;
+        if (!objects[obj.et]) {
+          objects[obj.et] = [];
+        }
+        objects[obj.et].push(obj);
       }
       break;
     }

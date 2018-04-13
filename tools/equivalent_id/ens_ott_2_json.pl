@@ -15,7 +15,7 @@ $output_dir ||= '.';
 my $output_file = ($is_private) ? 'ens_ott_data.json' : 'ens_ott_data_public.json';
 my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.txt' :  'ens_ott_autocomplete_public.txt';
 
-my $input_file   = 'ens_ott_table_sorted_by_HGNC_symbol.txt';
+my $input_file   = 'ens_ott_table.txt';
 my $havana_file  = 'hg38.bed';
 my $gencode_file = 'gencode.annotation.gtf';
 my $cars_file    = 'canonicals_hgnc.txt'; 
@@ -216,20 +216,19 @@ foreach my $enst (keys(%ensts)) {
     $enst_v      = $gencode_data{$enst}{'enst_v'};
     $ottt        = $gencode_data{$enst}{'ot'};
     $ottg        = $gencode_data{$enst}{'og'};
-    $new_tr_name = $gencode_data{$enst}{'tname'};
-    if ($new_tr_name =~ /^$hgnc-(\d+)$/) {
-      $new_tr_name = $1;
-    }
+    
+    # Priority to the Ensembl transcript name
+    $new_tr_name = ($ensembl_data{$enst}) ? $ensembl_data{$enst}{'new_tr'} : $gencode_data{$enst}{'tname'};
   }
   elsif ($ensembl_data{$enst}) {
-  
     $hgnc        = $ensembl_data{$enst}{'g'};
     $enst_v      = $ensembl_data{$enst}{'enst_v'};
     $ottt        = $gencode_data{$enst}{'ot'} if ($gencode_data{$enst}{'ot'});
     $new_tr_name = $ensembl_data{$enst}{'new_tr'};
-    if ($new_tr_name && $new_tr_name =~ /^$hgnc-(\d+)$/) {
-      $new_tr_name = $1;
-    }
+  }
+  
+  if ($new_tr_name && $new_tr_name =~ /^$hgnc-(\d+)$/) {
+    $new_tr_name = $1;
   }
   
   # Autocomplete data
