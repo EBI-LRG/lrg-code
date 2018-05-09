@@ -9,17 +9,18 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use DBI qw(:sql_types);
 use Date::Calc qw(Delta_Days);
 use File::Basename;
+use LWP::Simple;
 use POSIX;
 
 
 my $outputfile;
-#my $tmpdir;
 my $host;
 my $port;
 my $user;
 my $pass;
 my $dbname;
 my $is_private;
+my $website_header;
 
 GetOptions(
   'host=s'   => \$host,
@@ -28,13 +29,12 @@ GetOptions(
   'user=s'   => \$user,
   'pass=s'   => \$pass,
   'output=s' => \$outputfile,
-#  'tmpdir=s' => \$tmpdir,
-  'private!' => \$is_private
+  'private!' => \$is_private,
+  'website!'  => \$website_header
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
 die("An output HTML file (-output) must be specified") unless (defined($outputfile));
-#die("An temporary directory (-tmpdir) must be specified") unless (defined($tmpdir));
 
 #my $tmpfile = "$tmpdir/tmp_lrg_step_status.html";
 my $tmpfile = "tmp_lrg_step_status.html";
@@ -56,6 +56,7 @@ my @month_list = qw( January February March April May June July August September
 my $ftp      = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
 my $xml_dir  = '/ebi/ftp/pub/databases/lrgex';
 my $hgnc_url = 'http://www.genenames.org/data/hgnc_data.php?hgnc_id=';
+my $lrg_url  = 'http://dev.lrg-sequence.org/';
 
 
 my %updates = ( 0   => 'green_step',
@@ -65,10 +66,16 @@ my %updates = ( 0   => 'green_step',
               );
 my $new_update = 14; 
 
+my @lrg_status = ('pending', 'public', 'stalled');
+
 my %lrg_status_desc = ( 'public'  => 'LRGs curated and made public.',
                         'pending' => 'LRGs which are currently going through the curation process before being published.',
                         'stalled' => 'The curation process of these LRGs have been paused.'
-                      );                       
+                      ); 
+my %lrg_status_colours = ( 'public'  => '#48a726',
+                           'pending' => '#FFA500',
+                           'stalled' => '#E00'
+                         );                       
 
 
 #### Cleanup the database (remove useless lines) ####
@@ -91,7 +98,6 @@ my $sth_cleanup3 = $db_adaptor->dbc->prepare($stmt_cleanup3);
 $sth_cleanup3->execute();
 $sth_cleanup3->finish();
 #####################################################
-
 
            
 my $stmt = qq{
@@ -264,332 +270,171 @@ if ($is_private) {
   my ($black1, $black2)   = ('#000', '#555');
   
   $specific_css = qq{
-      .green_step { 
-        /* Old browsers */
-        background: $green1; 
-        /* IE10 */ 
-        background: -ms-linear-gradient($green1 10%, $green2 45%, $green1 85%);
-        /* Mozilla Firefox */ 
-        background: -moz-linear-gradient($green1 10%, $green2 45%, $green1 85%);
-        /* Opera */ 
-        background: -o-linear-gradient($green1 10%, $green2 45%, $green1 85%);
-        /* Webkit (Safari/Chrome 10) */ 
-        background: -webkit-gradient(linear, top, bottom, color-stop(0, $green1), color-stop(0.45, $green2),color-stop(0.85, $green1));
-        /* Webkit (Chrome 11+) */ 
-        background: -webkit-linear-gradient($green1 10%, $green2 45%, $green1 85%);
-        /* W3C Markup, IE10 Release Preview */ 
-        background: linear-gradient($green1 10%, $green2 45%, $green1 85%);
-      }
-      
-      .orange_step { 
-        /* Old browsers */
-        background: $orange1; 
-        /* IE10 */ 
-        background: -ms-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
-        /* Mozilla Firefox */ 
-        background: -moz-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
-        /* Opera */ 
-        background: -o-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
-        /* Webkit (Safari/Chrome 10) */ 
-        background: -webkit-gradient(linear, top, bottom, color-stop(0, $orange1), color-stop(0.45, $orange2),color-stop(0.85, $orange1));
-        /* Webkit (Chrome 11+) */ 
-        background: -webkit-linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
-        /* W3C Markup, IE10 Release Preview */ 
-        background: linear-gradient($orange1 10%, $orange2 45%, $orange1 85%);
-      }
-      
-      .red_step { 
-        /* Old browsers */
-        background: $red1; 
-        /* IE10 */ 
-        background: -ms-linear-gradient($red1 10%, $red2 45%, $red1 85%);
-        /* Mozilla Firefox */ 
-        background: -moz-linear-gradient($red1 10%, $red2 45%, $red1 85%);
-        /* Opera */ 
-        background: -o-linear-gradient($red1 10%, $red2 45%, $red1 85%);
-        /* Webkit (Safari/Chrome 10) */ 
-        background: -webkit-gradient(linear, top, bottom, color-stop(0, $red1), color-stop(0.45, $red2),color-stop(0.85, $red1));
-        /* Webkit (Chrome 11+) */ 
-        background: -webkit-linear-gradient($red1 10%, $red2 45%, $red1 85%);
-        /* W3C Markup, IE10 Release Preview */ 
-        background: linear-gradient($red1 10%, $red2 45%, $red1 85%);
-      }
+      .content { padding: 0px 15px }
   
-      .black_step { 
-        /* Old browsers */
-        background: $black1; 
-        /* IE10 */ 
-        background: -ms-linear-gradient($black1 10%, $black2 45%, $black1 85%);
-        /* Mozilla Firefox */ 
-        background: -moz-linear-gradient($black1 10%, $black2 45%, $black1 85%);
-        /* Opera */ 
-        background: -o-linear-gradient($black1 10%, $black2 45%, $black1 85%);
-        /* Webkit (Safari/Chrome 10) */ 
-        background: -webkit-gradient(linear, top, bottom, color-stop(0, $black1), color-stop(0.45, $black2),color-stop(0.85, $black1));
-        /* Webkit (Chrome 11+) */ 
-        background: -webkit-linear-gradient($black1 10%, $black2 45%, $black1 85%);
-        /* W3C Markup, IE10 Release Preview */ 
-        background: linear-gradient($black1 10%, $black2 45%, $black1 85%);
-      }
+      .green_step { background: $green1 }
+      .orange_step { background: $orange1 }
       
-      .step_list {position:absolute;left:520px;padding-top:4px}
+      .red_step { background: $red1 }
+  
+      .black_step { background: $black1 }
       
-      a.export_green_button {
-	      color: #FFF;
-	      background:url(img/download_white.png) no-repeat 4px 50%;
-	      background-color: #48a726;
-	      font-weight:bold;
-	      padding:2px 4px 2px 2px;
-	      margin-top:2px;
-	      margin-right:5px;
-	      border-radius:5px;
-	      border: 1px solid #EEE;
-	      text-align:center;
-	      cursor:pointer;
-	      position:absolute;
-	      left:850px;
-      }
-      a.export_green_button:before {
-        content:'';
-        float:left;
-        width: 22px;
-        height:18px;
-      }
-      a.export_green_button:hover{
-	      color: #48a726;
-	      background:url(img/download_green.png) no-repeat 4px 50%;
-	      background-color: #FFF;
-	      text-decoration: none;
-	      border: 1px solid #48a726;
-      }
-      a.export_green_button:active{
-	      box-shadow: 2px 2px 2px #CCC inset;
-      }
+      .step_list {padding-top:4px}
       
-      a.show_hide_step {
-        vertical-align:middle;
-        border:1px solid #3f9221;
-        border-radius:4px;
-        padding:1px;
-        margin-right:4px;
-        text-decoration:none;
-        background-color: #48a726;
-        color:#FFF;
-      }
-      a.show_hide_step:hover {
-        border:1px solid #48a726;
-        text-decoration:none;
-        background-color: #FFF;
-        color: #48a726;
-      }
-      .missing_step {
-        vertical-align:middle;
-        border:1px solid #000;
-        border-radius:4px;
-        padding:1px;
-        margin-right:4px;
-        text-decoration:none;
+      .missing_step, .missing_step:hover, .missing_step:active {
+        border:none;
         background-color: #444;
         color:#FFF;
+        cursor: default;
       }
   };
 }
 else { 
   my ($lrg1, $lrg2) = ('#48A726', '#6BD545');
   $specific_css = qq{
-      .$public_progression_class { 
-        /* Old browsers */
-        background: $lrg1; 
-        /* IE10 */ 
-        background: -ms-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
-        /* Mozilla Firefox */ 
-        background: -moz-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
-        /* Opera */ 
-        background: -o-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
-        /* Webkit (Safari/Chrome 10) */ 
-        background: -webkit-gradient(linear, top, bottom, color-stop(0, $lrg1), color-stop(0.45, $lrg2),color-stop(0.85, $lrg1));
-        /* Webkit (Chrome 11+) */ 
-        background: -webkit-linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
-        /* W3C Markup, IE10 Release Preview */ 
-        background: linear-gradient($lrg1 10%, $lrg2 45%, $lrg1 85%);
-      }
+      .$public_progression_class { background: $lrg1 }
   };
 }
 
 
 # HTML HEADER
-my $html_header = qq{
+my ($html_header, $html_footer);
+
+if ($website_header) {
+  my $index_html_content = get($lrg_url."/index.html");
+  if ($index_html_content) {
+    $html_header = (split('<!-- Specific content - start -->', $index_html_content))[0];
+    $html_footer = (split('<!-- Specific content - end -->',   $index_html_content))[1];
+    $html_header =~ s/[^\x00-\x7f]//g; # Remove wide character
+  }
+  else {
+   die "Can't get the header/footer from the LRG website";
+  }
+}
+else {
+  $html_header = qq{
 <html>
-  <header>
+  <head>
     <title>LRG CURATION PROGRESS</title>
-    <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
-    <script type="text/javascript">
-      function showhide(div_id) {
-        var div_obj    = document.getElementById(div_id);
-        var link_obj   = document.getElementById("link_"+div_id);
-        var button_obj = document.getElementById("button_"+div_id);
-        
-        if(div_obj.className == "hidden") {
-          div_obj.className = "unhidden";
-          if (link_obj) {
-            link_obj.innerHTML = "Hide history";
-          }
-          if (button_obj) {
-            button_obj.className = "show_hide_anno selected_anno";
-            button_obj.innerHTML = "Hide table";
-          }
-        }
-        else {
-          div_obj.className = "hidden";
-          if (link_obj) {
-            link_obj.innerHTML = "Show history";
-          }
-          if (button_obj) {
-            button_obj.className = "show_hide_anno";
-            button_obj.innerHTML = "Show table";
-          }
-        }
-      }
-      
-      function showhiderow(class_name,step_id) {
-        var tr_objs = document.getElementsByClassName(class_name);
-        
-        for(var i=0; i<tr_objs.length; i++) {
-          if (step_id=='all' || tr_objs[i].className == class_name+' '+class_name+'_'+step_id) {
-            tr_objs[i].style.display='table-row';
-          }
-          else {
-            tr_objs[i].style.display='none';
-          }
-        } 
-      }
-    </script>
-    <script src="sorttable.js"></script>
-    <style type="text/css">
-      
-      table {border-collapse:collapse; }
-      table.legend { font-size:0.8em;width:100% }
-      table.history { font-size:0.8em; }
-      
-      .to_sort { 
-                 background-image: url('img/sortable.png'); 
-                 background-repeat: no-repeat;
-                 background-position: right center;
-                 cursor: pointer;
-                 padding-right:25px;
-               }
-      .sorttable_sorted { 
-                          background-image: url('img/sort_desc.png'); 
-                          background-repeat: no-repeat;
-                          background-position: right center;
-                          cursor: pointer;
-                          padding-right:25px;
-                        }
-      .sorttable_sorted_reverse { 
-                                  background-image: url('img/sort_asc.png');
-                                  background-repeat: no-repeat;
-                                  background-position: right center;
-                                  cursor: pointer;
-                                  padding-right:25px;
-                                }
-      
-      
-      a.history { font-size:0.8em;cursor:pointer;white-space:nowrap }
-      a.lrg_link { font-weight:bold; }
-     
-      a.gene_link { color:#000; }
-     
-      .step { font-size:0.9em; }
-      .hidden {height:0px;display:none;margin-top:0px}
-      .unhidden {height:auto;display:inline;margin-top:5px}
-      
-      .progress_bar { background-color: #FFF; padding: 0px; border:1px solid #333; border-radius: 5px; width:200px; cursor:default; /* (height of inner div) / 2 + padding */ } 
-      .progress_step { height: 16px; border-radius: 4px }
-      
-      $specific_css
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="$lrg_url/css/ebi-visual-custom.css">
+    <link rel="stylesheet" href="$lrg_url/css/lrg.css">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="$lrg_url/js/lrg.js"></script>
+    <script src="$lrg_url/js/search_results.js"></script>
+    <script src="$lrg_url/js/sorttable.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  </head>
   
-      .header_count  {position:absolute;left:230px;padding-top:5px;color:#0E4C87}
-      
-    </style>
-  </header>
   <body>
-    <div class="banner" id="top">
-      <div class="banner_left">
-        <h1>Progress status of the LRGs</h1>
+    <header>
+      <nav class = "navbar navbar-default masterhead" role="navigation">
+        <div class="container">
+          <div class="navbar-header">
+            <div class="site-avatar">
+              <a href="$lrg_url/index.html" title=" Locus Reference Genomic home page">
+                <img src="$lrg_url/images/lrg_logo.png" />
+              </a>
+            </div>
+        </div>
+      </nav>
+
+      <div class="clearfix">
+        <div class="sub-masterhead_blue"  style="float:left;width:5%"></div>
+        <div class="sub-masterhead_green" style="float:left;width:4%"></div>
+        <div class="sub-masterhead_blue"  style="float:left;width:91%"></div>
+      </div>  
+      
+    </header>
+    
+    <div id="main" role="main" class="container container-extra">
+      <div class="inner-content">
+  };
+  
+  $html_footer = qq{
+  </div>
+  <div class="wrapper-footer">
+    <footer class="footer">
+
+      <div class="col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
+        <span>Partners</span>
       </div>
-      <div class="banner_right">
-        <a href="http://www.lrg-sequence.org/" title="Locus Reference Genomic website"><img alt="LRG logo" src="./img/lrg_logo.png" /></a>
-      </div>
-      <div style="clear:both"></div>
-    </div>
-    <div class="menu_title" style="padding:15px 10px">
-      <div style="float:right">Page generated the <b>$day</b></div>
-};
 
 
-# HTML FOOTER
-my $html_footer = qq{
-    <p>
-      If no LRG record exists for your gene of interest, you can request one to be created for you. Send your request to  <span class="green"><i>request\@lrg-sequence.org</i></span>.<br />
-      For any other question/request, please send an email to <span class="green"><i>feedback\@lrg-sequence.org</i></span>.
-    </p>
-    <div class="footer">
-      <div style="float:left;width:45%;padding:5px 0px;text-align:right">
-        <a href="http://www.ebi.ac.uk" target="_blank">
-          <img alt="EMBL-EBI logo" style="width:100px;height:156px;border:0px" src="./img/embl-ebi_logo.jpg" />
-          </img>
+      <div class="col-xs-6 text-right">
+        <a href="http://www.ebi.ac.uk">
+         <img src="$lrg_url/images/EMBL-EBI_logo.png">
         </a>
       </div>
-      <div style="float:left;width:10%;padding:5px 0px"></div>
-      <div style="float:left;width:45%;padding:5px 0px;text-align:left">
-        <a href="http://www.ncbi.nlm.nih.gov/" target="_blank">
-          <img alt="NCBI logo" style="width:100px;height:156px;border:0px" src="./img/ncbi_logo.jpg" />
-          </img>
+
+      <div class="col-xs-6 text-left">
+        <a href="http://www.ncbi.nlm.nih.gov">
+          <img src="$lrg_url/images/NCBI_logo.png">
         </a>
       </div>
-      <div style="clear:both" />
-    </div>
-  </body>
-</html>
-};
+
+
+      <div class="col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
+        <p class="footer-end">Site maintained by <a href="http://www.ebi.ac.uk/">EMBL-EBI</a> | <a href="http://www.ebi.ac.uk/Information/termsofuse.html">Terms of Use</a> | <a href="http://www.ebi.ac.uk/Information/privacy.html">Privacy</a> | <a href="http://www.ebi.ac.uk/Information/e-directive.html">Cookies</a></p>
+        <p>© LRG 2016</p>
+      </div>
+
+    </footer>
+  </div>
+  };
+}
 
 # TOP link
 my $back2top = qq{
-     <div class="top_up_anno_link" style="margin-bottom:60px;background-color:#FFF">
+     <div class="text-right">
        <a href="#top">[Back to top]</a>
      </div>
-     <div style="clear:both"></div>
 };
 
 # LEGEND
 my $html_legend = qq{
-  <div class="right_side">
-    <!-- Step legend -->
-    <div class="summary gradient_color1" style="padding-bottom:1px">
-      <div class="summary_header">Step Legend</div>
-      <table class="legend" style="text-align:center">
-        <tr><th title="Step number">#</th><th title="Step description">Description</th></tr>
+  <div class="legend_box">
+    <div id="legend_div_button" class="close-icon-5 icon-collapse-closed legend_title" onclick="javascript:show_hide('legend_div')">
+      <span class="icon-info smaller-icon legend_header">Curation steps legend</span>
+    </div>
+    <div id="legend_div" style="display:none">
+      <table class="table table-hover table-lrg table-small" style="text-align:center">
+          <thead>
+            <tr>
+              <th title="Curation step number" style="cursor:pointer;text-align:center">#</th>
+              <th title="Curation step description">Description</th>
+            </tr>
+          </thead>
+          <tbody>
 };
 foreach my $step_id (sort {$a <=> $b} keys(%steps)) {
   my $desc = $steps{$step_id};
      $desc =~ s/\s-\s/,<br \/>/g; # To save some horizontal space
-  $html_legend .= qq{        <tr><td class="left_col" style="text-align:center;vertical-align:top">$step_id</td><td class="right_col" style="text-align:left">$desc</td></tr>\n};
+  $html_legend .= qq{        <tr><td>$step_id</td><td>$desc</td></tr>\n};
 }
-
 $html_legend .= qq{
-      </table>
-    </div>
-};    
-    
+          </tbody>
+        </table>
+};
     
 # Legend colour (for private use)
 if ($is_private) {
   $html_legend .= qq{    
-    <!-- Colour legend -->  
-    <div class="summary gradient_color1" style="padding-bottom:1px;margin-top:20px">
-      <div class="summary_header">Colour Legend</div>
-      <table class="legend">
-        <tr><th title="Progress bar colour">Colour</th><th>Description</th></tr>
+      <!-- Colour legend -->
+      <div class="legend_box colour_box">
+        <div class="icon-info smaller-icon legend_subtitle">Colour Legend</div>
+        <table class="table table-hover table-lrg table-small" style="text-align:center">
+          <thead>
+            <tr>
+              <th title="Progress bar colour" style="cursor:pointer">Colour</th>
+              <th>Description</th>
+            </tr>
+          </thead>
   };
   
   my $colour_legend;
@@ -608,18 +453,20 @@ if ($is_private) {
   $html_legend .= qq{$colour_legend      </table>\n</div>\n};
 }
 
-$html_legend .= qq{</div>\n};
+$html_legend .= qq{
+      </div>
+    </div>
+};    
 
 # LIST
-my $html = qq{
-  <div style="float:left;min-width:70%;max-width:75%">
-};  
+my $html;
 
 my $html_pending_content;
 my $html_public_content;
 my $html_stalled_content;
 my $step_max = scalar(keys(%steps));
 my %count_lrgs;
+my %pending_steps;
 my %list_step_ids;
 
 foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
@@ -649,7 +496,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   }
   
   $progress_width .= 'px'; 
-  $progress_width .= ';border-top-right-radius:0px;border-bottom-right-radius:0px' if ($percent != 100);
+  #$progress_width .= ';border-top-right-radius:0px;border-bottom-right-radius:0px' if ($percent != 100);
   
   my $raw_date = $lrg_steps{$lrg}{'step'}{$current_step};
   my $date = format_date($raw_date);
@@ -675,39 +522,47 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     }
      
     $progression_bar = qq{
-      <div class="progress_bar" title="$percent_display">
-        <div class="progress_step $progression_class" style="width:$progress_width"></div>
+      <div class="progress lrg_progress_bar">
+        <div class="progress-bar lrg_progress_height $progression_class" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width:$progress_width">$current_step
+        <span class="sr-only">$percent_display</span>
       </div>
+</div>
     };
   }
   
   
   # History
   my $history_list = qq{
-    <table class="history">
-       <tr class="gradient_color2"><th title="Step number">#</th><th title="Step description">Description</th><th title="Date when the step was done">Date</th></tr>
+      <table class="table table-hover table-lrg table-small">
+        <thead>
+          <tr>
+            <th title="Curation step number" style="cursor:pointer">#</th>
+            <th title="Curation step description">Description</th>
+            <th title="Date when the step was done" style="cursor:pointer">Date</th>
+          </tr>
+        </thead>
   };
   foreach my $step (sort {$a <=> $b} keys(%{$lrg_steps{$lrg}{'step'}})) {
     my $history_date = format_date($lrg_steps{$lrg}{'step'}{$step});
     my $hdays = count_days(\@today,$lrg_steps{$lrg}{'step'}{$step});
     if ($hdays <= $new_update) {
-      $history_date = qq{<span class="blue">$history_date</span>};
+      $history_date = qq{<span class="lrg_blue bold_font">$history_date</span>};
     }
-    $history_list .= qq{    <tr><td>$step</td><td>}.$steps{$step}.qq{</td><td>$history_date</td></tr>\n};
+    $history_list .= qq{    <tr><td class="left_col">$step</td><td>}.$steps{$step}.qq{</td><td style="text-align:right">$history_date</td></tr>\n};
   }
   $history_list .= qq{</table>\n};
   
-  my $div_id = lc($lrg).'_detail';
+  my $div_id = 'link_'.lc($lrg).'_detail';
   my $detailled_div = qq{
-    <a class="history" href="javascript:showhide('$div_id')" id="link_$div_id">Show history</a>
-    <div class="hidden" id="$div_id">$history_list</div> 
+    <button class="btn btn-default btn-xs close-icon-5 smaller-icon icon-collapse-closed" onclick="javascript:show_hide('$div_id','history')" id="$div_id\_button">Show history</button>
+    <div style="display:none" id="$div_id"><div style="margin-top:2px">$history_list</divs></div> 
   };
   #### TEMPORARY FIX ####
   $detailled_div = '' unless($is_private);
   ####################### 
   
   if ($days <= $new_update) {
-    $date = qq{<span class="blue">$date</span>};
+    $date = qq{<span class="lrg_blue bold_font">$date</span>};
   }
   
   my $symbol    = $lrg_steps{$lrg}{'symbol'};
@@ -720,16 +575,16 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   my $requester_cell = ($is_private) ? ($requesters{$lrg} ? '<td>'.join('<br />',@{$requesters{$lrg}}).'</td>' : '<td>-</td>') : '';
   my $curator_cell   = ($is_private) ? ($curators{$lrg}   ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
   
+  my $operator = ($is_private) ? '/' : 'out of';
+  
   my $html_row = qq{
-      <td sorttable_customkey="$lrg_id"><a class="lrg_link" href="$lrg_link" target="_blank">$lrg</a></td>
+      <td sorttable_customkey="$lrg_id"><a class="lrg_link bold_font" href="$lrg_link" target="_blank">$lrg</a></td>
       <td sorttable_customkey="$symbol">
-        <a class="gene_link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
+        <a class="icon-external-link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
       </td>
-      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> out of <b>$step_max</b></span>$detailled_div</td>
+      <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> $operator <b>$step_max</b></span>$detailled_div</td>
       <td>$step_desc</td>
-      <td sorttable_customkey="$date_key">$date</td>
-      $requester_cell
-      $curator_cell
+      <td sorttable_customkey="$date_key">$date</td>$requester_cell$curator_cell
     </tr>
   };
   
@@ -742,7 +597,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   }
   
   if ($current_step eq $step_max) {
-    $html_public_content .= qq{<tr id="$lrg">\n$html_row};
+    $html_public_content .= qq{<tr id="$lrg">$html_row};
     $count_lrgs{'public'}++;
     $private_exports{'public'} .= $export_row if ($is_private);
   }
@@ -750,7 +605,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     # Stalled
     if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
       if ($is_private) {
-        $html_stalled_content .= qq{<tr id="$lrg" class="stalled_row stalled_row_$current_step">\n$html_row};
+        $html_stalled_content .= qq{<tr id="$lrg" class="stalled_row stalled_row_$current_step">$html_row};
         $list_step_ids{'stalled'}{$current_step} = 1;
         $count_lrgs{'stalled'}++;
         $private_exports{'stalled'} .= $export_row;
@@ -758,10 +613,11 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
     }
     # Pending + LRGs not yet moved to the FTP site (the latter is only for the private display)
     elsif ($lrg_steps{$lrg}{'status'} eq 'pending' || (!$lrg_steps{$lrg}{'status'} && $is_private)) {
-      $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">\n$html_row};
+      $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">$html_row};
       $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
       $private_exports{'pending'} .= $export_row if ($is_private);
+      $pending_steps{$current_step}++;
     }
   }
 }
@@ -770,143 +626,249 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
 my $select_pending_steps = '';
 my $select_stalled_steps = '';
 if ($is_private) {
-  $select_pending_steps = qq{<span class="step_list">Steps: };
-  $select_stalled_steps = qq{<span class="step_list">Steps: };
+  $select_pending_steps = qq{<span>Steps: </span>};
+  $select_stalled_steps = qq{<span>Steps: </span>};
+  my $btn_classes      = "btn btn-xs";
+  my $btn_classes_blue = "$btn_classes btn-primary";
   foreach my $step (sort {$a <=> $b} keys(%steps)) {
     next if ($step == $step_max);
   
     if ($list_step_ids{'pending'}{$step}) {
-      $select_pending_steps .= qq{<a class="show_hide_step" title="Select step $step" href="javascript:showhiderow('pending_row','$step');">$step</a>};
+      $select_pending_steps .= qq{<button class="$btn_classes_blue" title="Select step $step" onclick="javascript:showhiderow('pending_row','$step');">$step</button>};
     }
     else {
-      $select_pending_steps .= qq{<span class="missing_step">$step</span>};
+      $select_pending_steps .= qq{<button class="$btn_classes" title="No LRG data at this step">$step</button>};
     }  
   
     if ($list_step_ids{'stalled'}{$step}) {
-      $select_stalled_steps .= qq{<a class="show_hide_step" title="Select step $step" href="javascript:showhiderow('stalled_row','$step');">$step</a>};
+      $select_stalled_steps .= qq{<button class="$btn_classes_blue" title="Select step $step" onclick="javascript:showhiderow('stalled_row','$step');">$step</button>};
     }
     else {
-      $select_stalled_steps .= qq{<span class="missing_step">$step</span>};
+      $select_stalled_steps .= qq{<button class="$btn_classes" title="No LRG data at this step">$step</button>};
     }
   }
-  $select_pending_steps .= qq{<a class="show_hide_step" title="Select all steps" href="javascript:showhiderow('pending_row','all');">All</a></span>};
-  $select_stalled_steps .= qq{<a class="show_hide_step" title="Select all steps" href="javascript:showhiderow('stalled_row','all');">All</a></span>};
+  $select_pending_steps .= qq{<button class="$btn_classes_blue" title="Select all steps" onclick="javascript:showhiderow('pending_row','all');">All</button>};
+  $select_stalled_steps .= qq{<button class="$btn_classes_blue" title="Select all steps" onclick="javascript:showhiderow('stalled_row','all');">All</button>};
 }
 
 
 ## HTML TABLE OF CONTENT ##
-my $html_table_of_content = qq{<div style="float:left">};
-foreach my $status ('pending', 'public', 'stalled') {
+my $html_table_of_content = qq{
+  <h1 class="icon-unassigned-job smaller-icon">Curation status</h1>
+  <div class="panel-content-top clearfix">
+};
+if ($website_header) {
+  $html_table_of_content .= qq{<div class="col-xs-4 col-sm-4 col-md-3 col-lg-3 padding-left-0">};
+}
+else {
+  $html_table_of_content .= qq{<div class="col-xs-3 col-sm-3 col-md-3 col-lg-3 padding-left-0">};
+}
+
+foreach my $status (@lrg_status) {
   next if ($status eq 'stalled' and !$is_private);
   my $section_id = $status.'_section';
   my $section_label = ucfirst($status).' LRGs';
-  my $section_count = '['.$count_lrgs{$status}.' entries]';
+  my $section_count = $count_lrgs{$status};
+  
   $html_table_of_content .= qq{
-  <div class="submenu_section" style="border-bottom:none">
-    <img src="img/lrg_right_arrow_green.png" alt="right_arrow"><a href="#$section_id">$section_label</a> $section_count
-  </div>};
+    <div class="link_list lrg_$status clearfix">
+      <div class="left icon-next-page smaller-icon close-icon-5">
+        <a href="#$section_id" title="$section_count entries">$section_label</a>
+      </div>
+      <div class="right">
+        <span class="badge">$section_count</span>
+      </div>
+    </div>};
 }
-$html_table_of_content .= qq{</div><div style="clear:both"></div></div>};
+$html_table_of_content .= qq{    </div>};
 
+if (!$website_header) {
+  my @count_by_status = map { "['$_', ".$count_lrgs{$_}."]" } @lrg_status;
+  unshift(@count_by_status, "['Status','Number of LRGs']");
+  
+  my @count_by_step = map { "['$_', ".$pending_steps{$_}."]" } sort(keys(%pending_steps));
+  unshift(@count_by_step, "['Step','Number of LRGs']");
+  
+  $html_table_of_content .= qq{<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 clearfix" style="margin-top:-40px">};
+  #$html_table_of_content .= qq{<div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 padding-right-0" style="margin-top:-40px">};
+  $html_table_of_content .= qq{<div class="left" style="width:50%">};
+  $html_table_of_content .= display_piechart('status_chart', \@count_by_status,'LRG status',1);
+  $html_table_of_content .= qq{    </div>};
+  
+  #$html_table_of_content .= qq{<div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 col-xs-offset-1 col-sm-offset-1 col-md-offset-1 col-lg-offset-1 padding-left-0" style="margin-top:-40px">};
+  $html_table_of_content .= qq{<div class="left" style="width:50%">};
+  $html_table_of_content .= display_piechart('pending_steps_chart', \@count_by_step,'Pending steps');
+  $html_table_of_content .= qq{    </div>};
+  
+  $html_table_of_content .= qq{    </div>};
+}
+
+if ($website_header) {
+  $html_table_of_content .= qq{
+    <div class="col-xs-4 col-sm-4 col-md-4 col-lg-5 col-xs-offset-3 col-sm-offset-3 col-md-offset-3 col-lg-offset-4">
+      $html_legend
+    </div>};
+}
+else {
+  $html_table_of_content .= qq{
+    <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4 padding-right-0">
+      <div style="margin-top:-75px;padding-bottom:25px;text-align:right">
+        <div>Page generated the</div>
+        <div class="bold_font margin-top-2">$day</div>
+      </div>
+      $html_legend
+    </div>
+  };
+  #$html_table_of_content .= qq{
+  #  <div class="col-xs-4 col-sm-4 col-md-4 col-lg-4">
+  #    $html_legend
+  #  </div>
+  #  <div class="col-xs-3 col-sm-3 col-md-3 col-lg-3 padding-right-0" style="margin-top:-75px;text-align:right">
+  #    <div>Page generated the</div>
+  #    <div class="bold_font margin-top-2">$day</div>
+  #  </div>};
+}
+$html_table_of_content .= qq{  </div>};
 
 ## HEADERS ##
-my $html_pending_header = sprintf( qq{
-  <div id="pending_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Pending LRGs</h2>
-    <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno selected_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Hide table</a>
-    %s
-    %s
+my $html_pending_header = get_header('pending',$select_pending_steps);
+my $html_pending_header_old = sprintf( qq{
+  <div id="pending_section" class="status-header clearfix" style="margin-top:10px">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 icon-next-page close-icon-2" style="padding-left:0px">
+      <h2 class="status-label">%s LRGs</h2>
+    </div>
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" style="line-height:36px">
+      <div class="left" style="padding: 0px 5px">
+        <span class="badge big_badge lrg_blue_bg">%i LRGs</span>
+      </div>
+      <div class="right">
+        <button class="btn btn-primary btn-xs close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
+      </div>
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="vertical-align:baseline;padding-right:0px">
+      <div class="step_list left">%s</div>
+      <div class="right">%s</div>
+    </div>
   </div>
-  <div id="pending_lrg">
-    <div style="margin-bottom:4px">%s</div>
-    <table class="sortable" style="margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol (external link)">
-          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
-        </th>
-        <th class="to_sort" title="Sort by the number of steps done">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
-      </tr>\n},
+  
+  <div id="%s">
+    <div class="icon-info smaller-icon close-icon-5" style="margin:10px 0px 15px">%s</div>
+    <table class="table table-hover table-lrg sortable">
+      <thead>
+        <tr>
+          <th class="first-col sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+          <th class="to_sort" title="Sort by HGNC symbol (external link)">Symbol</th>
+          <th class="to_sort" title="Sort by the number of steps done">Curation step</th>
+          <th class="sorttable_nosort">Curation step description</th>
+          <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+        </tr>
+      </thead>\n},
+  'Pending',
   $count_lrgs{'pending'},
   'pending_lrg',
   'pending_lrg',
   $select_pending_steps,
   export_link('pending'),
+  'pending_lrg',
   $lrg_status_desc{'pending'},
   $extra_private_column_header
 );
 
-my $html_public_header = sprintf( qq{
-  <div id="public_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Public LRGs</h2>
-    <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Show table</a>
-    %s
+
+my $html_public_header = get_header('public','');
+my $html_public_header_old = sprintf( qq{
+  <div id="pending_section" class="status-header clearfix" style="margin-top:10px">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 icon-next-page close-icon-2" style="padding-left:0px">
+      <h2 class="status-label">%s LRGs</h2>
+    </div>
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" style="line-height:36px">
+      <div class="left" style="padding: 0px 5px">
+        <span class="badge big_badge lrg_blue_bg">%i LRGs</span>
+      </div>
+      <div class="right">
+        <button class="btn btn-primary btn-xs close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
+      </div>
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="padding: 0px 5px">
+      <div class="right">%s</div>
+    </div>
   </div>
-  <div id="public_lrg">
+  
+  <div id="%s">
     <div style="margin-bottom:4px">%s</div>
-    <table class="sortable" style="width:100%%;margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol (external link)">
-          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
-        </th>
-        <th class="sorttable_nosort">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
-      </tr>\n},
+    <table class="table table-hover table_content sortable">
+      <thead>
+        <tr>
+          <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+          <th class="to_sort" title="Sort by HGNC symbol (external link)">Symbol</th>
+          <th class="sorttable_nosort">Curation step</th>
+          <th class="sorttable_nosort">Curation step description</th>
+          <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+        </tr>
+      </thead>\n},
+  'Public',
   $count_lrgs{'public'},
   'public_lrg',
   'public_lrg',
   export_link('public'),
+  'public_lrg',
   $lrg_status_desc{'public'},
   $extra_private_column_header
 );
 
-my $html_stalled_header = sprintf( qq{
-  <div id="stalled_section" class="section" style="background-color:#F0F0F0;margin-top:10px">
-    <img alt="right_arrow" src="img/lrg_right_arrow_green_large.png"></img>
-    <h2 class="section">Stalled LRGs</h2>
-    <span class="header_count">(%i LRGs)</span>
-    <a class="show_hide_anno selected_anno" style="left:380px;margin-top:2px" id="button_%s" href="javascript:showhide('%s');">Hide table</a>
-    %s
-    %s
+my $html_stalled_header = get_header('stalled',$select_stalled_steps);
+my $html_stalled_header_old = sprintf( qq{
+  <div id="stalled_section" class="status-header clearfix" style="margin-top:10px">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 icon-next-page close-icon-2" style="padding-left:0px">
+      <h2 class="status-label">%s LRGs</h2>
+    </div>
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" style="line-height:36px">
+      <div class="left" style="padding: 0px 5px">
+        <span class="badge big_badge lrg_blue_bg">%i LRGs</span>
+      </div>
+      <div class="right">
+        <button class="btn btn-primary btn-xs close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
+      </div>
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="padding: 0px 5px">
+      <div class="step_list left">%s</div>
+      <div class="right">%s</div>
+    </div>
   </div>
-  <div id="stalled_lrg">
+  <div id="%s">
     <div style="margin-bottom:4px">%s</div>
-    <table class="sortable" style="margin-bottom:5px">
-      <tr class="gradient_color2">
-        <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
-        <th class="to_sort" title="Sort by HGNC symbol (external link)">
-          Gene<img src="img/external_link_green.png" class="external_link" style="margin-right:0px" alt="External link" title="External link">
-        </th>
-        <th class="to_sort" title="Sort by the number of steps done">Step</th>
-        <th class="sorttable_nosort">Step description</th>
-        <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
-      </tr>\n},
+    <table class="table table-hover table_content sortable">
+      <thead>
+        <tr>
+          <th class="sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+          <th class="to_sort" title="Sort by HGNC symbol (external link)">Symbol</th>
+          <th class="to_sort" title="Sort by the number of steps done">Curation step</th>
+          <th class="sorttable_nosort">Curation step description</th>
+          <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+        </tr>
+      </thead>\n},
+  'Stalled',
   ($count_lrgs{'stalled'}) ? $count_lrgs{'stalled'} : 0,
   'stalled_lrg',
   'stalled_lrg',
   $select_stalled_steps,
   export_link('stalled'),
+  'staller_lrg',
   $lrg_status_desc{'stalled'},
   $extra_private_column_header
 );
 
-my $html_pending .= qq{$html_pending_header$html_pending_content    </table>\n    $back2top\n  </div>\n};
-my $html_public  .= qq{$html_public_header$html_public_content    </table>\n    $back2top\n  </div>\n};
+my $html_pending .= qq{$html_pending_header$html_pending_content    </table>\n    $back2top\n  </div>\n</div>\n};
+my $html_public  .= qq{$html_public_header$html_public_content    </table>\n    $back2top\n  </div>\n</div>\n};
 
 my $html_stalled_private = '';
 if($is_private) {
-  $html_stalled_private = qq{$html_stalled_header$html_stalled_content    </table>\n    $back2top\n  </div>\n};
+  $html_stalled_private = qq{$html_stalled_header$html_stalled_content    </table>\n    $back2top\n  </div>\n</div>\n};
 }
 
-$html .= qq{$html_pending$html_public$html_stalled_private </div>\n$html_legend\n<div style="clear:both"></div>\n<br />\n};
+
+$html .= qq{$html_pending$html_public$html_stalled_private};
+$html .= qq{  </div>} if (!$website_header);
 
 
 if (%discrepancy) {
@@ -985,7 +947,134 @@ sub export_link {
   return '' if (!$is_private);
   
   my $html = qq{
-    <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="export_green_button">Export table</a>
+    <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="btn btn-primary btn-sm icon-download smaller-icon close-icon-5">Export table</a>
   };
   return $html; 
 }
+
+sub get_header {
+  my $status = shift;
+  my $steps  = shift;
+
+  my $label = ucfirst($status);
+  my $div_id = "$status\_lrg";
+
+  return sprintf( qq{
+<div class="panel-content">
+  <div id="%s\_section" class="status-header lrg_%s clearfix">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 icon-next-page close-icon-2" style="padding-left:0px">
+      <h2 class="status-label">%s LRGs</h2>
+    </div>
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" >
+      <div class="left" style="padding: 5px 5px 0px">
+        <span class="badge big_badge lrg_blue_bg">%i LRGs</span>
+      </div>
+      <div class="right">
+        <button class="btn btn-primary btn-sm close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
+      </div>
+    </div>
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="vertical-align:baseline;padding-right:0px">
+      <div class="step_list left">%s</div>
+      <div class="right">%s</div>
+    </div>
+  </div>
+  
+  <div id="%s" style="margin: 0px 5px">
+    <div class="icon-info smaller-icon close-icon-5" style="margin:10px 0px 25px 5px">%s</div>
+    <table class="table table-hover table-lrg sortable">
+      <thead>
+        <tr>
+          <th class="first-col sorttable_sorted" title="Sort by LRG ID">LRG ID</th>
+          <th class="to_sort" title="Sort by HGNC symbol (external link)">Symbol</th>
+          <th class="to_sort" title="Sort by the number of steps done">Curation step</th>
+          <th class="sorttable_nosort">Curation step description</th>
+          <th class="to_sort" title="Sort by the date of the last step done">Date</th>%s
+        </tr>
+      </thead>\n},
+  $status,
+  $status,
+  $label,
+  ($count_lrgs{$status}) ? $count_lrgs{$status} : 0,
+  $div_id,
+  $div_id,
+  $steps,
+  export_link($status),
+  $div_id,
+  $lrg_status_desc{$status},
+  $extra_private_column_header
+);
+}
+
+sub display_piechart {
+  my $id = shift;
+  my $data_array = shift;
+  my $title = shift;
+  my $use_status_colours = shift;
+  
+  my $data = join(',',@$data_array);
+  
+  my $colours = "";
+  my $handler = "";
+  if ($use_status_colours) {
+    $colours = qq{
+      slices: {
+        0: { color: '$lrg_status_colours{'pending'}' },
+        1: { color: '$lrg_status_colours{'public'}'  },
+        2: { color: '$lrg_status_colours{'stalled'}' },
+      },
+    };
+    
+    $handler = q{
+      function selectHandler() {
+        var selectedItem = chart.getSelection()[0];
+        if (selectedItem) {
+          var type = data.getValue(selectedItem.row, 0);
+          var id = type + '_lrg';
+          var id_button = '#' + id + '_button';
+          if ($(id_button).hasClass('icon-collapse-closed')) {
+            show_hide(id, 'table');
+          }
+          $(document).scrollTop( $(id_button).offset().top - 105);  
+        }
+      }
+    };
+  }
+  else {
+    $handler = q{
+      function selectHandler() {
+        var selectedItem = chart.getSelection()[0];
+        if (selectedItem) {
+          var topping = data.getValue(selectedItem.row, 0);
+          showhiderow('pending_row',topping);
+        }
+      }
+    };
+  }
+  
+  my $html = qq{
+ <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+      function drawChart() {
+
+        var data = google.visualization.arrayToDataTable([ $data ]);
+
+        var options = {
+          legend: 'none',
+          title: '$title',
+          chartArea: {width: 175, height: 175},
+          $colours
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('$id'));
+
+        $handler
+        google.visualization.events.addListener(chart, 'select', selectHandler);   
+        chart.draw(data, options);
+      }
+    </script>
+    <div id="$id" style="height: 200px;"></div>
+};
+  return $html;
+}
+
