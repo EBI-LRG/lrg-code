@@ -225,9 +225,11 @@ if ($tmp_dir ne $index_dir) {
   }
   if (-s "$tmp_dir/$lrg_diff_current") {
     `cp $tmp_dir/$lrg_diff_current $index_dir/`;
+    `cp $tmp_dir/$lrg_diff_current $xml_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff_previous") {
     `cp $tmp_dir/$lrg_diff_previous $index_dir/`;
+    `cp $tmp_dir/$lrg_diff_previous $xml_dir/`;
   }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
 }
