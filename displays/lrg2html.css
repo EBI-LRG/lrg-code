@@ -116,6 +116,19 @@ th.sub_other_label {
   border-bottom: 3px solid #BCBEC0;
 }
 
+table.genomic_mapping {
+  margin-top:-5px;
+  margin-bottom:50px;
+  border-bottom:0px;
+}
+
+td.left_label {
+  font-size:16px;
+  vertical-align:middle;
+  background-color:#E0E0E0;
+  padding:2px 4px;
+}
+
 /** Table cell display **/
 
 td.left_col {
@@ -637,11 +650,9 @@ div.sub_transcript_mapping {
   margin-top:20px;
 }
 
-.genomic_mapping { 
-  padding:25px 5px 5px;
-  margin-top:-5px;
-  margin-bottom:50px;
-  border-left: 8px solid #E0E0E0;
+
+div.genomic_mapping { 
+  padding:25px 5px 5px 10px;
 }
 
 .region_cover       { margin-left: 25px; }
@@ -1055,7 +1066,10 @@ div.gene_annotation {
   color: #78BE43;
   border-bottom: 2px solid #78BE43;
 }
- 
+
+.lrg_previous_assembly_color {
+  color: #9051A0 !important;
+}  
 .lrg_previous_assembly {
   color: #9051A0;
   border-bottom: 2px solid #9051A0;
@@ -1198,11 +1212,11 @@ div.top_upd_anno_link {
   color:#000;
 }
 .download_link:hover {
-  color: #78BE43;
+  color: #9051A0;
 }
 .download_link:hover > span {
   text-decoration:underline;
-  text-decoration-color: #78BE43;
+  text-decoration-color: #9051A0;
 }
 
 
@@ -1437,6 +1451,6 @@ div.top_upd_anno_link {
 
 /** Genoverse **/
 .genoverse_button_line {
-   margin:15px 5px 10px;
+   margin:15px 0px 10px;
 }
 

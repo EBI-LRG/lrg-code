@@ -609,8 +609,11 @@ function parse_rest_results(assembly, data) {
       var hgvsc_data = result.hgvsc;
       var hgvcs_content = '';
       $.each(hgvsc_data, function (id, hgvsc) {
-        var hgvsc_label = hgvsc.replace(re,"</span>:");
-        hgvcs_content += '<div><span class="bold_font">'+hgvsc_label+'</div>';
+        // We only display coding ENSTs and NMs
+        if (hgvsc.match(/^(ENST|NM_)\d+\.?\d+\:c\./)) {//} && hgvsc.match(/\:c\./)) {
+          var hgvsc_label = hgvsc.replace(re,"</span>:");
+          hgvcs_content += '<div><span class="bold_font">'+hgvsc_label+'</div>';
+        }
       });
       $('#'+row_id+'_hgvsc').html(hgvcs_content);
       
