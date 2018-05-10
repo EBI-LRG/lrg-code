@@ -134,14 +134,8 @@
     <link type="text/css" rel="stylesheet" media="all">
       <xsl:attribute name="href"><xsl:value-of select="$bootstrap_url" />/css/bootstrap.min.css</xsl:attribute>
     </link>
-    <!--<link type="text/css" rel="stylesheet" media="all">
-      <xsl:attribute name="href"><xsl:value-of select="$bootstrap_url" />/css/bootstrap-theme.min.css</xsl:attribute>
-    </link>-->
     <link type="text/css" rel="stylesheet" media="all">
       <xsl:attribute name="href"><xsl:value-of select="$lrg_url" />/css/lrg.css</xsl:attribute>
-    </link>
-    <link type="text/css" rel="stylesheet" media="all">
-      <xsl:attribute name="href"><xsl:value-of select="$lrg_url" />/css/lrg-fonts.css</xsl:attribute>
     </link>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato|Lato:700|Open+Sans:400,400i,700"/> 
     
@@ -158,35 +152,18 @@
       <xsl:attribute name="src"><xsl:value-of select="$bootstrap_url" />/js/bootstrap.min.js</xsl:attribute>
     </script>
     
-    <xsl:choose>
-      <xsl:when test="$lrg_status=0">  
-        <link type="text/css" rel="stylesheet" media="all" href="lrg2html.css" />
-        <script type="text/javascript" src="lrg2html.js" />
-        <link rel="icon" type="image/ico" href="img/favicon_public.ico" />
-        <!-- TEMP - TEST - begin -->
-        <!--<link type="text/css" rel="stylesheet" media="all" href="lrg.css"/>
-        <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css"/>-->
-        <!-- TEMP - TEST - end -->
-      </xsl:when>
-      <xsl:when test="$lrg_status=1">
-        <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
-        <script type="text/javascript" src="../lrg2html.js" />
-        <link rel="icon" type="image/ico" href="../img/favicon_pending.ico" />
-        <!-- TEMP - TEST - begin -->
-        <!--<link type="text/css" rel="stylesheet" media="all" href="../lrg.css"/>
-        <link type="text/css" rel="stylesheet" media="all" href="../ebi-visual-custom.css"/>-->
-        <!-- TEMP - TEST - end -->
-      </xsl:when>
-      <xsl:when test="$lrg_status=2">
-        <link type="text/css" rel="stylesheet" media="all" href="../lrg2html.css" />
-        <script type="text/javascript" src="../lrg2html.js" />
-        <link rel="icon" type="image/ico" href="../img/favicon_stalled.ico" />
-        <!-- TEMP - TEST - begin -->
-        <!--<link type="text/css" rel="stylesheet" media="all" href="../lrg.css"/>
-        <link type="text/css" rel="stylesheet" media="all" href="../ebi-visual-custom.css"/>-->
-        <!-- TEMP - TEST - end -->
-      </xsl:when>
-    </xsl:choose>
+    <link rel="icon" type="image/ico" href="img/favicon_public.ico">
+      <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />img/favicon_public.ico</xsl:attribute>
+    </link>
+    <link type="text/css" rel="stylesheet" media="all">
+     <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />lrg2html.css</xsl:attribute>
+    </link>
+    <link type="text/css" rel="stylesheet" media="all">
+     <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />ebi-visual-custom.css</xsl:attribute>
+    </link>
+    <script type="text/javascript">
+      <xsl:attribute name="src"><xsl:value-of select="$lrg_extra_path" />lrg2html.js</xsl:attribute>
+    </script>
     
     <script>
       $(document).ready(function(){

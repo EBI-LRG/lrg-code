@@ -1,0 +1,354 @@
+/* Generic icons that can be used as decoration or emphasis */
+@font-face {
+  font-family: 'EBI-Generic';
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Generic/fonts/EBI-Generic.eot');
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Generic/fonts/EBI-Generic.eot?#iefix') format('embedded-opentype'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Generic/fonts/EBI-Generic.woff') format('woff'),
+    local('â˜º'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Generic/fonts/EBI-Generic.svg#EBI-Generic') format('svg'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Generic/fonts/EBI-Generic.ttf') format('truetype');
+}
+
+/* Generic, functional or activity-orientated icons */
+@font-face {
+  font-family: 'EBI-Functional';
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Functional/fonts/EBI-Functional.eot');
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Functional/fonts/EBI-Functional.eot?#iefix') format('embedded-opentype'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Functional/fonts/EBI-Functional.woff') format('woff'),
+    local('â˜º'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Functional/fonts/EBI-Functional.svg#EBI-Functional') format('svg'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Functional/fonts/EBI-Functional.ttf') format('truetype');
+}
+
+/* Specific file formats */
+@font-face {
+  font-family: 'EBI-FileFormats';
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-FileFormats/fonts/EBI-FileFormats.eot');
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-FileFormats/fonts/EBI-FileFormats.eot?#iefix') format('embedded-opentype'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-FileFormats/fonts/EBI-FileFormats.woff') format('woff'),
+    local('â˜º'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-FileFormats/fonts/EBI-FileFormats.svg#EBI-Functional') format('svg'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-FileFormats/fonts/EBI-FileFormats.ttf') format('truetype');
+}
+
+/* Conceptual (biology) */
+@font-face {
+  font-family: 'EBI-Conceptual';
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Conceptual/fonts/EBI-Conceptual.eot');
+  src:url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Conceptual/fonts/EBI-Conceptual.eot?#iefix') format('embedded-opentype'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Conceptual/fonts/EBI-Conceptual.woff') format('woff'),
+    local('â˜º'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Conceptual/fonts/EBI-Conceptual.svg#EBI-Conceptual') format('svg'),
+    url('https://www.ebi.ac.uk/web_guidelines/fonts/EBI-Conceptual/fonts/EBI-Conceptual.ttf') format('truetype');
+}
+
+[class^="icon-"]:before, [class*=" icon-"]:before {
+  font-style: normal;
+  font-weight: normal;
+  margin-right: 10px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+[class^="icon-"]:after, [class*=" icon-"]:after {
+  font-style: normal;
+  font-weight: normal;
+  margin-left: 4px;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.smaller-icon:before,
+.smaller-icon:after {
+  font-size: 0.9em;
+}
+
+.tiny-icon:before,
+.tiny-icon:after {
+  font-size: 0.8em;
+}
+
+.close-icon-0:before {
+  margin-right: 0px;
+}
+.close-icon-2:before {
+  margin-right: 2px;
+}
+.close-icon-5:before {
+  margin-right: 5px;
+}
+
+.close-icon-0:after {
+  margin-left: 0px;
+}
+
+.rotate-icon-270:before {
+  padding-bottom: 4px;
+  transform: rotate(270deg);
+}
+
+
+/* Functional */
+.icon-add:before {
+  font-family: 'EBI-Functional';
+  content: "+";
+}
+
+.icon-approve:before {
+  font-family: 'EBI-Functional';
+  content: "/";
+}
+
+.icon-attach:before {
+  font-family: 'EBI-Functional';
+  content: "a";
+}
+
+.icon-collapse:before {
+  font-family: 'EBI-Functional';
+  content: "w";
+}
+
+.icon-collapse-closed:before {
+  font-family: 'EBI-Functional';
+  content: "9";
+}
+
+.icon-collapse-open:before {
+  font-family: 'EBI-Functional';
+  content: "8";
+}
+
+.icon-download:before {
+  font-family: 'EBI-Functional';
+  content: "=";
+}
+
+.icon-view:before {
+  font-family: 'EBI-Functional';
+  content: "4";
+}
+
+.icon-submit:before {
+  font-family: 'EBI-Functional';
+  content: "_";
+}
+
+.icon-mapping:before {
+  font-family: 'EBI-Functional';
+  content: "0";
+}
+
+.icon-next-page:before,
+.icon-next:before {
+  font-family: 'EBI-Functional';
+  content: ">";
+}
+
+.icon-previous-page:before {
+  font-family: 'EBI-Functional';
+  content: "<";
+}
+
+.icon-search:before {
+  font-family: 'EBI-Functional';
+  content: "1";
+}
+
+.icon-send:before {
+  font-family: 'EBI-Functional';
+  content: "n";
+}
+
+.icon-target:before {
+  font-family: 'EBI-Functional';
+  content: "T";
+}
+
+.icon-tool:before {
+  font-family: 'EBI-Functional';
+  content: "t";
+}
+
+.icon-unassigned-job:before {
+  font-family: 'EBI-Functional';
+  content: "*";
+}
+
+.icon-lock:before {
+  font-family: 'EBI-Functional';
+  content: "L";
+}
+
+.icon-database-submit:before {
+  font-family: 'EBI-Functional';
+  content: "D";
+}
+
+.icon-target:before {
+  font-family: 'EBI-Functional';
+  content: "T";
+}
+
+.icon-unlock:before {
+  font-family: 'EBI-Functional';
+  content: "U";
+}
+
+/* Generic */
+.icon-alert:before {
+  font-family: 'EBI-Generic';
+  content: "l";
+}
+
+.icon-contact:before {
+  font-family: 'EBI-Generic';
+  content: "C";
+}
+
+.icon-discuss:before {
+  font-family: 'EBI-Generic';
+  content: '\\';
+}
+
+.icon-email:before {
+  font-family: 'EBI-Generic';
+  content: "E";
+}
+
+.icon-help:before {
+  font-family: 'EBI-Generic';
+  content: "?";
+}
+
+.icon-info:before {
+  font-family: 'EBI-Generic';
+  content: "i";
+}
+
+.icon-request:before {
+  font-family: 'EBI-Generic';
+  content: "'";
+}
+
+.icon-research:before {
+  font-family: 'EBI-Generic';
+  content: ")";
+}
+
+.icon-news:before {
+  font-family: 'EBI-Generic';
+  content: "N";
+}
+
+.icon-link:before {
+  font-family: 'EBI-Generic';
+  content: "L";
+}
+
+.icon-publication:before {
+  font-family: 'EBI-Generic';
+  content: "P";
+}
+
+.icon-industry:before {
+  font-family: 'EBI-Generic';
+  content: "I";
+}
+
+.icon-face-to-face:before {
+  font-family: 'EBI-Generic';
+  content: "f";
+}
+
+.icon-resource:before {
+  font-family: 'EBI-Generic';
+  content: "R";
+}
+
+.icon-reviewed-data:before {
+  font-family: 'EBI-Generic';
+  content: "q";
+}
+
+.icon-unreviewed-data:before {
+  font-family: 'EBI-Generic';
+  content: "Q";
+}
+
+.icon-video:before {
+  font-family: 'EBI-Generic';
+  content: "V";
+}
+
+.icon-home:before {
+  font-family: 'EBI-Generic';
+  content: "H";
+}
+
+.icon-group:before {
+  font-family: 'EBI-Generic';
+  content: "}";
+}
+
+.icon-external-systems:before {
+  font-family: 'EBI-Generic';
+  content: "y";
+}
+
+/* Conceptual */
+.icon-dna:before {
+  font-family: 'EBI-Conceptual';
+  content: "d";
+}
+
+.icon-literature:before {
+  font-family: 'EBI-Conceptual';
+  content: "l";
+}
+
+/* FileFormats */
+.icon-xml:before {
+  font-family: 'EBI-FileFormats';
+  content: "x";
+}
+
+.icon-fasta:before {
+  font-family: 'EBI-FileFormats';
+  content: "a";
+}
+
+/* External link */
+.icon-external-link:after,
+.icon-ext:after {
+  font-family: 'EBI-Generic';
+  content: "x";
+  font-size: 0.7em;
+  vertical-align: top;
+}
+
+.icon-info-link:after {
+  font-family: 'EBI-Generic';
+  content: "i";
+  font-size: 0.7em;
+  vertical-align: top;
+}
+
+.icon-plus:after {
+  font-family: 'EBI-Functional';
+  content: "+";
+  font-size: 0.7em;
+}
+.icon-minus:after {
+  font-family: 'EBI-Functional';
+  content: "w";
+  font-size: 0.7em;
+  vertical-align: baseline;
+}
+
+/* Close button */
+.icon-close:before {
+  font-family: 'EBI-Functional';
+  content: "x";
+}
+
