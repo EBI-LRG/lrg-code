@@ -11,7 +11,7 @@ use Date::Calc qw(Delta_Days);
 use File::Basename;
 use LWP::Simple;
 use POSIX;
-
+use JSON;
 
 my $outputfile;
 my $host;
@@ -19,22 +19,25 @@ my $port;
 my $user;
 my $pass;
 my $dbname;
+my $ftp_dir;
 my $is_private;
 my $website_header;
 
 GetOptions(
-  'host=s'   => \$host,
-  'port=i'   => \$port,
-  'dbname=s' => \$dbname,
-  'user=s'   => \$user,
-  'pass=s'   => \$pass,
-  'output=s' => \$outputfile,
-  'private!' => \$is_private,
+  'host=s'    => \$host,
+  'port=i'    => \$port,
+  'dbname=s'  => \$dbname,
+  'user=s'    => \$user,
+  'pass=s'    => \$pass,
+  'output=s'  => \$outputfile,
+  'ftp_dir=s' => \$ftp_dir,
+  'private!'  => \$is_private,
   'website!'  => \$website_header
 );
 
 die("Database credentials (-host, -port, -dbname, -user) need to be specified!") unless (defined($host) && defined($port) && defined($dbname) && defined($user));
 die("An output HTML file (-output) must be specified") unless (defined($outputfile));
+die("The LRG FTP directory (-ftp_dir) must be specified") unless (defined($ftp_dir));
 
 #my $tmpfile = "$tmpdir/tmp_lrg_step_status.html";
 my $tmpfile = "tmp_lrg_step_status.html";
@@ -53,11 +56,11 @@ my $lrg_step         = 'lrg_step';
 
 my @month_list = qw( January February March April May June July August September October November December );
 
-my $ftp      = 'http://ftp.ebi.ac.uk/pub/databases/lrgex/';
-my $xml_dir  = '/ebi/ftp/pub/databases/lrgex';
-my $hgnc_url = 'http://www.genenames.org/data/hgnc_data.php?hgnc_id=';
-my $lrg_url  = 'http://dev.lrg-sequence.org/';
-
+my $ftp       = 'https://ftp.ebi.ac.uk/pub/databases/lrgex/';
+my $xml_dir   = '/ebi/ftp/pub/databases/lrgex';
+my $hgnc_url  = 'https://www.genenames.org/data/hgnc_data.php?hgnc_id=';
+my $lrg_url   = 'https://www.lrg-sequence.org/';
+my $json_file = 'step_index.json';
 
 my %updates = ( 0   => 'green_step',
                 30  => 'orange_step', # Number of days after the step update to be declared as "old"
@@ -129,7 +132,7 @@ my $stmt_lrg_date = qq{
     max(ls.status_date)
   FROM 
     $lrg_status_table ls
-  WHERE ls.lrg_id = ?
+  WHERE ls.lrg_id = ? 
   AND ls.lrg_step_id IS NOT NULL
 };
 
@@ -240,6 +243,12 @@ if ($is_private) {
   $sth_requester->finish();
 }
 
+
+
+# JSON index file
+my @steps_desc = map{ $steps{$_} } (sort{$a <=> $b} keys(%steps));
+open JSON, "> $json_file" or die $!;
+print JSON '{"steps":["'.join('","',@steps_desc)."\"],\n\"lrg\":{";
 
 # Date
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
@@ -381,7 +390,7 @@ else {
 
       <div class="col-lg-6 col-lg-offset-3 col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
         <p class="footer-end">Site maintained by <a href="http://www.ebi.ac.uk/">EMBL-EBI</a> | <a href="http://www.ebi.ac.uk/Information/termsofuse.html">Terms of Use</a> | <a href="http://www.ebi.ac.uk/Information/privacy.html">Privacy</a> | <a href="http://www.ebi.ac.uk/Information/e-directive.html">Cookies</a></p>
-        <p>© LRG 2016</p>
+        <p>© LRG 2018</p>
       </div>
 
     </footer>
@@ -469,37 +478,41 @@ my %count_lrgs;
 my %pending_steps;
 my %list_step_ids;
 
-foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
+my $first_row_in_json = 1;
+foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg_steps))) {
   
   my $lrg_link = $ftp;
-  $lrg_link .= '/'.$lrg_steps{$lrg}{'status'} if ($lrg_steps{$lrg}{'status'} ne 'public');
-  $lrg_link .= "/$lrg.xml";
+  $lrg_link .= '/'.$lrg_steps{$lrg_id}{'status'} if ($lrg_steps{$lrg_id}{'status'} ne 'public');
+  $lrg_link .= "/$lrg_id.xml";
   
-  $lrg =~ /LRG_(\d+)/i;
-  my $lrg_id = $1;
+  $lrg_id =~ /LRG_(\d+)/i;
+  my $id = $1;
 
-  my $current_step   = $lrg_steps{$lrg}{'current'};
+  my $current_step   = $lrg_steps{$lrg_id}{'current'};
   my $progress_value = $current_step/$step_max;
   my $percent        = ceil($progress_value*100);
   my $progress_width = ceil($progress_value*$bar_width);
   
   my $percent_display = "Progress: $percent\%";
  
+  my $lrg_path = "$xml_dir/$lrg_id.xml";
+  
   # Check errors/discrepancies between the database and the FTP site
-  if ($current_step == $step_max && ! -e "$xml_dir/$lrg.xml") {
-    $discrepancy{$lrg_id}{'lrg'} = $lrg;
-    $discrepancy{$lrg_id}{'msg'} = qq{The LRG XML file should be in the public FTP site as it reaches the final step, but the script can't find it.};
+  if ($current_step == $step_max && ! -e $lrg_path) {
+    $discrepancy{$id}{'lrg'} = $lrg_id;
+    $discrepancy{$id}{'msg'} = qq{The LRG XML file should be in the public FTP site as it reaches the final step, but the script can't find it.};
   }
-  elsif ($current_step != $step_max && -e "$xml_dir/$lrg.xml") {
-    $discrepancy{$lrg_id}{'lrg'} = $lrg;
-    $discrepancy{$lrg_id}{'msg'} = qq{The LRG XML file has been found in the public FTP site, however it seems that the LRG is at the step $current_step out of $step_max. Maybe the database is out of date};
+  elsif ($current_step != $step_max && -e $lrg_path) {
+    $discrepancy{$id}{'lrg'} = $lrg_id;
+    $discrepancy{$id}{'msg'} = qq{The LRG XML file has been found in the public FTP site, however it seems that the LRG is at the step $current_step out of $step_max. Maybe the database is out of date};
   }
   
   $progress_width .= 'px'; 
   #$progress_width .= ';border-top-right-radius:0px;border-bottom-right-radius:0px' if ($percent != 100);
   
-  my $raw_date = $lrg_steps{$lrg}{'step'}{$current_step};
+  my $raw_date = $lrg_steps{$lrg_id}{'step'}{$current_step};
   my $date = format_date($raw_date);
+  my $html_date = $date;
   my $days = count_days(\@today,$raw_date);
   
   
@@ -542,9 +555,9 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
           </tr>
         </thead>
   };
-  foreach my $step (sort {$a <=> $b} keys(%{$lrg_steps{$lrg}{'step'}})) {
-    my $history_date = format_date($lrg_steps{$lrg}{'step'}{$step});
-    my $hdays = count_days(\@today,$lrg_steps{$lrg}{'step'}{$step});
+  foreach my $step (sort {$a <=> $b} keys(%{$lrg_steps{$lrg_id}{'step'}})) {
+    my $history_date = format_date($lrg_steps{$lrg_id}{'step'}{$step});
+    my $hdays = count_days(\@today,$lrg_steps{$lrg_id}{'step'}{$step});
     if ($hdays <= $new_update) {
       $history_date = qq{<span class="lrg_blue bold_font">$history_date</span>};
     }
@@ -552,7 +565,7 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   }
   $history_list .= qq{</table>\n};
   
-  my $div_id = 'link_'.lc($lrg).'_detail';
+  my $div_id = 'link_'.lc($lrg_id).'_detail';
   my $detailled_div = qq{
     <button class="btn btn-default btn-xs close-icon-5 smaller-icon icon-collapse-closed" onclick="javascript:show_hide('$div_id','history')" id="$div_id\_button">Show history</button>
     <div style="display:none" id="$div_id"><div style="margin-top:2px">$history_list</divs></div> 
@@ -562,64 +575,80 @@ foreach my $lrg (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%lrg
   ####################### 
   
   if ($days <= $new_update) {
-    $date = qq{<span class="lrg_blue bold_font">$date</span>};
+    $html_date = qq{<span class="lrg_blue bold_font">$html_date</span>};
   }
   
-  my $symbol    = $lrg_steps{$lrg}{'symbol'};
-  my $symbol_id = $lrg_steps{$lrg}{'symbol_id'};
+  my $symbol    = $lrg_steps{$lrg_id}{'symbol'};
+  my $symbol_id = $lrg_steps{$lrg_id}{'symbol_id'};
   my $step_desc = $steps{$current_step};
-  my $date_key  = ($lrg_steps{$lrg}{'step'}{$current_step}) ? $lrg_steps{$lrg}{'step'}{$current_step} : 'NA';
+  my $date_key  = ($lrg_steps{$lrg_id}{'step'}{$current_step}) ? $lrg_steps{$lrg_id}{'step'}{$current_step} : 'NA';
   
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
-  my $requester_cell = ($is_private) ? ($requesters{$lrg} ? '<td>'.join('<br />',@{$requesters{$lrg}}).'</td>' : '<td>-</td>') : '';
-  my $curator_cell   = ($is_private) ? ($curators{$lrg}   ? '<td>'.join(', ',sort(@{$curators{$lrg}})).'</td>' : '<td>-</td>') : '';
+  my $requester_cell = ($is_private) ? ($requesters{$lrg_id} ? '<td>'.join('<br />',@{$requesters{$lrg_id}}).'</td>' : '<td>-</td>') : '';
+  my $curator_cell   = ($is_private) ? ($curators{$lrg_id}   ? '<td>'.join(', ',sort(@{$curators{$lrg_id}})).'</td>' : '<td>-</td>') : '';
   
   my $operator = ($is_private) ? '/' : 'out of';
   
   my $html_row = qq{
-      <td sorttable_customkey="$lrg_id"><a class="lrg_link bold_font" href="$lrg_link" target="_blank">$lrg</a></td>
+      <td sorttable_customkey="$id"><a class="lrg_link bold_font" href="$lrg_link" target="_blank">$lrg_id</a></td>
       <td sorttable_customkey="$symbol">
         <a class="icon-external-link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
       </td>
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> $operator <b>$step_max</b></span>$detailled_div</td>
       <td>$step_desc</td>
-      <td sorttable_customkey="$date_key">$date</td>$requester_cell$curator_cell
+      <td sorttable_customkey="$date_key">$html_date</td>$requester_cell$curator_cell
     </tr>
   };
   
   # Export row
   my $export_row;
   if ($is_private) {
-    my $requester_list = $requesters{$lrg} ? join(',',@{$requesters{$lrg}}) : '-';
-    my $curator_list   = $curators{$lrg} ? join(',',@{$curators{$lrg}}) : '-';
+    my $requester_list = $requesters{$lrg_id} ? join(',',@{$requesters{$lrg_id}}) : '-';
+    my $curator_list   = $curators{$lrg_id} ? join(',',@{$curators{$lrg_id}}) : '-';
     $export_row = qq{$lrg_id\t$symbol\t$current_step\t$step_desc\t$date\t$requester_list\t$curator_list\n};
   }
   
   if ($current_step eq $step_max) {
-    $html_public_content .= qq{<tr id="$lrg">$html_row};
+    $html_public_content .= qq{<tr id="$lrg_id">$html_row};
     $count_lrgs{'public'}++;
     $private_exports{'public'} .= $export_row if ($is_private);
   }
   else {
     # Stalled
-    if ($lrg_steps{$lrg}{'status'} eq 'stalled') {
+    if ($lrg_steps{$lrg_id}{'status'} eq 'stalled') {
       if ($is_private) {
-        $html_stalled_content .= qq{<tr id="$lrg" class="stalled_row stalled_row_$current_step">$html_row};
+        $html_stalled_content .= qq{<tr id="$lrg_id" class="stalled_row stalled_row_$current_step">$html_row};
         $list_step_ids{'stalled'}{$current_step} = 1;
         $count_lrgs{'stalled'}++;
         $private_exports{'stalled'} .= $export_row;
       }  
     }
     # Pending + LRGs not yet moved to the FTP site (the latter is only for the private display)
-    elsif ($lrg_steps{$lrg}{'status'} eq 'pending' || (!$lrg_steps{$lrg}{'status'} && $is_private)) {
-      $html_pending_content .= qq{<tr id="$lrg" class="pending_row pending_row_$current_step">$html_row};
+    elsif ($lrg_steps{$lrg_id}{'status'} eq 'pending' || (!$lrg_steps{$lrg_id}{'status'} && $is_private)) {
+      $html_pending_content .= qq{<tr id="$lrg_id" class="pending_row pending_row_$current_step">$html_row};
       $list_step_ids{'pending'}{$current_step} = 1;
       $count_lrgs{'pending'}++;
       $private_exports{'pending'} .= $export_row if ($is_private);
       $pending_steps{$current_step}++;
     }
   }
+  
+  # JSON index file
+  if ($lrg_steps{$lrg_id}{'status'} eq 'pending') {
+    my $comma = ',';
+    if ($first_row_in_json == 1) {
+      $comma = '';
+      $first_row_in_json = 0;
+    }
+    my $ordered_date = reorder_date($raw_date);
+    print JSON qq{$comma"$id":[$current_step,"$ordered_date"]}
+  }
+}
+print JSON "}}";
+close(JSON);
+if (-e $json_file) {
+  `mv $json_file $ftp_dir`; 
 }
 
 ## Steps list (private display) ##
@@ -630,6 +659,7 @@ if ($is_private) {
   $select_stalled_steps = qq{<span>Steps: </span>};
   my $btn_classes      = "btn btn-xs";
   my $btn_classes_blue = "$btn_classes btn-primary";
+  my $btn_classes_grey = "$btn_classes btn-default";
   foreach my $step (sort {$a <=> $b} keys(%steps)) {
     next if ($step == $step_max);
   
@@ -637,14 +667,14 @@ if ($is_private) {
       $select_pending_steps .= qq{<button class="$btn_classes_blue" title="Select step $step" onclick="javascript:showhiderow('pending_row','$step');">$step</button>};
     }
     else {
-      $select_pending_steps .= qq{<button class="$btn_classes" title="No LRG data at this step">$step</button>};
+      $select_pending_steps .= qq{<button class="$btn_classes_grey" title="No LRG data at this step">$step</button>};
     }  
   
     if ($list_step_ids{'stalled'}{$step}) {
       $select_stalled_steps .= qq{<button class="$btn_classes_blue" title="Select step $step" onclick="javascript:showhiderow('stalled_row','$step');">$step</button>};
     }
     else {
-      $select_stalled_steps .= qq{<button class="$btn_classes" title="No LRG data at this step">$step</button>};
+      $select_stalled_steps .= qq{<button class="$btn_classes_grey" title="No LRG data at this step">$step</button>};
     }
   }
   $select_pending_steps .= qq{<button class="$btn_classes_blue" title="Select all steps" onclick="javascript:showhiderow('pending_row','all');">All</button>};
@@ -682,20 +712,22 @@ foreach my $status (@lrg_status) {
 }
 $html_table_of_content .= qq{    </div>};
 
-if (!$website_header) {
-  my @count_by_status = map { "['$_', ".$count_lrgs{$_}."]" } @lrg_status;
+if (!$website_header || $is_private) {
+ 
+  my @count_by_status;
+  foreach my $status (@lrg_status) {
+    push (@count_by_status, "['$status', ".$count_lrgs{$status}."]") if ($count_lrgs{$status});
+  }
   unshift(@count_by_status, "['Status','Number of LRGs']");
   
   my @count_by_step = map { "['$_', ".$pending_steps{$_}."]" } sort(keys(%pending_steps));
   unshift(@count_by_step, "['Step','Number of LRGs']");
   
   $html_table_of_content .= qq{<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 clearfix" style="margin-top:-40px">};
-  #$html_table_of_content .= qq{<div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 padding-right-0" style="margin-top:-40px">};
   $html_table_of_content .= qq{<div class="left" style="width:50%">};
   $html_table_of_content .= display_piechart('status_chart', \@count_by_status,'LRG status',1);
   $html_table_of_content .= qq{    </div>};
   
-  #$html_table_of_content .= qq{<div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 col-xs-offset-1 col-sm-offset-1 col-md-offset-1 col-lg-offset-1 padding-left-0" style="margin-top:-40px">};
   $html_table_of_content .= qq{<div class="left" style="width:50%">};
   $html_table_of_content .= display_piechart('pending_steps_chart', \@count_by_step,'Pending steps');
   $html_table_of_content .= qq{    </div>};
@@ -703,7 +735,7 @@ if (!$website_header) {
   $html_table_of_content .= qq{    </div>};
 }
 
-if ($website_header) {
+if ($website_header || !$is_private) {
   $html_table_of_content .= qq{
     <div class="col-xs-4 col-sm-4 col-md-4 col-lg-5 col-xs-offset-3 col-sm-offset-3 col-md-offset-3 col-lg-offset-4">
       $html_legend
@@ -930,6 +962,25 @@ sub format_date {
   return $day.' '.$month_list[$month-1].' '.$year;
 }
 
+sub reorder_date {
+   my $date = shift;
+  
+  return "NA" if (!defined($date) || $date !~ /^\d{4}-\d{2}-\d{2}$/ || $date eq '0000-00-00');
+  
+  my @parts = split('-',$date);
+  
+  my $year  = $parts[0];
+  my $month = $parts[1];
+  my $day   = $parts[2];
+  
+  $day   =~ s/^0//;
+  $month =~ s/^0//;
+  $year  =~ s/^20//;
+  
+  
+  return "$day/$month/$year";
+}
+
 sub count_days {
   my $today = shift;
   my $raw_date = shift;
@@ -947,7 +998,7 @@ sub export_link {
   return '' if (!$is_private);
   
   my $html = qq{
-    <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="btn btn-primary btn-sm icon-download smaller-icon close-icon-5">Export table</a>
+    <a href="$type$export_suffix" download="$type$export_suffix" title="Export $type data" class="btn btn-primary btn-xs icon-download smaller-icon close-icon-5">Export table</a>
   };
   return $html; 
 }
@@ -965,15 +1016,15 @@ sub get_header {
     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 icon-next-page close-icon-2" style="padding-left:0px">
       <h2 class="status-label">%s LRGs</h2>
     </div>
-    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" >
-      <div class="left" style="padding: 5px 5px 0px">
+    <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix" style="line-height:36px">
+      <div class="left" style="padding: 0px 5px">
         <span class="badge big_badge lrg_blue_bg">%i LRGs</span>
       </div>
       <div class="right">
-        <button class="btn btn-primary btn-sm close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
+        <button class="btn btn-primary btn-xs close-icon-5 icon-collapse-open" id="%s\_button" onclick="javascript:show_hide('%s', 'table');">Hide table</button>
       </div>
     </div>
-    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="vertical-align:baseline;padding-right:0px">
+    <div class="col-lg-6 col-md-6 col-sm-6 col-xs-6 clearfix" style="line-height:36px;padding-right:0px">
       <div class="step_list left">%s</div>
       <div class="right">%s</div>
     </div>
