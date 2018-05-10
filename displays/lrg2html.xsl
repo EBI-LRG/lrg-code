@@ -96,6 +96,14 @@
   </xsl:choose>
 </xsl:variable>
 
+<xsl:variable name="favicon">
+  <xsl:choose>
+    <xsl:when test="$lrg_status=0">favicon_public.ico</xsl:when>
+    <xsl:when test="$lrg_status=1">favicon_pending.ico</xsl:when>
+    <xsl:when test="$lrg_status=2">favicon_stalled.ico</xsl:when>
+  </xsl:choose>
+</xsl:variable>
+
 <xsl:variable name="section_annotation_border">
   <xsl:choose>
     <xsl:when test="$lrg_status=0">section_annotation1</xsl:when>
@@ -153,7 +161,7 @@
     </script>
     
     <link rel="icon" type="image/ico" href="img/favicon_public.ico">
-      <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />img/favicon_public.ico</xsl:attribute>
+      <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />img/<xsl:value-of select="$favicon" /></xsl:attribute>
     </link>
     <link type="text/css" rel="stylesheet" media="all">
      <xsl:attribute name="href"><xsl:value-of select="$lrg_extra_path" />lrg2html.css</xsl:attribute>
@@ -164,6 +172,8 @@
     <script type="text/javascript">
       <xsl:attribute name="src"><xsl:value-of select="$lrg_extra_path" />lrg2html.js</xsl:attribute>
     </script>
+    
+    
     
     <script>
       $(document).ready(function(){
