@@ -72,7 +72,8 @@
 <xsl:variable name="scrolltop">260</xsl:variable>
 <xsl:variable name="menu_width">320</xsl:variable>
 
-<xsl:variable name="max_sequence_to_display">50000</xsl:variable>
+<xsl:variable name="max_g_sequence_to_display">250000</xsl:variable>
+<xsl:variable name="max_sequence_to_display">75000</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -1051,9 +1052,8 @@
   </xsl:variable>
 
   <div class="clearfix" id="sequence" style="display:none"> 
-  <div>VALUE: <xsl:value-of select="$sequence_length"/> &lt; <xsl:value-of select="$max_sequence_to_display"/></div>
   <xsl:choose>
-    <xsl:when test="$sequence_length &lt; $max_sequence_to_display">
+    <xsl:when test="$sequence_length &lt; $max_g_sequence_to_display">
   
     <div class="left" style="padding:15px 5px 15px"> 
       <table class="no_border_bottom">
