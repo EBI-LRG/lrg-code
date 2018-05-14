@@ -380,11 +380,21 @@ assembly_37='GRCh37'
 assembly_38='GRCh38'
 echo_log  "> Create GFF file in ${assembly_37} ... "
 perl ${perldir}/pipeline/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_37}.gff -xml ${lrg_xml_dir}/${xml_file} -assembly ${assembly_37}
-check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_37}.gff "GFF file for ${assembly_37} created"
+#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_37}.gff "GFF file for ${assembly_37} created"
+if [[ -s ${new_dir}/gff/${lrg_id}_${assembly_37}.gff ]] ; then
+  echo_log  "> GFF file for ${assembly_37} created"
+else
+  echo_log  "> ERROR during the creation of the GFF file for ${assembly_37}"
+fi
 
 echo_log  "> Create GFF file in ${assembly_38} ... "
 perl ${perldir}/pipeline/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_38}.gff -xml ${lrg_xml_dir}/${xml_file} -assembly ${assembly_38}
-check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_38}.gff "GFF file for ${assembly_38} created"
+#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_38}.gff "GFF file for ${assembly_38} created"
+if [[ -s ${new_dir}/gff/${lrg_id}_${assembly_38}.gff ]] ; then
+  echo_log  "> GFF file for ${assembly_38} created"
+else
+  echo_log  "> ERROR during the creation of the GFF file for ${assembly_38}"
+fi
 
 end_of_script ${lrg_xml_dir}/${xml_file}
 
