@@ -80,6 +80,8 @@ my %lrg_status_colours = ( 'public'  => '#48a726',
                            'stalled' => '#E00'
                          );                       
 
+# Give write permission for the group
+umask(0002);
 
 #### Cleanup the database (remove useless lines) ####
 # Remove lines where the lrg_id is wrong
