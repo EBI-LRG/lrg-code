@@ -828,7 +828,7 @@ while (my $transcript = shift(@{$transcripts})) {
         foreach my $inf (split("\n",$info)) {
           chomp $inf;
           my (undef,$refseq_with_poly_a) = split(' ',$inf);
-          $transcript->addNode('comment')->content(get_polya_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a));
+          $transcript->addNode('comment')->content(get_polya_comment_sentence($refseq_with_poly_a)) if (defined($refseq_with_poly_a) && $refseq_with_poly_a =~ /^N(M|R)/);
         }
       }
     }
