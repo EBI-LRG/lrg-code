@@ -19,10 +19,10 @@ GetOptions(
 );
 
 die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)); 
-die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir)); 
+die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir));
+die("Temporary directory (-tmp_dir) needs to be specified!") unless (defined($tmp_dir));
+die("Temporary and index directories need to be different!") if ($tmp_dir eq $index_dir);
 usage() if (defined($help));
-
-$tmp_dir ||= $index_dir;
 
 my $current_assembly  = 'GRCh38';
 my $previous_assembly = 'GRCh37';
