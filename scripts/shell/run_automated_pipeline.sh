@@ -75,14 +75,16 @@ function check_script_warning {
 function check_empty_file {
   file_path=$1
   msg=$2
+  error_msg=$3
   if [[ -s ${file_path} ]] ; then
     echo_log  "> ${msg}"
     echo_log  ""
   else  
-    echo_log  "ERROR: the script failed!"
+    echo_log "ERROR: the script failed!"
     if [ -n "${report_file}" ] ; then
       echo -e "${lrg_id}\tfailed\t\t" >> ${report_file}
     fi
+    echo -e "ERROR during ${error_msg}: the file ${file_path} is empty!" >> ${error_log}
     echo_stderr "Failed!"
     exit 1 #exit shell script
   fi
@@ -278,7 +280,7 @@ fi
 ## STEP 2: Add Ensembl annotations
 echo_log  "# Add annotations ... "
 bash ${perldir}/shell/update_xml_annotation.sh ${xml_dir}/${xml_file} ${hgnc} ${assembly} >> ${log_file} 2>&1
-check_empty_file ${xml_dir}/${xml_file}.new "Annotations done"
+check_empty_file ${xml_dir}/${xml_file}.new "Annotations done" "addition of Ensembl annotation"
 
 
 ## STEP 3: HealthCheck 2 - check annotation data
@@ -322,7 +324,7 @@ echo_log  ""
 ## STEP 5: Export the LRG data from the database to an XML file (new requester/lsdb/contact data)
 echo_log  "# Extract ${lrg_id} from the database ... "
 bash ${perldir}/shell/export_from_db.sh ${lrg_id} ${xml_dir}/${xml_file}.exp ${annotation_test}
-check_empty_file ${xml_dir}/${xml_file}.exp "Extracting done"
+check_empty_file ${xml_dir}/${xml_file}.exp "Extracting done" "extracting LRG data from the database"
 
 
 ## STEP 6: HealthCheck 3 - check the exported data
@@ -371,7 +373,7 @@ echo_log  ""
 
 echo_log  "# Create Fasta file ... "
 perl ${perldir}/pipeline/lrg2fasta.pl -xml_dir ${lrg_xml_dir} -fasta_dir ${new_dir}/fasta -xml_file ${lrg_id}.xml
-check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created"
+check_empty_file ${new_dir}/fasta/${lrg_id}.fasta "Fasta file created" "Fasta file creation"
 
 
 
@@ -380,16 +382,16 @@ assembly_37='GRCh37'
 assembly_38='GRCh38'
 echo_log  "> Create GFF file in ${assembly_37} ... "
 perl ${perldir}/pipeline/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_37}.gff -xml ${lrg_xml_dir}/${xml_file} -assembly ${assembly_37}
-#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_37}.gff "GFF file for ${assembly_37} created"
+#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_37}.gff "GFF file for ${assembly_37} created" "GFF file creation - GRCh37"
 if [[ -s ${new_dir}/gff/${lrg_id}_${assembly_37}.gff ]] ; then
-  echo_log  "> GFF file for ${assembly_37} created"
+  echo_log  "> GFF file for ${assembly_37} created" 
 else
   echo_log  "> ERROR during the creation of the GFF file for ${assembly_37}"
 fi
 
 echo_log  "> Create GFF file in ${assembly_38} ... "
 perl ${perldir}/pipeline/lrg2gff.pl -lrg ${lrg_id} -out ${new_dir}/gff/${lrg_id}_${assembly_38}.gff -xml ${lrg_xml_dir}/${xml_file} -assembly ${assembly_38}
-#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_38}.gff "GFF file for ${assembly_38} created"
+#check_empty_file ${new_dir}/gff/${lrg_id}_${assembly_38}.gff "GFF file for ${assembly_38} created" "GFF file creation - GRCh38"
 if [[ -s ${new_dir}/gff/${lrg_id}_${assembly_38}.gff ]] ; then
   echo_log  "> GFF file for ${assembly_38} created"
 else

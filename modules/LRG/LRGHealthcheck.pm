@@ -324,9 +324,9 @@ sub compare_main_mapping {
       foreach my $chr (sort(keys(%chrs))) {
         # Chromosome mapping missing
         if (!$new_data->{$assembly}{$chr} || !$arch_data->{$assembly}{$chr}) {
-          my $type = ($new_data->{$assembly}{$chr}) ? 'archive' : 'new';
+          my $type = ($new_data->{$assembly}{$chr}) ? 'EBI-LRG FTP' : 'new';
           $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "$lrg_id: mapping to the chromosome '$chr' on $assembly is missing on the $type LRG XML file//";
+          $self->{'check'}{$name}{'message'} .= "$lrg_id: mapping to the chromosome '$chr' on $assembly is missing on the $type version of the LRG XML file//";
           next;
         }
 

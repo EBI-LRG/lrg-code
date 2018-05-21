@@ -58,7 +58,7 @@ function check_empty_file {
     echo_stderr  "> ${msg}"
     echo_stderr  ""
   else  
-    echo_stderr  "ERROR: the script failed!"
+    echo_stderr  "ERROR: the script failed: file ${file_path} is empty!"
     if [ -n "${report_file}" ] ; then
       echo "failed" >> ${report_file}
     fi
