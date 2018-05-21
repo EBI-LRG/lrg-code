@@ -514,7 +514,7 @@ foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%
   
   my $raw_date = $lrg_steps{$lrg_id}{'step'}{$current_step};
   my $date = format_date($raw_date);
-  my $html_date = $date;
+  my $html_date = format_date($raw_date,1);
   my $days = count_days(\@today,$raw_date);
   
   
@@ -558,7 +558,7 @@ foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%
         </thead>
   };
   foreach my $step (sort {$a <=> $b} keys(%{$lrg_steps{$lrg_id}{'step'}})) {
-    my $history_date = format_date($lrg_steps{$lrg_id}{'step'}{$step});
+    my $history_date = format_date($lrg_steps{$lrg_id}{'step'}{$step},1);
     my $hdays = count_days(\@today,$lrg_steps{$lrg_id}{'step'}{$step});
     if ($hdays <= $new_update) {
       $history_date = qq{<span class="lrg_blue bold_font">$history_date</span>};
@@ -583,8 +583,7 @@ foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%
   my $symbol    = $lrg_steps{$lrg_id}{'symbol'};
   my $symbol_id = $lrg_steps{$lrg_id}{'symbol_id'};
   my $step_desc = $steps{$current_step};
-  my $date_key  = ($lrg_steps{$lrg_id}{'step'}{$current_step}) ? $lrg_steps{$lrg_id}{'step'}{$current_step} : 'NA';
-  
+
   my $progress_index = ($is_private) ? "$last_updates.".($step_max-$current_step) : $current_step;
   
   my $requester_cell = ($is_private) ? ($requesters{$lrg_id} ? '<td>'.join('<br />',@{$requesters{$lrg_id}}).'</td>' : '<td>-</td>') : '';
@@ -599,7 +598,7 @@ foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%
       </td>
       <td sorttable_customkey="$progress_index">$progression_bar<span class="step">Step <b>$current_step</b> $operator <b>$step_max</b></span>$detailled_div</td>
       <td>$step_desc</td>
-      <td sorttable_customkey="$date_key">$html_date</td>$requester_cell$curator_cell
+      <td>$html_date</td>$requester_cell$curator_cell
     </tr>
   };
   
@@ -950,6 +949,7 @@ if ($is_private) {
 
 sub format_date {
   my $date = shift;
+  my $numeric = shift
   
   return "NA" if (!defined($date) || $date !~ /^\d{4}-\d{2}-\d{2}$/ || $date eq '0000-00-00');
   
@@ -961,7 +961,7 @@ sub format_date {
   
   $month =~ s/^0//;
   
-  return $day.' '.$month_list[$month-1].' '.$year;
+  return ($numeric) ? "$day/$month/$year" : $day.' '.$month_list[$month-1].' '.$year;
 }
 
 sub reorder_date {
