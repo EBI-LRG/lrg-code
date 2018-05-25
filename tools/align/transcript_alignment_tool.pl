@@ -37,12 +37,14 @@ my $species  = 'homo_sapiens';
 my $html;
 #my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
 my $havana_file_default  = 'hg38.bed';
+my $refseq_select_file_default = 'select_per_gene_9606.txt';
 
 my $max_variants = 10;
 
 my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
 my $transcript_cars_info  = $data_file_dir.'/cars/cars_info.json';
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
+my $refseq_select_file    = $data_file_dir.'/select_per_gene_9606.txt';
 
 my $transcript_cars_date  = 'NA';
 if (-e $transcript_cars_info) {
@@ -955,7 +957,10 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $cdna_orientation = get_strand($cdna_strand);
   my $biotype = get_biotype($cdna_object->biotype);
   my $data_biotype = 'is_pc'; #($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
-
+  my $refseq_select_flag = get_refseq_select_transcript($gene_name,$nm);
+  if ($refseq_select_flag ne '') {
+    $refseq_select_flag = qq{<div class="col4_subtitle">$refseq_select_flag</div>};
+  }
   my $first_col = build_first_col($nm,$row_id);
 
   $exon_tab_list .= qq{
@@ -965,6 +970,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       <div>
         <a class="cdna_link" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
       </div>
+      $refseq_select_flag
     </td>
     <td class="extra_col fixed_col col5">$e_count</td>
   };
@@ -1464,6 +1470,24 @@ sub get_appris_html {
 }
 
 
+sub get_refseq_select_transcript {
+  my $gene_name = shift;
+  my $rs_trans  = shift;
+  my $rss_transcript;
+  if (-e $refseq_select_file) {
+    my $gene_query = ($gene_name =~ /^ENSG\d+$/) ? $gene_name : $ens_gene->stable_id;
+    my $query_results = `grep $gene_query $refseq_select_file`;
+    
+    foreach my $query_result (split("\n",$query_results)) {
+      my @result = split("\t", $query_result);
+      if ($rs_trans eq $result[2]) {
+        return qq{<div style="float:right"><span class="flag rs_select glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="RefSeq select transcript for this gene"></span></div>};
+      }
+    }
+  }
+  return "";
+}
+
 #sub get_uniprot_score_html {
 #  my $transcript   = shift;
 #  my $column_class = shift;
@@ -1626,7 +1650,7 @@ sub display_refseq_data {
     my $refseq_orientation = get_strand($refseq_strand);
     my $biotype = get_biotype($refseq_object->biotype);
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
-    
+    my $refseq_select_flag = get_refseq_select_transcript($gene_name,$nm);
     $exon_tab_list .= qq{
     <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
       $first_col
@@ -1634,7 +1658,7 @@ sub display_refseq_data {
         <div>
           <a class="white" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
-        <div class="col4_subtitle">$labels</div>
+        <div class="col4_subtitle">$labels$refseq_select_flag</div>
       </td>
       <td class="extra_col fixed_col col5">$e_count</td>
     };

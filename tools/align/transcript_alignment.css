@@ -276,6 +276,15 @@ table.legend td.subheader {
   color: #D00;
 }
 
+.rs_select {
+  border: none !important;
+  /*padding:1px 0px 1px 1px;*/
+  padding:3px;
+  border-radius:10px;
+  background-color:#FFF;
+  color: #D00;
+}
+
 .tr_score {
   color: #FFF;
   font-weight:bold;
@@ -318,6 +327,7 @@ table.legend td.subheader {
 }
 
 .source_flag {
+  float:left;
   padding:1px 2px;
   margin-right:4px;
 }
@@ -1020,8 +1030,8 @@ th.col4 {
   line-height:50px;
 }
 .col4_subtitle {
-  margin-top:4px;
-  text-align:center;
+  padding:4px 4px 0px;
+  text-align:left;
   font-size:85%;
 }
 .col4_subtitle:after {

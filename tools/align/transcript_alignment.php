@@ -2,7 +2,6 @@
 
   $gene_id = '';
   $title = 'Transcript alignments';
-  $root_dir = './';
   
   if ($_GET['gene']) {
     $gene_id = $_GET['gene'];
@@ -59,35 +58,23 @@
 EOF;
   
   $select_list = array();
-  
-  $dir_files = scandir($root_dir);
-  foreach ($dir_files as $dir_file) {
-    if (is_dir($dir_file)) {
-      $files = scandir("$root_dir$dir_file");
-      foreach ($files as $file) {
-        if (preg_match('/^(\w+-?\w*)\.html$/',$file,$matches)) {
-          $gene = $matches[1];
-          $select_list[$gene] = $dir_file;
-        }
+  $first_gene = 1;
+  if ($handle = opendir('./')) {
+    while (false !== ($file = readdir($handle))) {
+      if (preg_match('/^(\w+-?\w*)\.html$/',$file,$matches)) {
+        $gene = $matches[1];
+        array_push($select_list,$gene);
       }
     }
+    asort($select_list);
+    closedir($handle);
   }
-  #if ($handle = opendir('./')) {
-  #  while (false !== ($file = readdir($handle))) {
-  #    if (preg_match('/^(\w+-?\w*)\.html$/',$file,$matches)) {
-  #      $gene = $matches[1];
-  #      array_push($select_list,$gene);
-  #    }
-  #  }
-  #  asort($select_list);
-  #  closedir($handle);
-  #}
   
   // Generate autocomplete array for jQuery
   $count_items = 0;
   $max_items_per_line = 50;
   $line = "";
-  foreach ((array) $select_list as $gname => $dir) {
+  foreach ((array) $select_list as $gname) {
     if ($count_items == $max_items_per_line) {
       echo "$line,\n";
       $count_items = 0;
@@ -123,7 +110,7 @@ EOF;
   $count_items = 0;
   $max_items_per_line = 50;
   $line = "";
-  foreach ((array) $select_list as $gname => $dir) {
+  foreach ((array) $select_list as $gname) {
     $selected = '';
     if ($gname == $gene_id) {
       $selected = ' selected';
@@ -158,10 +145,9 @@ EOF;
   
   
   if ($gene_id != '') {
-    $subdir = $select_list[$gene_id];
-    if(!@include("$root_dir$subdir/$gene_id.html")) {
+    if(!@include("./$gene_id.html")) {
       $gene_id_uc = strtoupper($gene_id);
-      if(!@include("$root_dir$subdir/$gene_id_uc.html")) {
+      if(!@include("./$gene_id_uc.html")) {
         echo "<h3 style=\"padding-left:25px\">Alignment not found for the gene <span class=\"blue\">$gene_id</span>!</h3>";
       }
       else {
@@ -176,7 +162,7 @@ EOF;
     $array_length = count($select_list);
     echo "<div style=\"padding:2px 20px\">";
     echo "  <h3>List of available alignments ($array_length)</h3>\n  <ul>";
-    foreach ((array) $select_list as $gname => $dir) {
+    foreach ((array) $select_list as $gname) {
       echo "<li><a href=\"?gene=$gname\">$gname</a></li>";
     }
     echo "  </ul>";
@@ -281,6 +267,12 @@ function get_legend() {
               <span class="flag cars glyphicon glyphicon-star"></span>
             </td>
             <td>Label to indicate the CARS transcript</td>
+          </tr>
+          <tr class="bg2_legend">
+            <td>
+              <span class="flag rs_select glyphicon glyphicon-flag"></span>
+            </td>
+            <td>Label to indicate the RefSeq select transcript</td>
           </tr>
           <tr class="bg2_legend">
             <td>
