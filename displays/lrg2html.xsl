@@ -72,8 +72,8 @@
 <xsl:variable name="scrolltop">260</xsl:variable>
 <xsl:variable name="menu_width">320</xsl:variable>
 
-<xsl:variable name="max_g_sequence_to_display">250000</xsl:variable>
-<xsl:variable name="max_sequence_to_display">75000</xsl:variable>
+<xsl:variable name="max_g_sequence_to_display">1000000</xsl:variable>
+<xsl:variable name="max_sequence_to_display">500000</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
