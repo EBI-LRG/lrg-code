@@ -180,6 +180,7 @@ function display_results (results) {
         var refseq_info = entry.rsi;
             refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
             refseq      = "<div>"+rseq_prefix+entry.rs.join("</div><div>"+rseq_prefix)+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
+            refseq      = refseq.replace(/\|1/g,' <span class="flag red_flag glyphicon glyphicon-flag" title="RefSeq select transcript for this gene"></span>');
       }
 
       var ens_link   = (enst == '-') ? enst : get_ens_link(enst);
@@ -187,13 +188,14 @@ function display_results (results) {
       var ccds_link  = get_ccds_link(ccds);
     
       var is_cars = cars_flag(entry);
+      var is_rss  = rss_flag(entry);
 
       // HTML code
       var newrow = $('<tr/>');
       // HGNC Symbol
       newrow.append(newCell(get_hgnc_link(symbol)));
       // ENST ID;
-      newrow.append(newCell(ens_link+' <div class="right">'+is_cars+fasta_link+'</div>'));
+      newrow.append(newCell(ens_link+' <div class="right">'+is_cars+is_rss+fasta_link+'</div>'));
       // OTTG
       newrow.append(newCell(ottg));
       // OTTT
@@ -218,6 +220,18 @@ function cars_flag(res) {
     c_flag = $('<span></span>');
     c_flag.addClass('flag red_flag glyphicon glyphicon-star');
     c_flag.attr("title", "CARS transcript");
+    return c_flag[0].outerHTML;
+  }
+  else {
+    return '';
+  }
+}
+
+function rss_flag(res) {
+  if (res.rss) {
+    c_flag = $('<span></span>');
+    c_flag.addClass('flag red_flag glyphicon glyphicon-flag');
+    c_flag.attr("title", "RefSeq select transcript");
     return c_flag[0].outerHTML;
   }
   else {

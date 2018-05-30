@@ -15,12 +15,13 @@ $output_dir ||= '.';
 my $output_file = ($is_private) ? 'ens_ott_data.json' : 'ens_ott_data_public.json';
 my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.txt' :  'ens_ott_autocomplete_public.txt';
 
-my $input_file   = 'ens_ott_table.txt';
-my $havana_file  = 'hg38.bed';
-my $gencode_file = 'gencode.annotation.gtf';
-my $cars_file    = 'canonicals_hgnc.txt'; 
-my $data_dir     = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
-my $cars_info    = "$data_dir/cars/cars_info.json";
+my $input_file     = 'ens_ott_table.txt';
+my $havana_file    = 'hg38.bed';
+my $gencode_file   = 'gencode.annotation.gtf';
+my $cars_file      = 'canonicals_hgnc.txt'; 
+my $rs_select_file = 'select_per_gene_9606.txt';
+my $data_dir       = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
+my $cars_info      = "$data_dir/cars/cars_info.json";
 
 # CARS INFO
 my $transcript_cars_date  = '';
@@ -107,6 +108,24 @@ while(<G>) {
   }
 }
 close(G);
+
+
+# RefSeq select file
+my %rs_select_data;
+open R, "< $data_dir/$rs_select_file" or die $!;
+while(<R>) {
+  chomp $_;
+  next if ($_ =~ /^#/);
+  my @line = split("\t", $_);
+  
+  my $enst = $line[11];
+  if ($enst) {
+    my $rs = $line[2]; 
+    $rs =~ s/$rseq_prefix//i;
+    $rs_select_data{$enst} = $rs;
+  }
+}
+close(R);
 
 
 # Ensembl data file
@@ -276,6 +295,11 @@ foreach my $enst (keys(%ensts)) {
     }
     if ($ensembl_data{$enst}{'refseq'}) {
       my $refseq_data = $ensembl_data{$enst}{'refseq'};
+      foreach my $refseq (@$refseq_data) {
+        if ($rs_select_data{$enst}) {
+          $refseq .= '|1' if ($rs_select_data{$enst} eq $refseq);
+        }
+      }
       $json_data{"rs"} = $refseq_data;
       $json_data{"rsi"} = $ensembl_data{$enst}{'refseq_i'};
       
