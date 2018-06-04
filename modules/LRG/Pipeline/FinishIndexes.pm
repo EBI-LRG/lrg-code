@@ -19,6 +19,7 @@ sub run {
 
   my $tmp_dir   = "$new_xml_dir/index";
   my $index_dir = "$ftp_dir/.lrg_index";
+  my $data_dir = "$ftp_dir/data_files";
 
   # Move the indexes from the temporary directory to the new directory
   if ($tmp_dir ne $index_dir) {
@@ -115,11 +116,11 @@ sub run {
   if ($tmp_dir ne $index_dir) {
     `rm -f $index_dir/LRG_*_index.json`; # Double check
     `rm -f $index_dir/LRG_*_diff.txt`;   # Double check
-    `mv $tmp_dir/$lrg_index_json $index_dir`;
+    `mv $tmp_dir/$lrg_index_json $data_dir`;
     foreach my $assembly (@$assemblies) {
-      `mv $tmp_dir/$lrg_diff_prefix$assembly.txt $index_dir`;
+      `mv $tmp_dir/$lrg_diff_prefix$assembly.txt $data_dir`;
     }
-    `mv $tmp_dir/$lrg_search_file $index_dir`;
+    `mv $tmp_dir/$lrg_search_file $data_dir`;
   }
 }
 1;

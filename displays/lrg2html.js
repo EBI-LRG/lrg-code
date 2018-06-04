@@ -239,7 +239,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     if(tableobj_left.className.length > 11) {
       tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-      if(tname == 't1' && !no_gene_tr_highlight) {
+      if(genobj&& tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
      
@@ -256,7 +256,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     else {
       tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
       tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontableselect' : 'introntableselect');
-      if(tname == 't1' && !no_gene_tr_highlight) {
+      if(genobj && tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_odd_select' : 'intronselect');
       }
 
@@ -501,7 +501,7 @@ function format_note (){
 // function to retrieve the LRG name into a text file listing the LRG entries which are also stored in Ensembl
 function search_in_ensembl(lrg_id, lrg_status) {
 
-  var filePath = 'lrgs_in_ensembl.txt';
+  var filePath = 'data_files/lrgs_in_ensembl.txt';
   xmlhttp = new XMLHttpRequest();
   xmlhttp.open("GET",filePath,true);
   xmlhttp.send(null);
@@ -643,7 +643,7 @@ function get_lrg_query () {
   if (!query || query.length==0) {
     query = '*';
   }
-  go_to_lrg_result_page(query)
+  go_to_lrg_result_page(query);
 }
 
 function go_to_lrg_result_page (query) {
@@ -651,5 +651,23 @@ function go_to_lrg_result_page (query) {
   if (!query || query.length == 0) {
     query='*';
   }
-  window.open("http://dev.lrg-sequence.org/search/?query="+query,'_blank');
+  window.open("https://www.lrg-sequence.org/search/?query="+query,'_blank');
+}
+
+// Function get data in array
+function get_data_in_array () {
+  return $.ajax({
+    url:'./data_files/lrg_search_terms.txt',
+    dataType: "text"
+  })
+  .error(function (xhRequest, ErrorText, thrownError) {
+    console.log('xhRequest: ' + xhRequest + "\n");
+    console.log('ErrorText: ' + ErrorText + "\n");
+    console.log('thrownError: ' + thrownError + "\n");
+  })
+  .then(function(data) {
+    var data_array = data.split('\n');
+    console.log("DATA ARRAY LENGTH: "+data_array.length);
+    return data_array;
+  });
 }

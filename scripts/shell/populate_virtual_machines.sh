@@ -11,7 +11,7 @@ if [[ -z ${input_dir} ]]; then
 fi
 
 indexes_dir='indexes'
-ftp_dir=${PUBFTP}/.lrg_index/
+ftp_dir=${PUBFTP}/data_files/
 files=('lrg_index.json' 'step_index.json' 'lrg_search_terms.txt')
 files_with_path=()
 

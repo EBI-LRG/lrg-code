@@ -52,8 +52,8 @@
 <xsl:variable name="lrg_root_ftp">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/</xsl:variable>
 <xsl:variable name="current_lrg_bed_url"><xsl:value-of select="$lrg_extra_path"/>LRG_GRCh38.bed</xsl:variable>
 <xsl:variable name="previous_lrg_bed_url"><xsl:value-of select="$lrg_extra_path"/>LRG_GRCh37.bed</xsl:variable>
-<xsl:variable name="current_lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>lrg_diff_GRCh38.txt</xsl:variable>
-<xsl:variable name="previous_lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>lrg_diff_GRCh37.txt</xsl:variable>
+<xsl:variable name="current_lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>data_files/lrg_diff_GRCh38.txt</xsl:variable>
+<xsl:variable name="previous_lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>data_files/lrg_diff_GRCh37.txt</xsl:variable>
 <xsl:variable name="lrg_url">https://www.lrg-sequence.org</xsl:variable>
 <xsl:variable name="vep_parser_url"><xsl:value-of select="$lrg_url"/>/vep2lrg?</xsl:variable>
 <xsl:variable name="bootstrap_url">https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6</xsl:variable>
@@ -144,6 +144,9 @@
       <xsl:attribute name="href"><xsl:value-of select="$bootstrap_url" />/css/bootstrap.min.css</xsl:attribute>
     </link>
     <link type="text/css" rel="stylesheet" media="all">
+      <xsl:attribute name="href"><xsl:value-of select="$lrg_url" />/css/lib/jquery-ui.min.css</xsl:attribute>
+    </link>
+    <link type="text/css" rel="stylesheet" media="all">
       <xsl:attribute name="href"><xsl:value-of select="$lrg_url" />/css/lrg.css</xsl:attribute>
     </link>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato|Lato:700|Open+Sans:400,400i,700"/> 
@@ -181,6 +184,23 @@
         $('[data-toggle="tooltip"]').tooltip( {html:true} );
         $('button').focus(function() { this.blur(); });
 
+        // Autocompletion in the search box
+        get_data_in_array().then(function(data_list){
+          $("#search_id").autocomplete({
+            // Limit the number of results displayed
+            maxResults:25,
+            source: function(request, response) {
+              var results = $.ui.autocomplete.filter(data_list, request.term);
+              response(results.slice(0, this.options.maxResults));
+            },
+            select: function (e, ui) {
+              $("#search_id").val(ui.item.value);
+              get_lrg_query();
+            },
+            minLength:3
+          });
+        });
+
         // This will capture hash changes while on the page
         $(window).on("hashchange",offsetAnchor);
         // This is here so that when you enter the page with a hash,
@@ -190,6 +210,7 @@
         
         // Get coding HGVS notation and overlapping variants for the LRG/assembly differences
         get_hgvs();
+       
       });
     </script>
   </head>

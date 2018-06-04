@@ -6,11 +6,12 @@ use Getopt::Long;
 use Cwd;
 use JSON;
 
-my ($xml_dir,$tmp_dir,$index_dir,$default_assembly,$species,$taxo_id,$index_suffix,$help);
+my ($xml_dir,$tmp_dir,$index_dir,$data_dir,$default_assembly,$species,$taxo_id,$index_suffix,$help);
 GetOptions(
   'xml_dir=s'          => \$xml_dir,
   'tmp_dir=s'          => \$tmp_dir,
   'index_dir=s'        => \$index_dir,
+  'data_dir=s'         => \$data_dir,
   'default_assembly=s' => \$default_assembly,
   'species=s'          => \$species,
   'taxo_id=i'          => \$taxo_id ,
@@ -20,8 +21,11 @@ GetOptions(
 
 die("XML directory (-xml_dir) needs to be specified!") unless (defined($xml_dir)); 
 die("Index directory (-index_dir) needs to be specified!") unless (defined($index_dir));
+die("Data directory (-data_dir) needs to be specified!") unless (defined($data_dir));
 die("Temporary directory (-tmp_dir) needs to be specified!") unless (defined($tmp_dir));
 die("Temporary and index directories need to be different!") if ($tmp_dir eq $index_dir);
+die("Temporary and data directories need to be different!") if ($tmp_dir eq $data_dir);
+die("Index and data directories need to be different!") if ($index_dir eq $data_dir);
 usage() if (defined($help));
 
 my $current_assembly  = 'GRCh38';
@@ -50,7 +54,7 @@ my $script_path = ($1) ? $1 : '.';
 my $lrg_from_ensembl = `perl $script_path/get_LRG_from_Ensembl.pl $index_dir`;
 die ("\nCan't generate the file $index_dir/tmp_$lrg_list") if($lrg_from_ensembl);
 if (-s "$index_dir/tmp_$lrg_list") {
-  `mv $index_dir/tmp_$lrg_list $index_dir/../$lrg_list`;
+  `mv $index_dir/tmp_$lrg_list $data_dir/$lrg_list`;
 }
 print " done\n";
 
@@ -102,7 +106,7 @@ foreach my $xml (@xmlfiles) {
   my $lrg_id = $1;
 
   ## In ensembl
-  my $in_ensembl = (`grep -w $lrg_id $index_dir/../$lrg_list`) ? 1 : 0;
+  my $in_ensembl = (`grep -w $lrg_id $data_dir/$lrg_list`) ? 1 : 0;
 
   ## Status
   my $status = $xml->{'status'} if (defined($xml->{'status'}));
@@ -216,19 +220,19 @@ print " done\n";
 
 print "Moving the generated files ...";
 # Move the indexes from the temporary directory to the new directory
-if ($tmp_dir ne $index_dir) {
+if ($tmp_dir ne $data_dir) {
   if (-s "$tmp_dir/$lrg_json") {
-    `cp $tmp_dir/$lrg_json $index_dir/`;
+    `cp $tmp_dir/$lrg_json $data_dir/`;
   }
   if (-s "$tmp_dir/$lrg_term") {
-    `cp $tmp_dir/$lrg_term $index_dir/`;
+    `cp $tmp_dir/$lrg_term data_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff_current") {
-    `cp $tmp_dir/$lrg_diff_current $index_dir/`;
+    `cp $tmp_dir/$lrg_diff_current data_dir/`;
     `cp $tmp_dir/$lrg_diff_current $xml_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff_previous") {
-    `cp $tmp_dir/$lrg_diff_previous $index_dir/`;
+    `cp $tmp_dir/$lrg_diff_previous data_dir/`;
     `cp $tmp_dir/$lrg_diff_previous $xml_dir/`;
   }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
@@ -261,6 +265,7 @@ sub usage {
     
         -xml_dir           Path to LRG XML directory to be read (required)
         -index_dir         Path to LRG index directory where the file(s) will be stored (required)
+        -data_dir          Path to LRG data directory where the global file(s) will be stored (required)
         -tmp_dir           Path to the temporary LRG index directory where the file(s) will be temporary stored (optional)
         -default_assembly  Assembly - e.g. 'GRCh37' (optional)
         -species           Species - e.g. 'Homo sapiens' (optional)
