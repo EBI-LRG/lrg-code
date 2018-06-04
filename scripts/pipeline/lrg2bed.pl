@@ -189,11 +189,12 @@ foreach my $status (keys(%lrg_meta)) {
         foreach my $transcript (@$transcripts) {
           my $t_short_name = $transcript->data->{name};
           my $t_name   = $lrg_id.$t_short_name;
-          my $t_nm     = get_corresponding_nm($lrg,$t_short_name);
           my $t_number = substr($t_short_name,1);
           my $t_coords = $transcript->findNodeSingle('coordinates');
           my $t_start  = lrg2genomic($t_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
           my $t_end    = lrg2genomic($t_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
+          my $t_nm     = get_corresponding_nm($lrg,$t_short_name);
+          my $t_enst   = get_corresponding_enst($lrg,$t_short_name,$t_coords->data->{start},$t_coords->data->{end});
 
           # Coding coords
           my $coding = $transcript->findNodeSingle('coding_region');
@@ -256,7 +257,12 @@ foreach my $status (keys(%lrg_meta)) {
           my $exons_sizes_list = join(',',@exons_sizes);
           my $exons_starts_list = join(',',@exons_starts);
       
-          my $t_extra_info = $t_nm ? $t_nm : "transcript$t_number";
+          my $t_extra_info = $t_nm if ($t_nm);
+          if ($t_enst) {
+            $t_extra_info .= '|' if ($t_extra_info);
+            $t_extra_info .= $t_enst;
+          }
+          $t_extra_info .= "transcript$t_number" if (!$t_extra_info);
       
           my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name($t_extra_info)\t0\t$strand_operator\t$c_start\t$c_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
@@ -445,7 +451,32 @@ sub get_corresponding_nm {
 	  my $ncbi_trs = $aset->findNodeArray('features/gene/transcript');
 	  foreach my $ncbi_tr (@$ncbi_trs) {
 	    if ($ncbi_tr->{data}->{fixed_id} && $ncbi_tr->{data}->{fixed_id} eq $lrg_tr_name) {
-	      return $ncbi_tr->{data}->{accession}
+	      return $ncbi_tr->{data}->{accession};
+	    }
+    }
+  }
+  return undef;
+}
+
+sub get_corresponding_enst {
+  my $lrg = shift;
+  my $lrg_tr_name  = shift;
+  my $lrg_tr_start = shift;
+  my $lrg_tr_end   = shift;
+  
+  my $asets = $lrg->findNodeArraySingle('updatable_annotation/annotation_set');
+	foreach my $aset (@$asets) {
+	  next if ($aset->{data}->{type} ne 'ensembl');
+	  
+	  my $ens_trs = $aset->findNodeArray('features/gene/transcript');
+	  foreach my $ens_tr (@$ens_trs) {
+	    if ($ens_tr->{data}->{fixed_id} && $ens_tr->{data}->{fixed_id} eq $lrg_tr_name) {
+	      my $ens_tr_coord = $ens_tr->findNodeSingle('coordinates');
+        my $ens_tr_start = $ens_tr_coord->data->{start};
+        my $ens_tr_end   = $ens_tr_coord->data->{end};
+	      if ($lrg_tr_start == $ens_tr_start && $lrg_tr_end == $ens_tr_end) {
+	        return $ens_tr->{data}->{accession};
+	      }
 	    }
     }
   }
