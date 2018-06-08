@@ -166,7 +166,7 @@ table.legend td.subheader {
   text-align:right;
 }
 
-.small_cell {
+.sm_cell {
   text-align:left;
   padding: 1px 2px;
   margin-top:3px;
@@ -174,7 +174,7 @@ table.legend td.subheader {
   width:10%;
 }
 
-.medium_cell {
+.md_cell {
   text-align:right;
   padding: 1px 2px;
   margin-top:1px;
@@ -182,7 +182,7 @@ table.legend td.subheader {
   width:20%;
 }
 
-.large_cell {
+.lg_cell {
   text-align:right;
   padding: 1px 2px;
   margin-top:1px;
@@ -353,14 +353,7 @@ th.coord {
   cursor:pointer
 }
 
-
-.first_col {
-  text-align:center;
-  border:1px solid #FFF;
-  padding:1px 2px;
-}
-
-.extra_col {
+.add_col {
   background-color:#DDD;
   color:#000;
   text-align:center;
@@ -397,19 +390,19 @@ th.coord {
 }
 
 /* Havana */
-.havana, .havana:hover, .havana:active {
+.hv, .hv:hover, .hv:active {
   background-color:#ff9900;
   color:#FFF;
 }
 
-.havana_link {
+.hv_link {
   color:#FFF;
 }
-.havana_link:hover, .havana_link:active {
+.hv_link:hover, .hv_link:active {
   color:#8d0017;
 }
 
-.havana_enst {
+.hv_enst {
   text-align:center;
   padding-top:4px;
   font-size:13px;
@@ -472,11 +465,12 @@ th.coord {
   height:20px;
   cursor:pointer;
   box-shadow:2px 2px 1px #CCC;
+  margin-top:10px;
 }
 .coding {
   background-color:#090;
 }
-.coding_refseq {
+.coding_rs {
   background-color:#002389;/*#55F;*/
 }
 .coding_cdna {
@@ -491,22 +485,22 @@ th.coord {
   position:relative;
   /*background-image: repeating-linear-gradient(135deg,transparent, transparent 5px, rgba(255,255,255,.5) 5px, rgba(255,255,255,.5) 10px)*/
 }
-.partial_utr_l {
+.part_utr_l {
   position:absolute;
   height:18px;
   top:1px;
   left:1px;
 }
-.partial_utr_r {
+.part_utr_r {
   position:absolute;
   height:18px;
   top:1px;
   right:1px;
 }
 
-.partial_utr_enst   { background-color: #e5f4e5; }
-.partial_utr_havana { background-color: #fff4e5; }
-.partial_utr_refseq { background-color: #e5e9f3; }
+.part_utr_enst { background-color: #e5f4e5; }
+.part_utr_hv   { background-color: #fff4e5; }
+.part_utr_rs   { background-color: #e5e9f3; }
 
 .e_label {
   position:relative;
@@ -525,14 +519,14 @@ th.coord {
     -1px 1px 0 #090,
     1px 1px 0 #090;  
 }
-.e_label_havana {
+.e_label_hv {
   text-shadow:
     -1px -1px 0 #ff9900,
     1px -1px 0 #ff9900,
     -1px 1px 0 #ff9900,
     1px 1px 0 #ff9900;  
 }
-.e_label_refseq {
+.e_label_rs {
   text-shadow:
     -1px -1px 0 #002389,
     1px -1px 0 #002389,
@@ -556,7 +550,7 @@ th.coord {
   background-color:#e5f4e5;
   /*background-color:#9ED6A0;*//* rgba(0,153,0, 0.4); *//
 }
-.non_coding_refseq {
+.non_coding_rs {
   border:1px solid #002389;
   background-color:#e5e9f3;
   /*background-color:rgba(0,0,153, 0.4);*/ /*#009*/
@@ -573,10 +567,10 @@ th.coord {
   display:none;
 } 
 
-.havana_coding {
+.hv_coding {
   background-color:#ff9900;
 }
-.havana_non_coding {
+.hv_non_coding {
   border:1px solid #ff9900;
   background-color:#fff4e5;
   /*background-color:#FAD6A6;*/ /* rgba(255, 153, 0, 0.4); */
@@ -843,6 +837,10 @@ th.coord {
   padding:8px;
   vertical-align:top;
 }
+.btn_col_right {
+  padding:4px;
+}
+
 .btn_row_title {
   font-weight:bold;
 }
@@ -852,41 +850,11 @@ th.coord {
   text-align:right;
 }
 
-.btn_row_content {
-  padding:4px;
-}
-
 
 .compact_expand_icon {
   padding-right:4px;
-  /*border: 1px solid #FFF;
-  border-radius: 5px;
-  padding: 1px 2px;*/
 }
-/*.compact_expand_icon span:first-child {
-  padding-right:1px;
-}*/
 
-/* Table */
-
-/*.table_right {
-  max-width:1600px;
-  margin-left: -2px;
-  overflow-x: scroll;
-  white-space: nowrap;
-}
-.table_right::-webkit-scrollbar { 
-  height: 16px;
-}
-.table_right::-webkit-scrollbar-track {
-  box-shadow: inset 0 0 6px #AAA;
-  border-radius: 10px;
-} 
-.table_right::-webkit-scrollbar-thumb {
-  border-radius: 10px; 
-  background: #0E4C87;
-  box-shadow: inset 0 0 6px #1A4468;
-}*/
 
 .clearfix:before,.clearfix:after {
   content:" ";
@@ -999,10 +967,7 @@ table.transcript tbody tr:first-child {
   margin-bottom:20px 0px;
 }
 
-.tr_col {
-  border:1px solid #FFF;
-}
-.fixed_col {
+.fx_col {
   position:absolute;
   vertical-align: middle;
   height:50px;
@@ -1025,6 +990,8 @@ table.transcript tbody tr:first-child {
 .col4 { 
   width:205px; 
   left:75px;
+  text-align:center;
+  border:1px solid #FFF;
 }
 th.col4 {
   line-height:50px;

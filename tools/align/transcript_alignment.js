@@ -255,30 +255,30 @@ function hideall() {
 function show_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
   
-  var button_color = $("#button_color_"+row_id).val();
+  var button_color = $("#btn_color_"+row_id).val();
   
   $('#'+tr_id).switchClass('hidden','unhidden',0);
   
-  if ($("#button_"+row_id).hasClass('off')) {
-    $("#button_"+row_id).switchClass('off',button_color,0);
+  if ($("#btn_"+row_id).hasClass('off')) {
+    $("#btn_"+row_id).switchClass('off',button_color,0);
   }
   else {
-    $("#button_"+row_id).addClass(button_color);
+    $("#btn_"+row_id).addClass(button_color);
   }
 }
 
 function hide_row(row_id) {
   var tr_id = TR_ID_PREFIX+row_id;
   
-  var button_color = $("#button_color_"+row_id).val();
+  var button_color = $("#btn_color_"+row_id).val();
   
   $('#'+tr_id).switchClass('unhidden','hidden',0);
   
-  if ($("#button_"+row_id).hasClass(button_color)) {
-    $("#button_"+row_id).switchClass(button_color,'off',0);
+  if ($("#btn_"+row_id).hasClass(button_color)) {
+    $("#btn_"+row_id).switchClass(button_color,'off',0);
   }
   else {
-    $("#button_"+row_id).addClass('off');
+    $("#btn_"+row_id).addClass('off');
   }
 }
 
