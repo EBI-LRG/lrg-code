@@ -579,6 +579,7 @@ if (scalar(keys(%new_lrgs))) {
   }
   print S qq{    </ul>\n  </div>\n  <div style="clear:both"></div>};
 }
+print S qq{  </div>};
 close(S);
 
 
