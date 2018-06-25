@@ -87,9 +87,12 @@ sub send_email {
         $summary .= qq{
   <div style="border-radius:5px;border:1px solid #CCC;background-color:#3C3F45;padding:2px 4px 4px;max-width:650px">
     <div style="color:#FFF;font-weight:bold;padding:2px"># Summary reports</div>
-    <div style="background-color:#FFF;padding:8px 4px 4px">};
+    <div style="background-color:#FFF;padding:8px 4px 4px">
+      <div>};
         $summary .= <$file>;
         $summary .= qq{
+        <div style="clear:both"></div>
+      </div>
       <hr style="width:75%;text-align:center"/>
       <div style="text-align:center">
         <a style="text-decoration:none;color:#FFF;background-color:#1C9BCF;font-weight:bold;padding:4px 8px 3px;border-radius:5px;text-align:center;cursor:pointer" href="$reports_url/$html_file_name">See full HTML reports</a>
