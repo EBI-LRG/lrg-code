@@ -3285,6 +3285,7 @@
                         <xsl:value-of select="$desc"/>
                       </a>
                     </xsl:when>
+                    <xsl:otherwise><xsl:value-of select="$desc"/></xsl:otherwise>
                   </xsl:choose>
                 </th>
             </xsl:for-each>
