@@ -1,5 +1,6 @@
 var TR_ID_PREFIX='tr_';
 var TR_RIGHT_SUFFIX='_right';
+var TH_COORD_PRFIX = '#coord_';
 
 var ENS_WEB_ROOT  = 'https://www.ensembl.org/Homo_sapiens/';
 var NCBI_WEB_ROOT = 'http://www.ncbi.nlm.nih.gov/';
@@ -15,8 +16,10 @@ var EXT_LINKS = {
   'uniprot' : 'http://www.uniprot.org/uniprot/'
 };
 
-/* Highlight the similar exons (same genomic coordinates)*/
+
 $(document).ready(function(){
+
+  /* Highlight the similar exons (same genomic coordinates)*/
   $('.exon')
     .mouseover(function(){
       var exon_coord = $(this).attr('data-name');      
@@ -25,7 +28,165 @@ $(document).ready(function(){
     .mouseout(function(){
       var exon_coord = $(this).attr('data-name');
       $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'transparent');
+    })
+    .click(function (e) {
+
+      if (!e) var e = window.event;
+      var posX = e.pageX;
+      var posY = e.pageY;
+
+      var tr_label = $(this).closest('tr').data('name');
+      var tr_id    = tr_label.split('.')[0];
+      var params   = $(this).data('params');
+      var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,ens_pathogenic_var,ens_pathogenic_variant_list] = params.split('|');
+      var content = $(this).data('name').replace('_', '-');
+      var coords = $('#gene_coord').data('chr')+':'+content;
+
+      var exon_popup = '';
+      var exon_popup_id = "exon_popup_"+tr_id+"_"+exon_id;
+      
+      if (document.getElementById(exon_popup_id)) {
+        exon_popup = document.getElementById(exon_popup_id);
+      }
+      else {
+        // Popup Div
+        exon_popup = document.createElement('div');
+        exon_popup.id = exon_popup_id;
+        exon_popup.className = "exon_popup";
+        
+        // Header
+        exon_popup_header = document.createElement('div');
+        exon_popup_header.className = "exon_popup_header clearfix";
+        
+        exon_popup_header_left = document.createElement('div');
+        exon_popup_header_left.innerHTML = tr_label;
+        exon_popup_header_left.className = "exon_popup_header_title";
+        exon_popup_header.appendChild(exon_popup_header_left);
+        
+        exon_popup_header_right = document.createElement('div');
+        exon_popup_header_right.className = "icon-close smaller-icon close-icon-0 hide_popup_button";
+        exon_popup_header_right.title="Hide this popup";
+        exon_popup_header_right.onclick = function() { hide_popup(exon_popup_id); };
+        exon_popup_header.appendChild(exon_popup_header_right);
+        
+        exon_popup.appendChild(exon_popup_header);
+        
+        // Body
+        exon_popup_body = document.createElement('div');
+        exon_popup_body.className = "exon_popup_body";
+        var popup_content = "";
+
+        if (tr_id.substr(0,4) != 'ENSG') {
+          popup_content += "<b>Exon</b> #"+exon_id+"<br />";
+        }
+        if (ens_exon_id && ens_exon_id != '') {
+          popup_content += '<div><b>Ensembl exon:</b> <a class="external" href="'+ENS_WEB_ROOT+'Transcript/Exons?t='+tr_id+'" target="_blank">'+ens_exon_id+'</a></div>';
+        }
+        popup_content += '<div><b>Coords:</b> <a class="external" href="'+ENS_WEB_ROOT+'Location/View?r='+coords+'" target="_blank">'+coords+'</a></div>';
+        // Phase
+        if (phase_start != null && phase_end != null) {
+          if (phase_start.match(/^\d$/) && !phase_end.match(/^\d$/)) {
+            popup_content += '<div><b>Frame:</b> '+phase_start+'</div>';
+          }
+          else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
+            if (phase_start == -1) {
+              phase_start = '-';
+            }
+            if (phase_end == -1) {
+              phase_end = '-';
+            }
+            popup_content += '<div><b>Phase (start;end):</b> '+phase_start+';'+phase_end+'</div>';
+          }
+        }  
+        popup_content += '<div><b>Length:</b> '+exon_length+' bp</div>';
+        
+        // Pathogenic variant(s)
+        if (ens_pathogenic_var) {
+          popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
+          if (ens_pathogenic_variant_list) {
+            var ens_var_id = exon_popup_id+"_variant";
+            var ens_var_button_id = "btn_"+ens_var_id;
+            popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\":showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+            popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
+            popup_content += "<ul>"; 
+            var list = ens_pathogenic_variant_list.split(":");
+            $.each(list, function( index, value ) {
+              var var_detail = value.split('-');
+              var var_id = var_detail[0];
+              var ref_allele = '';
+              var pat_allele = '';
+              if (var_detail[1]) {
+                ref_allele = ' (ref: '+var_detail[1]+')';
+              }
+              if (var_detail[2]) {
+                pat_allele = ' <b>'+var_detail[2]+'</b>';
+              }
+              popup_content += "<li><a class=\"external\" href=\""+EXT_LINKS['ensv']+var_id+"\" target=\"_blank\">"+var_id+"</a>"+pat_allele+ref_allele+"</li>";
+            });
+            popup_content += "</ul></div>";
+          }
+          popup_content += '</div>';
+        }
+        
+        exon_popup_body.innerHTML = popup_content;
+        exon_popup.appendChild(exon_popup_body);
+        
+        document.body.appendChild(exon_popup);
+        
+        exon_popup.style.top = posY;
+        exon_popup.style.left = posX;
+        $('#'+exon_popup_id).draggable();
+      }
+      
+      if ($('#'+exon_popup_id).css('display') == 'none') {
+        exon_popup.style.top = posY;
+        exon_popup.style.left = posX;
+        $('#'+exon_popup_id).show();
+      }
     });
+    
+  /* Display column coordinates */ 
+  $('.coord').click(function() {
+    var coord_comma = $(this).attr('title');
+    var chr = $('#gene_coord').data('chr'); 
+    var coord = coord_comma.split(',').join('');
+    alert("Genomic coordinates: "+chr+':'+coord);
+  });
+  
+  // Highlight row
+  $('.hl_row').click(function() {
+    var id = $(this).attr('id');
+    var info = id.split("_");
+    var row_id = info[1];
+    
+    // Odd vs Even background
+    var bg = (isOdd(row_id)) ? "bg1" : "bg2";
+    
+    var status = false;
+    if ($('#'+id).is(':checked')) {
+      status = true;
+      bg += "_hl selected";
+    }
+    $('#'+info[0]+'_'+row_id+'_l').prop( "checked", status );
+    $('#'+info[0]+'_'+row_id+'_r').prop( "checked", status );
+
+    $("#"+TR_ID_PREFIX+row_id).removeClass().addClass( "unhidden " + bg);
+  });
+  
+  // Show/hide button 
+  $('.btn_sh').click(function() {
+    var id = $(this).attr('id');
+    var info = id.split("_");
+    var row_id = info[1];
+    var tr_row_id = "#"+TR_ID_PREFIX+row_id;
+  
+    if($(tr_row_id).hasClass("hidden")) {
+      show_row(row_id);
+    }
+    else {
+      hide_row(row_id);
+    }
+  });
 });
 
 
@@ -106,8 +267,8 @@ $(document).on('click', '.exon', function (e) {
       popup_content += '<div><b>Pathogenic variant(s):</b> '+ens_pathogenic_var;
       if (ens_pathogenic_variant_list) {
         var ens_var_id = exon_popup_id+"_variant";
-        var ens_var_button_id = "button_"+ens_var_id;
-        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+        var ens_var_button_id = "btn_"+ens_var_id;
+        popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\":showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
         popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
         popup_content += "<ul>"; 
         var list = ens_pathogenic_variant_list.split(":");
@@ -160,13 +321,6 @@ function go2blast(id) {
   window.open('https://www.ensembl.org/Multi/Tools/Blast?db=core;query_sequence='+id,'_blank')
 }
 
-function display_coord(coord_id) {
-  var coord_comma = $('#'+coord_id).attr('title');
-  var chr = $('#gene_coord').data('chr'); 
-  var coord = coord_comma.split(',').join('');
-  alert("Genomic coordinates: "+chr+':'+coord);
-}
-
 function showhide_elements(button_id,class_name) {
   var button_text = $("#"+button_id).html();
   if (button_text.match(/show/i)) {
@@ -213,7 +367,7 @@ function showhide_id(button_id,id) {
   }
 }
 
-function showhide(row_id) {
+/*function showhide(row_id) {
   var tr_row_id = "#"+TR_ID_PREFIX+row_id;
   
   if($(tr_row_id).hasClass("hidden")) {
@@ -222,7 +376,7 @@ function showhide(row_id) {
   else {
     hide_row(row_id);
   }
-}
+}*/
 
 function showhide_range(start_row_id,end_row_id,show) {
 
@@ -347,7 +501,7 @@ function show_hide_in_between_rows(row_id,tr_names) {
     }
   // end of 'row_loop'  
 
-  var button_row_obj = document.getElementById('button_'+row_id+'_'+tr_names[0]);
+  var button_row_obj = document.getElementById('btn_'+row_id+'_'+tr_names[0]);
   var show_nm  = 'Show line(s)';
   var show_all = 'Show all';
   if (button_row_obj.innerHTML == show_nm) {
@@ -402,28 +556,6 @@ function hl_enst(enst_list,suffix) {
   });
 }
 
-// Highlight row
-function hl_row(row_id,type) {
- 
-  var id_prefix = '#hl_';
-  
-  // Odd vs Even background
-  var bg = "bg2";
-  if (isOdd(row_id)) {
-    bg = "bg1";
-  }
-  
-  var status = false;
-  if ($(id_prefix+row_id+'_'+type).is(':checked')) {
-    status = true;
-    bg += "_hl selected";
-  }
-  $(id_prefix+row_id+'_l').prop( "checked", status );
-  $(id_prefix+row_id+'_r').prop( "checked", status );
-
-  $("#" + TR_ID_PREFIX + row_id).removeClass().addClass( "unhidden " + bg);
-}
-
 
 function getElementsStartsWithId( id, tag ) {
   var children = document.body.getElementsByTagName(tag);
@@ -463,7 +595,7 @@ function compact_expand(column_count) {
   $("#compact_expand_text").html(button_text);
   
   for (var id=1; id<=column_count; id++) {
-    var column_id = "#coord_"+id;
+    var column_id = TH_COORD_PRFIX+id;
     var coord = $(column_id).attr("title");
     if ($(column_id).html() == coord) {
       var id_label = (id < 10 && column_count >= 10) ? "0"+id : id;

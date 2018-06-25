@@ -369,10 +369,12 @@ th.coord {
 .gold, .gold:hover, .gold:active {
   background-color:gold;
   color:#333;
+  padding:0px;
 }
 .ens, .ens:hover, .ens:active {
   background-color:#336;
   color:#EEE;
+  padding:0px;
 }
 
 .ens_hv, .gold_hv {
@@ -483,7 +485,6 @@ th.coord {
 
 .partial {
   position:relative;
-  /*background-image: repeating-linear-gradient(135deg,transparent, transparent 5px, rgba(255,255,255,.5) 5px, rgba(255,255,255,.5) 10px)*/
 }
 .part_utr_l {
   position:absolute;
@@ -502,7 +503,7 @@ th.coord {
 .part_utr_hv   { background-color: #fff4e5; }
 .part_utr_rs   { background-color: #e5e9f3; }
 
-.e_label {
+.exon > .e_label {
   position:relative;
   text-align:center;
   vertical-align:middle;
@@ -511,22 +512,21 @@ th.coord {
   top:1px;
   z-index:5;
 }
-
-.e_label_enst {
+.exon > .e_enst {
   text-shadow:
     -1px -1px 0 #090,
     1px -1px 0 #090,
     -1px 1px 0 #090,
     1px 1px 0 #090;  
 }
-.e_label_hv {
+.exon > .e_hv {
   text-shadow:
     -1px -1px 0 #ff9900,
     1px -1px 0 #ff9900,
     -1px 1px 0 #ff9900,
     1px 1px 0 #ff9900;  
 }
-.e_label_rs {
+.exon > .e_rs {
   text-shadow:
     -1px -1px 0 #002389,
     1px -1px 0 #002389,
@@ -745,6 +745,8 @@ th.coord {
 	margin-right:5px;
 	white-space:nowrap;
 	vertical-align:middle;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .btn-lrg:hover, .btn-lrg:active, .btn-lrg:visited,
 .btn-lrg-sm:hover, .btn-lrg-sm:active, .btn-lrg-sm:visited,
@@ -993,16 +995,22 @@ table.transcript tbody tr:first-child {
   text-align:center;
   border:1px solid #FFF;
 }
-th.col4 {
-  line-height:50px;
+.col4 > div:first-child {
+  height:24px;
 }
-.col4_subtitle {
-  padding:4px 4px 0px;
+.col4 > div:last-child {
+  height:26px;
+  padding:1px 2px;
   text-align:left;
   font-size:85%;
+  background-color:rgba(255,255,255,0.15);
 }
-.col4_subtitle:after {
+.col4 > div:last-child:after {
   clear:both;
+}
+}
+th.col4 {
+  line-height:50px;
 }
 
 .col5 {

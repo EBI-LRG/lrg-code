@@ -584,7 +584,7 @@ $html .= qq{
       <div id="exon_popup" class="hidden exon_popup"></div>
 
       <!-- Compact/expand button -->
-      <button class="btn btn-lrg" onclick="javascript:compact_expand($coord_span);">
+      <button class="btn btn-lrg" onclick="compact_expand($coord_span);">
         <span class="compact_expand_icon">
           <span id="compact_expand_icon_l" class="glyphicon glyphicon-arrow-right"></span><span id="compact_expand_icon_m" class="glyphicon glyphicon-menu-hamburger"></span><span id="compact_expand_icon_r" class="glyphicon glyphicon-arrow-left"></span>
         </span> 
@@ -643,7 +643,7 @@ foreach my $exon_coord (sort(keys(%exons_list))) {
   
   my $exon_coord_label = thousandify($exon_coord);
   
-  $exon_tab_list .= qq{<th class="rspan1 coord" id="coord_$exon_number" title="$exon_coord_label" onclick="display_coord('coord_$exon_number')">};
+  $exon_tab_list .= qq{<th class="rspan1 coord" id="coord_$exon_number" title="$exon_coord_label">};
   $exon_tab_list .= $exon_coord_label;
   $exon_tab_list .= qq{</th>};
 
@@ -732,8 +732,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
     <td class="$column_class fx_col col4">
       <table class="transcript">
         <tr>
-          <td class="$column_class" style="padding:0px" colspan="6">
-            <a$a_class onclick="javascript:get_ext_link('$tr_source','$ens_tr')">$ens_tr_label</a>
+          <td class="$column_class" colspan="6">
+            <a$a_class onclick="get_ext_link('$tr_source','$ens_tr')">$ens_tr_label</a>
           </td>
         </tr>
         <tr class="bottom_row">
@@ -764,14 +764,14 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   };
   
 
-  my @ccds   = map { qq{<a class="external" onclick="javascript:get_ext_link('ccds','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
-  my @refseq = map { qq{<a class="external" onclick="javascript:get_ext_link('refseq','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
+  my @ccds   = map { qq{<a class="external" onclick="get_ext_link('ccds','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'CCDS'}});
+  my @refseq = map { qq{<a class="external" onclick="get_ext_link('refseq','$_')">$_</a>} } keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
   my $refseq_button = '';
 
   if (scalar(@refseq)) {
     my @nm_list = keys(%{$ens_tr_exons_list{$ens_tr}{'RefSeq_mRNA'}});
     my $nm_ids = "['".join("','",@nm_list)."']";
-    $refseq_button = qq{<div style="margin-top:2px"><button class="btn btn-lrg-xs btn-xs" id='button_$row_id\_$nm_list[0]' onclick="javascript:show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button></div>};
+    $refseq_button = qq{<div style="margin-top:2px"><button class="btn btn-lrg-xs" id='btn_$row_id\_$nm_list[0]' onclick="show_hide_in_between_rows($row_id,$nm_ids)">Show line(s)</button></div>};
   }
   $bg = ($bg eq 'bg1') ? 'bg2' : 'bg1';
   $ens_rows_list{$row_id}{'label'} = $ens_tr_label;
@@ -822,8 +822,6 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
       $colspan ++;
       $end_index = $i;
     }
-    
-    print STDERR "Exon $exon_number: $exon_start - $coord\n" if ($ens_tr =~ /ENST00000540235/ && $exon_start);
     
     my $no_match = ($first_exon > $coord || $last_exon < $coord) ? 'none' : 'no_exon';
     
@@ -922,9 +920,6 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $biotype = get_biotype($cdna_object->biotype);
   my $data_biotype = 'is_pc'; #($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   my $refseq_select_flag = get_refseq_select_transcript($gene_name,$nm);
-  if ($refseq_select_flag ne '') {
-    $refseq_select_flag = qq{<div class="col4_subtitle">$refseq_select_flag</div>};
-  }
   my $first_col = build_first_col($nm,$row_id);
 
   $exon_tab_list .= qq{
@@ -932,9 +927,9 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
     $first_col
     <td class="$column_class fx_col col4">
       <div>
-        <a class="cdna_link" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
+        <a class="cdna_link" onclick="get_ext_link('$tr_source','$nm')">$nm_label</a>
       </div>
-      $refseq_select_flag
+      <div>$refseq_select_flag</div>
     </td>
     <td class="add_col fx_col col5">$e_count</td>
   };
@@ -1026,7 +1021,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
   # HGNC symbol
   my @hgnc_list = grep {$_->dbname eq 'HGNC'} $gene_object->display_xref;
-  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<div class="col4_subtitle">('.$hgnc_list[0]->display_id.')</div>' : '';
+  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<div>('.$hgnc_list[0]->display_id.')</div>' : '';
 
   my $column_class = 'gene';
   
@@ -1039,7 +1034,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
     $first_col
     <td class="$column_class fx_col col4">
-      <a class="white" onclick="javascript:get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a>$hgnc_name
+      <a class="white" onclick="get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a>$hgnc_name
     </td>
     <td class="add_col fx_col col5">-</td>
   };
@@ -1204,19 +1199,19 @@ $html .= qq{
     <div class="clearfix" style="margin:15px 10px 60px">
       
       <div class="left">
-        <button class="btn btn-lrg" onclick="javascript:showall();">Show <b>all</b> the entries</button>
+        <button class="btn btn-lrg" onclick="showall();">Show <b>all</b> the entries</button>
       </div>
     
       <!--Show/Hide non protein coding entries -->
       <div class="left" style="margin-left:15px">
-        <button class="btn btn-lrg" id="button_protein_coding" onclick="showhide_elements_by_attrib('button_protein_coding','biotype','no_pc')" title="Show/Hide the non protein coding entries" data-toggle="tooltip" data-placement="right">
+        <button class="btn btn-lrg" id="btn_protein_coding" onclick="showhide_elements_by_attrib('btn_protein_coding','biotype','no_pc')" title="Show/Hide the non protein coding entries" data-toggle="tooltip" data-placement="right">
           Hide <b>non protein coding</b> entries
         </button>
       </div>
       
       <!--Show/Hide NR transcript -->
       <div class="left" style="margin-left:15px">
-        <button class="btn btn-lrg" id="button_nr_trans" onclick="showhide_elements_by_attrib('button_nr_trans','name','NR_')" title="Show/Hide the non coding RefSeq transcripts (NR_xxx)" data-toggle="tooltip" data-placement="right">
+        <button class="btn btn-lrg" id="btn_nr_trans" onclick="showhide_elements_by_attrib('btn_nr_trans','name','NR_')" title="Show/Hide the non coding RefSeq transcripts (NR_xxx)" data-toggle="tooltip" data-placement="right">
           Show <b>NR RefSeq</b> transcripts
         </button>
       </div>
@@ -1266,21 +1261,21 @@ close(OUT);
 
 sub hide_button {
   my $id = shift;
-  
-  return qq{<div id="button_$id\_x" class="icon-close smaller-icon close-icon-0 left" onclick="showhide($id)" title="Hide this row"></div>};
+
+  return qq{<div id="btn_$id\_x" class="btn_sh icon-close smaller-icon close-icon-0 left" title="Hide this row"></div>};
 }
 
 sub highlight_button {
   my $id   = shift;
   my $type = shift;
-  
-  return qq{<div><input type="checkbox" class="hl_row" id="hl_$id\_$type" name="$id" onclick="javascript:hl_row('$id','$type');" title="Highlight this row"/></div>};
+
+  return qq{<div><input type="checkbox" class="hl_row" id="hl_$id\_$type" name="$id" title="Highlight this row"/></div>};
 }
 
 sub blast_button {
   my $id  = shift;
   my $url = $blast_url.$id;
-  return qq{<div><button class="btn btn-lrg-xs btn-sm icon-research close-icon-0" style="margin-right:0px" onclick="go2blast('$id')" title="Run Blast"></button></div>};
+  return qq{<div><button class="btn btn-lrg-xs icon-research close-icon-0" style="margin-right:0px" onclick="go2blast('$id')" title="Run Blast"></button></div>};
 
 }
 
@@ -1288,9 +1283,6 @@ sub blast_button {
 sub build_first_col {
   my $id     = shift;
   my $row_id = shift;
-  #<td class="fx_col col1">$hide_row</td>
-  #<td class="fx_col col2">$hl_row</td>
-  #<td class="fx_col col3">$blast_button</td>-->
   
   my $hide_row      = hide_button($row_id);
   my $hl_row = highlight_button($row_id,'l');
@@ -1298,19 +1290,6 @@ sub build_first_col {
   
    return qq{<td class="fx_col col1"><div class="row_btns clearfix">$hide_row$hl_row$blast_button</div></td>};
 }
-
-#sub get_manual_html {
-#  my $transcript   = shift;
-#  my $column_class = shift;
-#  
-#  my $tr_ext_name    = $transcript->external_name;
-#  my $manual_class   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'manual' : 'not_manual';
-#  my $manual_label   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'M' : 'A';
-#  my $manual_title   = ($tr_ext_name =~ /^(\w+)-0\d{2}$/) ? 'Manual' : 'Automated';
-#  my $manual_border  = ($column_class eq 'gold') ? qq{ style="border-color:#555"} : '';
-# 
-#  return qq{<span class="$manual_class"$manual_border data-toggle="tooltip" data-placement="bottom" title="$manual_title annotation">$manual_label</span>};
-#}  
 
 sub get_canonical_transcript {
   my $gene_name = shift;
@@ -1483,7 +1462,7 @@ sub get_refseq_select_transcript {
 #    my $border_colour = ($column_class eq 'gold') ? " dark_border" : '';
 #  
 #    return qq{
-#    <span onclick="javascript:get_ext_link('uniprot','$uniprot_id')" class="flag uniprot_flag icon-target close-icon-2 smaller-icon$border_colour" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>};
+#    <span onclick="get_ext_link('uniprot','$uniprot_id')" class="flag uniprot_flag icon-target close-icon-2 smaller-icon$border_colour" data-toggle="tooltip" data-placement="bottom" title="UniProt annotation score: $uniprot_result. Click to see the entry in UniProt">$uniprot_score</span>};
 #  }
 #  else {
 #    return '';
@@ -1566,8 +1545,8 @@ sub get_showhide_buttons {
   return qq{
        <div class="btn_row_title">$type rows:</div>
        <div class="btn_row_subtitle">
-             <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,1);">Show all rows</button>
-             <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="javascript:showhide_range($start,$end,0);">Hide all rows</button>
+             <button class="btn btn-lrg btn-sm icon-view smaller-icon close-icon-5" onclick="showhide_range($start,$end,1);">Show all rows</button>
+             <button class="btn btn-lrg btn-sm icon-close smaller-icon close-icon-5" onclick="showhide_range($start,$end,0);">Hide all rows</button>
              $hidden_ids
        </div>};
 }
@@ -1620,9 +1599,9 @@ sub display_refseq_data {
       $first_col
       <td class="$column_class fx_col col4">
         <div>
-          <a class="white" onclick="javascript:get_ext_link('$tr_source','$nm')">$nm_label</a>
+          <a class="white" onclick="get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
-        <div class="col4_subtitle">$labels$refseq_select_flag</div>
+        <div>$labels$refseq_select_flag</div>
       </td>
       <td class="add_col fx_col col5">$e_count</td>
     };
@@ -1754,9 +1733,12 @@ sub display_bed_source_data {
       $enst = qq{
         <div class="$source_tag\_enst">
           $enst
-          <button class="btn btn-lrg btn-xs" onclick="javascript:hl_enst(['$ensts'],'$suffix');" title="$button_title">hl</button>
+          <button class="btn btn-lrg btn-xs" onclick="hl_enst(['$ensts'],'$suffix');" title="$button_title">hl</button>
         </div>
       };
+    }
+    else {
+      $enst = qq{<div></div>};
     }
     
     my $first_col = build_first_col($id,$row_id);
@@ -1771,8 +1753,9 @@ sub display_bed_source_data {
       $first_col
       <td class="$column_class fx_col col4">
         <div$date>
-          <a class="$source_tag\_link" onclick="javascript:get_ext_link('$source','$id')">$id_label</a>
-        </div>$enst
+          <a class="$source_tag\_link" onclick="get_ext_link('$source','$id')">$id_label</a>
+        </div>
+        $enst
       </td>
       <td class="add_col fx_col col5">$e_count</td>
     };
@@ -1898,7 +1881,7 @@ sub display_transcript_buttons {
     my $class = $rows_list->{$row_id}{'class'};
     my $class_init = ($label =~ /^NR_/) ? 'off' : $class;
     $buttons_html .= qq{<input type="hidden" id="btn_color_$row_id" value="$class"/>};
-    $buttons_html .= qq{<button id="btn_$row_id" class="btn btn-sm btn-non-lrg $class_init" onclick="showhide($row_id)">$label</button>};
+    $buttons_html .= qq{<button id="btn_$row_id" class="btn btn-sm btn-non-lrg btn_sh $class_init">$label</button>};
     $tr_count ++;
   }
 
@@ -2029,12 +2012,11 @@ sub display_exon {
   
   return qq{
     <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" data-params="$showhide_info_params">
-      <div class="e_label e_label_$source">$e_number$e_extra</div>
+      <div class="e_label e_$source">$e_number$e_extra</div>
       $partial_display
     </div>
     <div class="sub_exon$clearfix_class">$pathogenic_variants</div>
   };
-  #onmouseover="javascript:hl_exons('$e_start\_$e_end')" onmouseout="javascript:hl_exons('$e_start\_$e_end',1)"
 }
 
 
