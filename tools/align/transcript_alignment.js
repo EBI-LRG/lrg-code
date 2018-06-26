@@ -22,11 +22,53 @@ $(document).ready(function(){
   /* Highlight the similar exons (same genomic coordinates)*/
   $('.exon')
     .mouseover(function(){
-      var exon_coord = $(this).attr('data-name');      
+      var exon_coord = $(this).data('name');      
       $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'#BAF4F4');
+//      var title_data  = $(this).data('original-title').split('|');
+$(this).data('original-title', '');
+      var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,tr_name,coding_start,coding_end,ens_pathogenic_var] = $(this).data('params').split('|');
+
+      var tr_label = $(this).closest('tr').data('name');
+      
+      var new_title = [];
+      
+      new_title.push(tr_label);
+      if (tr_name != '') {
+        new_title.push(tr_name);
+      }
+      new_title.push(exon_length+" bp");
+      
+      if (coding_start) {
+        new_title.push("Coding starts at "+coding_start+" bp");
+      }
+      if (coding_end) {
+        new_title.push("Coding stops at "+coding_end+" bp");
+      }
+      
+      var phase = "";
+      if (phase_start != '-1' && !phase_end.match(/^-?\d$/)) {
+        phase = 'Frame: '+phase_start;
+      }
+      else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
+        var phase_start_content = (phase_start == -1) ? '-' : phase_start;
+        var phase_end_content   = (phase_end == -1)   ? '-' : phase_end;
+        phase = 'Phase: '+phase_start_content+';'+phase_end_content;
+      }
+      else {
+         phase = 'No phase data';
+      }
+      new_title.push(phase);
+      if (ens_pathogenic_var) {
+        var plural_var = (ens_pathogenic_var > 1) ? 's' : '';
+        new_title.push(ens_pathogenic_var+ ' pathogenic variant'+plural_var);
+      }
+      //$(this).attr('data-original-title', 'YES');
+      $(this).attr('data-original-title', new_title.join(' | '));
+      
+      console.log("TITLE: "+new_title.join(' | '));
     })
     .mouseout(function(){
-      var exon_coord = $(this).attr('data-name');
+      var exon_coord = $(this).data('name');
       $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'transparent');
     })
     .click(function (e) {
@@ -38,7 +80,7 @@ $(document).ready(function(){
       var tr_label = $(this).closest('tr').data('name');
       var tr_id    = tr_label.split('.')[0];
       var params   = $(this).data('params');
-      var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,ens_pathogenic_var,ens_pathogenic_variant_list] = params.split('|');
+      var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,tr_name,coding_start,coding_end,ens_pathogenic_var,ens_pathogenic_variant_list] = params.split('|');
       var content = $(this).data('name').replace('_', '-');
       var coords = $('#gene_coord').data('chr')+':'+content;
 
@@ -106,7 +148,7 @@ $(document).ready(function(){
           if (ens_pathogenic_variant_list) {
             var ens_var_id = exon_popup_id+"_variant";
             var ens_var_button_id = "btn_"+ens_var_id;
-            popup_content += "<button class=\"btn btn-lrg btn-xs\" id=\""+ens_var_button_id +"\" style=\"margin-right:0px;margin-left:5px\" onclick=\":showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+            popup_content += "<button class=\"btn btn btn-lrg-xs\" id=\""+ens_var_button_id +"\" style=\"margin-left:10px;padding:0px 5px\" onclick=\"showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
             popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
             popup_content += "<ul>"; 
             var list = ens_pathogenic_variant_list.split(":");

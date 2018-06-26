@@ -1926,48 +1926,35 @@ sub display_exon {
   my $e_tr_id = (split(/\./,$e_tr))[0];
   my $showhide_info_params  = "$e_number|$e_length";
      $showhide_info_params .= ($e_stable_id) ? "|$e_stable_id" : "|";
-     $showhide_info_params .= "|$phase_start|$phase_end";
-     
-  my $title = "$e_tr";
-     $title .= " | $e_tr_name" if ($e_tr_name && $e_tr_name ne '-');
-     $title .= " | $e_length bp";
-     
-   # UTR info
+     $showhide_info_params .= "|$phase_start|$phase_end";  
+     $showhide_info_params .=  ($e_tr_name && $e_tr_name ne '-') ? "|$e_tr_name" : '|';
+  
+  # UTR info
+  my ($coding_start, $coding_end);
   if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
     if ($left_utr_end && $left_utr_end > $e_start &&  $left_utr_end < $e_end) {
       if ($e_strand == 1) {
         my $non_coding_length = $left_utr_end - $e_start + 1;
-        $title .= " | Coding starts at $non_coding_length"."bp";
+        $coding_start = $non_coding_length;
       }
       else {
         my $coding_length = $e_end - $left_utr_end + 1;
-        $title .= " | Coding stops at $coding_length"."bp";
+        $coding_end = $coding_length;
       }
     }
     if ($right_utr_start && $right_utr_start < $e_end &&  $right_utr_start > $e_start) {
       if ($e_strand == 1) {
         my $coding_length = $right_utr_start - $e_start + 1;
-        $title .= " | Coding stops at $coding_length"."bp";
+        $coding_end = $coding_length;
       }
       else {
         my $non_coding_length = $e_end - $right_utr_start + 1;
-        $title .= " | Coding starts at $non_coding_length"."bp";
+        $coding_start = $non_coding_length;
       }
     }
   }
-  
-  # Exon phase   
-  if ($phase_start ne '-1' && $phase_end !~ /^-?\d$/) { 
-    $title .= " | Frame: $phase_start";
-  }
-  elsif ($phase_start =~ /^\d$/ || $phase_end =~ /^\d$/) {
-    my $phase_start_content = ($phase_start eq '-1') ? '-' : "$phase_start";
-    my $phase_end_content   = ($phase_end eq '-1')   ? '-' : "$phase_end";
-    $title .= " | Phase: $phase_start_content;$phase_end_content";
-  }
-  else {
-    $title .= " | No phase data";
-  }
+  $showhide_info_params .= ($coding_start) ? "|$coding_start" : '|';
+  $showhide_info_params .= ($coding_end)   ? "|$coding_end"   : '|';
   
 
   my $pathogenic_variants = '';
@@ -1976,7 +1963,6 @@ sub display_exon {
     my $pathogenic = scalar(@variants);
     if ($pathogenic) {
       $pathogenic_variants = qq{<div class="pathog_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
-      $title .= " | $pathogenic pathogenic variants";
       $showhide_info_params .= "|$pathogenic";
       if ($pathogenic <= $max_variants) {
         my @variants_allele;
@@ -2009,9 +1995,9 @@ sub display_exon {
   $showhide_info_params =~ s/'//g;
   
   my $clearfix_class = ($pathogenic_variants eq '') ? '' : ' clearfix';
-  
+
   return qq{
-    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" title="$title" data-params="$showhide_info_params">
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" data-params="$showhide_info_params">
       <div class="e_label e_$source">$e_number$e_extra</div>
       $partial_display
     </div>

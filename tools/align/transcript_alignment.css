@@ -369,12 +369,10 @@ th.coord {
 .gold, .gold:hover, .gold:active {
   background-color:gold;
   color:#333;
-  padding:0px;
 }
 .ens, .ens:hover, .ens:active {
   background-color:#336;
   color:#EEE;
-  padding:0px;
 }
 
 .ens_hv, .gold_hv {
@@ -921,6 +919,9 @@ table.transcript tr.bottom_row {
 }
 table.transcript tbody tr:first-child {
   cursor: default;
+}
+table.transcript tbody tr td:first-child {
+  padding:0px;
 }
 
 .gold table.transcript tr.bottom_row {
