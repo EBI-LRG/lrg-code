@@ -548,7 +548,6 @@ function get_hgvs() {
 
   var query_list = {};
   $(".gen_diff_table>tbody>tr").each(function (index, row) {
-    //var line_id = $(row).attr('id');
     var hgvs = $(row).attr('data-hgvs');
     var assembly = $(row).attr('data-assembly');
     if (hgvs && assembly) {
@@ -573,7 +572,9 @@ function get_hgvs() {
     
     $('td.hgvsc_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
     $('td.var_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
-    
+    if (assembly_item=='GRCh37') {
+      console.log('REST URL: '+rest_url+' '+hgvs_list);
+    }
     // 2 - Run Variant recorder call, parse results and display parsed data
     $.ajax({
       url: rest_url,
@@ -598,8 +599,14 @@ function get_hgvs() {
 
 // Parse results from the Ensembl REST call "variant_recoder" and display the data
 function parse_rest_results(assembly, data) {
-  if (!data.error) {
+  if (data.error) {
+    var hgvs_input = data.error.match(/'.+:\w\..+'/);
+    var row_id = $('tr[data-hgvs="'+hgvs_input+'"]').attr('id');
+    $('#'+row_id+'_hgvsc').html('No data available');
+  }
+  else {
     var re = new RegExp(':');
+    
     $.each(data,function (index, result) {
       // Retrieve corresponding row
       var hgvs_input = result.input;
@@ -610,11 +617,15 @@ function parse_rest_results(assembly, data) {
       var hgvcs_content = '';
       $.each(hgvsc_data, function (id, hgvsc) {
         // We only display coding ENSTs and NMs
-        if (hgvsc.match(/^(ENST|NM_)\d+\.?\d+\:c\./)) {//} && hgvsc.match(/\:c\./)) {
+        if (hgvsc.match(/^(ENST|NM_)\d+\.?\d+\:c\./)) {
           var hgvsc_label = hgvsc.replace(re,"</span>:");
           hgvcs_content += '<div><span class="bold_font">'+hgvsc_label+'</div>';
         }
       });
+
+      if (hgvcs_content == '') {
+        hgvcs_content = '-';
+      }
       $('#'+row_id+'_hgvsc').html(hgvcs_content);
       
       // Populate the Co-located variant(s) cell
@@ -628,6 +639,10 @@ function parse_rest_results(assembly, data) {
       $.each(variants, function (id, variant) {
         variants_content += '<div><a class="icon-external-link" href="'+variant_url+variant+'" target="_blank">'+variant+'</a></div>';
       });
+      
+      if (variants_content == '') {
+        variants_content = '-';
+      }
       $('#'+row_id+'_var').html(variants_content);
     });
   }

@@ -2519,7 +2519,7 @@
             </xsl:call-template>
           </div>
           <div style="margin:0px 15px">  
-            <div id="current_patch_mappings" style="display:none"> 
+            <div id="current_patch_mappings" style="display:none">
             <xsl:for-each select="$current_patches">
               <xsl:sort select="@coord_system" data-type="text"/>
               <xsl:sort select="@other_name" data-type="text"/>
@@ -2607,12 +2607,13 @@
 <xsl:template name="g_mapping">
   <xsl:param name="lrg_id" />
   
-  <xsl:variable name="coord_system"  select="@coord_system" />
-  <xsl:variable name="region_name"   select="@other_name" />
-  <xsl:variable name="region_id"     select="@other_id" />
-  <xsl:variable name="region_start"  select="@other_start" />
-  <xsl:variable name="region_end"    select="@other_end" />
-  <xsl:variable name="type"          select="@type" />
+  <xsl:variable name="coord_system" select="@coord_system" />
+  <xsl:variable name="region_name"  select="@other_name" />
+  <xsl:variable name="region_id"    select="@other_id" />
+  <xsl:variable name="region_start" select="@other_start" />
+  <xsl:variable name="region_end"   select="@other_end" />
+  <xsl:variable name="region_syn"   select="@other_id_syn" />
+  <xsl:variable name="type"         select="@type" />
   
   <xsl:variable name="main_assembly">
     <xsl:choose>
@@ -2629,7 +2630,7 @@
   <!-- Type of mapping -->
   <xsl:choose>
     <!-- Genome assembly -->
-    <xsl:when test="$region_name='X' or $region_name='Y' or $region_name='MT' or number($region_name)">
+    <xsl:when test="$type='main_assembly' or $type='other_assembly'">
       <xsl:call-template name="assembly_mapping">
         <xsl:with-param name="assembly"><xsl:value-of select="$coord_system"/></xsl:with-param>
       </xsl:call-template>
@@ -2665,6 +2666,13 @@
     </xsl:choose>
   </xsl:variable>
 
+  <xsl:variable name="region_label_name">
+    <xsl:choose>
+      <xsl:when test="$region_name='Unknown'"><xsl:value-of select="$region_syn" /></xsl:when>
+      <xsl:otherwise><xsl:value-of select="$region_name" /></xsl:otherwise>
+    </xsl:choose>  
+  </xsl:variable>
+
   <table class="genomic_mapping">
     <tbody><tr>
       <td>
@@ -2676,7 +2684,7 @@
           <xsl:call-template name="g_mapping_table">
             <xsl:with-param name="main_assembly"><xsl:value-of select="$main_assembly"/></xsl:with-param>
             <xsl:with-param name="assembly"><xsl:value-of select="$coord_system"/></xsl:with-param>
-            <xsl:with-param name="region_name"><xsl:value-of select="$region_name" /></xsl:with-param>
+            <xsl:with-param name="region_name"><xsl:value-of select="$region_label_name" /></xsl:with-param>
             <xsl:with-param name="region_id"><xsl:value-of select="$region_id" /></xsl:with-param>
           </xsl:call-template>
         </div>
@@ -2788,14 +2796,21 @@
         </span>
         
         <!-- Region synonyms for the patches and haplotypes -->
-        <xsl:if test="@type='patch' or @type='haplotype'">
-          <span style="margin-left:15px;margin-right:15px">|</span>
-          <span style="margin-right:10px;font-weight:bold">Region synonym(s):</span>
-          <span class="external_link">
-          <xsl:if test="$region_name!='unlocalized'"><xsl:value-of select="$region_id"/>, </xsl:if>
-          <xsl:value-of select="@other_id_syn"/>
-          </span>
-        </xsl:if>
+        <xsl:choose>
+          <xsl:when test="@type='patch' or @type='haplotype'">
+            <span style="margin-left:15px;margin-right:15px">|</span>
+            <span style="margin-right:10px;font-weight:bold">Region synonym(s):</span>
+            <span class="external_link">
+            <xsl:if test="$region_name!='unlocalized'"><xsl:value-of select="$region_id"/>, </xsl:if>
+            <xsl:value-of select="@other_id_syn"/>
+            </span>
+          </xsl:when>
+          <xsl:when test="@other_name='Unknown'">
+            <span style="margin-left:15px;margin-right:15px">|</span>
+            <span style="margin-right:10px;font-weight:bold">Region synonym:</span>
+            <span class="external_link"><xsl:value-of select="$region_id"/></span>
+          </xsl:when>
+        </xsl:choose>  
       </div> 
        
       <div>
@@ -2858,12 +2873,13 @@
     </div>
   </div>
   
-  <xsl:variable name="show_hgvs_for_this_mapping">
+  <xsl:variable name="show_hgvs_for_this_mapping">1</xsl:variable>
+  <!--<xsl:variable name="show_hgvs_for_this_mapping">
     <xsl:choose>
       <xsl:when test="@type='patch' or @type='haplotype'">0</xsl:when>
       <xsl:otherwise>1</xsl:otherwise>
     </xsl:choose>
-  </xsl:variable>
+  </xsl:variable>-->
   
   <xsl:for-each select="mapping_span">
     <xsl:call-template name="diff_table">
@@ -5935,7 +5951,14 @@
           </xsl:choose>
         </xsl:variable>     
             
-        <xsl:variable name="hgvs_chr" select="../../@other_name"/>    
+        <xsl:variable name="hgvs_chr">
+          <xsl:choose>
+            <xsl:when test="../../@other_name='X' or ../../@other_name='Y' or ../../@other_name='MT' or number(../../@other_name)">
+              <xsl:value-of select="../../@other_name"/>
+            </xsl:when>
+            <xsl:otherwise><xsl:value-of select="../../@other_id_syn"/></xsl:otherwise>
+          </xsl:choose>
+        </xsl:variable>
                 
         <xsl:variable name="genomic_hgvs">
           <xsl:choose>
@@ -5954,14 +5977,13 @@
             
         <xsl:variable name="line_id">
           <xsl:text>diff_</xsl:text><xsl:value-of select="$diff_id"/>_<xsl:value-of select="translate($hgvs_assembly,'GRCH','grch')"/>
+          <xsl:if test="../../@type!='main_assembly' and ../../@type!='other_assembly'">_<xsl:value-of select="translate(../../@other_name,'.','_')"/></xsl:if>
         </xsl:variable>
             
         <tr>
-          <xsl:if test="$hgvs_chr='X' or $hgvs_chr='Y' or $hgvs_chr='MT' or number($hgvs_chr)"> 
-            <xsl:attribute name="id"><xsl:value-of select="$line_id"/></xsl:attribute>
-            <xsl:attribute name="data-hgvs"><xsl:value-of select="$hgvs_chr"/><xsl:value-of select="$genomic_hgvs"/></xsl:attribute>
-            <xsl:attribute name="data-assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:attribute>
-          </xsl:if>
+          <xsl:attribute name="id"><xsl:value-of select="$line_id"/></xsl:attribute>
+          <xsl:attribute name="data-hgvs"><xsl:value-of select="$hgvs_chr"/><xsl:value-of select="$genomic_hgvs"/></xsl:attribute>
+          <xsl:attribute name="data-assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:attribute>
    
           <td class="no_border_bottom no_border_left" style="font-weight:bold">
             <xsl:variable name="diff_type" select="@type" />
@@ -6021,7 +6043,7 @@
               </xsl:variable>   
            
               <xsl:call-template name="diff_hgvs_genomic_ref_link">
-                <xsl:with-param name="chr"><xsl:value-of select="../../@other_name"/></xsl:with-param>
+                <xsl:with-param name="chr"><xsl:value-of select="$hgvs_chr"/></xsl:with-param>
                 <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
                 <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
                 <xsl:with-param name="key"><xsl:value-of select="$genkey"/></xsl:with-param>
@@ -6033,9 +6055,7 @@
           <!-- Transcript HGVS -->
           <td>
             <xsl:attribute name="class">no_border_bottom current_assembly_bg hgvsc_col_<xsl:value-of select="translate($hgvs_assembly,'GRCH','grch')"/></xsl:attribute>
-            <xsl:if test="$hgvs_chr='X' or $hgvs_chr='Y' or $hgvs_chr='MT' or number($hgvs_chr)"> 
-              <xsl:attribute name="id"><xsl:value-of select="$line_id"/>_hgvsc</xsl:attribute>
-            </xsl:if>
+            <xsl:attribute name="id"><xsl:value-of select="$line_id"/>_hgvsc</xsl:attribute>
           </td>
               
           <!--LRG HGVS -->
@@ -6054,9 +6074,7 @@
           <!-- Co-located variants -->
          <td>
            <xsl:attribute name="class">no_border_bottom border_left current_assembly_bg var_col_<xsl:value-of select="translate($assembly_label,'GRCH','grch')"/></xsl:attribute>
-           <xsl:if test="$hgvs_chr='X' or $hgvs_chr='Y' or $hgvs_chr='MT' or number($hgvs_chr)"> 
              <xsl:attribute name="id"><xsl:value-of select="$line_id"/>_var</xsl:attribute>
-           </xsl:if>
          </td>
        </xsl:if>
 
@@ -6148,48 +6166,45 @@
   <xsl:param name="assembly" />
   <xsl:param name="key" />
   <xsl:param name="hgvs_gen" />
+        
+  <xsl:variable name="button_colour">
+    <xsl:choose>
+      <xsl:when test="contains($assembly,$current_assembly)">btn-lrg2</xsl:when>
+      <xsl:when test="contains($assembly,$previous_assembly)">btn-lrg3</xsl:when>
+      <xsl:otherwise>#FFF</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
     
-  <xsl:if test="$chr='X' or $chr='Y' or $chr='MT' or number($chr)">
+  <xsl:variable name="tooltip_font_colour">
+    <xsl:choose>
+      <xsl:when test="contains($assembly,$current_assembly)">#78BE43</xsl:when>
+      <xsl:when test="contains($assembly,$previous_assembly)">#ba8ec6</xsl:when>
+      <xsl:otherwise>#FFF</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  <xsl:variable name="tooltip_colour"> &lt;span class="bold_font" style="color:<xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>
     
-    <xsl:variable name="button_colour">
-      <xsl:choose>
-        <xsl:when test="contains($assembly,$current_assembly)">btn-lrg2</xsl:when>
-        <xsl:when test="contains($assembly,$previous_assembly)">btn-lrg3</xsl:when>
-        <xsl:otherwise>#FFF</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    
-    <xsl:variable name="tooltip_font_colour">
-      <xsl:choose>
-        <xsl:when test="contains($assembly,$current_assembly)">#78BE43</xsl:when>
-        <xsl:when test="contains($assembly,$previous_assembly)">#ba8ec6</xsl:when>
-        <xsl:otherwise>#FFF</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="tooltip_colour"> &lt;span class="bold_font" style="color:<xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>
-    
-    <div class="hgvs nowrap">
-      <xsl:call-template name="assembly_colour">
-        <xsl:with-param name="assembly"><xsl:value-of select="$assembly"/></xsl:with-param>
-        <xsl:with-param name="content"><xsl:value-of select="$chr"/></xsl:with-param>
-        <xsl:with-param name="bold">1</xsl:with-param>
-      </xsl:call-template>
-      <span><xsl:value-of select="$hgvs_gen"/></span>
-    </div>
-    <div class="margin-top-2">
-      <a data-toggle="tooltip" data-placement="bottom" data-html="true" target="_blank">
-        <xsl:attribute name="href">
-          <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_gen"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>&amp;hgnc=</xsl:text><xsl:value-of select="$lrg_gene_name"/><xsl:text>&amp;strand=</xsl:text><xsl:value-of select="$strand"/>
-        </xsl:attribute>
-        <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
-        <xsl:attribute name="title">View allele information and predicted variant consequences</xsl:attribute>
-        <button type="button" class="btn btn-lrg btn-lrg1 btn-sm">
-          <xsl:attribute name="class">btn btn-lrg <xsl:value-of select="$button_colour"/> btn-sm</xsl:attribute>
-          <span class="icon-tool smaller-icon close-icon-2"></span>Variant information
-        </button>
-      </a>
-    </div>
-  </xsl:if>
+  <div class="hgvs nowrap">
+     <xsl:call-template name="assembly_colour">
+      <xsl:with-param name="assembly"><xsl:value-of select="$assembly"/></xsl:with-param>
+      <xsl:with-param name="content"><xsl:value-of select="$chr"/></xsl:with-param>
+      <xsl:with-param name="bold">1</xsl:with-param>
+    </xsl:call-template>
+    <span><xsl:value-of select="$hgvs_gen"/></span>
+  </div>
+  <div class="margin-top-2">
+    <a data-toggle="tooltip" data-placement="bottom" data-html="true" target="_blank">
+      <xsl:attribute name="href">
+        <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$chr"/><xsl:value-of select="$hgvs_gen"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>&amp;hgnc=</xsl:text><xsl:value-of select="$lrg_gene_name"/><xsl:text>&amp;strand=</xsl:text><xsl:value-of select="$strand"/>
+      </xsl:attribute>
+      <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
+      <xsl:attribute name="title">View allele information and predicted variant consequences</xsl:attribute>
+      <button type="button" class="btn btn-lrg btn-lrg1 btn-sm">
+        <xsl:attribute name="class">btn btn-lrg <xsl:value-of select="$button_colour"/> btn-sm</xsl:attribute>
+        <span class="icon-tool smaller-icon close-icon-2"></span>Variant information
+      </button>
+    </a>
+  </div>
 </xsl:template>
 
 
@@ -6319,128 +6334,131 @@
       </xsl:choose>
     </xsl:variable>
     
-    <xsl:variable name="assembly_lc" select="translate($assembly_name,'GRCH','grch')"/>
-    
-    <xsl:variable name="genoverse_id">genoverse_<xsl:value-of select="$assembly_lc"/></xsl:variable>
-    <xsl:variable name="genoverse_div">genoverse_div_<xsl:value-of select="$assembly_lc"/></xsl:variable>
-    
-    <xsl:variable name="button_colour">
+    <xsl:variable name="main_chr">
       <xsl:choose>
-        <xsl:when test="contains($assembly,$current_assembly)">2</xsl:when>
-        <xsl:when test="contains($assembly,$previous_assembly)">3</xsl:when>
+        <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_mapping/@other_name"/></xsl:when>
+        <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_mapping/@other_name"/></xsl:when>
       </xsl:choose>
     </xsl:variable>
     
-    <!-- Genoverse button -->
-    <div class="genoverse_button_line">
-      <xsl:call-template name="show_hide_button">
-        <xsl:with-param name="div_id" select="$genoverse_div"/>
-        <xsl:with-param name="showhide_text">the <b>Genoverse</b> genome browser</xsl:with-param>
-        <xsl:with-param name="show_as_button"><xsl:value-of select="$button_colour"/></xsl:with-param>
-        <xsl:with-param name="default_open">1</xsl:with-param>
-      </xsl:call-template>
-    </div>
-  
-    <!-- Genoverse div -->
-    <div>
-      <xsl:attribute name="id"><xsl:value-of select="$genoverse_div"/></xsl:attribute>
-        
-      <div>
-        <xsl:attribute name="id"><xsl:value-of select="$genoverse_id"/></xsl:attribute>
-      </div>
+    <xsl:if test="$main_chr='X' or $main_chr='Y' or $main_chr='MT' or number($main_chr)">
+    
+      <xsl:variable name="assembly_lc" select="translate($assembly_name,'GRCH','grch')"/>
       
-      <xsl:variable name="main_chr">
+      <xsl:variable name="genoverse_id">genoverse_<xsl:value-of select="$assembly_lc"/></xsl:variable>
+      <xsl:variable name="genoverse_div">genoverse_div_<xsl:value-of select="$assembly_lc"/></xsl:variable>
+      
+      <xsl:variable name="button_colour">
         <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_mapping/@other_name"/></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_mapping/@other_name"/></xsl:when>
+          <xsl:when test="contains($assembly,$current_assembly)">2</xsl:when>
+          <xsl:when test="contains($assembly,$previous_assembly)">3</xsl:when>
         </xsl:choose>
       </xsl:variable>
-        
-      <xsl:variable name="ref_start">
-        <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_ref_start"/></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_ref_start"/></xsl:when>
-        </xsl:choose>
-      </xsl:variable>
-      <xsl:variable name="ref_end">
-        <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_ref_end"/></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_ref_end"/></xsl:when>
-        </xsl:choose>
-      </xsl:variable>
-        
-      <xsl:variable name="ens_rest_url_prefix">
-        <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)">grch37.</xsl:when>
-        </xsl:choose>
-      </xsl:variable>
-        
-      <xsl:variable name="lrg_bed_url">
-        <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_lrg_bed_url"/></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_lrg_bed_url"/></xsl:when>
-        </xsl:choose>
-      </xsl:variable>
-        
-      <xsl:variable name="lrg_diff_url">
-        <xsl:choose>
-          <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_lrg_diff_url"/></xsl:when>
-          <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_lrg_diff_url"/></xsl:when>
-        </xsl:choose>
-      </xsl:variable>
-      <xsl:variable name="main_tracks">
-        Genoverse.Track.extend({
-          name       : '<xsl:value-of select="$assembly_name"/>',
-          controller : Genoverse.Track.Controller.Sequence,
-          model      : Genoverse.Track.Model.Sequence.Ensembl,
-          view       : Genoverse.Track.View.Sequence,
-          resizable  : 'auto',
-          1000000    : false
-        }),
-        
-        Genoverse.Track.File.LRGBED.extend({
-          name            : 'LRG',
-          url             : '<xsl:value-of select="$lrg_bed_url"/>',
-          resizable       : 'auto'
-        }),
-        Genoverse.Track.File.LRGDIFF.extend({
-          name      : 'Sequence differences LRG vs <xsl:value-of select="$assembly_name"/>',
-          url       : '<xsl:value-of select="$lrg_diff_url"/>',
-          resizable : 'auto'
-        }),
-        Genoverse.Track.Gene.extend({
-          name   : 'Ensembl transcripts',
-          resizable  : 'auto'
-        }),
-        Genoverse.Track.RefSeqGene.extend({
-          name      : 'RefSeq transcripts',
-          resizable  : 'auto'
-        })
-      </xsl:variable>
-        
-      <script>
-        new Genoverse({
-          container : '#<xsl:value-of select="$genoverse_id"/>',
-          width     : '1100',
-          genome    : '<xsl:value-of select="$assembly_lc"/>',
-          chr       : '<xsl:value-of select="$main_chr"/>',
-          start     : <xsl:value-of select="$ref_start"/>,
-          end       : <xsl:value-of select="$ref_end"/>,
-          plugins   : [ 'controlPanel', 'karyotype', 'trackControls', 'resizer', 'focusRegion', 'fullscreen', 'tooltips', 'fileDrop' ],
-          tracksLibrary: [
-            <xsl:value-of select="$main_tracks"/>,
-            Genoverse.Track.dbSNP.extend({
-              name      : 'dbSNP variants'
-            })
-          ],
-          tracks    : [
-            Genoverse.Track.Scalebar,
-            <xsl:value-of select="$main_tracks"/>
-          ]
-        });
-      </script>
-    </div>
+      
+      <!-- Genoverse button -->
+      <div class="genoverse_button_line">
+        <xsl:call-template name="show_hide_button">
+          <xsl:with-param name="div_id" select="$genoverse_div"/>
+          <xsl:with-param name="showhide_text">the <b>Genoverse</b> genome browser</xsl:with-param>
+          <xsl:with-param name="show_as_button"><xsl:value-of select="$button_colour"/></xsl:with-param>
+          <xsl:with-param name="default_open">1</xsl:with-param>
+        </xsl:call-template>
+      </div>
+    
+      <!-- Genoverse div -->
+      <div>
+        <xsl:attribute name="id"><xsl:value-of select="$genoverse_div"/></xsl:attribute>
+          
+        <div>
+          <xsl:attribute name="id"><xsl:value-of select="$genoverse_id"/></xsl:attribute>
+        </div>
+          
+        <xsl:variable name="ref_start">
+          <xsl:choose>
+            <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_ref_start"/></xsl:when>
+            <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_ref_start"/></xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="ref_end">
+          <xsl:choose>
+            <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_ref_end"/></xsl:when>
+            <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_ref_end"/></xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+          
+        <xsl:variable name="ens_rest_url_prefix">
+          <xsl:choose>
+            <xsl:when test="contains($assembly_name,$current_assembly)"></xsl:when>
+            <xsl:when test="contains($assembly_name,$previous_assembly)">grch37.</xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+          
+        <xsl:variable name="lrg_bed_url">
+          <xsl:choose>
+            <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_lrg_bed_url"/></xsl:when>
+            <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_lrg_bed_url"/></xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+          
+        <xsl:variable name="lrg_diff_url">
+          <xsl:choose>
+            <xsl:when test="contains($assembly_name,$current_assembly)"><xsl:value-of select="$current_lrg_diff_url"/></xsl:when>
+            <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_lrg_diff_url"/></xsl:when>
+          </xsl:choose>
+        </xsl:variable>
+        <xsl:variable name="main_tracks">
+          Genoverse.Track.extend({
+            name       : '<xsl:value-of select="$assembly_name"/>',
+            controller : Genoverse.Track.Controller.Sequence,
+            model      : Genoverse.Track.Model.Sequence.Ensembl,
+            view       : Genoverse.Track.View.Sequence,
+            resizable  : 'auto',
+            1000000    : false
+          }),
+          
+          Genoverse.Track.File.LRGBED.extend({
+            name            : 'LRG',
+            url             : '<xsl:value-of select="$lrg_bed_url"/>',
+            resizable       : 'auto'
+          }),
+          Genoverse.Track.File.LRGDIFF.extend({
+            name      : 'Sequence differences LRG vs <xsl:value-of select="$assembly_name"/>',
+            url       : '<xsl:value-of select="$lrg_diff_url"/>',
+            resizable : 'auto'
+          }),
+          Genoverse.Track.Gene.extend({
+            name   : 'Ensembl transcripts',
+            resizable  : 'auto'
+          }),
+          Genoverse.Track.RefSeqGene.extend({
+            name      : 'RefSeq transcripts',
+            resizable  : 'auto'
+          })
+        </xsl:variable>
+          
+        <script>
+          new Genoverse({
+            container : '#<xsl:value-of select="$genoverse_id"/>',
+            width     : '1100',
+            genome    : '<xsl:value-of select="$assembly_lc"/>',
+            chr       : '<xsl:value-of select="$main_chr"/>',
+            start     : <xsl:value-of select="$ref_start"/>,
+            end       : <xsl:value-of select="$ref_end"/>,
+            plugins   : [ 'controlPanel', 'karyotype', 'trackControls', 'resizer', 'focusRegion', 'fullscreen', 'tooltips', 'fileDrop' ],
+            tracksLibrary: [
+              <xsl:value-of select="$main_tracks"/>,
+              Genoverse.Track.dbSNP.extend({
+                name      : 'dbSNP variants'
+              })
+            ],
+            tracks    : [
+              Genoverse.Track.Scalebar,
+              <xsl:value-of select="$main_tracks"/>
+            ]
+          });
+        </script>
+      </div>
+    </xsl:if>
 </xsl:template>
 
 
