@@ -44,7 +44,7 @@ sub default_options {
         #uniprot_file            => 'UP000005640_9606_proteome.bed',
         havana_file             => 'hg38.bed',
         # Havana BED file (actually bigGenePred => https://genome.ucsc.edu/goldenPath/help/bigGenePred.html)
-        havana_ftp              => 'ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data',
+        havana_ftp              => 'ftp://ftp.ebi.ac.uk/pub/databases/gencode/update_trackhub/data',
         ## Uniprot BED file
         #uniprot_ftp             => 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds',
         

@@ -67,7 +67,7 @@ if ($data_file_dir && -d $data_file_dir) {
   if (!$no_download) {
     # Havana
     `rm -f $data_file_dir/$havana_file\.gz`;
-    `wget -q -P $data_file_dir ftp://ngs.sanger.ac.uk/production/gencode/update_trackhub/data/$havana_file\.gz`;
+    `wget -q -P $data_file_dir ftp://ftp.ebi.ac.uk/pub/databases/gencode/update_trackhub/data/$havana_file\.gz`;
     if (-e "$data_file_dir/$havana_file") {
       `mv $data_file_dir/$havana_file $data_file_dir/$havana_file\_old`;
     }
