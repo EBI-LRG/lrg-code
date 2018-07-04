@@ -82,12 +82,16 @@ my $lrg = $lrg_adaptor->fetch();
 # Get translation sequences (for comparison with Ensembl protein sequences)
 my %lrg_pr_seq;
 my $lrg_transcripts = $lrg->fixed_annotation->transcript;
+my $lrg_id = $lrg->fixed_annotation->name;
+
 foreach my $lrg_tr (@$lrg_transcripts) {
   next if (!$lrg_tr->coding_region);
   foreach my $cds (@{$lrg_tr->coding_region}) {
     my $pr = $cds->translation;
     my $pr_seq  = $pr->sequence->sequence;
-    $lrg_pr_seq{ $lrg_tr->name}{$pr->name} = seq2array($pr_seq);
+    $lrg_pr_seq{ $lrg_tr->name}{$pr->name}{'start'} = $cds->coordinates->[0]->start;
+    $lrg_pr_seq{ $lrg_tr->name}{$pr->name}{'end'}   = $cds->coordinates->[0]->end;
+    $lrg_pr_seq{ $lrg_tr->name}{$pr->name}{'seq'}   = seq2array($pr_seq);
   }
 }
 
@@ -208,25 +212,45 @@ foreach my $f (@ens_feature) {
       $ens_mapping = $ens_tr_mapping->get_transcripts_mappings;
       ($ens_match_lrg, $ens_diff_utr_lrg) = @{compare_ens_transcripts_with_lrg_transcripts($ens_mapping,$lrg_tr_coords,$diffs_list)};
     }
-    
     remove_grc_coordinates($g);
+    
+    # Transcript
     foreach my $t (@{$g->transcript}) {
       my $enst_name = $t->accession;
-      $t->fixed_id($ens_match_lrg->{$enst_name}{'fixed_id'}) if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'});
       remove_grc_coordinates($t);
       foreach my $e (@{$t->exon}) {
         remove_grc_coordinates($e);
       }
+
+      my $same_pr_coords = 1;
+
       if ($t->translation) {
         foreach my $trans (@{$t->translation}) {
-          if ($t->fixed_id) {
+          # The ENST coordinates matches the LRG's
+          if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'}) {
             my $ens_pr_seq = get_ens_protein_seq($trans->accession);
             my $ens_pr_seq_array = seq2array($ens_pr_seq);
             
-            my $lrg_tr_name = $t->fixed_id;
+            my $lrg_tr_name = $ens_match_lrg->{$enst_name}{'fixed_id'};
             
+            my $ens_pr_start;
+            my $ens_pr_end;
+
+            foreach my $ens_coords (@{$trans->coordinates}) {
+              if ($ens_coords->coordinate_system eq $lrg_id) {
+                $ens_pr_start = $ens_coords->start;
+                $ens_pr_end   = $ens_coords->end;
+              }
+            }
+            
+            # Protein
             foreach my $lrg_pr_name (keys(%{$lrg_pr_seq{$lrg_tr_name}})) {
-              if (compare_ens_proteins_with_lrg_proteins($ens_pr_seq_array, $lrg_pr_seq{$lrg_tr_name}{$lrg_pr_name})) {
+              # Compare coding coordinates
+              if ($ens_pr_start && $ens_pr_end) {
+                if ($ens_pr_start != $lrg_pr_seq{$lrg_tr_name}{$lrg_pr_name}{'start'} || $ens_pr_end != $lrg_pr_seq{$lrg_tr_name}{$lrg_pr_name}{'end'}) {                 $same_pr_coords = 0;
+                }
+              }
+              if (compare_ens_proteins_with_lrg_proteins($ens_pr_seq_array, $lrg_pr_seq{$lrg_tr_name}{$lrg_pr_name}{'seq'})) {
                 $trans->fixed_id($lrg_pr_name);
                 last;
               }  
@@ -235,6 +259,7 @@ foreach my $f (@ens_feature) {
           remove_grc_coordinates($trans);
         }
       }
+      $t->fixed_id($ens_match_lrg->{$enst_name}{'fixed_id'}) if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'} && $same_pr_coords != 0);
     }
     
     # Create specific comment(s) for the ENST(s) with different 5' and/or 3' UTRs compared to the LRG transcript(s)
@@ -325,7 +350,6 @@ sub get_lrg_transcript_coords {
   my $lrg_obj = shift;
 
   my $fixed = $lrg_obj->fixed_annotation;
-  my $lrg_id = $fixed->name;
 
   my %tr_coord;
   foreach my $tr (@{$fixed->transcript}) {
@@ -414,7 +438,7 @@ sub compare_ens_transcripts_with_lrg_transcripts {
       foreach my $lrg_tr (keys(%$lrg_tr_coord)) {
         my $cds_start =  $lrg_tr_coord->{$lrg_tr}{'CDS_start'};
         my $cds_end   =  $lrg_tr_coord->{$lrg_tr}{'CDS_end'};
-          
+
         # Exon coord match
         if ($lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} && $lrg_tr_coord->{$lrg_tr}{'exon'}{$m_start} == $m_end) {
           # Compare coding start and end between LRG transcript and ENST
