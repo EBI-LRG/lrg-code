@@ -42,18 +42,19 @@ my $refseq_select_file_default = 'select_per_gene_9606.txt';
 my $max_variants = 10;
 
 my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
-my $transcript_cars_info  = $data_file_dir.'/cars/cars_info.json';
+my $transcript_data_info  = $data_file_dir.'/data_files_info.json';
 my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
 my $refseq_select_file    = $data_file_dir.'/select_per_gene_9606.txt';
 
 my $transcript_cars_date  = 'NA';
-if (-e $transcript_cars_info) {
-  my $json_text = `cat $transcript_cars_info`;
+my $transcript_rss_date  = 'NA';
+if (-e $transcript_data_info) {
+  my $json_text = `cat $transcript_data_info`;
   my $data = decode_json($json_text);
-  $transcript_cars_date = $data->{'Date'}.' - '.$data->{'Release'};
+  $transcript_cars_date = $data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
+  $transcript_rss_date  = $data->{'refseq_select'}{'Date'};
 }
 
-#my $transcript_cars_date  = 'January 2018 - e92';
 my $transcript_score_date = '23rd August 2017 - e89';
 #$uniprot_file ||= $uniprot_file_default;
 
@@ -1424,7 +1425,7 @@ sub get_refseq_select_transcript {
     foreach my $query_result (split("\n",$query_results)) {
       my @result = split("\t", $query_result);
       if ($rs_trans eq $result[2]) {
-        return qq{<div style="float:right"><span class="flag rs_select glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="RefSeq select transcript for this gene"></span></div>};
+        return qq{<div style="float:right"><span class="flag rs_select glyphicon glyphicon-flag" data-toggle="tooltip" data-placement="bottom" title="RefSeq select transcript for this gene ($transcript_rss_date)"></span></div>};
       }
     }
   }

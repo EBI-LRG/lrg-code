@@ -150,9 +150,16 @@
         this.blur();
       });
       
-      jQuery.get('./ens_ott_cars_info.txt', function(data) {
-         $("#cars_info").html(data);
+      jQuery.get('./ens_ott_data_info.txt', function(data) {
+        var lines = data.split("\n");
+        $.each(lines, function(index,content) {
+          var [id,text] = content.split(';');
+          if ($("#"+id+"_info").length) {
+            $("#"+id+"_info").html(text);
+          } 
+        });
       });
+
     });
 
   </script>
@@ -168,6 +175,11 @@
             <td><span class="red_flag glyphicon glyphicon-star"></span></td>
             <td><span class="bold_font" style="width:105px">CARS version: </span></td>
             <td><span id="cars_info"></span></td>
+          </tr>
+          <tr>
+            <td><span class="flag red_flag glyphicon glyphicon-flag" style="color:#D00"></span></td>
+            <td><span class="bold_font" style="width:105px">RefSeq select: </span></td>
+            <td><span id="refseq_select_info"></span></td>
           </tr>
           <tr>
             <td><span class="green_flag glyphicon glyphicon-refresh"></span></td>

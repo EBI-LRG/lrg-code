@@ -15,22 +15,22 @@ $output_dir ||= '.';
 my $output_file = ($is_private) ? 'ens_ott_data.json' : 'ens_ott_data_public.json';
 my $autocomplete_file = ($is_private) ? 'ens_ott_autocomplete.txt' :  'ens_ott_autocomplete_public.txt';
 
-my $input_file     = 'ens_ott_table.txt';
-my $havana_file    = 'hg38.bed';
-my $gencode_file   = 'gencode.annotation.gtf';
-my $cars_file      = 'canonicals_hgnc.txt'; 
-my $rs_select_file = 'select_per_gene_9606.txt';
-my $data_dir       = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
-my $cars_info      = "$data_dir/cars/cars_info.json";
+my $input_file      = 'ens_ott_table.txt';
+my $havana_file     = 'hg38.bed';
+my $gencode_file    = 'gencode.annotation.gtf';
+my $cars_file       = 'canonicals_hgnc.txt'; 
+my $rs_select_file  = 'select_per_gene_9606.txt';
+my $data_dir        = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
+my $data_files_info = "$data_dir/data_files_info.json";
 
 # CARS INFO
 my $transcript_cars_date  = '';
-if (-e $cars_info) {
-  my $json_text = `cat $cars_info`;
+if (-e $data_files_info) {
+  my $json_text = `cat $data_files_info`;
   my $data = decode_json($json_text);
-  $transcript_cars_date = $data->{'Date'}.' - '.$data->{'Release'};
+  $transcript_cars_date = $data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
 }
-open C, "> $output_dir/ens_ott_cars_info.txt" or die $!;
+open C, "> $output_dir/ens_ott_data_info.txt" or die $!;
 print C "$transcript_cars_date";
 close(C);
 
