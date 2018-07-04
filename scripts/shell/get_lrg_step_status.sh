@@ -13,7 +13,7 @@ port=${LRGDBPORT}
 user=${LRGDBADMUSER}
 dbname=${LRGDBNAME}
 
-ftp_dir=${PUBFTP}/.lrg_index/
+ftp_dir=${PUBFTP}/data_files/
 
 pass=${LRGDBPASS}
 perldir=${LRGROOTDIR}/lrg-code/scripts/
