@@ -408,8 +408,7 @@
             <tbody>
               <tr>
                 <!-- HGNC data --> 
-                <td class="bold_font">HGNC Gene Symbol (Identifier): </td>
-                <td><xsl:value-of select="$lrg_gene_name"/> 
+                <td><span class="bold_font padding-right-10">HGNC Gene Symbol (Identifier):</span><xsl:value-of select="$lrg_gene_name"/> 
                 (<a>
                     <xsl:attribute name="class">http_link</xsl:attribute>
                     <xsl:attribute name="href"><xsl:value-of select="$hgnc_url" /><xsl:value-of select="fixed_annotation/hgnc_id" /></xsl:attribute>
@@ -418,24 +417,24 @@
                   </a>)
                 </td>
                 <!-- Creation date --> 
-                <td class="bold_font border_left">
+                <td><span class="bold_font padding-right-10">
                   <xsl:choose>
                     <xsl:when test="$lrg_status=0">Made Public</xsl:when>
                     <xsl:otherwise>Creation</xsl:otherwise>
-                  </xsl:choose>:
-                </td>
-                <td>
-                  <span class="glyphicon glyphicon-time blue_button_2 valign_bottom"></span>
+                  </xsl:choose>:</span>
+                  <span class="glyphicon glyphicon-time blue_button_2 valign_bottom"></span> 
+                  <span class="padding-left-5">
                   <xsl:call-template name="format_date">
                     <xsl:with-param name="date2format"><xsl:value-of select="fixed_annotation/creation_date"/></xsl:with-param>
-                  </xsl:call-template>
+                  </xsl:call-template></span>
                 </td>
-                <td class="bold_font border_left">Last Update:</td>
                 <td>
+                  <span class="bold_font padding-right-10">Last Update:</span>
                   <span class="glyphicon glyphicon-time green_button_2 valign_bottom"></span>
+                  <span class="padding-left-5">
                   <xsl:call-template name="format_date">
                     <xsl:with-param name="date2format"><xsl:value-of select="/*/updatable_annotation/annotation_set[@type = $lrg_set_name]/modification_date"/></xsl:with-param>
-                  </xsl:call-template>
+                  </xsl:call-template></span>
                 </td>
               </tr>
             </tbody>

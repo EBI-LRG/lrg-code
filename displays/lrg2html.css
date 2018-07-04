@@ -196,20 +196,11 @@ table.bordered>tbody>tr>td.other_separator {
 
 table.summary { border:none; }
 table.summary>tbody>tr>td {
-  padding: 6px;
+  padding: 6px 10px;
   border:none;
+  line-height:14px;
 }
-table.summary>tbody>tr>td.line_separator{
-  height:0px;
-  border-top:1px solid #1C9BCF;
-  padding:0px;
-}
-table.summary>tbody>tr>td.line_separator_top{
-  height:4px;
-  border-top:3px solid #1C9BCF;
-  padding:0px;
-}
-table.summary>tbody>tr>td.border_left {
+table.summary>tbody>tr>td:not(:first-child) {
   border-left: 1px solid #DDD;
 }
 
@@ -306,7 +297,7 @@ div.top_icon a:hover, div.top_icon a:active, div.top_icon a:hover:before {
 
 div.menu {
   padding-top:10px;
-  margin-bottom:25px;
+  margin-bottom:50px;
   min-width:1024px;
 }
 
@@ -536,31 +527,31 @@ div.right_annotation {
   border-color: #78BE43;
 }
 
-.section_annotation_menu>div {
+.section_anno_menu>div {
   background-color: #3C3F45;
 }
-.section_annotation_menu h4 {
+.section_anno_menu h4 {
   padding: 0px 8px;
   margin: 0px;
   color: #FFF;
   font-weight: normal;
 }
-.section_annotation_menu {
+.section_anno_menu {
   color: #FFF;
   text-decoration: none;
 }
-.section_annotation_menu:hover>div>div:first-child>h4, .section_annotation_menu:active>div>div:first-child>h4 {
+.section_anno_menu:hover>div>div:first-child>h4, .section_anno_menu:active>div>div:first-child>h4 {
   background-color: #9051A0;
 }
 
-a.section_annotation_h_menu>span:first-child {
+a.section_anno_h_menu>span:first-child {
   padding: 2px 6px 1px;
 }
-a.section_annotation_h_menu>span:last-child {
+a.section_anno_h_menu>span:last-child {
   padding-left:4px;
   
 }
-a.section_annotation_h_menu:hover>span:first-child {
+a.section_anno_h_menu:hover>span:first-child {
   color: #FFF;
 }
 
@@ -634,13 +625,13 @@ h3.sub_subsection {
 
 /** Mappings **/
 
-div.transcript_mapping {
+div.tr_mapping {
   margin:0px 6px 20px;
 	padding:0px 2px 2px;
 	border:1px solid #3C3F45;
 }
 
-div.sub_transcript_mapping {
+div.sub_tr_mapping {
   background-color:#FFF;
 }
 
@@ -665,7 +656,7 @@ td.mapping{
   padding-right:5px;
 }
 
-td.transcript_mapping { border:none; }
+td.tr_mapping { border:none; }
 
 span.translation_label {
   font-weight: bold;
@@ -1120,6 +1111,21 @@ ul.seq_info{
 
 ul.seq_info > li {
   margin-bottom:5px;
+}
+
+.info_header {
+  text-align:left;
+  border:1px solid #DDD;
+  padding:0px;
+  background-color:#FFF;
+  color:#FFF;
+  margin-left:15px;
+  
+}
+.info_header>div{
+  padding:6px 8px;
+  line-height:15px;
+  vertical-align:middle;
 }
 
 .sequence_padding {
