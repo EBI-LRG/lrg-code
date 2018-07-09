@@ -270,6 +270,7 @@ foreach my $f (@ens_feature) {
         
         foreach my $enst_name (keys(%{$ens_diff_utr_lrg->{$lrg_tr_name}})) {
           next if (!$ens_match_lrg->{$enst_name});
+          next if (!$ens_match_lrg->{$enst_name}{'fixed_id'});
           next if ($ens_match_lrg->{$enst_name}{'fixed_id'} ne $lrg_tr_name);
           
           my $five_prime_diff = $ens_diff_utr_lrg->{$lrg_tr_name}{$enst_name}{'5_prime_diff'} ? 1 : 0;
