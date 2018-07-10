@@ -74,6 +74,7 @@
 
 <xsl:variable name="max_g_sequence_to_display">1000000</xsl:variable>
 <xsl:variable name="max_sequence_to_display">500000</xsl:variable>
+<xsl:variable name="max_allele_to_display">10</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -5856,6 +5857,44 @@
         <xsl:when test="contains(../@coord_system,$current_assembly)"><xsl:value-of select="$current_assembly"/></xsl:when>
       </xsl:choose>
     </xsl:variable>
+    
+    <xsl:variable name="button_colour">
+      <xsl:choose>
+        <xsl:when test="contains(../@coord_system,$current_assembly)">btn-lrg2</xsl:when>
+        <xsl:when test="contains(../@coord_system,$previous_assembly)">btn-lrg3</xsl:when>
+        <xsl:otherwise>btn-lrg1</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    
+    <xsl:variable name="tooltip_font_colour">
+      <xsl:choose>
+        <xsl:when test="contains(../@coord_system,$current_assembly)">#78BE43</xsl:when>
+        <xsl:when test="contains(../@coord_system,$previous_assembly)">#ba8ec6</xsl:when>
+        <xsl:otherwise>#FFF</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    
+    <xsl:variable name="hgvs_assembly">
+      <xsl:choose>
+        <xsl:when test="$show_hgvs=1">
+          <!--HGVS assembly -->
+          <xsl:choose>
+            <xsl:when test="$assembly_label"><xsl:value-of select="$assembly_label"/></xsl:when>
+            <xsl:otherwise>none</xsl:otherwise>
+          </xsl:choose>
+        </xsl:when>
+        <xsl:otherwise></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>     
+            
+    <xsl:variable name="hgvs_chr">
+      <xsl:choose>
+        <xsl:when test="../@other_name='X' or ../@other_name='Y' or ../@other_name='MT' or number(../@other_name)">
+          <xsl:value-of select="../@other_name"/>
+        </xsl:when>
+        <xsl:otherwise><xsl:value-of select="../@other_id_syn"/></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
   
     <thead>
       <tr class="top_th">
@@ -5931,33 +5970,6 @@
      
       <xsl:for-each select="diff">
         <xsl:variable name="diff_id" select="position()" />
-         
-        <xsl:variable name="hgvs_assembly">
-          <xsl:choose>
-            <xsl:when test="$show_hgvs=1">
-              <!--HGVS assembly -->
-              <xsl:choose>
-                <xsl:when test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
-                  <xsl:choose>
-                    <xsl:when test="contains(../../@coord_system,$previous_assembly)"><xsl:value-of select="$previous_assembly"/></xsl:when>
-                    <xsl:when test="contains(../../@coord_system,$current_assembly)"><xsl:value-of select="$current_assembly"/></xsl:when>
-                  </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>none</xsl:otherwise>
-              </xsl:choose>
-            </xsl:when>
-            <xsl:otherwise></xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>     
-            
-        <xsl:variable name="hgvs_chr">
-          <xsl:choose>
-            <xsl:when test="../../@other_name='X' or ../../@other_name='Y' or ../../@other_name='MT' or number(../../@other_name)">
-              <xsl:value-of select="../../@other_name"/>
-            </xsl:when>
-            <xsl:otherwise><xsl:value-of select="../../@other_id_syn"/></xsl:otherwise>
-          </xsl:choose>
-        </xsl:variable>
                 
         <xsl:variable name="genomic_hgvs">
           <xsl:choose>
@@ -6005,7 +6017,13 @@
      
           <td class="text_right no_border_bottom current_assembly_bg" style="font-weight:bold">
             <xsl:choose>
-              <xsl:when test="@other_sequence"><xsl:value-of select="@other_sequence"/></xsl:when>
+              <xsl:when test="@other_sequence">
+                <xsl:call-template name="display_sequence">
+                  <xsl:with-param name="sequence" select="@other_sequence"/>
+                  <xsl:with-param name="btn_colour_class" select="$button_colour"/>
+                  <xsl:with-param name="prefix"><xsl:value-of select="$line_id"/>_al_ref</xsl:with-param>
+                </xsl:call-template>
+              </xsl:when>
               <xsl:otherwise>-</xsl:otherwise>
             </xsl:choose>
           </td>
@@ -6017,7 +6035,12 @@
           </td>
           <td class="no_border_bottom lrg_bg" style="font-weight:bold">
             <xsl:choose>
-              <xsl:when test="@lrg_sequence"><xsl:value-of select="@lrg_sequence"/></xsl:when>
+              <xsl:when test="@lrg_sequence">
+                <xsl:call-template name="display_sequence">
+                  <xsl:with-param name="sequence" select="@lrg_sequence"/>
+                  <xsl:with-param name="prefix"><xsl:value-of select="$line_id"/>_al_lrg</xsl:with-param>
+                </xsl:call-template>
+              </xsl:when>
               <xsl:otherwise>-</xsl:otherwise>
             </xsl:choose>
           </td>
@@ -6047,6 +6070,8 @@
                 <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
                 <xsl:with-param name="key"><xsl:value-of select="$genkey"/></xsl:with-param>
                 <xsl:with-param name="hgvs_gen"><xsl:value-of select="$genomic_hgvs"/></xsl:with-param>
+                <xsl:with-param name="button_colour"><xsl:value-of select="$button_colour"/></xsl:with-param>
+                <xsl:with-param name="tooltip_font_colour"><xsl:value-of select="$tooltip_font_colour"/></xsl:with-param>
               </xsl:call-template>
             </xsl:if>
           </td>
@@ -6133,10 +6158,10 @@
       <xsl:when test="$diff/@type='other_ins'">
         <xsl:choose>
           <xsl:when test="$diff/@other_start=@other_end">
-            <xsl:value-of select="$diff/@other_start"/>del<xsl:value-of select="$ref_seq"/>
+            <xsl:value-of select="$diff/@other_start"/>del
           </xsl:when>
           <xsl:otherwise>
-            <xsl:value-of select="$diff/@other_start"/>_<xsl:value-of select="$diff/@other_end"/>del<xsl:value-of select="$ref_seq"/>
+            <xsl:value-of select="$diff/@other_start"/>_<xsl:value-of select="$diff/@other_end"/>del
           </xsl:otherwise>
         </xsl:choose>
       </xsl:when>
@@ -6165,22 +6190,10 @@
   <xsl:param name="assembly" />
   <xsl:param name="key" />
   <xsl:param name="hgvs_gen" />
-        
-  <xsl:variable name="button_colour">
-    <xsl:choose>
-      <xsl:when test="contains($assembly,$current_assembly)">btn-lrg2</xsl:when>
-      <xsl:when test="contains($assembly,$previous_assembly)">btn-lrg3</xsl:when>
-      <xsl:otherwise>#FFF</xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
-    
-  <xsl:variable name="tooltip_font_colour">
-    <xsl:choose>
-      <xsl:when test="contains($assembly,$current_assembly)">#78BE43</xsl:when>
-      <xsl:when test="contains($assembly,$previous_assembly)">#ba8ec6</xsl:when>
-      <xsl:otherwise>#FFF</xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
+  <xsl:param name="button_colour"/>
+  <xsl:param name="tooltip_font_colour"/>
+
+
   <xsl:variable name="tooltip_colour"> &lt;span class="bold_font" style="color:<xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>
     
   <div class="hgvs nowrap">
@@ -6223,10 +6236,10 @@
         <xsl:when test="@type='lrg_ins'">
           <xsl:choose>
             <xsl:when test="@lrg_start=@lrg_end">
-              <xsl:value-of select="@lrg_start"/>del<xsl:value-of select="@lrg_sequence"/>
+              <xsl:value-of select="@lrg_start"/>del
             </xsl:when>
             <xsl:otherwise>
-              <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>del<xsl:value-of select="@lrg_sequence"/>
+              <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>del
             </xsl:otherwise>
           </xsl:choose>
         </xsl:when>
@@ -6848,7 +6861,7 @@
   <xsl:param name="dark_bg"/>
   
   <xsl:variable name="lrg_bold">
-    <xsl:if test="$bold"> bold_font</xsl:if>
+    <xsl:if test="$bold">bold_font</xsl:if>
   </xsl:variable>
   
   <xsl:variable name="lrg_previous_assembly">
@@ -7175,6 +7188,43 @@
   </div>
 </xsl:template>
 
+<xsl:template name="display_sequence">
+  <xsl:param name="sequence"/>
+  <xsl:param name="prefix"/>
+  <xsl:param name="btn_colour_class"/>
+  <xsl:choose>
+    <xsl:when test="string-length($sequence) &gt; $max_allele_to_display">
+    
+      <xsl:variable name="btn_class">
+        <xsl:choose>
+          <xsl:when test="$btn_colour_class"><xsl:value-of select="$btn_colour_class"/></xsl:when>
+          <xsl:otherwise>btn-lrg1</xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+    
+      <div><xsl:value-of select="substring($sequence, 1, $max_allele_to_display)"/>... 
+        <button type="button">
+        <xsl:attribute name="id"><xsl:value-of select="$prefix"/>_button</xsl:attribute>
+        <xsl:attribute name="class"><xsl:text>btn btn-lrg </xsl:text><xsl:value-of select="$btn_class"/><xsl:text> btn-sm close-icon-5 icon-collapse-closed</xsl:text></xsl:attribute>
+        <xsl:attribute name="onclick">showhide_button('<xsl:value-of select="$prefix"/>','allele');</xsl:attribute>
+        Show allele</button>
+      </div>
+      <div style="display:none">
+        <xsl:attribute name="id"><xsl:value-of select="$prefix"/></xsl:attribute>
+        <table class="no_border">
+          <tbody>
+            <tr>
+              <td class="sequence sequence_raw">
+                <div class="hardbreak" style="text-align:left"><xsl:value-of select="$sequence"/></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </xsl:when>
+    <xsl:otherwise><xsl:value-of select="$sequence"/></xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
 
 <xsl:template name="thousandify">
   <xsl:param name="number"/>
