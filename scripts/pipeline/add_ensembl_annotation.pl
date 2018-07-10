@@ -259,7 +259,12 @@ foreach my $f (@ens_feature) {
           remove_grc_coordinates($trans);
         }
       }
-      $t->fixed_id($ens_match_lrg->{$enst_name}{'fixed_id'}) if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'} && $same_pr_coords != 0);
+      if ($ens_match_lrg->{$enst_name} && $ens_match_lrg->{$enst_name}{'fixed_id'} && $same_pr_coords != 0) {
+        $t->fixed_id($ens_match_lrg->{$enst_name}{'fixed_id'});
+      }
+      else {
+        $ens_match_lrg->{$enst_name}{'fixed_id'} = undef;
+      }
     }
     
     # Create specific comment(s) for the ENST(s) with different 5' and/or 3' UTRs compared to the LRG transcript(s)
@@ -267,7 +272,7 @@ foreach my $f (@ens_feature) {
       foreach my $lrg_tr_obj (@{$lrg->fixed_annotation->transcript}) {
         my $lrg_tr_name = $lrg_tr_obj->name;
         next if (!$ens_diff_utr_lrg->{$lrg_tr_name});
-        
+      
         foreach my $enst_name (keys(%{$ens_diff_utr_lrg->{$lrg_tr_name}})) {
           next if (!$ens_match_lrg->{$enst_name});
           next if (!$ens_match_lrg->{$enst_name}{'fixed_id'});
