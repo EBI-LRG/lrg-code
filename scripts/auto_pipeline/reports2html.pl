@@ -138,10 +138,12 @@ my $html_header = qq{
       .header_count_succeed { border-color:$succeed_colour }
       .header_count_stopped { border-color:$stopped_colour }
       
+      .text-center { text-align:center}
       .status  {float:left;border-radius:20px;box-shadow:2px 2px 2px #888;width:24px;height:24px;position:relative;top:2px;left:6px}
       
       .log_header { background-color:#DDD;padding:1px 2px;cursor:pointer;color:#337ab7 }
       .log_header:hover, .log_header:active { color:#9051A0 }
+      .log_content { border:1px solid #DDD;padding:4px 4px 2px;background-color:#FFF }
       
       .succeed_bg {background-color:$succeed_colour}
       .waiting_bg {background-color:$waiting_colour}
@@ -149,8 +151,15 @@ my $html_header = qq{
       .failed_bg  {background-color:$failed_colour}
       .new_bg     {background-color:$new_colour}
       
+      .public_c  { color:#090 }
+      .pending_c { color:#E69400 }
+      .stalled_c { color:#900 }
+      .new_c     { color:$new_colour }
+      .grey_c    { color:#888 }
+      
       .section_annotation_icon_small { color:#FFF;margin-right:5px;padding:2px 5px !important}
       
+      .failed_path { text-decoration:none;color:#000 }
       .popup { font-family: "Lucida Grande", "Helvetica", "Arial", sans-serif }
     </style>
     
@@ -181,6 +190,25 @@ my $html_header = qq{
         // it can provide the offset in that case too. Having a timeout
         // seems necessary to allow the browser to jump to the anchor first.
         window.setTimeout(offsetAnchor, 0.1);
+        
+        // Display popup with the path to the failed LRG
+        \$(".failed_path").on("click", function () {
+          var abs_path = \$("#absolute_dir").html();
+          alert(abs_path+\$(this).data('path'));
+        });
+        
+        // Display popup with the full log
+        \$(".btn-log").on("click", function () {
+          var id = \$(this).parents('tr').attr('id');
+          show_log_info(id);
+        });
+        
+        // Display/hide the error and warning logs
+        \$(".log_header").on("click", function () {
+          var id = \$(this).parents('tr').attr('id');
+          var type = (\$(this).hasClass('log_warning')) ? 'warning' : 'error';
+          showhide(id+'_'+type);
+        });
       });
     </script>
   </head>
@@ -212,7 +240,7 @@ my $html_header = qq{
     <div class="data_container container-extra" style="padding-top:0px">
   
       <div class="report_header">
-        <span class="bold_font lrg_blue padding-right-5">XML files location:</span> $abs_xml_dir/
+        <span class="bold_font lrg_blue padding-right-5">XML files location:</span> <span id="absolute_dir">$abs_xml_dir/</span>
       </div>
 };
 
@@ -278,7 +306,7 @@ while (<F>) {
     }
   }
   else {
-    $html_comments = '<span style="color:#888">none</span>';
+    $html_comments = '<span class="grey_c">none</span>';
   }
   
   my $html_warnings = '';
@@ -294,7 +322,7 @@ while (<F>) {
     $html_warnings .= get_detailled_log_info($lrg_id,'warning');
   }
   else {
-     $html_warnings = '<span style="color:#888">none</span>';
+     $html_warnings = '<span class="grey_c">none</span>';
   }
   
   my $lrg_path = find_lrg_xml_file($lrg_id);
@@ -335,7 +363,7 @@ foreach my $status (@pipeline_status_list) {
       <span class="label header_count header_count_$status">$lrg_count LRGs</span>
     </div>
     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:8px">
-      <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-$button_type close-icon-5" id="$status\_lrg_button" onclick="javascript:showhide_button('$status\_lrg','table');">$button_text table</button>
+      <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-$button_type close-icon-5" id="$status\_lrg_button" onclick="showhide_button('$status\_lrg','table');">$button_text table</button>
     </div>
   </div>
   <div id="$status\_lrg"$div_display>
@@ -358,7 +386,7 @@ foreach my $status (@pipeline_status_list) {
     my ($lrg_status, $lrg_status_html) = find_lrg_on_ftp($lrg_id);
 
     if ($lrgs_list{$status}{$id}{'log_found'}) {
-      $log_link = qq{<a class="btn btn-lrg btn-lrg1" href="javascript:show_log_info('$lrg_id');">Show log</a>};
+      $log_link = qq{<a class="btn btn-lrg btn-lrg1 btn-log">Show log</a>};
     }
     
     my $error_log_column = ($status eq 'failed') ? '<td>'.get_detailled_log_info($lrg_id,'error').'</td>' : '';
@@ -369,8 +397,8 @@ foreach my $status (@pipeline_status_list) {
         <td>$lrg_status_html</td>
         <td>$comments</td>
         <td>$warnings</td>
-        <td><a style="text-decoration:none;color:#000" href="javascript:alert('$abs_xml_dir/$lrg_path')">$lrg_path</a></td>
-        <td style="text-align:center">$log_link</td>
+        <td><a class="failed_path" data-path="$lrg_path">$lrg_path</a></td>
+        <td class="text-center">$log_link</td>
         $error_log_column
       </tr>
     };
@@ -452,7 +480,7 @@ if ($count_new_lrgs) {
   my $display_table  = '';
   
   if ($count_new_lrgs > $max_new_lrg) {
-    $summary_class  = qq{ class="summary_clickable" onclick="javascript:showhide('$new_lrg_div_id')"};
+    $summary_class  = qq{ class="summary_clickable" onclick="showhide('$new_lrg_div_id')"};
     $display_button = qq{<span id="$new_lrg_div_id\_button" class="icon-collapse-closed smaller-icon close-icon-2" style="padding:0px;vertical-align:middle"></span> };
     $display_table  = ' style="display:none"';
   }
@@ -627,11 +655,11 @@ sub get_detailled_log_info {
     
     $html = qq{
       $error_type
-      <div class="log_header" onclick="javascript:showhide('$id')">
+      <div class="log_header log_$type">
         <span id="$id\_button" class="icon-collapse-closed close-icon-5">$label details</span>
       </div>
       <div id="$id" style="display:none">
-        <div style="border:1px solid #DDD;padding:4px 4px 2px">
+        <div class="log_content">
         $content
       </div>
     };
@@ -660,18 +688,18 @@ sub find_lrg_on_ftp {
     if (-e $lrg_file) {
       if ($dir eq '') {
         $status = 'public';
-        $status_html = qq{<span style="color:#090">public</span>};
+        $status_html = qq{<span class="public_c">public</span>};
       }
       elsif ($dir eq 'pending') {
-        $status_html = qq{<span style="color:#E69400">$dir</span>};
+        $status_html = qq{<span class="pending_c">$dir</span>};
       }
       elsif ($dir eq 'stalled') {
-        $status_html = qq{<span style="color:#900">$dir</span>};
+        $status_html = qq{<span class="stalled_c">$dir</span>};
       }
       return ($status, $status_html);
     }
   }
-  return ('new', qq{<span style="color:$new_colour">new</span>});
+  return ('new', qq{<span class="new_c">new</span>});
 }
 
 sub get_log_reports {
