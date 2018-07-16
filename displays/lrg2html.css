@@ -129,6 +129,10 @@ td.left_label {
   padding:2px 4px;
 }
 
+tr.trans_prot_hl {
+  background-color:#CAE1FF;
+}
+
 /** Table cell display **/
 
 td.left_col {
@@ -1452,6 +1456,16 @@ div.top_upd_anno_link {
 .transcript_sublegend_container {
   text-align:center;
   margin:0px 5px;
+}
+
+ul.tr_tooltip {
+  padding-left:15px;
+  text-align:left;
+  margin:2px 0px;
+}
+
+ul.tr_tooltip > li {
+  line-height:1;
 }
 
 

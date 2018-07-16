@@ -1203,7 +1203,7 @@
             <div style="margin-top:5px">
               <button class="btn btn-lrg btn-lrg1" type="button">
                  <xsl:attribute name="onclick">javascript:clear_highlight('<xsl:value-of select="$transname"/>');</xsl:attribute>
-                 <span class="glyphicon glyphicon glyphicon-chevron-right"></span>
+                 <span class="glyphicon glyphicon-erase"></span>
                  <span>Clear all the exon highlightings for the LRG transcript <xsl:value-of select="$transname"/></span>
               </button>
             </div>
@@ -4398,11 +4398,12 @@
     
     <xsl:variable name="tooltip_font_colour">
       <xsl:choose>
-        <xsl:when test="$is_enst">#8F8</xsl:when>
-        <xsl:otherwise>#1C9BCF</xsl:otherwise>
+        <xsl:when test="$is_enst">lrg_green2</xsl:when>
+        <xsl:otherwise>lrg_blue</xsl:otherwise>
       </xsl:choose>
     </xsl:variable>
-    <xsl:variable name="tooltip_colour"> &lt;span class="bold_font" style="color:<xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>
+    <xsl:variable name="tooltip_colour">&lt;span class="bold_font <xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>
+    <!--<xsl:variable name="tooltip_colour">&lt;span class="bold_font" style="color:<xsl:value-of select="$tooltip_font_colour" />"&gt;</xsl:variable>-->
     
     <xsl:for-each select="$transnode/exon">
       
@@ -4435,7 +4436,7 @@
             </xsl:choose>
           </xsl:attribute>
           <xsl:attribute name="title">
-            &lt;ul style="padding-left:15px;text-align:left;margin:2px 0px"&gt;
+            <!--&lt;ul style="padding-left:15px;text-align:left;margin:2px 0px"&gt;
               &lt;li style="line-height:1"&gt;LRG exon number: <xsl:value-of select="$tooltip_colour"/><xsl:value-of select="$exon_label"/>&lt;/span&gt;&lt;/li&gt;
               &lt;li style="line-height:1"&gt;<xsl:value-of select="$tr_label"/> exon number: <xsl:value-of select="$tooltip_colour"/><xsl:value-of select="$exon_number"/>&lt;/span&gt;&lt;/li&gt;
               &lt;li style="line-height:1"&gt;Coord.: <xsl:value-of select="$tooltip_colour"/>
@@ -4443,7 +4444,16 @@
               <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$lrg_end"/></xsl:call-template>&lt;/span&gt;&lt;/li&gt; 
               &lt;li style="line-height:1"&gt;Length: <xsl:value-of select="$tooltip_colour"/>
                <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$exon_size"/></xsl:call-template>nt&lt;/span&gt;&lt;/li&gt;
-              &lt;li style="line-height:1"&gt;<xsl:value-of select="$tooltip_colour"/>
+              &lt;li style="line-height:1"&gt;<xsl:value-of select="$tooltip_colour"/>-->
+              &lt;ul class="tr_tooltip"&gt;
+              &lt;li&gt;LRG exon number: <xsl:value-of select="$tooltip_colour"/><xsl:value-of select="$exon_label"/>&lt;/span&gt;&lt;/li&gt;
+              &lt;li&gt;<xsl:value-of select="$tr_label"/> exon number: <xsl:value-of select="$tooltip_colour"/><xsl:value-of select="$exon_number"/>&lt;/span&gt;&lt;/li&gt;
+              &lt;li&gt;Coord.: <xsl:value-of select="$tooltip_colour"/>
+              <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$lrg_start"/></xsl:call-template>-
+              <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$lrg_end"/></xsl:call-template>&lt;/span&gt;&lt;/li&gt; 
+              &lt;li&gt;Length: <xsl:value-of select="$tooltip_colour"/>
+               <xsl:call-template name="thousandify"><xsl:with-param name="number" select="$exon_size"/></xsl:call-template>nt&lt;/span&gt;&lt;/li&gt;
+              &lt;li&gt;<xsl:value-of select="$tooltip_colour"/>
             <xsl:choose>
               <!-- Non coding -->
               <xsl:when test="$cds_start=0 and $cds_end=0">
@@ -5597,10 +5607,10 @@
   
   <xsl:variable name="lrg_tr_name" select="@fixed_id"/>
 
-  <tr valign="top">
+  <tr>
   <xsl:attribute name="class">trans_prot</xsl:attribute>
   <xsl:attribute name="id">up_trans_<xsl:value-of select="$setnum"/>_<xsl:value-of select="$gene_idx"/>_<xsl:value-of select="$transcript_idx"/></xsl:attribute>
-  <xsl:attribute name="onClick">toggle_transcript_highlight(<xsl:value-of select="$setnum"/>,<xsl:value-of select="$gene_idx"/>,<xsl:value-of select="$transcript_idx"/>)</xsl:attribute>
+  <xsl:attribute name="onClick">toggle_transcript_hl(<xsl:value-of select="$setnum"/>,<xsl:value-of select="$gene_idx"/>,<xsl:value-of select="$transcript_idx"/>)</xsl:attribute>
     <td class="external_link">
       <xsl:value-of select="@accession"/>
     </td>
@@ -5686,7 +5696,7 @@
   <tr valign="top">
   <xsl:attribute name="class">trans_prot</xsl:attribute>
   <xsl:attribute name="id">up_prot_<xsl:value-of select="$setnum"/>_<xsl:value-of select="$gene_idx"/>_<xsl:value-of select="$transcript_idx"/></xsl:attribute>
-  <xsl:attribute name="onClick">toggle_transcript_highlight(<xsl:value-of select="$setnum"/>,<xsl:value-of select="$gene_idx"/>,<xsl:value-of select="$transcript_idx"/>)</xsl:attribute> 
+  <xsl:attribute name="onClick">toggle_transcript_hl(<xsl:value-of select="$setnum"/>,<xsl:value-of select="$gene_idx"/>,<xsl:value-of select="$transcript_idx"/>)</xsl:attribute> 
     <td class="external_link">
       <xsl:value-of select="@accession"/>
     </td>
@@ -6751,7 +6761,7 @@
   <div style="margin-top:5px">
     <span class="btn btn-lrg btn-lrg-small btn-lrg1">
       <xsl:attribute name="onclick">javascript:clear_highlight('<xsl:value-of select="$transname"/>');</xsl:attribute>
-      <span class="glyphicon glyphicon glyphicon-chevron-right"></span> Clear all the exon highlightings for the LRG transcript <xsl:value-of select="$transname"/>
+      <span class="glyphicon glyphicon glyphicon-erase"></span> Clear all the exon highlightings for the LRG transcript <xsl:value-of select="$transname"/>
     </span>
   </div>
 </xsl:template>

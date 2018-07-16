@@ -164,7 +164,7 @@ function show(lyr) {
 }
 
 // function to highlight paired transcripts and protein products
-function toggle_transcript_highlight(s_id,g_id,t_id) {
+function toggle_transcript_hl(s_id,g_id,t_id) {
   var trans = document.getElementById('up_trans_'+s_id+'_'+g_id+'_'+t_id);
   var prot = document.getElementById('up_prot_'+s_id+'_'+g_id+'_'+t_id);
   var cur = trans.className;
