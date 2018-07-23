@@ -37,7 +37,6 @@ my $species  = 'homo_sapiens';
 my $html;
 #my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
 my $havana_file_default  = 'hg38.bed';
-my $refseq_select_file_default = 'select_per_gene_9606.txt';
 
 my $max_variants = 10;
 

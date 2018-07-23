@@ -24,14 +24,17 @@ my $data_dir        = '/nfs/production/panda/production/vertebrate-genomics/lrg/
 my $data_files_info = "$data_dir/data_files_info.json";
 
 # CARS INFO
-my $transcript_cars_date  = '';
+my $transcript_cars_date = '';
+my $refseq_select_date   = '';
 if (-e $data_files_info) {
   my $json_text = `cat $data_files_info`;
   my $data = decode_json($json_text);
-  $transcript_cars_date = $data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
+  $transcript_cars_date = 'cars;'.$data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
+  $refseq_select_date = 'refseq_select;'.$data->{'refseq_select'}{'Date'};
 }
 open C, "> $output_dir/ens_ott_data_info.txt" or die $!;
-print C "$transcript_cars_date";
+print C "$transcript_cars_date\n";
+print C "$refseq_select_date\n";
 close(C);
 
 
@@ -115,7 +118,7 @@ my %rs_select_data;
 open R, "< $data_dir/$rs_select_file" or die $!;
 while(<R>) {
   chomp $_;
-  next if ($_ =~ /^#/);
+  next if ($_ =~ /^#/ || $_ =~ /^tax_id/);
   my @line = split("\t", $_);
   
   my $enst = $line[11];
