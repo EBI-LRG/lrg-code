@@ -950,7 +950,12 @@ span.source_name {
   letter-spacing:0.5px;
 }
 
-.fasta { background-color:#FFF; } 
+.fasta_link {
+  border:1px solid #DDD;
+  background-color:#FFF;
+  padding:4px 6px;
+  vertical-align:middle;
+}
 
 .hardbreak {
   /*-moz-binding: url('./wordwrap.xml#wordwrap');*/

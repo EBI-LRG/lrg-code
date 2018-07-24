@@ -1603,7 +1603,7 @@
     <!-- CDNA SEQUENCE -->
     <div style="display:none">
       <xsl:attribute name="id">cdna_<xsl:value-of select="$transname"/></xsl:attribute>
-      
+ 
       <div class="unhidden_content">
 
       <xsl:choose>
@@ -1657,21 +1657,7 @@
                     
                   </td>
                 </tr>
-        
-                <tr>
-                  <td class="showhide">
-                    <a>
-                      <xsl:attribute name="id">cdna_fasta_anchor_<xsl:value-of select="$transname"/></xsl:attribute>
-                    </a>
-                    <xsl:call-template name="show_hide_button">
-                      <xsl:with-param name="div_id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:with-param>
-                      <xsl:with-param name="showhide_text">the transcript sequence <xsl:value-of select="$transname"/> in <b>FASTA</b> format </xsl:with-param>
-                      <xsl:with-param name="show_as_button">1</xsl:with-param>
-                      <xsl:with-param name="small_button">1</xsl:with-param>
-                    </xsl:call-template>
-                  </td>
-                </tr>
-                
+ 
               </tbody>
             </table>
           </div>
@@ -1698,44 +1684,14 @@
                 </li>
               </ul>
             </div>
+            
             <div style="padding-left:5px;margin:10px 0px 15px">
-              <a>
-                <xsl:attribute name="href">javascript:show_content('cdna_fasta_<xsl:value-of select="$transname"/>','cdna_fasta_anchor_<xsl:value-of select="$transname"/>');</xsl:attribute>
-                <xsl:call-template name="right_arrow_blue" />
-                Jump to sequence <xsl:value-of select="$transname"/> in <b>FASTA</b> format
-              </a>
+              <span>The genomic, transcript and protein sequences are available in <span class="fasta_link"><xsl:call-template name="fasta_dl_button"/></span> format</span>
             </div>
+
           </div>
         </div>
 
-        <div style="display:none">
-          <xsl:attribute name="id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:attribute>
-          
-          <table border="0" cellpadding="0" cellspacing="0" class="sequence fasta">
-            <tbody>
-              <tr>
-                <td class="sequence">
-                  ><xsl:value-of select="$lrg_id"/><xsl:value-of select="$transname"/> (transcript <xsl:value-of select="$transname"/> of <xsl:value-of select="$lrg_id"/>)
-                </td>
-              </tr>
-              <xsl:call-template name="sequence_to_fasta">
-                <xsl:with-param name="i" select="1"/>
-                <xsl:with-param name="to" select="string-length(cdna/sequence)"/>
-                <xsl:with-param name="type" select="cdna"/>
-                <xsl:with-param name="transname" select="$transname"/>
-                <xsl:with-param name="first_exon_start" select="$first_exon_start"/>
-              </xsl:call-template>
-            </tbody>
-          </table>
-          
-          <div style="padding-top:5px">
-            <xsl:call-template name="hide_button">
-              <xsl:with-param name="div_id">cdna_fasta_<xsl:value-of select="$transname"/></xsl:with-param>
-              <xsl:with-param name="text_desc">FASTA sequence</xsl:with-param>
-            </xsl:call-template>
-          </div>
-        
-        </div>
         </xsl:when>
         <xsl:otherwise><xsl:call-template name="sequence_too_long"/></xsl:otherwise>
       </xsl:choose>
@@ -1914,6 +1870,7 @@
 
       <div class="clearfix unhidden_content">
         <!-- sequence -->
+        
         <div class="left"> 
           <table class="no_border">
             <tbody>
@@ -2000,47 +1957,12 @@
                    </xsl:if>
                  </xsl:for-each>
                  </div>
-               </td>
-             </tr>
-        
-             <tr>
-               <td class="showhide">
-                 <a>
-                   <xsl:attribute name="id">translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
-                 </a>
-                 
-                 <xsl:call-template name="show_hide_button">
-                   <xsl:with-param name="div_id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:with-param>
-                   <xsl:with-param name="showhide_text">the translated sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format</xsl:with-param>
-                   <xsl:with-param name="show_as_button">1</xsl:with-param>
-                   <xsl:with-param name="small_button">1</xsl:with-param>
-                 </xsl:call-template>
-               </td>
-             </tr>
-            </tbody>
-          </table>
-           
-          <div style="display:none">
-            <xsl:attribute name="id">translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/></xsl:attribute>
-            <p></p>
-            <table border="0" cellpadding="0" cellspacing="0" class="sequence fasta">
-               
-              <tr>
-                <td class="sequence">
-                  ><xsl:value-of select="$lrg_id"/><xsl:value-of select="$pepname"/> (protein translated from transcript <xsl:value-of select="$transname"/> of <xsl:value-of select="$lrg_id"/>)
                 </td>
               </tr>
-              <xsl:call-template name="sequence_to_fasta">
-                <xsl:with-param name="i" select="1"/>
-                <xsl:with-param name="to" select="string-length(translation/sequence)"/>
-                <xsl:with-param name="type" select="translation"/>
-                <xsl:with-param name="transname" select="$transname"/>
-                <xsl:with-param name="first_exon_start" select="$first_exon_start"/>
-              </xsl:call-template>
-       
-            </table>
-
-          </div>
+        
+            </tbody>
+          </table>
+          
         </div>
       
         <!-- Right handside help/key -->
@@ -2064,13 +1986,10 @@
             </ul>
           </div>
         
-          <div class="padding-left-5" style="margin:0px 0px 15px">
-            <a>
-              <xsl:attribute name="href">javascript:show_content('translated_fasta_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','translated_fasta_anchor_<xsl:value-of select="$transname"/>_<xsl:value-of select="$pepname"/>','the translated sequence <xsl:value-of select="$pepname"/> in FASTA format');</xsl:attribute>
-              <xsl:call-template name="right_arrow_blue" />
-              Jump to sequence <xsl:value-of select="$pepname"/> in <b>FASTA</b> format
-            </a>
+          <div style="padding-left:5px;margin:10px 0px 15px">
+            <span>The genomic, transcript and protein sequences are available in <span class="fasta_link"><xsl:call-template name="fasta_dl_button"/></span> format</span>
           </div>
+            
         </div>
       </div>
     </div>
@@ -7153,28 +7072,26 @@
 
 
 <!-- SEQUENCE FORMATTING DISPLAY -->
-<xsl:template name="sequence_to_fasta">
+<!--<xsl:template name="sequence_to_fasta">
   <xsl:param name="i"/>
   <xsl:param name="to"/>
   <xsl:param name="type"/>
   <xsl:param name="transname"/>
   <xsl:param name="first_exon_start"/>
-
-  <xsl:variable name="step">60</xsl:variable>
   
   <tr>
-    <td class="sequence"><xsl:value-of select="substring($type/sequence,$i,$step)"/></td>
+    <td class="sequence"><xsl:value-of select="substring($type/sequence,$i,$fasta_row_length)"/></td>
   </tr>
-  <xsl:if test="$i+$step &lt;= $to">
+  <xsl:if test="$i+$fasta_row_length &lt;= $to">
     <xsl:call-template name="sequence_to_fasta">
-      <xsl:with-param name="i" select="$i + $step"/>
+      <xsl:with-param name="i" select="$i + $fasta_row_length"/>
       <xsl:with-param name="to" select="$to"/>
       <xsl:with-param name="type" select="$type"/>
       <xsl:with-param name="transname" select="$transname"/>
       <xsl:with-param name="first_exon_start" select="$first_exon_start"/>
     </xsl:call-template>
   </xsl:if>
-</xsl:template>
+</xsl:template>-->
 
 
 <xsl:template name="fasta_dl_button">
