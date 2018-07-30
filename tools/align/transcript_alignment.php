@@ -284,23 +284,29 @@ function get_legend() {
           </tr>
           <tr class="bg2_legend">
             <td>
+              <span class="flag uniprot_flag glyphicon glyphicon-record"></span>
+            </td>
+            <td>Label to indicate the UniProt canonical transcript</td>
+          </tr>
+          <tr class="bg1_legend">
+            <td>
               <span class="flag rs_select glyphicon glyphicon-flag"></span>
             </td>
             <td>Label to indicate the RefSeq select transcript</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag pathog icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
             <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag source_flag gff3 dark_border">gff3</span>
             </td>
@@ -346,7 +352,7 @@ function get_legend() {
             <tr class="bg1_legend">
               <td>
                 <div class="exon coding partial">
-                  <div class="e_label e_label_enst">#</div>
+                  <div class="e_label e_enst">#</div>
                   <div class="part_utr_l part_utr_enst" style="width:$partial_width%"></div>
                 </div>
               </td>
@@ -355,7 +361,7 @@ function get_legend() {
             <tr class="bg2_legend">
               <td>
                 <div class="exon hv_coding partial">
-                  <div class="e_label e_label_hv">#</div>
+                  <div class="e_label e_hv">#</div>
                   <div class="part_utr_l part_utr_hv" style="width:$partial_width%"></div>
                 </div>
               </td>
@@ -364,7 +370,7 @@ function get_legend() {
             <tr class="bg1_legend">
               <td>
                 <div class="exon coding_rs partial">
-                  <div class="e_label e_label_rs">#</div>
+                  <div class="e_label e_rs">#</div>
                   <div class="part_utr_l part_utr_rs" style="width:$partial_width%"></div>
                 </div>
               </td>
@@ -375,15 +381,15 @@ function get_legend() {
             <tr class="bg1_legend"><td colspan="2"></td></tr>
             <tr><td colspan="2" class="subheader">Non coding</td></tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding"><div class="e_label e_label_enst">#</div></div></td>
+              <td><div class="exon non_coding"><div class="e_label e_enst">#</div></div></td>
               <td style="padding-left:5px">The exon is not coding. The exon and reference sequences are <b>identical</b></td>
             </tr>
             <tr class="bg2_legend">
-              <td><div class="exon hv_non_coding"><div class="e_label e_label_hv">#</div></div></td>
+              <td><div class="exon hv_non_coding"><div class="e_label e_hv">#</div></div></td>
               <td style="padding-left:5px">Havana exon. The exon and reference sequences are <b>identical</b></td>
             </tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding_rs"><div class="e_label e_label_rs">#</div></div></td>
+              <td><div class="exon non_coding_rs"><div class="e_label e_rs">#</div></div></td>
               <td style="padding-left:5px">The exon is not coding. We don't know whether the sequence is identical or different with the reference</td>
             </tr>
             
@@ -391,20 +397,20 @@ function get_legend() {
             <tr class="bg1_legend"><td colspan="2"></td></tr>
             <tr><td colspan="2" class="subheader">Low evidences <span style="color:#AFA">(only for Ensembl transcripts)</span></td></tr>
             <tr class="bg1_legend">
-              <td><div class="exon coding few_ev"><div class="e_label e_label_enst">#</div></div></td>
+              <td><div class="exon coding few_ev"><div class="e_label e_enst">#</div></div></td>
               <td style="padding-left:5px">Coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             <tr class="bg2_legend">
               <td>
                 <div class="exon coding few_ev partial">
-                  <div class="e_label e_label_enst">#</div>
+                  <div class="e_label e_enst">#</div>
                   <div class="part_utr_l part_utr_enst few_ev_l" style="width:$partial_width%"></div>
                 </div>
               </td>
               <td style="padding-left:5px">Partial coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             <tr class="bg1_legend">
-              <td><div class="exon non_coding few_ev"><div class="e_label e_label_enst">#</div></div></td>
+              <td><div class="exon non_coding few_ev"><div class="e_label e_enst">#</div></div></td>
               <td style="padding-left:5px">Non coding exon. The exon and reference sequences are <b>identical</b>, but  less than $nb_exon_evidence "non-refseq" supporting evidences are associated with this exon</td>
             </tr>
             

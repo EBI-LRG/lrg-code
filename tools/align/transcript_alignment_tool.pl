@@ -40,10 +40,11 @@ my $havana_file_default  = 'hg38.bed';
 
 my $max_variants = 10;
 
-my $transcript_cars_file  = $data_file_dir.'/canonicals_hgnc.txt';
-my $transcript_data_info  = $data_file_dir.'/data_files_info.json';
-my $transcript_score_file = $data_file_dir.'/transcript_scores.txt';
-my $refseq_select_file    = $data_file_dir.'/select_per_gene_9606.txt';
+my $transcript_cars_file   = $data_file_dir.'/canonicals_hgnc.txt';
+my $transcript_data_info   = $data_file_dir.'/data_files_info.json';
+my $transcript_score_file  = $data_file_dir.'/transcript_scores.txt';
+my $refseq_select_file     = $data_file_dir.'/select_per_gene_9606.txt';
+my $uniprot_canonical_file = $data_file_dir.'/uniprot/human_sp_ensembl-withIdentifiers.txt';
 
 my $transcript_cars_date  = 'NA';
 my $transcript_rss_date  = 'NA';
@@ -202,6 +203,7 @@ if (-e $transcript_score_file) {
 
 my $ref_canonical_transcript = get_cars_transcript($gene_name);
 my $canonical_transcript     = get_canonical_transcript($gene_name);
+my ($uniprot_canonical_transcript, $uniprot_id) = @{get_uniprot_canonical_transcript($ens_gene->stable_id)};
 
 my $gene_chr    = $ens_gene->slice->seq_region_name;
 my $gene_start  = $ens_gene->start;
@@ -702,13 +704,16 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $canonical_html = get_canonical_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $cars_html      = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $tr_score_html  = get_tr_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
+  my $uniprot_html   = get_uniprot_canonical_transcript_html($ens_tr_exons_list{$ens_tr}{'object'});
   #my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   
   my $pathogenic_count = $ens_tr_exons_list{$ens_tr}{'has_pathogenic'};
   my $pathogenic_html  = ($pathogenic_count) ? get_pathogenic_html($pathogenic_count) : '';
   
-  my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'lg_cell'  : 'md_cell';
-  my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'md_cell' : 'lg_cell';
+  #my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'lg_cell'  : 'md_cell';
+  #my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'md_cell' : 'lg_cell';
+  my $pathogenic_td_class = 'lg_cell';
+  my $canonical_td_class  = 'lg_cell';
   
   my $biotype = get_biotype($tr_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
@@ -740,7 +745,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           <td class="sm_cell">$tsl_html</td>
           <td class="md_cell">$tr_score_html</td>
           <td class="md_cell">$appris_html</td>
-          <td class="$canonical_td_class">$canonical_html$cars_html</td>
+          <td class="$canonical_td_class">$canonical_html$cars_html$uniprot_html</td>
           <td class="$pathogenic_td_class">$pathogenic_html</td>
         </tr>
       </table>
@@ -1323,6 +1328,23 @@ sub get_cars_transcript {
   return $cars_transcript;
 }
 
+sub get_uniprot_canonical_transcript {
+  my $ensg = shift;
+  my $uniprot_transcript;
+  my $uniprot_id;
+  if (-e $uniprot_canonical_file) {
+    my $query_results = `grep $ensg $uniprot_canonical_file`;
+    
+    foreach my $query_result (split("\n",$query_results)) {
+      my @result = split("\t", $query_result);
+      $uniprot_transcript = $result[2];
+      $uniprot_id = $result[0];
+      last;
+    }
+  }
+  return [$uniprot_transcript, $uniprot_id];
+}
+
 sub get_tsl_html {
   my $transcript = shift;
   my $tr_type    = shift;
@@ -1364,7 +1386,7 @@ sub get_tsl_html {
 }
 
 sub get_canonical_html {
-  my $transcript   = shift;
+  my $transcript = shift;
   
   return '' unless($transcript->is_canonical);
 
@@ -1372,12 +1394,22 @@ sub get_canonical_html {
 }
 
 sub get_cars_html {
-  my $transcript   = shift;
+  my $transcript = shift;
   
   return '' unless($transcript->stable_id eq $ref_canonical_transcript && $ref_canonical_transcript);
 
   return qq{<span class="flag cars glyphicon glyphicon-star" data-toggle="tooltip" data-placement="bottom" title="CARS transcript ($transcript_cars_date)"></span>};
 }
+
+sub get_uniprot_canonical_transcript_html {
+  my $transcript = shift;
+ 
+  return '' unless($transcript->stable_id eq $uniprot_canonical_transcript && $uniprot_canonical_transcript);
+ 
+  return qq{<a class="flag uniprot_flag glyphicon glyphicon-record" data-toggle="tooltip" data-placement="bottom" title="UniProt canonical transcript for $uniprot_id" href="https://www.uniprot.org/uniprot/$uniprot_id" target="_blank"></a>};
+}
+
+
 
 sub get_tr_score_html {
   my $transcript   = shift;
@@ -1479,7 +1511,7 @@ sub get_pathogenic_html {
 
 
 sub get_source_html {
-  my $source   = shift;
+  my $source = shift;
   
   return qq{<span class="flag source_flag $source" data-toggle="tooltip" data-placement="bottom" title="Same coordinates in the RefSeq $source import">$source</span>};
 }
