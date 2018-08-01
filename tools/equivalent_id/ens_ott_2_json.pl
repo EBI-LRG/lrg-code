@@ -20,21 +20,25 @@ my $havana_file     = 'hg38.bed';
 my $gencode_file    = 'gencode.annotation.gtf';
 my $cars_file       = 'canonicals_hgnc.txt'; 
 my $rs_select_file  = 'select_per_gene_9606.txt';
+my $uniprot_file    = 'uniprot/human_sp_ensembl-withIdentifiers.txt';
 my $data_dir        = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
 my $data_files_info = "$data_dir/data_files_info.json";
 
 # CARS INFO
 my $transcript_cars_date = '';
 my $refseq_select_date   = '';
+my $uniprot_date   = '';
 if (-e $data_files_info) {
   my $json_text = `cat $data_files_info`;
   my $data = decode_json($json_text);
   $transcript_cars_date = 'cars;'.$data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
   $refseq_select_date = 'refseq_select;'.$data->{'refseq_select'}{'Date'};
+  $uniprot_date = 'uniprot;'.$data->{'uniprot'}{'Date'};
 }
 open C, "> $output_dir/ens_ott_data_info.txt" or die $!;
 print C "$transcript_cars_date\n";
 print C "$refseq_select_date\n";
+print C "$uniprot_date\n";
 close(C);
 
 
@@ -127,6 +131,19 @@ while(<R>) {
     $rs =~ s/$rseq_prefix//i;
     $rs_select_data{$enst} = $rs;
   }
+}
+close(R);
+
+
+# UniProt canonical file
+my %uniprot_data;
+open U, "< $data_dir/$uniprot_file" or die $!;
+while(<U>) {
+  chomp $_;
+  next if ($_ =~ /^ACCESSION/);
+  my @line = split("\t", $_);
+  
+  $uniprot_data{$line[2]} = $line[0];
 }
 close(R);
 
@@ -274,6 +291,7 @@ foreach my $enst (keys(%ensts)) {
   my %json_data = ( "et" => $enst_v );
   $json_data{"g"} = $hgnc if ($hgnc && $hgnc ne '');
   $json_data{"cars"} = 1 if ($cars_data{$enst});
+  $json_data{"up"} = $uniprot_data{$enst} if ($uniprot_data{$enst});
   
   if ($is_private) {
     if ($ottt) {

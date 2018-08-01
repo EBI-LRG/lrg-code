@@ -5,10 +5,8 @@
   <!-- CSS -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"/>
-  <!--<link rel="stylesheet" href="http://dev.lrg-sequence.org/css/ebi-visual-custom.css"/>-->
   <link rel="stylesheet" href="../ebi-visual-custom.css"/>
-  <!--<link rel="stylesheet" href="http://dev.lrg-sequence.org/css/lrg.css"/>-->
-  <link rel="stylesheet" href="../lrg.css"/>
+  <link rel="stylesheet" href="https://www.lrg-sequence.org/css/lrg.css"/>
   <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.min.css"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato|Lato:700|Open+Sans:400,400i,700"/> 
   
@@ -53,6 +51,7 @@
     color:#FFF;
     border-radius:0.25em;
     font-size:75%;
+    margin-left:2px;
   }
   .fa_button:hover {
      color:#FFF;
@@ -63,12 +62,18 @@
     padding-left:2px;
     padding-right:2px;
     cursor: help;
+    color: #D00;
     font-size: 15px;
     vertical-align:baseline;
     cursor:default;
   }
-  .red_flag   { color: #D00;  }
-  .green_flag { color: green; }
+  .flag:hover {
+    color: #F00;
+  }
+  a.flag:hover {
+    cursor:pointer;
+  }
+  
   
   .version_info_container {
     float:right;
@@ -168,11 +173,31 @@
 <body>
   <div class="container container_padding">
     <div class="clearfix">
-      <h2 class="left">Identifier equivalent</h2>
+    
+      <div class="left">
+        <h2>Identifier equivalent</h2>
+        <!-- Search form -->
+        <div id="search_form" class="clearfix margin-top-20">
+          <div id="temp_loader" style="width:350px;text-align:center">
+            <div class="loader"></div>
+          </div>
+          <div class="search_record_title">Search:</div>
+          <div class="left padding-left-5 padding-right-5">
+            <div class="input-group" style="width:300px">
+	            <input type="text" class="form-control ui-autocomplete-input search_record_input" placeholder="enter search term/ID" id="search_id" onkeydown="javascript: if (event.keyCode==13) get_query();" autocomplete="off">
+              <span class="input-group-btn">
+                <button class="btn btn-search btn-search-record icon-search smaller-icon close-icon-0" type="button" onclick="javascript:get_query();"></button>
+              </span>
+            </div>
+            <div class="smaller-font padding-top-5" style="color:#555">e.g. &quot;BRCA2&quot;, &quot;ENST00000593374&quot;, &quot;NM_001173466&quot;, &quot;OTTHUMG00000183508&quot; or &quot;OTTHUMT00000466932&quot;</div>
+          </div>
+        </div>
+      </div>
+      
       <div class="version_info_container">
         <table class="version_info">
           <tr>
-            <td><span class="red_flag glyphicon glyphicon-star"></span></td>
+            <td><span class="cars_flag glyphicon glyphicon-star" style="color:#D00"></span></td>
             <td><span class="bold_font" style="width:105px">CARS version: </span></td>
             <td><span id="cars_info"></span></td>
           </tr>
@@ -182,28 +207,16 @@
             <td><span id="refseq_select_info"></span></td>
           </tr>
           <tr>
-            <td><span class="green_flag glyphicon glyphicon-refresh"></span></td>
+            <td><span class="flag red_flag glyphicon glyphicon-record" style="color:#D00"></span></td>
+            <td><span class="bold_font" style="width:105px">UniProt: </span></td>
+            <td><span id="uniprot_info"></span></td>
+          </tr>
+          <tr>
+            <td><span class="update_flag glyphicon glyphicon-refresh" style="color:green"></span></td>
             <td><span class="bold_font" style="width:105px">Last update: </span></td>
             <td><span id="timestamp_info"></span></td>
           </tr>
         </table>
-      </div>
-    </div>
-  
-    <!-- Search form -->
-    <div id="search_form" class="clearfix margin-top-20">
-      <div id="temp_loader" style="width:350px;text-align:center">
-        <div class="loader"></div>
-      </div>
-      <div class="search_record_title">Search:</div>
-      <div class="left padding-left-5 padding-right-5">
-        <div class="input-group" style="width:300px">
-	        <input type="text" class="form-control ui-autocomplete-input search_record_input" placeholder="enter search term/ID" id="search_id" onkeydown="javascript: if (event.keyCode==13) get_query();" autocomplete="off">
-          <span class="input-group-btn">
-            <button class="btn btn-search btn-search-record icon-search smaller-icon close-icon-0" type="button" onclick="javascript:get_query();"></button>
-          </span>
-        </div>
-        <div class="smaller-font padding-top-5" style="color:#555">e.g. &quot;BRCA2&quot;, &quot;ENST00000593374&quot;, &quot;NM_001173466&quot;, &quot;OTTHUMG00000183508&quot; or &quot;OTTHUMT00000466932&quot;</div>
       </div>
     </div>
     
