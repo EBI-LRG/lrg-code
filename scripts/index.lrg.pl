@@ -225,15 +225,13 @@ if ($tmp_dir ne $data_dir) {
     `cp $tmp_dir/$lrg_json $data_dir/`;
   }
   if (-s "$tmp_dir/$lrg_term") {
-    `cp $tmp_dir/$lrg_term data_dir/`;
+    `cp $tmp_dir/$lrg_term $data_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff_current") {
-    `cp $tmp_dir/$lrg_diff_current data_dir/`;
-    `cp $tmp_dir/$lrg_diff_current $xml_dir/`;
+    `mv $tmp_dir/$lrg_diff_current $data_dir/`;
   }
   if (-s "$tmp_dir/$lrg_diff_previous") {
-    `cp $tmp_dir/$lrg_diff_previous data_dir/`;
-    `cp $tmp_dir/$lrg_diff_previous $xml_dir/`;
+    `mv $tmp_dir/$lrg_diff_previous $data_dir/`;
   }
   `mv $tmp_dir/LRG_*$index_suffix.xml $index_dir`;
 }
