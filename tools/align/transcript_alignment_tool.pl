@@ -203,7 +203,7 @@ if (-e $transcript_score_file) {
 
 my $ref_canonical_transcript = get_cars_transcript($gene_name);
 my $canonical_transcript     = get_canonical_transcript($gene_name);
-my ($uniprot_canonical_transcript, $uniprot_id) = @{get_uniprot_canonical_transcript($ens_gene->stable_id)};
+my $uniprot_canonical_transcripts = get_uniprot_canonical_transcript($ens_gene->stable_id);
 
 my $gene_chr    = $ens_gene->slice->seq_region_name;
 my $gene_start  = $ens_gene->start;
@@ -1332,17 +1332,16 @@ sub get_uniprot_canonical_transcript {
   my $ensg = shift;
   my $uniprot_transcript;
   my $uniprot_id;
+  my %uniprot_canonical;
   if (-e $uniprot_canonical_file) {
     my $query_results = `grep $ensg $uniprot_canonical_file`;
     
     foreach my $query_result (split("\n",$query_results)) {
       my @result = split("\t", $query_result);
-      $uniprot_transcript = $result[2];
-      $uniprot_id = $result[0];
-      last;
+      $uniprot_canonical{$result[2]} = $result[0];
     }
   }
-  return [$uniprot_transcript, $uniprot_id];
+  return \%uniprot_canonical;
 }
 
 sub get_tsl_html {
@@ -1404,8 +1403,9 @@ sub get_cars_html {
 sub get_uniprot_canonical_transcript_html {
   my $transcript = shift;
  
-  return '' unless($transcript->stable_id eq $uniprot_canonical_transcript && $uniprot_canonical_transcript);
+  return '' unless($uniprot_canonical_transcripts->{$transcript->stable_id} && $uniprot_canonical_transcripts);
  
+  my $uniprot_id = $uniprot_canonical_transcripts->{$transcript->stable_id};
   return qq{<a class="flag uniprot_flag glyphicon glyphicon-record" data-toggle="tooltip" data-placement="bottom" title="UniProt canonical transcript for $uniprot_id" href="https://www.uniprot.org/uniprot/$uniprot_id" target="_blank"></a>};
 }
 
