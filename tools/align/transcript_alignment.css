@@ -267,13 +267,13 @@ table.legend td.subheader {
 .canonical {
   border: none !important;
   padding:1px 2px 1px 2px;
-  color: #D00;
+  color: #F24;
 }
 
 .cars {
   border: none !important;
   padding:1px 2px 1px 2px;
-  color: #D00;
+  color: #F24;
 }
 
 .rs_select {
@@ -288,11 +288,15 @@ table.legend td.subheader {
 .uniprot_flag {
   border: none !important;
   padding:1px 0px 1px 2px;
-  color:#D00;
+  color:#F24;
 }
 
 .canonical:hover, .cars:hover, .uniprot_flag:hover, .rs_select:hover {
   color:#F00;
+}
+
+.gold .canonical, .gold .cars, .gold .uniprot_flag {
+  color:#D00;
 }
 
 .tr_score {
