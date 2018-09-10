@@ -3,6 +3,7 @@ use strict;
 use File::stat;
 use LRG::LRG;
 use Getopt::Long;
+use POSIX;
 
 my ($only_ftp_snapshot, $xml_dir, $tmp_dir, $root_dir);
 GetOptions(
@@ -38,6 +39,8 @@ my $relnotes = $xml_dir.'/'.$relnotes_fname;
 my $new_relnotes = $tmp_dir."/new_".$relnotes_fname;
 my $tmp_lrg_list = "$tmp_dir/tmp_lrg_list.txt";
 
+
+
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 $year+=1900;
@@ -47,6 +50,12 @@ foreach my $item ($hour,$min,$sec,$mday) {
 }
 
 my $day = "$mday-$abbr[$mon]-$year";
+
+# New LRG post (for the website)
+my $month_label = $mon +1;
+   $month_label =  "0$month_label" if ($month_label < 10);
+my $new_lrg_post = $year."-".$month_label."-".$mday."-new-lrgs-public-###COUNT###.md";
+my %new_public_lrgs;
 
 my %changes;
 
@@ -155,20 +164,23 @@ foreach my $lrg (sort(keys(%changes))) {
   # Get HGNC name 
   my $subdir = ($new_data{$lrg}{'status'} eq 'pending') ? 'pending/' : '';
   my $hgnc = '';
+  my $hgnc_label = '';
   if (-e "$xml_dir/$subdir$lrg.xml") {
     my $lrg_obj = LRG::LRG::newFromFile("$xml_dir/$subdir$lrg.xml") or die "ERROR: Could not load the LRG file $lrg.xml!";
-    $hgnc = '('.$lrg_obj->findNode('lrg_locus')->content.')';
+    $hgnc_label = $lrg_obj->findNode('lrg_locus')->content;
+    $hgnc = "($hgnc_label)";
   }
   
   if ($changes{$lrg} eq 'new_status') {
     print NEW "# Pending LRG record $lrg$hgnc is now public\n";
     print TMP "$lrg\tpublic\n";
+    $new_public_lrgs{$hgnc_label} = $lrg if ($hgnc_label ne '');
   } elsif ($changes{$lrg} eq 'new_file') {
     print NEW "#$pending LRG record $lrg$hgnc added\n";
     print TMP "$lrg\tpending\n";
   } elsif ($changes{$lrg} eq 'new_public_date' || $changes{$lrg} eq 'new_pending_date') {
     print NEW "#$pending LRG record $lrg$hgnc updated\n";
-   }
+  }
 
 }
 close(NEW);
@@ -176,6 +188,99 @@ close(TMP);
 
 #### Update file status ####
 ftp_snapshot();
+
+
+#### Create new public LRGs post ####
+if (%new_public_lrgs) {
+  
+  my $count_new_public_lrgs = scalar(keys(%new_public_lrgs));
+  
+  my $cols;
+  if ($count_new_public_lrgs <= 10) {
+    $cols = 1;
+  }
+  elsif ($count_new_public_lrgs <= 20) {
+    $cols = 2;
+  }
+  elsif ($count_new_public_lrgs <= 30) {
+    $cols = 3;
+  }
+  elsif ($count_new_public_lrgs <= 40) {
+    $cols = 4;
+  }
+  elsif ($count_new_public_lrgs > 40) {
+    $cols = 5;
+  }
+  
+  my $thead = qq{
+      <thead>
+        <tr><th>HGNC symbol</th><th>LRG ID</th></tr>
+      </thead>};
+  
+  $new_lrg_post =~ s/###COUNT###/$count_new_public_lrgs/;
+  open POST , "> $tmp_dir/$new_lrg_post" or die $!;
+  print POST qq{---
+layout: post
+title: 'new LRGs made public'
+lrg_count: $count_new_public_lrgs
+category: 'new data'
+---
+
+<div class="clearfix">
+  <div class="left margin-right-25">
+    <table class="table table-hover table-lrg table-lrg-bold-left-col" style="width:auto">$thead
+      <tbody class="bordered-columns">};
+  
+  my $nb_per_col = $count_new_public_lrgs / $cols;
+  my $first_col  = $nb_per_col;
+  if ($nb_per_col =~ /^\d+\.(\d+)$/) {
+    $nb_per_col = floor($nb_per_col); 
+    my $float  = "0.$1";
+       $float  = printf("%.0f", $float*$cols);
+    $first_col = $nb_per_col + $float;
+  }
+  my $count_lrg  = 0;
+  my $col_number = 1;
+  foreach my $gene (sort(keys(%new_public_lrgs))) {
+    if ((($col_number == 1 && $count_lrg == $first_col) || ($col_number > 1 && $count_lrg == $nb_per_col)) && $col_number < $cols) {
+      print POST qq{
+      </tbody>
+    </table>
+  </div>};
+      $count_lrg = 0;
+      $col_number ++;
+    }
+    
+    if ($count_new_public_lrgs > $first_col && $count_lrg == 0 && $col_number > 1) {
+      my $margin_right = ($col_number == $cols) ? '' : ' margin-right-25';
+      print POST qq{
+  <div class="left$margin_right">
+    <table class="table table-hover table-lrg table-lrg-bold-left-col" style="width:auto">$thead
+      <tbody class="bordered-columns">};
+    }
+    
+    my $lrg_id = $new_public_lrgs{$gene};
+    print POST qq{\n        <tr><td>$gene</td><td><a href="{{ site.urls.lrg_ftp_http }}$lrg_id.xml" target="_blank">$lrg_id</a></td></tr>};
+    
+    $count_lrg ++;
+  }
+  print POST qq{
+        </tbody>
+    </table>
+  </div>
+</div>
+<div class="margin-bottom-40">
+See more details <a class="btn btn-primary btn-xs" href="/search/?query=};
+  
+  print POST join(';',values(%new_public_lrgs))."\">here</a>\n</div>";
+  close(POST);
+  
+  if (-e "$tmp_dir/$new_lrg_post") {
+    `mv $tmp_dir/$new_lrg_post $xml_dir/.lrg_index/`;
+  }
+}
+
+
 
 
 print get_tag_version($version,$year,$mon,$mday);
