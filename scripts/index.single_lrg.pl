@@ -317,6 +317,7 @@ close(JSON);
 ## LRG diff data ##
 foreach my $assembly ($new_assembly, $default_assembly) {
   my $assembly_lc = lc($assembly);
+  my $strand = $data{'chr_strand'} ? $data{'chr_strand'} : 1;
   if ($data{'diff'}{$assembly_lc}) {
     open DIFF, "> $tmp_dir/$lrg_id$diff_suffix$assembly.txt" || die $!;
     foreach my $diff (sort(keys(%{$data{'diff'}{$assembly_lc}}))) {
@@ -327,7 +328,7 @@ foreach my $assembly ($new_assembly, $default_assembly) {
       my $ref   = $data{'diff'}{$assembly_lc}{$diff}{'ref'};
       my $alt   = $data{'diff'}{$assembly_lc}{$diff}{'alt'};
       my $asm   = $data{'diff'}{$assembly_lc}{$diff}{'assembly'};
-      my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt,$data{'chr_strand'});
+      my $hgvs  = get_hgvs($chr,$start,$end,$type,$ref,$alt,$strand);
 
       print DIFF "$lrg_id\t$chr\t$start\t$end\t$type\t$ref\t$alt\t$asm\t$hgvs\n";
     }
