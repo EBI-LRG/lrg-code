@@ -33,7 +33,7 @@ my $output_file = './list_collaborators.json';
 my $stmt = qq{
   SELECT DISTINCT c.name,c.address 
   FROM lsdb_contact lc, lrg_request r, contact c 
-  WHERE lc.lsdb_id=r.lsdb_id and lc.contact_id=c.contact_id ORDER BY c.name;
+  WHERE lc.lsdb_id=r.lsdb_id and lc.contact_id=c.contact_id AND c.name != 'LRG Consortium' ORDER BY c.name;
 };
 
 my $collaborators_data = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt);
