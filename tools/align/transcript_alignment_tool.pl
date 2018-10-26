@@ -1913,7 +1913,7 @@ sub display_transcript_buttons {
     my $class = $rows_list->{$row_id}{'class'};
     my $class_init = ($label =~ /^NR_/) ? 'off' : $class;
     $buttons_html .= qq{<input type="hidden" id="btn_color_$row_id" value="$class"/>};
-    $buttons_html .= qq{<button id="btn_$row_id" class="btn btn-sm btn-non-lrg btn_sh $class_init">$label</button>};
+    $buttons_html .= qq{<button id="btn_$row_id" class="btn btn-sm btn-non-lrg btn_sh2 $class_init">$label</button>};
     $tr_count ++;
   }
 

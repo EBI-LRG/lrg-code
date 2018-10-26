@@ -26,7 +26,6 @@
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     
     <script type="text/javascript" src="transcript_alignment.js"></script>
-    <script type="text/javascript" src="sorttable.js"></script>
     <script>
       \$(document).ready(function(){
         // Popups

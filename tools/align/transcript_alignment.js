@@ -46,7 +46,7 @@ $(this).data('original-title', '');
       }
       
       var phase = "";
-      if (phase_start != '-1' && !phase_end.match(/^-?\d$/)) {
+      if (phase_start != '-1' && (!phase_end || !phase_end.match(/^-?\d$/))) {
         phase = 'Frame: '+phase_start;
       }
       else if (phase_start.match(/^\d$/) || phase_end.match(/^\d$/)) {
@@ -64,8 +64,6 @@ $(this).data('original-title', '');
       }
       //$(this).attr('data-original-title', 'YES');
       $(this).attr('data-original-title', new_title.join(' | '));
-      
-      console.log("TITLE: "+new_title.join(' | '));
     })
     .mouseout(function(){
       var exon_coord = $(this).data('name');
@@ -196,11 +194,12 @@ $(this).data('original-title', '');
   });
   
   // Highlight row
-  $('.hl_row').click(function() {
+  $( "#sortable_rows" ).on('click', '.hl_row', function() {
+  //$('.hl_row').click(function() {
     var id = $(this).attr('id');
     var info = id.split("_");
     var row_id = info[1];
-    
+console.log(id+" | "+row_id);
     // Odd vs Even background
     var bg = (isOdd(row_id)) ? "bg1" : "bg2";
     
@@ -208,6 +207,7 @@ $(this).data('original-title', '');
     if ($('#'+id).is(':checked')) {
       status = true;
       bg += "_hl selected";
+console.log(id+" selected");
     }
     $('#'+info[0]+'_'+row_id+'_l').prop( "checked", status );
     $('#'+info[0]+'_'+row_id+'_r').prop( "checked", status );
@@ -216,7 +216,20 @@ $(this).data('original-title', '');
   });
   
   // Show/hide button 
-  $('.btn_sh').click(function() {
+  $( "#sortable_rows" ).on('click', '.btn_sh', function() {
+    var id = $(this).attr('id');
+    var info = id.split("_");
+    var row_id = info[1];
+    var tr_row_id = "#"+TR_ID_PREFIX+row_id;
+  
+    if($(tr_row_id).hasClass("hidden")) {
+      show_row(row_id);
+    }
+    else {
+      hide_row(row_id);
+    }
+  });
+  $('.btn_sh2').click(function() {
     var id = $(this).attr('id');
     var info = id.split("_");
     var row_id = info[1];
