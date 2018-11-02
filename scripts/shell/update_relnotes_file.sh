@@ -26,8 +26,6 @@ status=$3
 is_assembly=`echo ${assembly} | grep -P '^GRCh'`
 if [[ -z ${is_assembly} ]]; then
   assembly=${default_assembly}
-  tmp=$2
-  status=$3
 fi
 
 # Status of the script
@@ -45,11 +43,11 @@ if [[ -n "${tmp}" ]]; then
   elif [[ -d ${tmp} ]] ; then
     tmpdir="-tmp_dir ${tmp}"
   else 
-    tmp=${gitftp}
+    tmp=${gitpath}
     tmpdir="-tmp_dir ${tmp}"
   fi
 else
-  tmp=${gitftp}
+  tmp=${gitpath}
   tmpdir="-tmp_dir ${tmp}"
 fi
 
