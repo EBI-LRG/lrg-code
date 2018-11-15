@@ -464,6 +464,10 @@ th.coord {
   background-color:#000;
   color:#FFF;
 }
+.gene > div { 
+  text-align:center !important; 
+  padding-top:2px !important;
+}
 
 .exon {
   background-color:#FFF;

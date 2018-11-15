@@ -1026,7 +1026,7 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
 
   # HGNC symbol
   my @hgnc_list = grep {$_->dbname eq 'HGNC'} $gene_object->display_xref;
-  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '<div>('.$hgnc_list[0]->display_id.')</div>' : '';
+  my $hgnc_name = (scalar(@hgnc_list) > 0) ? '('.$hgnc_list[0]->display_id.')' : '';
 
   my $column_class = 'gene';
   
@@ -1039,7 +1039,8 @@ foreach my $o_ens_gene (sort keys(%overlapping_genes_list)) {
   <tr class="unhidden tr_row $bg" id="$row_id_prefix$row_id" data-name="$o_ens_gene" data-biotype="$data_biotype">
     $first_col
     <td class="$column_class fx_col col4">
-      <a class="white" onclick="get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a>$hgnc_name
+      <div><a class="white" onclick="get_ext_link('ensg','$o_ens_gene')">$o_ens_gene</a></div>
+      <div>$hgnc_name</div>
     </td>
     <td class="add_col fx_col col5">-</td>
   };
