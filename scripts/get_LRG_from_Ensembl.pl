@@ -21,6 +21,9 @@ my $dbCore = $cdb->dbc->db_handle;
 my $stmt = qq{ SELECT stable_id FROM gene WHERE stable_id like "LRG_%" and biotype='LRG_gene'};
 my $rows = $dbCore->selectall_arrayref($stmt);	
 
+# Give write permission for the group
+umask(0002);
+
 open F,"> $dir/tmp_lrgs_in_ensembl.txt" or die $!;
 foreach my $row (@$rows) {
   print F $row->[0]."\n";
