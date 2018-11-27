@@ -16,17 +16,9 @@ lrgindex=${PUBFTP}/.lrg_index/
 branch=${GITBRANCH}
 
 tmpdir=''
-default_assembly='GRCh37'
 
-assembly=$1
-tmp=$2
-status=$3
-
-# Test the assembly
-is_assembly=`echo ${assembly} | grep -P '^GRCh'`
-if [[ -z ${is_assembly} ]]; then
-  assembly=${default_assembly}
-fi
+tmp=$1
+status=$2
 
 # Status of the script
 # Value "1" or "test" => test mode

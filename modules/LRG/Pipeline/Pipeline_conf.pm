@@ -243,7 +243,6 @@ sub pipeline_analyses {
             -module            => 'LRG::Pipeline::UpdateRelnotesFile',
             -rc_name           => 'default',
             -parameters        => {
-               assembly    => $self->o('assembly'),
                is_test     => $self->o('is_test'),
                @common_params
             },
