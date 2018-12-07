@@ -31,7 +31,7 @@ if [[ -z ${skip_extra_hc} ]] ; then
   skip_extra_hc=0
 fi
 
-skip_hc_options="fixed mapping polya main" # all: all of these options
+skip_hc_options="exons fixed mapping polya main" # all: all of these options
 
 log_file=${tmp_dir}/log/log_${lrg_id}.txt
 error_log=${tmp_dir}/error/error_log_${lrg_id}.txt
