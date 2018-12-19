@@ -181,7 +181,7 @@ sub pipeline_analyses {
         { # TEST MODE # See in the module to update the code!
             -logic_name        => 'move_xml_files', 
             -module            => 'LRG::Pipeline::MoveXMLFiles',
-            -rc_name           => 'small',
+            -rc_name           => 'default',
             -parameters        => {
                date        => $self->o('date'),
                is_test     => $self->o('is_test'),
@@ -206,7 +206,7 @@ sub pipeline_analyses {
             },
             -input_ids     => [],
             -wait_for      => ['move_xml_files'],
-            -flow_into     => { 
+            -flow_into     => {
                '2->A' => ['create_indexes'],
                'A->1' => ['finish_indexes']
             },		
