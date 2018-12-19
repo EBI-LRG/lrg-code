@@ -59,9 +59,9 @@ sub default_options {
 
         output_dir              => $self->o('reports_dir').'/hive_output',
 
-        small_lsf_options   => '-R"select[mem>250]  rusage[mem=250]"  -M250',
-        default_lsf_options => '-R"select[mem>1000] rusage[mem=1000]" -M1000',
-        highmem_lsf_options => '-R"select[mem>2500] rusage[mem=2500]" -M2500',
+        small_lsf_options   => '-qproduction-rh7 -R"select[mem>250]  rusage[mem=250]"  -M250',
+        default_lsf_options => '-qproduction-rh7 -R"select[mem>1000] rusage[mem=1000]" -M1000',
+        highmem_lsf_options => '-qproduction-rh7 -R"select[mem>2500] rusage[mem=2500]" -M2500',
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
