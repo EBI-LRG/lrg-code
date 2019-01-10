@@ -12,7 +12,7 @@
 <xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
 <xsl:variable name="lrg_number" select="substring-after($lrg_id, '_')" />
 <xsl:variable name="lrg_status" select="0"/>
-<xsl:variable name="lrg_year" select="2018"/>
+<xsl:variable name="lrg_year" select="2019"/>
 
 <!-- Number of transcripts -->
 <xsl:variable name="count_tr" select="count(/*/fixed_annotation/transcript)" />
