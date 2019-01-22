@@ -271,41 +271,47 @@ function get_legend() {
           </tr>
           <tr class="bg2_legend">
             <td>
+              <span class="flag mane glyphicon glyphicon-pushpin"></span>
+            </td>
+            <td>Label to indicate the MANE transcript</td>
+          </tr>
+          <tr class="bg1_legend">
+            <td>
               <span class="flag canonical glyphicon glyphicon-tag"></span>
             </td>
             <td>Label to indicate the canonical transcript</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag cars glyphicon glyphicon-star"></span>
             </td>
             <td>Label to indicate the CARS transcript</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag uniprot_flag glyphicon glyphicon-record"></span>
             </td>
             <td>Label to indicate the UniProt canonical transcript</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag rs_select glyphicon glyphicon-flag"></span>
             </td>
             <td>Label to indicate the RefSeq select transcript</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag pathog icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
             <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
           </tr>
-          <tr class="bg1_legend">
+          <tr class="bg2_legend">
             <td>
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
           </tr>
-          <tr class="bg2_legend">
+          <tr class="bg1_legend">
             <td>
               <span class="flag source_flag gff3 dark_border">gff3</span>
             </td>

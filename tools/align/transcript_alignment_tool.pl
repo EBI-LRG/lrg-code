@@ -45,6 +45,7 @@ my $transcript_data_info   = $data_file_dir.'/data_files_info.json';
 my $transcript_score_file  = $data_file_dir.'/transcript_scores.txt';
 my $refseq_select_file     = $data_file_dir.'/select_per_gene_9606.txt';
 my $uniprot_canonical_file = $data_file_dir.'/uniprot/human_sp_ensembl-withIdentifiers.txt';
+my $mane_file              = $data_file_dir.'/mane/MANE.GRCh38.v0.5.summary.txt';
 
 my $transcript_cars_date  = 'NA';
 my $transcript_rss_date  = 'NA';
@@ -80,6 +81,33 @@ if ($data_file_dir && -d $data_file_dir) {
     #}
     #`wget -q -P $data_file_dir ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds/$uniprot_file`;
   }
+}
+
+
+# MANE
+my %mane_data;
+if (-e $mane_file) {
+  open MANE, "< $mane_file" or die $!;
+  my @headers;
+  while (<MANE>) {
+    chomp $_;
+    if ($_ =~ /^#/) {
+      my $header = $_;
+         $header =~ s/#//;
+      @headers = split("\t", $_);
+      next;
+    }
+    
+    die "Can't find a header for the MANE data file\n" unless (@headers);
+    
+    my @line = split("\t", $_);
+    my %entry;
+    for(my $i=0;$i<scalar(@line);$i++) {
+      $entry{$headers[$i]} = $line[$i];
+    }
+    $mane_data{$entry{'symbol'}} = { 'enst' => $entry{'Ensembl_ID'}, 'nm' => $entry{'RefSeq'} };
+  }
+  close(MANE);
 }
 
 
@@ -684,8 +712,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $column_class = ($tr_object->source eq 'ensembl_havana') ? 'gold' : 'ens';
   my $a_class      = ($column_class eq 'ens') ? qq{ class="white" } : '' ;
   
-  my $ens_tr_label = ($ens_tr_exons_list{$ens_tr}{'label'}) ? $ens_tr_exons_list{$ens_tr}{'label'} : $ens_tr;
-     $ens_tr_label = version_label($ens_tr_label);
+  my $ens_tr_full_id = ($ens_tr_exons_list{$ens_tr}{'label'}) ? $ens_tr_exons_list{$ens_tr}{'label'} : $ens_tr;
+  my $ens_tr_label   = version_label($ens_tr_full_id);
   
   # cDNA lengths
   my $cdna_coding_start  = $tr_object->cdna_coding_start;
@@ -705,14 +733,15 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $cars_html      = get_cars_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $tr_score_html  = get_tr_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
   my $uniprot_html   = get_uniprot_canonical_transcript_html($ens_tr_exons_list{$ens_tr}{'object'});
+  my $mane_html      = get_mane_transcript($gene_name,$ens_tr_full_id);
   #my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
-  
+
   my $pathogenic_count = $ens_tr_exons_list{$ens_tr}{'has_pathogenic'};
   my $pathogenic_html  = ($pathogenic_count) ? get_pathogenic_html($pathogenic_count) : '';
   
   #my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'lg_cell'  : 'md_cell';
   #my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'md_cell' : 'lg_cell';
-  my $pathogenic_td_class = 'lg_cell';
+  my $pathogenic_td_class = 'xlg_cell';
   my $canonical_td_class  = 'lg_cell';
   
   my $biotype = get_biotype($tr_object->biotype);
@@ -744,8 +773,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
         <tr class="bottom_row">
           <td class="sm_cell">$tsl_html</td>
           <td class="md_cell">$tr_score_html</td>
-          <td class="md_cell">$appris_html</td>
-          <td class="$canonical_td_class">$canonical_html$cars_html$uniprot_html</td>
+          <td class="sm_cell">$appris_html</td>
+          <td class="$canonical_td_class">$canonical_html$cars_html$uniprot_html$mane_html</td>
           <td class="$pathogenic_td_class">$pathogenic_html</td>
         </tr>
       </table>
@@ -925,6 +954,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
   my $biotype = get_biotype($cdna_object->biotype);
   my $data_biotype = 'is_pc'; #($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
   my $refseq_select_flag = get_refseq_select_transcript($gene_name,$nm);
+  my $mane_flag_html     = get_mane_transcript($gene_name,$nm);
   my $first_col = build_first_col($nm,$row_id);
 
   $exon_tab_list .= qq{
@@ -934,7 +964,7 @@ foreach my $nm (sort {$cdna_tr_exons_list{$b}{'count'} <=> $cdna_tr_exons_list{$
       <div>
         <a class="cdna_link" onclick="get_ext_link('$tr_source','$nm')">$nm_label</a>
       </div>
-      <div>$refseq_select_flag</div>
+      <div>$mane_flag_html$refseq_select_flag</div>
     </td>
     <td class="add_col fx_col col5">$e_count</td>
   };
@@ -1464,6 +1494,23 @@ sub get_refseq_select_transcript {
   return "";
 }
 
+sub get_mane_transcript {
+  my $gene_name = shift;
+  my $trans  = shift;
+  
+  if ($mane_data{$gene_name}) {
+     my $type = ($trans =~ /^ENST/) ? 'enst' : 'nm';
+     #if ($mane_data{$gene_name}{$type} eq $trans) {
+     my $mane_tr = $mane_data{$gene_name}{$type};
+     my $mane_tr_no_version = (split('\.',$mane_tr))[0];
+     if ($trans =~ /^$mane_tr_no_version\./) {
+       my $rs_class = ($type eq 'nm') ? 'rs_select' : 'mane';
+       return qq{<div style="float:right"><span class="flag $rs_class glyphicon glyphicon-pushpin" data-toggle="tooltip" data-placement="bottom" title="MANE transcript ($mane_tr)"></span></div>};
+     }
+  }
+  return "";
+}
+
 #sub get_uniprot_score_html {
 #  my $transcript   = shift;
 #  my $column_class = shift;
@@ -1627,6 +1674,7 @@ sub display_refseq_data {
     my $biotype = get_biotype($refseq_object->biotype);
     my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
     my $refseq_select_flag = get_refseq_select_transcript($gene_name,$nm);
+    my $mane_flag_html     = get_mane_transcript($gene_name,$nm);
     $exon_tab_list .= qq{
     <tr class="$display_status tr_row $bg" id="$row_id_prefix$row_id" data-name="$nm" data-biotype="$data_biotype">
       $first_col
@@ -1634,7 +1682,7 @@ sub display_refseq_data {
         <div>
           <a class="white" onclick="get_ext_link('$tr_source','$nm')">$nm_label</a>
         </div>
-        <div>$labels$refseq_select_flag</div>
+        <div>$labels$mane_flag_html$refseq_select_flag</div>
       </td>
       <td class="add_col fx_col col5">$e_count</td>
     };
