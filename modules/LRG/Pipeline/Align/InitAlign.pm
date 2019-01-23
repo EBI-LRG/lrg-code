@@ -170,23 +170,17 @@ sub write_output {
     if ($lrg_id ne '') {
       $gene_job->{'lrg_id'} = $lrg_id;
     }
-    if ($GENES_LENGTH{$gene} < $LENGTH) {
-      push @jobs, $gene_job;
-    } else {
-      push @big_jobs, $gene_job;
-    }
+    push @jobs, $gene_job;
 
   }
   
-  
-  my $total_jobs = scalar(@jobs) + scalar(@big_jobs);
+  my $total_jobs = scalar(@jobs);
   print REPORTS "<li>Total alignments to run: <b>$total_jobs</b></li>\n";
   print REPORTS "</ul>";
   close(REPORTS);
   
   $self->dataflow_output_id(\@jobs, 2);
-  $self->dataflow_output_id(\@big_jobs, 3);
-  $self->dataflow_output_id([{}], 4);
+  $self->dataflow_output_id([{}], 3);
   
   return;
 }

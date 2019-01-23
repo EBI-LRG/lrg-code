@@ -62,6 +62,7 @@ sub default_options {
         small_lsf_options   => '-qproduction-rh7 -R"select[mem>250]  rusage[mem=250]"  -M250',
         default_lsf_options => '-qproduction-rh7 -R"select[mem>1000] rusage[mem=1000]" -M1000',
         highmem_lsf_options => '-qproduction-rh7 -R"select[mem>2500] rusage[mem=2500]" -M2500',
+        hugemem_lsf_options => '-qproduction-rh7 -R"select[mem>6000] rusage[mem=6000]" -M6000',
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
@@ -79,7 +80,8 @@ sub resource_classes {
     return {
           'small'   => { 'LSF' => $self->o('small_lsf_options')   },
           'default' => { 'LSF' => $self->o('default_lsf_options') },
-          'highmem' => { 'LSF' => $self->o('highmem_lsf_options') }
+          'highmem' => { 'LSF' => $self->o('highmem_lsf_options') },
+          'hugemem' => { 'LSF' => $self->o('hugemem_lsf_options') }
     };
 }
 
@@ -116,8 +118,7 @@ sub pipeline_analyses {
             -input_ids  => [{}],
             -flow_into  => { 
                2 => ['create_align'],
-               3 => ['create_align_highmem'],
-               4 => ['finish_align']
+               3 => ['finish_align']
             },		
       },
       {   
@@ -136,7 +137,18 @@ sub pipeline_analyses {
             -rc_name       => 'highmem',
             -can_be_empty  => 1,
             -input_ids     => [],
-            -hive_capacity => 25,
+            -hive_capacity => 20,
+            -flow_into      => {
+              -1 => ['create_align_hugemem'],
+            }
+      },
+      {   
+            -logic_name    => 'create_align_hugemem', 
+            -module        => 'LRG::Pipeline::Align::CreateAlign',
+            -rc_name       => 'hugemem',
+            -can_be_empty  => 1,
+            -input_ids     => [],
+            -hive_capacity => 5,
             -flow_into     => {},
       },
       {   
@@ -149,7 +161,7 @@ sub pipeline_analyses {
                @common_params
             },
             -input_ids  => [],
-            -wait_for   => [ 'create_align', 'create_align_highmem' ],
+            -wait_for   => [ 'create_align', 'create_align_highmem', 'create_align_hugemem' ],
             -flow_into  => {},
       },
     );
