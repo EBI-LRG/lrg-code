@@ -2,6 +2,7 @@ package LRG::Pipeline::Align::Pipeline_align_conf;
 
 use strict;
 use warnings;
+use Bio::EnsEMBL::Hive::Version 2.5;
 use base ('Bio::EnsEMBL::Hive::PipeConfig::HiveGeneric_conf');
 
 sub default_options {
@@ -13,11 +14,13 @@ sub default_options {
 
   return {
         hive_auto_rebalance_semaphores => 0, 
+        hive_default_max_retry_count   => 0,
 
         hive_force_init         => 1,
         hive_use_param_stack    => 0,
         hive_use_triggers       => 0,
         hive_no_init            => 0,
+        hive_debug_init         => 1,        
         hive_root_dir           => $ENV{'HOME'} . '/head/ensembl-hive', # To update in order to match the location of your own hive copy!
         hive_db_host            => $ENV{'LRGDBHOST'},
         hive_db_port            => $ENV{'LRGDBPORT'},
