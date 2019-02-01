@@ -364,7 +364,7 @@ sub long_name {
     # Primarily use the RefSeq xref description
     my $dbe = $feature->get_all_DBEntries('RefSeq_peptide'); 
     if ($dbe) {
-      $name = join(", ",map {$_->description()} grep {$_->description ne ''} @{$dbe});
+      $name = join(", ",map {$_->description()} grep {$_->description ne '' && $_->description} @{$dbe});
     }
   }
   

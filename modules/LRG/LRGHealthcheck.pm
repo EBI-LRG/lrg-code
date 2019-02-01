@@ -218,18 +218,19 @@ sub existing_entry {
             $self->{'check'}{$name}{'message'} .= "- The existing translation '$e_pr_name' can't be found in the new file!//";
           }
         }
-      }
-      # Check the exon coordinates
-      my $existing_exon_coord = $e_tr->findNodeArray('exon/coordinates');
-      foreach my $e_coord (@$existing_exon_coord) {
-        my $c_sys   = $e_coord->data()->{'coord_system'};
-        my $c_start = $e_coord->data()->{'start'};
-        my $c_end   = $e_coord->data()->{'end'};
 
-        my $new_exon_coord = $new_tr->findNodeArray('exon/coordinates',{'coord_system' => $c_sys, 'start' => $c_start, 'end' => $c_end});
-        if (!$new_exon_coord) {
-          $passed = 0;
-          $self->{'check'}{$name}{'message'} .= "- The existing exon coordinates '$c_sys:$c_start-$c_end' (transcript $e_tr_name) can't be found in the new file!//";
+        # Check the exon coordinates
+        my $existing_exon_coord = $e_tr->findNodeArray('exon/coordinates');
+        foreach my $e_coord (@$existing_exon_coord) {
+          my $c_sys   = $e_coord->data()->{'coord_system'};
+          my $c_start = $e_coord->data()->{'start'};
+          my $c_end   = $e_coord->data()->{'end'};
+
+          my $new_exon_coord = $new_tr->findNodeArray('exon/coordinates',{'coord_system' => $c_sys, 'start' => $c_start, 'end' => $c_end});
+          if (!$new_exon_coord) {
+            $passed = 0;
+            $self->{'check'}{$name}{'message'} .= "- The existing exon coordinates '$c_sys:$c_start-$c_end' (transcript $e_tr_name) can't be found in the new file!//";
+          }
         }
       }
     }
