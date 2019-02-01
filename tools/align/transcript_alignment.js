@@ -25,7 +25,7 @@ $(document).ready(function(){
       var exon_coord = $(this).data('name');      
       $('.exon[data-name="'+exon_coord+'"]').parents('td').css("background-color",'#BAF4F4');
 //      var title_data  = $(this).data('original-title').split('|');
-$(this).data('original-title', '');
+//$(this).data('original-title', '');
       var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,tr_name,coding_start,coding_end,ens_pathogenic_var] = $(this).data('params').split('|');
 
       var tr_label = $(this).closest('tr').data('name');
@@ -81,7 +81,6 @@ $(this).data('original-title', '');
       var [exon_id,exon_length,ens_exon_id,phase_start,phase_end,tr_name,coding_start,coding_end,ens_pathogenic_var,ens_pathogenic_variant_list] = params.split('|');
       var content = $(this).data('name').replace('_', '-');
       var coords = $('#gene_coord').data('chr')+':'+content;
-
       var exon_popup = '';
       var exon_popup_id = "exon_popup_"+tr_id+"_"+exon_id;
       
@@ -146,7 +145,7 @@ $(this).data('original-title', '');
           if (ens_pathogenic_variant_list) {
             var ens_var_id = exon_popup_id+"_variant";
             var ens_var_button_id = "btn_"+ens_var_id;
-            popup_content += "<button class=\"btn btn btn-lrg-xs\" id=\""+ens_var_button_id +"\" style=\"margin-left:10px;padding:0px 5px\" onclick=\"showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
+            popup_content += "<button class=\"btn btn btn-lrg-xs\" id=\""+ens_var_button_id +"\" style=\"margin-left:10px;padding:0px 5px\" onclick=\"javascript:showhide_id('"+ens_var_button_id +"','"+ens_var_id+"')\">+</button>";
             popup_content += "<div id=\""+ens_var_id+"\" style='display:none'>";
             popup_content += "<ul>"; 
             var list = ens_pathogenic_variant_list.split(":");

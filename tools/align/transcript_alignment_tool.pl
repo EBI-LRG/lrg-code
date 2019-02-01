@@ -741,8 +741,8 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   
   #my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'lg_cell'  : 'md_cell';
   #my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'md_cell' : 'lg_cell';
-  my $pathogenic_td_class = 'xlg_cell';
-  my $canonical_td_class  = 'lg_cell';
+  my $pathogenic_td_class = 'lg_cell';
+  my $canonical_td_class  = 'xlg_cell';
   
   my $biotype = get_biotype($tr_object->biotype);
   my $data_biotype = ($biotype eq 'protein coding') ? 'is_pc' : 'no_pc';
@@ -1552,8 +1552,12 @@ sub get_mane_transcript {
 
 sub get_pathogenic_html {
   my $data = shift;
-  
-  return qq{<span class="flag pathog icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">$data</span>};
+  my $data_label = $data;
+  if ($data =~ /^(\d+)\d{3}$/) {
+    $data_label = $1."<span>K</span>";
+  }
+  return qq{<span class="flag pathog icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="$data pathogenic variants">$data_label
+  </span>};
   
 }
 

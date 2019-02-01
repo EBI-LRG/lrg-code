@@ -41,6 +41,10 @@ body {
   cursor:-moz-grabbing; 
   cursor:grabbing;
 }
+.ui-sortable-helper {
+  display: table;
+}
+
 
 table {
   border-collapse:collapse;
@@ -184,14 +188,14 @@ table.legend td.subheader {
   text-align:right;
   padding: 1px 2px;
   margin-top:1px;
-  width:29%;
+  width:24%;
 }
 
 .xlg_cell {
-  text-align:right;
+  text-align:left;
   padding: 1px 2px;
   margin-top:1px;
-  width:35%;
+  width:40%;
 }
 
 
@@ -350,6 +354,9 @@ table.legend td.subheader {
   color: #FFF;
   background-color:#555;
   border-radius:0px;
+}
+.pathog span {
+  color: #F55;
 }
 
 .source_flag {

@@ -14,16 +14,16 @@
   <head>
     <title>$title</title>
       
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap-theme.min.css"/>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css"/>
     
     <link type="text/css" rel="stylesheet" media="all" href="transcript_alignment.css" />
     <link type="text/css" rel="stylesheet" media="all" href="ebi-visual-custom.css" />
     
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
     
     <script type="text/javascript" src="transcript_alignment.js"></script>
     <script>
@@ -32,9 +32,13 @@
         \$('[data-toggle="tooltip"]').tooltip();
         // Drag and drop rows
         \$( "#sortable_rows" ).sortable({
+          start: function(e, ui){
+            ui.placeholder.height(ui.item.height());
+          },
           delay: 150, //Needed to prevent accidental drag when trying to select
           revert: true,
           cancel: ".transcript tbody tr:first-child",
+          placeholder: "ui-state-highlight",
           helper:function(e,item){
             var helper = \$('<tr/>');
             if (!item.hasClass('selected')) {
