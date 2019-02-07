@@ -141,6 +141,7 @@ sub existing_entry {
       if (!defined($existing_transcript)) {
         $passed = 0;
         $self->{'check'}{$name}{'message'} .= "- The transcript '$tr_name' doesn't exist in the file $existing_file!//";
+        next;
       }
       elsif ($existing_transcript->findNode('cdna/sequence')) {
         if ($tr_seq ne $existing_transcript->findNode('cdna/sequence')->content()) {
