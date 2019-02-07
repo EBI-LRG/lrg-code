@@ -123,16 +123,17 @@ fi
 
 # Update the LRG status and update the creation date
 function update_lrg_status {
-
+  export MYSQL_PWD=$pass
   while read line           
     do
       read -a lrg_info <<< $line
       lrg_id=${lrg_info[0]}
       lrg_status=${lrg_info[1]}
-          
+      lrg_xml="${lrg_id}.xml"
+
       # Update the LRG status in the LRG database
-      mysql -h $host -P $port -u $user -p$pass -e "UPDATE gene SET status='${lrg_status}' WHERE lrg_id='${lrg_id}';" $dbname 
-      
+      `bash ${gitpath}/lrg-code/scripts/shell/update_lrg_status.sh ${lrg_status} ${lrg_id} ${dbname}`
+
       pending_fasta="${pubpath}/fasta/${lrg_id}.fasta"
       stalled_fasta="${pubpath}/stalled/fasta/${lrg_id}.fasta"
       
@@ -145,15 +146,27 @@ function update_lrg_status {
         if [[ -e ${pending_fasta} ]]; then
           mv ${pending_fasta} ${stalled_fasta}
         fi
-            
+
       # If the LRG has been moved to the "Pending" status  
       elif [[ ${lrg_status} == 'pending' ]] ; then
-        # Move the fasta file from the "Stalled" directory to the main fasta directory
-        if [[ ! -e ${pending_fasta} && -e ${stalled_fasta} ]]; then
-          mv ${stalled_fasta} ${pending_fasta}
-        # Remove the fasta file from the "Stalled" directory  
-        elif [[ -e ${stalled_fasta} ]]; then
+
+        # Remove the fasta file from the "Stalled" directory
+        if [[ -e ${pending_fasta} ]]; then
           rm -f ${stalled_fasta}
+        # Move the fasta file from the "Stalled" directory to the main fasta directory
+        elif [[ -e ${stalled_fasta} ]]; then
+          mv ${stalled_fasta} ${pending_fasta}
+        fi
+
+        # Add the new pending LRG to the Git directory lrg-xml
+        ftp_lrg_xml="${pubpath}/${lrg_status}/${lrg_xml}"
+        if [[ -e ${ftp_lrg_xml} ]]; then
+          cd ${gitxml}
+          git pull origin ${branch}
+          cp ${ftp_lrg_xml} ${gitxml}
+          git add ${lrg_xml}
+          git commit -m "Updated pending LRG"
+          git push origin ${branch}
         fi
 
         # Create the steps in the table lrg_status, if needed
@@ -161,7 +174,7 @@ function update_lrg_status {
 
         # Send automatic email(s) to the requester(s)
         `perl ${perldir}/send_email.pl -lrg_id ${lrg_id} -xml_dir ${pubpath} -status ${lrg_status}`
-             
+
       # If the LRG has been moved to the "Public" status
       elif [[ ${lrg_status} == 'public' ]] ; then
         # Update the creation date
