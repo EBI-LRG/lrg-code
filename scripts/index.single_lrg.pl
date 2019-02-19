@@ -296,17 +296,28 @@ my $json_chr_name = $data{'assemblies'}{$json_assembly}{'chr_name'};
 if ($json_chr_name) {
   $json_chr_name += 0 if ($json_chr_name =~ /^\d/); # Force number for the JSON data
 }
+my $json_id = $lrg_id;
+   $json_id =~ s/LRG_//;
 
-my %json_data = ( "id"     => $lrg_id,  
+my %json_data = ( "id"     => $json_id + 0, # Force number for the JSON data
                   "symbol" => $data{'hgnc'},
                   "status" => $status,
-                  "coord"  => [$json_chr_name,
+                  "c"      => [$json_chr_name,
                                $data{'assemblies'}{$json_assembly}{'chr_start'} + 0, # Force number for the JSON data
-                               $data{'assemblies'}{$json_assembly}{'chr_end'} + 0   # Force number for the JSON data
+                               $data{'assemblies'}{$json_assembly}{'chr_end'} + 0    # Force number for the JSON data
                               ]
                 );
 if (scalar(@json_terms_list) != 0) {
-  $json_data{"terms"} = \@json_terms_list;
+  # Shorten the Ensembl and RefSeq IDs by removing part of their prefix
+  my @processed_json_terms_list;
+  foreach my $json_term (@json_terms_list) {
+    $json_term = s/^ENS//i;
+    $json_term = s/^NM_/M_/i;
+    $json_term = s/^NR_/R_/i;
+    $json_term = s/^NG_/G_/i;
+    push (@processed_json_terms_list,$json_term);
+  }
+  $json_data{"terms"} = \@processed_json_terms_list;
 }
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;

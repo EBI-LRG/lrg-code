@@ -159,9 +159,11 @@ while (my $file = readdir($dh)) {
     
     # Get autocomplete data
     my $json_obj = decode_json $json_data;
-    $autocomplete{$json_obj->{'id'}} = 1;
-    $autocomplete{$json_obj->{'symbol'}} = 1;
-    $autocomplete{$json_obj->{'status'}} = 1;
+    foreach my $key ('id','symbol','status') {
+      my $entry = $json_obj->{$key};
+      next if ($autocomplete{$entry} || $autocomplete{uc($entry)} || $autocomplete{lc($entry)});
+      $autocomplete{$entry} = 1;
+    }
     foreach my $term (@{$json_obj->{'terms'}}) {
       $autocomplete{$term} = 1;
     }
