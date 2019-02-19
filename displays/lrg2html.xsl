@@ -50,6 +50,7 @@
 <xsl:variable name="hgnc_url">https://www.genenames.org/data/hgnc_data.php?hgnc_id=</xsl:variable>
 <xsl:variable name="omim_search_url">https://www.omim.org/search/?search=</xsl:variable>
 <xsl:variable name="lrg_root_ftp">ftp://ftp.ebi.ac.uk/pub/databases/lrgex/</xsl:variable>
+<xsl:variable name="lovd_url">https://www.lovd.nl/</xsl:variable>
 <xsl:variable name="current_lrg_bed_url"><xsl:value-of select="$lrg_extra_path"/>LRG_GRCh38.bed</xsl:variable>
 <xsl:variable name="previous_lrg_bed_url"><xsl:value-of select="$lrg_extra_path"/>LRG_GRCh37.bed</xsl:variable>
 <xsl:variable name="current_lrg_diff_url"><xsl:value-of select="$lrg_extra_path"/>data_files/lrg_diff_GRCh38.txt</xsl:variable>
@@ -2245,7 +2246,7 @@
     <div class="section_annotation_content section_annotation_content2">
 
       <xsl:variable name="lsdb_list">List of locus specific databases for <xsl:value-of select="$lrg_gene_name"/></xsl:variable>
-      <xsl:variable name="lsdb_url">https://<xsl:value-of select="$lrg_gene_name"/>.lovd.nl</xsl:variable>
+      <xsl:variable name="lsdb_url"><xsl:value-of select="$lovd_url"/><xsl:value-of select="$lrg_gene_name"/></xsl:variable>
 
       <div class="external_source">
         <div class="other_source"><span class="other_source"><xsl:value-of select="$lsdb_list"/></span></div>
