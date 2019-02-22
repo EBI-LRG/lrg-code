@@ -362,9 +362,14 @@ sub long_name {
   elsif (ref($feature) eq 'Bio::EnsEMBL::Translation') {
     
     # Primarily use the RefSeq xref description
-    my $dbe = $feature->get_all_DBEntries('RefSeq_peptide'); 
+    my @refseq_names = ();
+    my $dbe = $feature->get_all_DBEntries('RefSeq_peptide');
     if ($dbe) {
-      $name = join(", ",map {$_->description()} grep {$_->description ne '' && $_->description} @{$dbe});
+      foreach my $entry (@$dbe) {
+        next if (!$entry->description());
+        push(@refseq_names, $entry->description()) if ($entry->description() ne '');
+      }
+      $name = join(", ",@refseq_names);
     }
   }
   
