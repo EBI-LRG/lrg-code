@@ -2012,23 +2012,6 @@
     
     <xsl:variable name="exons_count" select="count(/*/fixed_annotation/transcript[@name=$transname]/exon)" />
     <xsl:variable name="exon_label"> exon<xsl:if test="$exons_count &gt; 1">s</xsl:if></xsl:variable>
-    <!-- ALL EXONS -->
-    <div>
-      <div class="lrg_transcript_button">
-        <xsl:call-template name="show_hide_button">
-          <xsl:with-param name="div_id">exontable_<xsl:value-of select="$transname"/></xsl:with-param>
-          <xsl:with-param name="link_text">All exons including UTR</xsl:with-param>
-          <xsl:with-param name="show_as_button">1</xsl:with-param>
-        </xsl:call-template>
-        <span class="badge lrg_transcript_length"><xsl:value-of select="$exons_count"/><xsl:value-of select="$exon_label"/></span>
-      </div>   
-      <xsl:call-template name="exons">
-        <xsl:with-param name="exons_id"><xsl:value-of select="$transname" /></xsl:with-param>
-        <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
-        <xsl:with-param name="show_other_exon_naming">0</xsl:with-param>
-        <xsl:with-param name="table_type">all</xsl:with-param>
-      </xsl:call-template>
-    </div>
     
     <!-- CODING EXONS -->
     <div>
@@ -2044,6 +2027,24 @@
         <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
         <xsl:with-param name="show_other_exon_naming">0</xsl:with-param>
         <xsl:with-param name="table_type">coding</xsl:with-param>
+      </xsl:call-template>
+    </div>
+    
+    <!-- ALL EXONS -->
+    <div>
+      <div class="lrg_transcript_button">
+        <xsl:call-template name="show_hide_button">
+          <xsl:with-param name="div_id">exontable_<xsl:value-of select="$transname"/></xsl:with-param>
+          <xsl:with-param name="link_text">All exons including UTR</xsl:with-param>
+          <xsl:with-param name="show_as_button">1</xsl:with-param>
+        </xsl:call-template>
+        <span class="badge lrg_transcript_length"><xsl:value-of select="$exons_count"/><xsl:value-of select="$exon_label"/></span>
+      </div>   
+      <xsl:call-template name="exons">
+        <xsl:with-param name="exons_id"><xsl:value-of select="$transname" /></xsl:with-param>
+        <xsl:with-param name="transname"><xsl:value-of select="$transname" /></xsl:with-param>
+        <xsl:with-param name="show_other_exon_naming">0</xsl:with-param>
+        <xsl:with-param name="table_type">all</xsl:with-param>
       </xsl:call-template>
     </div>
     
