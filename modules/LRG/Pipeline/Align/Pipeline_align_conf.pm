@@ -33,7 +33,7 @@ sub default_options {
 
         # Directories
         data_files_dir          => '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/',
-        align_dir               => '/homes/lgil/public_html/LRG/align',  # To update!
+        align_dir               => '/hps/nobackup2/production/ensembl/lgil/tgmi/align',  # To update!
         ftp_dir                 => $ENV{'PUBFTP'},
         xml_dirs                => ',pending,stalled',
         run_dir                 => $ENV{'LRGROOTDIR'},
@@ -93,6 +93,7 @@ sub pipeline_analyses {
     my @analyses;
     
     my @common_params = (
+        run_dir       => $self->o('run_dir'),
         align_dir     => $self->o('align_dir'),
         reports_dir   => $self->o('reports_dir'),
         reports_file  => $self->o('reports_file')
@@ -106,7 +107,6 @@ sub pipeline_analyses {
             -parameters => {
                xml_dirs        => $self->o('xml_dirs'),
                ftp_dir         => $self->o('ftp_dir'),
-               run_dir         => $self->o('run_dir'),
                data_files_dir  => $self->o('data_files_dir'),
                genes_file      => $self->o('genes_file'),
                havana_ftp      => $self->o('havana_ftp'),

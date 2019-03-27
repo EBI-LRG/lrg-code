@@ -9,6 +9,7 @@ use base ('Bio::EnsEMBL::Hive::Process');
 sub run {
   my $self = shift;
   
+  my $run_dir       = $self->param('run_dir');
   my $align_dir     = $self->param('align_dir');
   my $reports_dir   = $self->param('reports_dir');
   my $reports_file  = $self->param('reports_file');
@@ -18,6 +19,9 @@ sub run {
 
   my $nb_files = `ls -l $align_dir/*/*.html | wc -l`;
   chomp $nb_files;
+
+  # Copy files to DEV virtual machine
+  `perl $run_dir/lrg-code/scripts/shell/copy_dir_to_virtual_machine.sh $align_dir align`;
 
   # Send email
   $self->send_email($reports_dir, $reports_file, $nb_files, $email_contact, $date, $align_url);
