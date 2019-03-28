@@ -21,7 +21,9 @@ sub run {
   chomp $nb_files;
 
   # Copy files to DEV virtual machine
-  `perl $run_dir/lrg-code/scripts/shell/copy_dir_to_virtual_machine.sh $align_dir align`;
+  if ($nb_files && $nb_files != 0) {
+    `perl $run_dir/lrg-code/scripts/shell/copy_dir_to_virtual_machine.sh $align_dir align`;
+  }
 
   # Send email
   $self->send_email($reports_dir, $reports_file, $nb_files, $email_contact, $date, $align_url);

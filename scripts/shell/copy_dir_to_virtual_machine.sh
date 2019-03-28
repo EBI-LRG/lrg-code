@@ -19,6 +19,8 @@ full_output_dir="${DEVWEBSITE}/../${output_dir}/"
 become ${WEBADMIN} bash << EOF
   if [ ! -d "${full_output_dir}" ]; then
     mkdir ${full_output_dir}
+  else
+    rm -f ${full_output_dir}/*/*.html
   fi
 
   cp -r ${input_dir}/* ${full_output_dir}
