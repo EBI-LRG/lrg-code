@@ -311,10 +311,10 @@ if (scalar(@json_terms_list) != 0) {
   # Shorten the Ensembl and RefSeq IDs by removing part of their prefix
   my @processed_json_terms_list;
   foreach my $json_term (@json_terms_list) {
-    $json_term = s/^ENS//i;
-    $json_term = s/^NM_/M_/i;
-    $json_term = s/^NR_/R_/i;
-    $json_term = s/^NG_/G_/i;
+    $json_term =~ s/^ENS//i;
+    $json_term =~ s/^NM_/M_/i;
+    $json_term =~ s/^NR_/R_/i;
+    $json_term =~ s/^NG_/G_/i;
     push (@processed_json_terms_list,$json_term);
   }
   $json_data{"terms"} = \@processed_json_terms_list;
