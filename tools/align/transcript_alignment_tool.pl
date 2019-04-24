@@ -120,7 +120,7 @@ $hgmd_file    = "$data_file_dir/$hgmd_file";
 #);
 
 $registry->load_registry_from_db(
-    -host => 'mysql-ensembl-mirror.ebi.ac.uk',
+    -host => 'mysql-ens-mirror-1.ebi.ac.uk',
     -user => 'anonymous',
     -port => 4240
 );
@@ -159,7 +159,7 @@ my %ens_tr_exons_list;
 my %havana_tr_exons_list;
 #my %uniprot_tr_exons_list;
 my %refseq_tr_exons_list;
-my %refseq_gff3_tr_exons_list;
+#my %refseq_gff3_tr_exons_list;
 my %cdna_tr_exons_list;
 my %overlapping_genes_list;
 my %exons_count;
@@ -171,7 +171,7 @@ my %havana2ensembl;
 #my %uniprot2ensembl;
 
 my $ref_seq_attrib = 'human';
-my $gff_attrib     = 'gff3';
+#my $gff_attrib     = 'gff3';
 my $cdna_attrib    = 'cdna';
 
 my $MAX_LINK_LENGTH = 60;
@@ -412,18 +412,20 @@ if ($data_file_dir && -e "$data_file_dir/$havana_file") {
 #}
 
 
-#-------------#
-# RefSeq data #
-#-------------#
+#-------------------#
+# RefSeq data (GFF) #
+#-------------------#
 my $refseq = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
 
 foreach my $refseq_tr (@$refseq) {
   my $refseq_strand = $refseq_tr->slice->strand;
   next if ($refseq_strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
 
-  next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
-
+  #next unless ($refseq_tr->analysis->logic_name eq 'refseq_human_import');
+  next unless ($refseq_tr->analysis->logic_name eq 'refseq_import');
+  
   my $refseq_name = $refseq_tr->stable_id;
+     $refseq_name =~ s/^rna-//;
   next unless ($refseq_name =~ /^N(M|P|R)_/);
   
   my $refseq_exons = $refseq_tr->get_all_Exons;
@@ -493,36 +495,36 @@ foreach my $refseq_tr (@$refseq) {
 }
 
 
-#------------------#
-# RefSeq GFF3 data #
-#------------------#
-my $refseq_gff3 = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
-
-foreach my $refseq_tr (@$refseq_gff3) {
-  next if ($refseq_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
-
-  next unless ($refseq_tr->analysis->logic_name eq 'refseq_import');
-
-  my $refseq_name = $refseq_tr->stable_id;
-  next unless ($refseq_name =~ /^N(M|P|R)_/);
-  
-  my $refseq_exons = $refseq_tr->get_all_Exons;
-  my $refseq_exon_count = scalar(@$refseq_exons);
-  
-  $refseq_gff3_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
-  $refseq_gff3_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
-  
-  # RefSeq GFF3 exons
-  foreach my $refseq_exon (@{$refseq_exons}) {
-    my $start = $refseq_exon->seq_region_start;
-    my $end   = $refseq_exon->seq_region_end;
-    
-    $exons_list{$start} ++;
-    $exons_list{$end} ++;
-    
-    $refseq_gff3_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
-  }
-}
+##------------------#
+## RefSeq GFF3 data #
+##------------------#
+#my $refseq_gff3 = $refseq_tr_a->fetch_all_by_Slice($gene_slice);
+#
+#foreach my $refseq_tr (@$refseq_gff3) {
+#  next if ($refseq_tr->slice->strand != $gene_strand); # Skip transcripts on the opposite strand of the gene
+#
+#  next unless ($refseq_tr->analysis->logic_name eq 'refseq_import');
+#
+#  my $refseq_name = $refseq_tr->stable_id;
+#  next unless ($refseq_name =~ /^N(M|P|R)_/);
+#  
+#  my $refseq_exons = $refseq_tr->get_all_Exons;
+#  my $refseq_exon_count = scalar(@$refseq_exons);
+#  
+#  $refseq_gff3_tr_exons_list{$refseq_name}{'count'} = $refseq_exon_count;
+#  $refseq_gff3_tr_exons_list{$refseq_name}{'object'} = $refseq_tr;
+#  
+#  # RefSeq GFF3 exons
+#  foreach my $refseq_exon (@{$refseq_exons}) {
+#    my $start = $refseq_exon->seq_region_start;
+#    my $end   = $refseq_exon->seq_region_end;
+#    
+#    $exons_list{$start} ++;
+#    $exons_list{$end} ++;
+#    
+#    $refseq_gff3_tr_exons_list{$refseq_name}{'exon'}{$start}{$end}{'exon_obj'} = $refseq_exon;
+#  }
+#}
 
 
 #------#
@@ -559,7 +561,8 @@ my $cdna_strand = $cdna_tr->slice->strand;
   $cdna_tr_exons_list{$cdna_name}{'object'} = $cdna_tr if ($cdna_name ne '');
 }
 
-compare_nm_data(\%refseq_tr_exons_list ,\%refseq_gff3_tr_exons_list, \%cdna_tr_exons_list);
+#compare_nm_data(\%refseq_tr_exons_list ,\%refseq_gff3_tr_exons_list, \%cdna_tr_exons_list);
+compare_nm_data(\%refseq_tr_exons_list, \%cdna_tr_exons_list);
 
 #---------------------#
 # Overlapping gene(s) #
@@ -925,10 +928,10 @@ my %havana_rows_list = %{display_bed_source_data(\%havana_tr_exons_list, 'havana
 my %refseq_rows_list = %{display_refseq_data(\%refseq_tr_exons_list, $ref_seq_attrib)};
 
 
-#---------------------------------#
-# Display REFSEQ GFF3 transcripts #
-#---------------------------------#
-my %refseq_gff3_rows_list = %{display_refseq_data(\%refseq_gff3_tr_exons_list, $gff_attrib)};
+##---------------------------------#
+## Display REFSEQ GFF3 transcripts #
+##---------------------------------#
+#my %refseq_gff3_rows_list = %{display_refseq_data(\%refseq_gff3_tr_exons_list, $gff_attrib)};
 
 
 #--------------------------#
@@ -1218,11 +1221,11 @@ $html .= display_transcript_buttons(\%havana_rows_list, 'HAVANA');
 ## Uniprot
 #$html .= display_transcript_buttons(\%uniprot_rows_list, 'Uniprot');
 
-# RefSeq
+# RefSeq (GFF)
 $html .= display_transcript_buttons(\%refseq_rows_list, 'RefSeq');
 
-# RefSeq GFF3
-$html .= display_transcript_buttons(\%refseq_gff3_rows_list, 'RefSeq GFF3');
+## RefSeq GFF3
+#$html .= display_transcript_buttons(\%refseq_gff3_rows_list, 'RefSeq GFF3');
 
 # cDNA
 $html .= display_transcript_buttons(\%cdna_rows_list, 'cDNA');
@@ -1500,12 +1503,17 @@ sub get_mane_transcript {
   
   if ($mane_data{$gene_name}) {
      my $type = ($trans =~ /^ENST/) ? 'enst' : 'nm';
-     #if ($mane_data{$gene_name}{$type} eq $trans) {
+     my $rs_class = ($type eq 'nm') ? 'rs_select' : 'mane';
+     
      my $mane_tr = $mane_data{$gene_name}{$type};
-     my $mane_tr_no_version = (split('\.',$mane_tr))[0];
-     if ($trans =~ /^$mane_tr_no_version\./) {
-       my $rs_class = ($type eq 'nm') ? 'rs_select' : 'mane';
-       return qq{<div style="float:right"><span class="flag $rs_class glyphicon glyphicon-pushpin" data-toggle="tooltip" data-placement="bottom" title="MANE transcript ($mane_tr)"></span></div>};
+     if ($mane_data{$gene_name}{$type} eq $trans) {
+       return qq{<div style="float:right"><span class="flag $rs_class glyphicon glyphicon-pushpin" data-toggle="tooltip" data-placement="bottom" title="MANE transcript"></span></div>};
+     }
+     else {
+       my $mane_tr_no_version = (split('\.',$mane_tr))[0];
+       if ($trans =~ /^$mane_tr_no_version\./) {
+         return qq{<div style="float:right"><span class="flag flag_off $rs_class glyphicon glyphicon-pushpin" data-toggle="tooltip" data-placement="bottom" title="MANE transcript ($mane_tr)"></span></div>};
+       }
      }
   }
   return "";
@@ -1650,13 +1658,14 @@ sub display_refseq_data {
 
   foreach my $nm (sort {$refseq_exons_list->{$b}{'count'} <=> $refseq_exons_list->{$a}{'count'}} keys(%{$refseq_exons_list})) {
 
-    next if ($refseq_import eq $gff_attrib && $compare_nm_data{$nm}{$gff_attrib});
+    #next if ($refseq_import eq $gff_attrib && $compare_nm_data{$nm}{$gff_attrib});
 
     my $tr_source = 'refseq';
 
     my $refseq_exons = $refseq_exons_list->{$nm}{'exon'};
     my $e_count = scalar(keys(%{$refseq_exons})); 
-    my $column_class = ($refseq_import eq $gff_attrib) ? $gff_attrib : 'nm';
+    #my $column_class = ($refseq_import eq $gff_attrib) ? $gff_attrib : 'nm';
+    my $column_class = 'nm';
     
     my $labels = '';
     if ($refseq_import eq $ref_seq_attrib && $compare_nm_data{$nm}) {
@@ -2101,29 +2110,29 @@ sub thousandify {
 
 sub compare_nm_data {
   my $ref_seq = shift;
-  my $gff3    = shift;
+  #my $gff3    = shift;
   my $cdna    = shift;
   
   foreach my $nm (keys(%{$ref_seq})) {
     
     my $ref_seq_exon_count = $ref_seq->{$nm}{'count'};
     
-    # GFF3
-    if ($gff3->{$nm} && $gff3->{$nm}{'count'} == $ref_seq_exon_count) {
-      my $same_gff3_exon_count = 0;
-      GFF3: foreach my $exon_start (keys(%{$ref_seq->{$nm}{'exon'}})) {
-        my $exon_end = (keys(%{$ref_seq->{$nm}{'exon'}{$exon_start}}))[0];
-        if ($gff3->{$nm}{'exon'}{$exon_start} && $gff3->{$nm}{'exon'}{$exon_start}{$exon_end}) {
-          $same_gff3_exon_count++;
-        }
-        else {
-          last GFF3;
-        }
-      }
-      if ($same_gff3_exon_count == $ref_seq_exon_count) {
-        $compare_nm_data{$nm}{$gff_attrib} = 1;
-      }
-    }
+    ## GFF3
+    #if ($gff3->{$nm} && $gff3->{$nm}{'count'} == $ref_seq_exon_count) {
+    #  my $same_gff3_exon_count = 0;
+    #  GFF3: foreach my $exon_start (keys(%{$ref_seq->{$nm}{'exon'}})) {
+    #    my $exon_end = (keys(%{$ref_seq->{$nm}{'exon'}{$exon_start}}))[0];
+    #    if ($gff3->{$nm}{'exon'}{$exon_start} && $gff3->{$nm}{'exon'}{$exon_start}{$exon_end}) {
+    #      $same_gff3_exon_count++;
+    #    }
+    #    else {
+    #      last GFF3;
+    #    }
+    #  }
+    #  if ($same_gff3_exon_count == $ref_seq_exon_count) {
+    #    $compare_nm_data{$nm}{$gff_attrib} = 1;
+    #  }
+    #}
   
     # cDNA
     if ($cdna->{$nm} && $cdna->{$nm}{'count'} == $ref_seq_exon_count) {
@@ -2166,8 +2175,14 @@ sub check_if_in_hgmd_file {
   return '-' if (!$hgmd_file || !-f $hgmd_file);
   
   my $result = `grep $tr $hgmd_file`;
-
-  return ($result =~ /^$gene_name/i) ? 'HGMD' : '-';
+  
+  my $label = '-';
+  
+  if ($result =~ /^$gene_name\s+(.+)/i) {
+    $label = qq{<span class="helptip_label" data-toggle="tooltip" data-placement="bottom" title="$1">HGMD</span>};
+  }
+  
+  return $label;
 }
 
 
@@ -2175,7 +2190,11 @@ sub end_of_row {
   my $id = shift;
   my $tr = shift;
   
-  my $hgmd_flag = ($tr) ? check_if_in_hgmd_file($tr) : '-';
+  my $hgmd_flag = '-';
+  if ($tr) {
+    my $tr_id = (split(/\./,$tr))[0];
+    $hgmd_flag = check_if_in_hgmd_file($tr_id);
+  }
   my $highlight_button = highlight_button($id, 'r');
   
   my $html = $end_of_row;

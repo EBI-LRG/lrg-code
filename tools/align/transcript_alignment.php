@@ -223,15 +223,12 @@ function get_legend() {
             <td class="hv first_column"></td><td>Label the <b>HAVANA transcripts</b></td>
           </tr>
           <tr class="bg2_legend">
+            <td class="nm first_column"></td><td>Label the <b>RefSeq transcripts</b> (from the <b>GFF3 import</b>)</td>
+          </tr>
+          <tr class="bg1_legend">
             <td class="cdna first_column"></td><td>Label the <b>RefSeq transcripts cDNA</b> data</td>
           </tr>
-          <tr class="bg1_legend">
-            <td class="nm first_column"></td><td>Label the <b>RefSeq transcripts</b></td>
-          </tr>
           <tr class="bg2_legend">
-            <td class="gff3 first_column"></td><td>Label the <b>RefSeq transcripts</b> from the <b>GFF3 import</b></td>
-          </tr>
-          <tr class="bg1_legend">
             <td class="gene first_column"></td><td>Label the <b>Ensembl genes</b></td>
           </tr>
           
@@ -275,9 +272,9 @@ function get_legend() {
           </tr>
           <tr class="bg2_legend">
             <td>
-              <span class="flag mane glyphicon glyphicon-pushpin"></span>
+              <span class="flag mane glyphicon glyphicon-pushpin"></span> <span class="flag flag_off mane glyphicon glyphicon-pushpin"></span>
             </td>
-            <td>Label to indicate the MANE transcript</td>
+            <td>Label to indicate the MANE transcript (in grey if the transcript versions are not matching)</td>
           </tr>
           <tr class="bg1_legend">
             <td>
@@ -314,12 +311,6 @@ function get_legend() {
               <span class="flag source_flag cdna">cdna</span>
             </td>
             <td>Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq cDNA import</td>
-          </tr>
-          <tr class="bg1_legend">
-            <td>
-              <span class="flag source_flag gff3 dark_border">gff3</span>
-            </td>
-            <td style="padding-left:5px">Label to indicate that the RefSeq transcript has the same coordinates in the RefSeq GFF3 import</td>
           </tr>
           
         </table>

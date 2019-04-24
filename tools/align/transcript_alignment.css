@@ -287,7 +287,7 @@ table.legend td.subheader {
 .mane {
   border: none !important;
   padding:1px 2px 1px 2px;
-  color: #CCC;/*#F24*/;
+  color: #F24;
 }
 
 .rs_select {
@@ -311,12 +311,11 @@ table.legend td.subheader {
   color:#F00;
 }
 
-/* Temporary - To be removed when proper MANE set will be in Ensembl */
-.gold .mane, .glyphicon-pushpin { color:#888 !important; }
-.mane:hover, .glyphicon-pushpin:hover { color:#AAA !important; }
+/* Make the flag grey */
+.flag_off { color:#888 !important; }
+.flag_off:hover { color:#AAA !important; }
 
-/*.gold .canonical, .gold .cars, .gold .mane, .gold .uniprot_flag {*/
-.gold .canonical, .gold .cars, .gold .uniprot_flag {
+.gold .canonical, .gold .cars, .gold .mane, .gold .uniprot_flag {
   color:#D00;
 }
 
