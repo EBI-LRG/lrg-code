@@ -31,6 +31,10 @@ var rseq_prefix = 'N';
 
 var rseqi_keys = { 1 : 'cds_only', 2 : 'whole_transcript'};
 
+var rs_select_flag = ' <span class="flag red_flag glyphicon glyphicon-flag" title="RefSeq select transcript for this gene"></span>';
+var rs_mane_flag   = ' <span class="flag red_flag glyphicon glyphicon-pushpin" title="MANE transcript for this gene"></span>';
+
+
 //
 // Methods //
 //
@@ -180,7 +184,12 @@ function display_results (results) {
         var refseq_info = entry.rsi;
             refseq_info = (rseqi_keys[refseq_info]) ? rseqi_keys[refseq_info] : refseq_info;
             refseq      = "<div>"+rseq_prefix+entry.rs.join("</div><div>"+rseq_prefix)+ "</div><div class=\"small txt_right\">("+refseq_info+")</div>";
-            refseq      = refseq.replace(/\|1/g,' <span class="flag red_flag glyphicon glyphicon-flag" title="RefSeq select transcript for this gene"></span>');
+            // RefSeq select
+            refseq = refseq.replace(/\|1/g, rs_select_flag);
+            // MANE
+            refseq = refseq.replace(/\|2/g, rs_mane_flag);
+            // RefSeq select and MANE
+            refseq = refseq.replace(/\|3/g, rs_select_flag+rs_mane_flag);
       }
 
       var ens_link   = (enst == '-') ? enst : get_ens_link(enst);
@@ -188,6 +197,7 @@ function display_results (results) {
       var ccds_link  = get_ccds_link(ccds);
     
       var is_cars    = cars_flag(entry);
+      var is_mane    = mane_flag(entry);
       var is_uniprot = uniprot_flag(entry);
       //var is_rss     = rss_flag(entry);
 
@@ -196,7 +206,7 @@ function display_results (results) {
       // HGNC Symbol
       newrow.append(newCell(get_hgnc_link(symbol)));
       // ENST ID;
-      newrow.append(newCell(ens_link+' <div class="right">'+is_cars+is_uniprot+fasta_link+'</div>'));
+      newrow.append(newCell(ens_link+' <div class="right">'+is_cars+is_mane+is_uniprot+fasta_link+'</div>'));
       // OTTG
       newrow.append(newCell(ottg));
       // OTTT
@@ -217,7 +227,7 @@ function display_results (results) {
 }
 
 function cars_flag(res) {
-  if (res.cars) {
+  if (res.cf) {
     var c_flag = $('<span></span>');
     c_flag.addClass('flag red_flag glyphicon glyphicon-star');
     c_flag.attr("title", "CARS transcript");
@@ -228,8 +238,20 @@ function cars_flag(res) {
   }
 }
 
+function mane_flag(res) {
+  if (res.mf) {
+    var m_flag = $('<span></span>');
+    m_flag.addClass('flag red_flag glyphicon glyphicon-pushpin');
+    m_flag.attr("title", "MANE transcript");
+    return m_flag[0].outerHTML;
+  }
+  else {
+    return '';
+  }
+}
+
 function uniprot_flag(res) {
-  if (res.up) {
+  if (res.uf) {
     var u_flag = $('<a href="https://www.uniprot.org/uniprot/'+res.up+'" target="_blank"></a>');
     u_flag.addClass('flag red_flag glyphicon glyphicon-record');
     u_flag.attr("title", "UniProt canonical transcript for "+res.up);

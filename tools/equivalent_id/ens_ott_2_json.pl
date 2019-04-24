@@ -21,12 +21,14 @@ my $gencode_file    = 'gencode.annotation.gtf';
 my $cars_file       = 'canonicals_hgnc.txt'; 
 my $rs_select_file  = 'select_per_gene_9606.txt';
 my $uniprot_file    = 'uniprot/human_sp_ensembl-withIdentifiers.txt';
+my $mane_file       = 'mane/MANE.GRCh38.v0.5.summary.txt';
 my $data_dir        = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
 my $data_files_info = "$data_dir/data_files_info.json";
 
 # CARS INFO
 my $transcript_cars_date = '';
 my $refseq_select_date   = '';
+my $mane_version = '';
 my $uniprot_date   = '';
 if (-e $data_files_info) {
   my $json_text = `cat $data_files_info`;
@@ -34,10 +36,12 @@ if (-e $data_files_info) {
   $transcript_cars_date = 'cars;'.$data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
   $refseq_select_date = 'refseq_select;'.$data->{'refseq_select'}{'Date'};
   $uniprot_date = 'uniprot;'.$data->{'uniprot'}{'Date'};
+  $mane_version = 'mane;'.$data->{'mane'}{'Version'};
 }
 open C, "> $output_dir/ens_ott_data_info.txt" or die $!;
 print C "$transcript_cars_date\n";
 print C "$refseq_select_date\n";
+print C "$mane_version\n";
 print C "$uniprot_date\n";
 close(C);
 
@@ -83,6 +87,19 @@ while(<C>) {
   $cars_data{$cars} = 1;
 }
 close(C);
+
+# MANE file
+my %mane_data;
+open M, "< $data_dir/$mane_file" or die $!;
+while(<M>) {
+  chomp $_;
+  next if ($_ =~ /^#/ | $_ eq '');
+  my @line = split("\t", $_);
+  $mane_data{$line[5]} = 1;
+  $mane_data{$line[6]} = 1;
+}
+close(M);
+
 
 # Gencode data file
 my %gencode_data;
@@ -287,11 +304,13 @@ foreach my $enst (keys(%ensts)) {
   }
   
   # JSON data
-  $enst_v =~ s/$enst_prefix//i;
-  my %json_data = ( "et" => $enst_v );
+  my $enst_json = $enst_v;
+  $enst_json =~ s/$enst_prefix//i;
+  my %json_data = ( "et" => $enst_json );
   $json_data{"g"} = $hgnc if ($hgnc && $hgnc ne '');
-  $json_data{"cars"} = 1 if ($cars_data{$enst});
-  $json_data{"up"} = $uniprot_data{$enst} if ($uniprot_data{$enst});
+  $json_data{"cf"} = 1 if ($cars_data{$enst});
+  $json_data{"mf"} = 1 if ($mane_data{$enst_v});
+  $json_data{"uf"} = $uniprot_data{$enst} if ($uniprot_data{$enst});
   
   if ($is_private) {
     if ($ottt) {
@@ -316,10 +335,18 @@ foreach my $enst (keys(%ensts)) {
     }
     if ($ensembl_data{$enst}{'refseq'}) {
       my $refseq_data = $ensembl_data{$enst}{'refseq'};
+      # Add the flag(s) for RefSeq
       foreach my $refseq (@$refseq_data) {
-        if ($rs_select_data{$enst}) {
-          $refseq .= '|1' if ($rs_select_data{$enst} eq $refseq);
+        my $val = 0;
+        # RefSeq select
+        if ($rs_select_data{$enst} && $rs_select_data{$enst} eq $refseq) {
+          $val += 1;          
         }
+        # MANE
+        if ($mane_data{$refseq}) {
+          $val += 2;
+        }
+        $refseq .= "|$val" if ($val != 0);
       }
       $json_data{"rs"} = $refseq_data;
       $json_data{"rsi"} = $ensembl_data{$enst}{'refseq_i'};
