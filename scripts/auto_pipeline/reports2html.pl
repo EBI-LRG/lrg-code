@@ -6,12 +6,13 @@ use LRG::LRG qw(date);
 use Getopt::Long;
 use Cwd 'abs_path';
 
-my ($reports_dir,$reports_file,$reports_sum,$missing_file,$xml_dir,$ftp_dir,$date);
+my ($reports_dir,$reports_file,$reports_sum,$reports_html_file,$missing_file,$xml_dir,$ftp_dir,$date);
 
 GetOptions(
   'reports_dir=s'  => \$reports_dir,
   'reports_file=s' => \$reports_file,
   'reports_sum=s'  => \$reports_sum,
+  'reports_html=s' => \$reports_html_file,
   'missing_file=s' => \$missing_file,
   'xml_dir=s'      => \$xml_dir,
   'ftp_dir=s'      => \$ftp_dir,
@@ -23,6 +24,14 @@ $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
 my $ensg_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=';
 my $enst_url = 'http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=';
+
+my $failed_jira_ticket = 'https://www.ebi.ac.uk/panda/jira/browse/LREF-2553';
+my $jira_button = qq {
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:7px">
+      <a href="$failed_jira_ticket" target="_blank">
+        <button type="button" class="btn btn-lrg btn-lrg1 icon-external-link">Failed LRGs history</button>
+      </a>
+    </div>};
 
 my $max_new_lrg = 10;
 
@@ -36,7 +45,7 @@ die("Reports directory '$reports_dir' doesn't exist!") unless (-d $reports_dir);
 die("Reports file '$reports_file' doesn't exist in '$reports_dir'!") unless (-e "$reports_dir/$reports_file");
 die("XML directory '$xml_dir' doesn't exist!") unless (-d $xml_dir);
 
-my $reports_html_file = (split(/\./,$reports_file))[0].'.html';
+$reports_html_file ||= (split(/\./,$reports_file))[0].'.html';
 
 my $public  = 'public';
 my $pending = 'pending';
@@ -349,6 +358,8 @@ foreach my $status (@pipeline_status_list) {
   my $button_text  = ($status eq 'succeed') ? 'Show' : 'Hide';
   my $div_display  = ($status eq 'succeed') ? ' style="display:none"' : '';
   
+  my $link_to_jira = ($status eq 'failed') ? $jira_button : '';
+  
   $html_content .= qq{
   <div class="section_annotation clearfix section_annotation1 margin-top-25 margin-bottom-20" id="$status\_section">
     <div class="col-lg-3 col-md-3 col-sm-3 col-xs-3 clearfix padding-left-0">
@@ -362,9 +373,10 @@ foreach my $status (@pipeline_status_list) {
     <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-left-0 padding-right-0" style="padding-top:12px">
       <span class="label header_count header_count_$status">$lrg_count LRGs</span>
     </div>
-    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:8px">
+    <div class="col-lg-2 col-md-2 col-sm-2 col-xs-2 padding-right-0" style="height:36px;padding-top:7px">
       <button type="button" class="btn btn-lrg btn-lrg1 icon-collapse-$button_type close-icon-5" id="$status\_lrg_button" onclick="showhide_button('$status\_lrg','table');">$button_text table</button>
     </div>
+    $link_to_jira
   </div>
   <div id="$status\_lrg"$div_display>
   };
