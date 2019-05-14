@@ -90,7 +90,7 @@ print " done\n";
 my $general_desc = 'LRG sequences provide a stable genomic DNA framework for reporting mutations with a permanent ID and core content that never changes.';
 
 
-print "Generating the index files ...";
+print "Generating the index files ...\n";
 
 # Count variables
 my $nb_files = @xmlfiles;
@@ -161,10 +161,15 @@ while (my $file = readdir($dh)) {
     my $json_obj = decode_json $json_data;
     foreach my $key ('id','symbol','status') {
       my $entry = $json_obj->{$key};
-      next if ($autocomplete{$entry} || $autocomplete{uc($entry)} || $autocomplete{lc($entry)});
+      if ($entry =~ /^\d+$/ && $key eq 'id') {
+        $entry = 'LRG_'.$entry;
+      }
+      next if ($autocomplete{$entry} || $autocomplete{uc($entry)} || $autocomplete{lc($entry)} || length($entry) == 1);
       $autocomplete{$entry} = 1;
     }
-    foreach my $term (@{$json_obj->{'terms'}}) {
+    foreach my $term (split(/\|/,$json_obj->{'t'})) {
+    print STDERR $json_obj->{'symbol'}.": $term | ".length($term)."\n";
+      next if (length($term) == 1);
       $autocomplete{$term} = 1;
     }
   }

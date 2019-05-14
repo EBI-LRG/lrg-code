@@ -309,15 +309,24 @@ my %json_data = ( "id"     => $json_id + 0, # Force number for the JSON data
                 );
 if (scalar(@json_terms_list) != 0) {
   # Shorten the Ensembl and RefSeq IDs by removing part of their prefix
-  my @processed_json_terms_list;
+  my %processed_json_terms_list;
   foreach my $json_term (@json_terms_list) {
     $json_term =~ s/^ENS//i;
     $json_term =~ s/^NM_/M_/i;
     $json_term =~ s/^NR_/R_/i;
     $json_term =~ s/^NG_/G_/i;
-    push (@processed_json_terms_list,$json_term);
+    $json_term =~ s/@//;
+    $json_term =~ s/'//;
+    $json_term = (split(/\(|\/|\*/,$json_term))[0];
+    if ($json_term =~ /\+(.+)/) {
+      $json_term = $1;
+    }
+    next if ($json_term eq $data{'hgnc'});
+    $processed_json_terms_list{$json_term} = 1;
   }
-  $json_data{"terms"} = \@processed_json_terms_list;
+  if (scalar(keys(%processed_json_terms_list)) != 0) {
+    $json_data{"t"} = join('|',keys(%processed_json_terms_list));
+  }
 }
 my $json = encode_json \%json_data;
 open JSON, "> $tmp_dir/$lrg_id$index_suffix.json" || die $!;
