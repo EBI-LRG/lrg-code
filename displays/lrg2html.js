@@ -560,9 +560,12 @@ function get_hgvs() {
   
   $.each(query_list, function (assembly_item, hgvs_list) {
     var hgvs_strings = '"'+hgvs_list.join('","')+'"';
-    
+
     var post_query = JSON.stringify({ "ids" : hgvs_list, "fields" : ["hgvsc","id"] });
 
+    $("td.hgvsc_col_"+assembly_item.toLowerCase()).html('-');
+    $("td.var_col_"+assembly_item.toLowerCase()).html('-');
+    
     // 1 - Get HGVS and assembly and build the URL
     var rest_url_root = 'rest';
     if (assembly_item.match(previous_assembly)) {
@@ -570,8 +573,11 @@ function get_hgvs() {
     }
     var rest_url = 'https://'+rest_url_root+'.ensembl.org/variant_recoder/human';
     
-    $('td.hgvsc_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
-    $('td.var_col_'+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
+    $.each(hgvs_list, function (index, hgvs_entry) {
+      hgvs_entry = hgvs_entry.trim();
+      $("tr[data-hgvs='"+hgvs_entry+"'] > td.hgvsc_col_"+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
+      $("tr[data-hgvs='"+hgvs_entry+"'] > td.var_col_"+assembly_item.toLowerCase()).html('<div class="loader-small"></div>');
+    });
     if (assembly_item=='GRCh37') {
       console.log('REST URL: '+rest_url+' '+hgvs_list);
     }
@@ -582,7 +588,7 @@ function get_hgvs() {
       data: JSON.stringify({ "ids" : hgvs_list, "fields" : ["hgvsc","id"] }),
       contentType: "application/json; charset=utf-8",
       success: function (data) {
-        //console.log(data);
+        console.log(rest_url);
         parse_rest_results(assembly_item,data);
       },
       error: function (xhRequest, ErrorText, thrownError) {
@@ -599,14 +605,16 @@ function get_hgvs() {
 
 // Parse results from the Ensembl REST call "variant_recoder" and display the data
 function parse_rest_results(assembly, data) {
+  
   if (data.error) {
-    var hgvs_input = data.error.match(/'.+:\w\..+'/);
-    var row_id = $('tr[data-hgvs="'+hgvs_input+'"]').attr('id');
-    $('#'+row_id+'_hgvsc').html('No data available');
+    var hgvs_input = data.error.match(/.+:\w\..+/);
+    if (hgvs_input) {
+      var row_id = $('tr[data-hgvs="'+hgvs_input+'"]').attr('id');
+      $('#'+row_id+'_hgvsc').html('No data available');
+    }
   }
   else {
     var re = new RegExp(':');
-    
     $.each(data,function (index, result) {
       // Retrieve corresponding row
       var hgvs_input = result.input;

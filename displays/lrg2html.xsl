@@ -5924,7 +5924,9 @@
             
         <tr>
           <xsl:attribute name="id"><xsl:value-of select="$line_id"/></xsl:attribute>
-          <xsl:attribute name="data-hgvs"><xsl:value-of select="$hgvs_chr"/><xsl:value-of select="$genomic_hgvs"/></xsl:attribute>
+          <xsl:if test="$genomic_hgvs!=''">
+            <xsl:attribute name="data-hgvs"><xsl:value-of select="$hgvs_chr"/><xsl:value-of select="$genomic_hgvs"/></xsl:attribute>
+          </xsl:if>
           <xsl:attribute name="data-assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:attribute>
    
           <td class="no_border_bottom no_border_left" style="font-weight:bold">
@@ -5989,22 +5991,27 @@
                   
           <!-- Genomic HGVS -->
           <td class="no_border_bottom border_left current_assembly_bg">
-            <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
-              <!--ID / Key -->
-              <xsl:variable name="genkey">
-                <xsl:text>gen_</xsl:text><xsl:value-of select="@type"/>_<xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>_<xsl:value-of select="$hgvs_assembly"/>
-              </xsl:variable>   
-           
-              <xsl:call-template name="diff_hgvs_genomic_ref_link">
-                <xsl:with-param name="chr"><xsl:value-of select="$hgvs_chr"/></xsl:with-param>
-                <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
-                <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
-                <xsl:with-param name="key"><xsl:value-of select="$genkey"/></xsl:with-param>
-                <xsl:with-param name="hgvs_gen"><xsl:value-of select="$genomic_hgvs"/></xsl:with-param>
-                <xsl:with-param name="button_colour"><xsl:value-of select="$button_colour"/></xsl:with-param>
-                <xsl:with-param name="tooltip_font_colour"><xsl:value-of select="$tooltip_font_colour"/></xsl:with-param>
-              </xsl:call-template>
-            </xsl:if>
+            <xsl:choose>
+              <xsl:when test="$genomic_hgvs!=''">
+                <xsl:if test="contains(../../@coord_system,$previous_assembly) or contains(../../@coord_system,$current_assembly)">  
+                  <!--ID / Key -->
+                  <xsl:variable name="genkey">
+                    <xsl:text>gen_</xsl:text><xsl:value-of select="@type"/>_<xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>_<xsl:value-of select="$hgvs_assembly"/>
+                  </xsl:variable>   
+               
+                  <xsl:call-template name="diff_hgvs_genomic_ref_link">
+                    <xsl:with-param name="chr"><xsl:value-of select="$hgvs_chr"/></xsl:with-param>
+                    <xsl:with-param name="strand"><xsl:value-of select="../@strand"/></xsl:with-param>
+                    <xsl:with-param name="assembly"><xsl:value-of select="$hgvs_assembly"/></xsl:with-param>
+                    <xsl:with-param name="key"><xsl:value-of select="$genkey"/></xsl:with-param>
+                    <xsl:with-param name="hgvs_gen"><xsl:value-of select="$genomic_hgvs"/></xsl:with-param>
+                    <xsl:with-param name="button_colour"><xsl:value-of select="$button_colour"/></xsl:with-param>
+                    <xsl:with-param name="tooltip_font_colour"><xsl:value-of select="$tooltip_font_colour"/></xsl:with-param>
+                  </xsl:call-template>
+                </xsl:if>
+              </xsl:when>
+              <xsl:otherwise>HGVS too long to display!</xsl:otherwise>
+            </xsl:choose>
           </td>
               
           <!-- Transcript HGVS -->
@@ -6083,7 +6090,9 @@
     <xsl:choose>
       <!-- Ref deletion -->
       <xsl:when test="$diff/@type='lrg_ins'">
-        <xsl:value-of select="$diff/@other_start"/>_<xsl:value-of select="$diff/@other_end"/>ins<xsl:value-of select="$lrg_seq"/>
+        <xsl:if test="string-length($lrg_seq) &lt;= $max_allele_to_display">  
+          <xsl:value-of select="$diff/@other_start"/>_<xsl:value-of select="$diff/@other_end"/>ins<xsl:value-of select="$lrg_seq"/>
+        </xsl:if>
       </xsl:when>
       <!-- Ref insertion -->
       <xsl:when test="$diff/@type='other_ins'">
@@ -6102,15 +6111,17 @@
           <xsl:when test="@other_start=@other_end">
             <xsl:value-of select="@other_start"/><xsl:value-of select="$ref_seq"/>><xsl:value-of select="$lrg_seq"/>
           </xsl:when>  
-          <xsl:otherwise>
+          <xsl:when test="string-length($ref_seq) &lt;= $max_allele_to_display">
             <xsl:value-of select="@other_start"/>_<xsl:value-of select="@other_end"/>del<xsl:value-of select="$ref_seq"/>ins<xsl:value-of select="$lrg_seq"/>
-          </xsl:otherwise>
+          </xsl:when>
         </xsl:choose>  
       </xsl:otherwise>
     </xsl:choose>
     </xsl:variable>
     
-    <xsl:value-of select="$hgvs_type" /><xsl:value-of select="$hgvs_diff" />
+    <xsl:if test="$hgvs_diff!=''">
+      <xsl:value-of select="$hgvs_type" /><xsl:value-of select="$hgvs_diff" />
+    </xsl:if>
     
 </xsl:template>
 
@@ -6176,7 +6187,9 @@
         </xsl:when>
         <!-- LRG deletion -->
         <xsl:when test="@type='other_ins'">
-          <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>ins<xsl:value-of select="@other_sequence"/>
+          <xsl:if test="string-length(@other_sequence) &lt;= $max_allele_to_display">
+            <xsl:value-of select="@lrg_start"/>_<xsl:value-of select="@lrg_end"/>ins<xsl:value-of select="@other_sequence"/>
+          </xsl:if>
         </xsl:when>
         <!-- LRG mismatch -->
         <xsl:otherwise>
@@ -6192,19 +6205,15 @@
       </xsl:choose>
     </xsl:variable>
     
-     <div class="hgvs nowrap">
-      <span class="lrg_blue bold_font"><xsl:value-of select="$lrg_id"/></span>
-      <span><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
-    <!--<xsl:if test="$assembly!='none' and $lrg_status=0">
-      <a class="vep_icon vep_lrg" data-toggle="tooltip" data-placement="bottom" target="_blank">
-        <xsl:attribute name="href">
-          <xsl:value-of select="$vep_parser_url"/><xsl:text>assembly=</xsl:text><xsl:value-of select="$assembly"/><xsl:text>&amp;hgvs=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/><xsl:text>&amp;lrg=</xsl:text><xsl:value-of select="$lrg_id"/><xsl:text>&amp;hgnc=</xsl:text><xsl:value-of select="$lrg_gene_name"/><xsl:text>&amp;strand=</xsl:text><xsl:value-of select="$strand"/>
-        </xsl:attribute>
-        <xsl:attribute name="id"><xsl:value-of select="$key"/></xsl:attribute>
-        <xsl:attribute name="title">Click on the link above to see the VEP output for <xsl:value-of select="$lrg_id"/><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></xsl:attribute>
-      </a>
-    </xsl:if>-->
-    </div>
+    <xsl:choose>
+      <xsl:when test="$diff!=''">
+        <div class="hgvs nowrap">
+          <span class="lrg_blue bold_font"><xsl:value-of select="$lrg_id"/></span>
+          <span><xsl:value-of select="$hgvs_type"/><xsl:value-of select="$diff"/></span>
+        </div>
+      </xsl:when>
+      <xsl:otherwise>HGVS too long to display!</xsl:otherwise>
+    </xsl:choose>
   </xsl:for-each>
    
 </xsl:template>
