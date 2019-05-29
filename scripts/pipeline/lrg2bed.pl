@@ -33,15 +33,18 @@ my $track_desc = 'Locus Reference Genomic sequences (LRG)';
 my %lrg_meta = (
   'public'  => {'files'  => [],
                 'dir'    => $xml_dir,
-                'colour' => {'gene'  => '72,167,38',
-                             'trans' => '54,125,29',
-                             'prot'  => '36,84,19'}
+                'colour' => {'gene'  => '26,142,190',
+                             'trans' => '28,155,207'}
                },
   'pending' => {'files'  => [],
                 'dir'    => "$xml_dir/pending",
-                'colour' => {'gene'  => '240,0,0',
-                             'trans' => '190,0,0',
-                             'prot'  => '140,0,0'}
+                'colour' => {'gene'  => '235,129,0',
+                             'trans' => '255,140,0'}
+               },
+  'stalled' => {'files'  => [],
+                'dir'    => "$xml_dir/stalled",
+                'colour' => {'gene'  => '199,0,0',
+                             'trans' => '238,0,0'}
                }
 );
 
@@ -119,6 +122,9 @@ open BED, "> $tmp_dir/$bed_file" or die $!;
 ##################
 foreach my $status (keys(%lrg_meta)) {
 
+  my $gene_colour  = $lrg_meta{$status}{'colour'}{'gene'};
+  my $trans_colour = $lrg_meta{$status}{'colour'}{'trans'};
+
   foreach my $xml (@{$lrg_meta{$status}{'files'}}) {
 	  my $lrg = LRG::LRG::newFromFile($lrg_meta{$status}{'dir'}."/$xml") or die("ERROR: Could not create LRG object from XML file!");
 	  my $lrg_id = $lrg->findNodeSingle('fixed_annotation/id')->content;
@@ -151,7 +157,7 @@ foreach my $status (keys(%lrg_meta)) {
 	      $strand = $mapping_span->data()->{'strand'};
 	      $strand_operator = ($strand == 1) ? '+' : '-';
 	    
-	      my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator";
+	      my $line_content = "chr$chr\t$start\t$end\t$lrg_id($gene_name)\t0\t$strand_operator\t$start\t$end\t$gene_colour";
 	  
 		    if ($lrg_gene{$status}{$chr_name}{$start}) {
 	        push(@{$lrg_gene{$status}{$chr_name}{$start}}, $line_content);
@@ -264,7 +270,7 @@ foreach my $status (keys(%lrg_meta)) {
           }
           $t_extra_info .= "transcript$t_number" if (!$t_extra_info);
       
-          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name($t_extra_info)\t0\t$strand_operator\t$c_start\t$c_end\t0\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
+          my $t_line_content = "chr$chr\t$t_start\t$t_end\t$t_name($t_extra_info)\t0\t$strand_operator\t$c_start\t$c_end\t$trans_colour\t$exons_count\t$exons_sizes_list\t$exons_starts_list";
       
           if ($lrg_trans{$status}{$chr_name}{$t_start}{$t_number}) {
 	          push(@{$lrg_trans{$status}{$chr_name}{$t_start}{$t_number}}, $t_line_content);
@@ -279,43 +285,6 @@ foreach my $status (keys(%lrg_meta)) {
             $lrg_trans{$status}{$chr_name} = {$t_start => { $t_number => [$t_line_content]}};
 	    	  }
         }
-      
-        ## Protein coordinates
-        #my $codings = $transcript->findNodeArraySingle('coding_region');
-        #foreach my $coding (@$codings) {
-        #  my $p_short_name = $coding->findNodeSingle('translation')->data->{name};
-        #  
-        #  next if ($protein_list{$p_short_name});
-        #  $protein_list{$p_short_name} = 1;
-        #  
-        #  my $p_name   = $lrg_id.$p_short_name;
-        #  my $p_number = substr($p_short_name,1);
-        #  my $p_coords = $coding->findNode('coordinates');
-        #  my $p_start  = lrg2genomic($p_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
-        #  my $p_end    = lrg2genomic($p_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
-        #  
-        #  if ($strand == -1) {
-        #    my $p_tmp = $p_start;
-        #    $p_start = $p_end;
-        #    $p_end = $p_tmp;
-        #  }
-        #  
-        #  #my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name ($lrg_id protein $p_number)\t0\t$strand_operator";
-        #  my $p_line_content = "chr$chr\t$p_start\t$p_end\t$p_name(protein$p_number)\t0\t$strand_operator";
-        #
-        #  if ($lrg_prot{$status}{$chr_name}{$p_start}{$p_number}) {
-	      #    push(@{$lrg_prot{$status}{$chr_name}{$p_start}{$p_number}}, $p_line_content);
-	      #  }
-        #  elsif ($lrg_prot{$status}{$chr_name}{$p_start}) {
-	      #    $lrg_prot{$status}{$chr_name}{$p_start}{$p_number} = [$p_line_content];
-	  	  #  }
-		    #  elsif ($lrg_prot{$status}{$chr_name}) {
-		    #    $lrg_prot{$status}{$chr_name}{$p_start} = {$p_number => [$p_line_content]};
-		    #  }
-		    #  else {
-        #    $lrg_prot{$status}{$chr_name} = {$p_start => { $p_number => [$p_line_content]}};
-		    #  }
-        #} 
       } 
 	  }
 	}
@@ -334,8 +303,7 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   my $add_status_to_name = ($status eq 'pending') ? ' [pending]' : '';
   
   # Genomic track
-  #print BED "track name=\"$track_name$add_status_to_name\" type=bedDetail description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg19 visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
-  print BED "track name=\"$track_name$add_status_to_name\" description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  print BED "track name=\"$track_name$add_status_to_name\" description=\"$track_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"https://www.lrg-sequence.org/\"\n";
   foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_gene{$status}})) {
     foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_gene{$status}{$lrg_chr}})) {
       foreach my $lrg_line (@{$lrg_gene{$status}{$lrg_chr}{$lrg_start}}) {
@@ -351,7 +319,7 @@ foreach my $status (sort {$b cmp $a} (keys(%lrg_gene))) {
   my $tr_desc = $track_desc;
   $tr_desc =~ s/sequence/transcript/i;
   
-  print BED "track name=\"$track_name transcripts$add_status_to_name\" description=\"$tr_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"http://www.lrg-sequence.org/\"\n";
+  print BED "track name=\"$track_name transcripts$add_status_to_name\" description=\"$tr_desc - $status\" color=$track_colour priority=$priority db=hg$db_version visibility=3 url=\"https://www.lrg-sequence.org/\"\n";
   foreach my $lrg_chr (sort {$a <=> $b} keys(%{$lrg_trans{$status}})) {
     foreach my $lrg_start (sort {$a <=> $b} keys(%{$lrg_trans{$status}{$lrg_chr}})) {
       foreach my $t_number (sort {$a <=> $b} keys(%{$lrg_trans{$status}{$lrg_chr}{$lrg_start}})) {
