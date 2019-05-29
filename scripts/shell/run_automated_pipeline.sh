@@ -225,23 +225,23 @@ if [[ ${skip_hc} ]] ; then
   fi
 fi
 
+
 # Preliminary test: compare fixed section with existing LRG entry
-if [[ ! ${skip_hc} =~ 'fixed' ]] ; then
-  echo_log  "# Preliminary check: compare fixed section with existing LRG entry ... "
-  if [[ ${status} == 'public' || ${status} == 'pending' ]] ; then
-    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${warning_log}
-    check_script_warning 'fixed'
-    if [[ -s ${warning_log} ]] ; then
-      fixed_section_diff=1
-    fi
-  else
-    rm -f ${error_log}
-    bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${error_log}
-    check_script_result
+echo_log  "# Preliminary check: compare fixed section with existing LRG entry ... "
+if [[ ${status} == 'public' || ${status} == 'pending' ]] ; then
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${warning_log}
+  check_script_warning 'fixed'
+  if [[ -s ${warning_log} ]] ; then
+    fixed_section_diff=1
   fi
-  echo_log  "> checking comparison done" 
-  echo_log  ""
+else
+  rm -f ${error_log}
+  bash ${perldir}/shell/healthcheck_record.sh ${xml_dir}/${xml_file} ${assembly} ${status} "-check existing_entry" 2> ${error_log}
+  check_script_result
 fi
+echo_log  "> comparison of fixed sections done" 
+echo_log  ""
+
 
 # Test the mapping: compare global mapping with existing LRG entry
 if [[ ! ${skip_hc} =~ 'mapping' ]] && [[ ! ${skip_extra_hc} =~ 'compare_main_mapping' ]]; then
@@ -302,15 +302,15 @@ if [[ ${annotation_test} == 2 ]] ; then
 fi
 
 
-# Public LRG with different fixed annotations: store the file in a separate directory
-# before the step of storing the XML data in the LRG database
+# Public LRG with different fixed annotations: store the file in a separate directory and stop.
+# To be used before the step of storing the XML data in the LRG database.
 if [[ ${status} == 'public' && ${fixed_section_diff} == 1 && ! ${skip_hc} =~ 'fixed' ]] ; then
   move_file_to_directory ${xml_dir}/${xml_file}.new ${error_log}
 fi
 
 ## STEP 4: Store the XML data into the LRG database
 echo_log  "# Store ${lrg_id} into the database ... "
-if [[ ${status} == 'public' ]] ; then
+if [[ ${status} == 'public' && ${fixed_section_diff} == 'no' ]] ; then
   echo_log  "> Only store the updatable annotations for this LRG"
   bash ${perldir}/shell/import_upd_into_db.sh ${xml_dir}/${xml_file}.new ${hgnc} ${annotation_test} ${error_log} ${warning}
 else
