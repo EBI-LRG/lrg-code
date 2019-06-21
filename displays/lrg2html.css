@@ -48,6 +48,8 @@ a.icon-external-link {
 
 .bold_font { font-weight: bold; }
 
+.small-font { font-size:12px; }
+
 .dotted_underline { border-bottom: 1px dotted #555; }
 
 .line_header {
@@ -1073,6 +1075,14 @@ div.gene_annotation {
 .lrg_previous_assembly {
   color: #9051A0;
   border-bottom: 2px solid #9051A0;
+}
+
+.lrg_light_purple {
+  color: #BA8EC6;
+}
+
+.lrg_white {
+  color:#FFF;
 }
 
 div.lrg_transcript_separator {

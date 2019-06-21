@@ -507,7 +507,7 @@
                   <thead>
                     <tr class="top_th">
                       <th class="split-header" colspan="3">Genomic</th> 
-                      <th class="split-header" colspan="3">Transcript</th> 
+                      <th class="split-header" colspan="4">Transcript</th> 
                       <th class="split-header" colspan="4">Protein</th></tr>
                     <tr>
                     <th title="LRG transcript name">Name</th>
@@ -3636,7 +3636,14 @@
                   <xsl:choose>
                     <xsl:when test="$cds_end &gt;= $lrg_end"><xsl:value-of select="$lrg_current_ref_end"/></xsl:when>
                     <xsl:otherwise>
-                      <xsl:value-of select="$lrg_current_ref_end - ($lrg_end - $cds_end)"/>
+                      <xsl:choose>
+                        <xsl:when test="$current_ref_strand = 1">
+                          <xsl:value-of select="$lrg_current_ref_end + ($lrg_end - $cds_end)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:value-of select="$lrg_current_ref_end + ($lrg_end - $cds_end)"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
                     </xsl:otherwise>
                   </xsl:choose>
                 </xsl:with-param>
@@ -3662,7 +3669,14 @@
                   <xsl:choose>
                     <xsl:when test="$cds_end &gt;= $lrg_end"><xsl:value-of select="$lrg_previous_ref_end"/></xsl:when>
                     <xsl:otherwise>
-                      <xsl:value-of select="$lrg_previous_ref_end - ($lrg_end - $cds_end)"/>
+                      <xsl:choose>
+                        <xsl:when test="$previous_ref_strand = 1">
+                          <xsl:value-of select="$lrg_previous_ref_end + ($lrg_end - $cds_end)"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:value-of select="$lrg_previous_ref_end + ($lrg_end - $cds_end)"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
                     </xsl:otherwise>
                   </xsl:choose>
                 </xsl:with-param>
@@ -6358,6 +6372,7 @@
             <xsl:when test="contains($assembly_name,$previous_assembly)"><xsl:value-of select="$previous_lrg_diff_url"/></xsl:when>
           </xsl:choose>
         </xsl:variable>
+        
         <xsl:variable name="main_tracks">
           Genoverse.Track.extend({
             name       : '<xsl:value-of select="$assembly_name"/>',
@@ -6369,22 +6384,24 @@
           }),
           
           Genoverse.Track.File.LRGBED.extend({
-            name            : 'LRG',
-            url             : '<xsl:value-of select="$lrg_bed_url"/>',
-            resizable       : 'auto'
+            name      : 'LRG',
+            url       : 'https://www.ebi.ac.uk/~lgil/LRG/test/data_files/<xsl:value-of select="$lrg_bed_url"/>',
+            resizable : 'auto',
+            info      : 'LRG gene(s) and transcript(s)'
           }),
           Genoverse.Track.File.LRGDIFF.extend({
             name      : 'Sequence differences LRG vs <xsl:value-of select="$assembly_name"/>',
-            url       : '<xsl:value-of select="$lrg_diff_url"/>',
-            resizable : 'auto'
+            url       : 'https://www.ebi.ac.uk/~lgil/LRG/test/<xsl:value-of select="$lrg_diff_url"/>',
+            resizable : 'auto',
+            info      : 'Sequence differences between LRG and Reference assembly'
           }),
           Genoverse.Track.Gene.extend({
-            name   : 'Ensembl transcripts',
-            resizable  : 'auto'
+            name      : 'Ensembl transcripts',
+            resizable : 'auto'
           }),
           Genoverse.Track.RefSeqGene.extend({
             name      : 'RefSeq transcripts',
-            resizable  : 'auto'
+            resizable : 'auto'
           })
         </xsl:variable>
           
@@ -6927,7 +6944,7 @@
   <xsl:param name="lrg_end_coord"/>
   <xsl:param name="ref_assembly"/>
   <xsl:param name="coord_type"/>
-   
+
   <xsl:variable name="ref_assembly_type">
     <xsl:choose>
       <xsl:when test="$ref_assembly = $current_assembly">main_assembly</xsl:when>
