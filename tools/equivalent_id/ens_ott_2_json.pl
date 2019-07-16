@@ -21,13 +21,14 @@ my $gencode_file    = 'gencode.annotation.gtf';
 my $cars_file       = 'canonicals_hgnc.txt'; 
 my $rs_select_file  = 'select_per_gene_9606.txt';
 my $uniprot_file    = 'uniprot/human_sp_ensembl-withIdentifiers.txt';
-my $mane_file       = 'mane/MANE.GRCh38.v0.5.summary.txt';
+my $mane_file       = 'MANE.GRCh38.summary.txt';
 my $data_dir        = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/';
 my $data_files_info = "$data_dir/data_files_info.json";
 
 # CARS INFO
 my $transcript_cars_date = '';
 my $refseq_select_date   = '';
+my $gencode_version = '';
 my $mane_version = '';
 my $uniprot_date   = '';
 if (-e $data_files_info) {
@@ -36,11 +37,13 @@ if (-e $data_files_info) {
   $transcript_cars_date = 'cars;'.$data->{'cars'}{'Date'}.' - '.$data->{'cars'}{'Release'};
   $refseq_select_date = 'refseq_select;'.$data->{'refseq_select'}{'Date'};
   $uniprot_date = 'uniprot;'.$data->{'uniprot'}{'Date'};
+  $gencode_version = 'gencode;'.$data->{'gencode'}{'Version'};
   $mane_version = 'mane;'.$data->{'mane'}{'Version'};
 }
 open C, "> $output_dir/ens_ott_data_info.txt" or die $!;
 print C "$transcript_cars_date\n";
 print C "$refseq_select_date\n";
+print C "$gencode_version\n";
 print C "$mane_version\n";
 print C "$uniprot_date\n";
 close(C);
@@ -96,7 +99,7 @@ while(<M>) {
   next if ($_ =~ /^#/ | $_ eq '');
   my @line = split("\t", $_);
   $mane_data{$line[5]} = 1;
-  $mane_data{$line[6]} = 1;
+  $mane_data{$line[7]} = 1;
 }
 close(M);
 
@@ -405,7 +408,7 @@ if ($is_private) {
     my $ottt = $havana_data{$ottt_label}{'id'};
     my $ottg = $havana_data{$ottt_label}{'og'};
     
-    # Autocomplete data           
+    # Autocomplete data
     $autocomplete{$hgnc} = 1;
     $autocomplete{$ottt_label} = 1;
     my $ottg_no_v = (split(/\./,$ottg))[0];

@@ -45,7 +45,7 @@ my $transcript_data_info   = $data_file_dir.'/data_files_info.json';
 my $transcript_score_file  = $data_file_dir.'/transcript_scores.txt';
 my $refseq_select_file     = $data_file_dir.'/select_per_gene_9606.txt';
 my $uniprot_canonical_file = $data_file_dir.'/uniprot/human_sp_ensembl-withIdentifiers.txt';
-my $mane_file              = $data_file_dir.'/mane/MANE.GRCh38.v0.5.summary.txt';
+my $mane_file              = $data_file_dir.'/MANE.GRCh38.summary.txt';
 
 my $transcript_cars_date  = 'NA';
 my $transcript_rss_date  = 'NA';
@@ -105,7 +105,7 @@ if (-e $mane_file) {
     for(my $i=0;$i<scalar(@line);$i++) {
       $entry{$headers[$i]} = $line[$i];
     }
-    $mane_data{$entry{'symbol'}} = { 'enst' => $entry{'Ensembl_ID'}, 'nm' => $entry{'RefSeq'} };
+    $mane_data{$entry{'symbol'}} = { 'enst' => $entry{'Ensembl_nuc'}, 'nm' => $entry{'RefSeq_nuc'} };
   }
   close(MANE);
 }
