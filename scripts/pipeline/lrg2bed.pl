@@ -252,7 +252,7 @@ foreach my $status (keys(%lrg_meta)) {
             $e_size  = $e_end-$e_start; # No "+1" because we only want the relative coordinate of the end (e.g. chr1:1-10 has a sequence length of 10 but the block size is 9 : 1+9=10)
             push(@exons_sizes,$e_size);
         
-            $e_relative_start = $e_start-$t_start;
+            $e_relative_start = $e_start-$t_start-1; # 0 Based => first block starts at 0
             push(@exons_starts,$e_relative_start);
           }
 
