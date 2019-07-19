@@ -219,7 +219,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
   var exon_block_id = 'tr_img_exon_'+tname+'_'+ename;
 
   // we only want to get the genomic exon if this is transcript t1
-  var genob, exon_select;
+  var genobj, exon_select;
   if(tname == 't1') {
     genobj = document.getElementById('genomic_exon_'+num);
   }
@@ -239,7 +239,7 @@ function highlight_exon(tname,ename,pname,no_gene_tr_highlight) {
     if(tableobj_left.className.length > 11) {
       tableobj_left.className  = (tableobj_left.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
       tableobj_right.className = (tableobj_right.className.substr(0,1) == 'e' ? 'exontable' : 'introntable');
-      if(genobj&& tname == 't1' && !no_gene_tr_highlight) {
+      if(genobj && tname == 't1' && !no_gene_tr_highlight) {
         genobj.className = (genobj.className.substr(0,1) == 'e' ? 'exon_genomic' : 'intron');
       }
      
