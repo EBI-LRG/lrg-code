@@ -31,6 +31,7 @@ sub write_output {
   my $hgmd_file      = $self->param('hgmd_file');
   #my $uniprot_ftp    = $self->param('uniprot_ftp');
   #my $uniprot_file   = $self->param('uniprot_file');
+  my $decipher_file  = $self->param('decipher_file');
   my $reports_dir    = $self->param('reports_dir'),
   my $reports_file   = $self->param('reports_file');
   
@@ -169,6 +170,9 @@ sub write_output {
        };
     if ($lrg_id ne '') {
       $gene_job->{'lrg_id'} = $lrg_id;
+    }
+    if ($decipher_file ne '') {
+      $gene_job->{'decipher_file'} = $decipher_file;
     }
     push @jobs, $gene_job;
 

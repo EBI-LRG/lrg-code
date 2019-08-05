@@ -15,6 +15,7 @@ sub run {
   my $havana_file    = $self->param('havana_file');
   my $hgmd_file      = $self->param('hgmd_file');
   #my $uniprot_file   = $self->param('uniprot_file');
+  my $decipher_file  = $self->param('decipher_file');
   my $lrg_id         = $self->param('lrg_id');
   
   # Creater letter directory
@@ -24,15 +25,9 @@ sub run {
     `mkdir $sub_dir`;
   }
   
+  my $lrg_option      = ($lrg_id && $lrg_id ne '') ? "--lrg $lrg_id" : '';
+  my $decipher_option = ($decipher_file && $decipher_file ne '') ? "--decipher $decipher_file" : '';
   
-  
-  if ($lrg_id && $lrg_id ne '') {
-    #`perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $sub_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file -lrg $lrg_id`;
-    `perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $sub_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -lrg $lrg_id`;
-  }
-  else {
-     #`perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $sub_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file -uniprot_file $uniprot_file`;
-    `perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $sub_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file`;
-  }
+  `perl $run_dir/lrg-code/tools/align/transcript_alignment_tool.pl -g $gene -o $sub_dir/$gene.html -df $data_files_dir -hf $havana_file -no_dl -hgmd $hgmd_file $lrg_option $decipher_option`;
 }
 1;

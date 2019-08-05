@@ -304,7 +304,7 @@ function get_legend() {
             <td>
               <span class="flag pathog icon-alert close-icon-2 smaller-icon dark_border" data-toggle="tooltip" data-placement="bottom" title="Number of pathogenic variants">10</span>
             </td>
-            <td>Number of pathogenic variants overlapping the transcript exon(s)</td>
+            <td>Number of <b>P</b>athogenic and/or <b>D</b>ECIPHER variants overlapping the transcript exon(s)</td>
           </tr>
           <tr class="bg2_legend">
             <td>

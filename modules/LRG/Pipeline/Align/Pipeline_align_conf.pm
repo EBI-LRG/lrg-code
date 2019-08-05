@@ -50,11 +50,13 @@ sub default_options {
         havana_ftp              => 'ftp://ftp.ebi.ac.uk/pub/databases/gencode/update_trackhub/data',
         ## Uniprot BED file
         #uniprot_ftp             => 'ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/genome_annotation_tracks/UP000005640_9606_beds',
+        # DECIPHER file (mapped to GRCh38)
+        decipher_file           => '/gpfs/nobackup/ensembl/lgil/other_import/decipher/latest_38.tsv.gz',  # To update!
         
         git_branch              => $ENV{'GITBRANCH'},
 
         rest_gene_endpoint      => 'http://rest.ensembl.org/lookup/symbol/homo_sapiens/',
-        align_url               => 'http://www.ebi.ac.uk/~lgil/LRG/align/transcript_alignment.php',  # To update!
+        align_url               => 'http://ves-hx-e2.ebi.ac.uk/align/transcript_alignment.php',
         
         gene_length_highmem_threshold => 400000,
         
@@ -114,6 +116,7 @@ sub pipeline_analyses {
                hgmd_file       => $self->o('hgmd_file'),
                #uniprot_ftp     => $self->o('uniprot_ftp'),
                #uniprot_file    => $self->o('uniprot_file'),
+               decipher_file   => $self->o('decipher_file'),
                rest_url        => $self->o('rest_gene_endpoint'),
                gene_max_length => $self->o('gene_length_highmem_threshold'),
                @common_params

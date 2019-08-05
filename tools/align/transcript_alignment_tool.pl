@@ -8,7 +8,7 @@ use HTTP::Tiny;
 use JSON;
 use POSIX;
 
-my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_download, $hgmd_file, $help);
+my ($gene_name, $output_file, $lrg_id, $tsl, $uniprot_file, $data_file_dir, $havana_file, $no_download, $hgmd_file, $decipher_file, $help);
 GetOptions(
   'gene|g=s'	          => \$gene_name,
   'outputfile|o=s'      => \$output_file,
@@ -18,7 +18,8 @@ GetOptions(
   'havana_file|hf=s'    => \$havana_file,
   'no_dl!'              => \$no_download,
   'hgmd_file|hgmd=s'    => \$hgmd_file,
-#  'uniprot_file|uf=s'   => \$uniprot_file,
+#  'uniprot_file|uf=s'  => \$uniprot_file,
+  'decipher_file|decipher=s' => \$decipher_file,
   'help!'               => \$help
 );
 
@@ -32,13 +33,16 @@ usage("You need to give a directory containing the extra data files (e.g. HGMD, 
 #usage("Uniprot file '$uniprot_file' not found") if ($uniprot_file && !-f "$data_file_dir/$uniprot_file");
 usage("HGMD file '$hgmd_file' not found") if ($hgmd_file && !-f "$data_file_dir/$hgmd_file");
 
+# DECIPHER
+die("ERROR: DECIPHER file '$decipher_file' can't be find.") if ($decipher_file && ! -e $decipher_file);
+
 my $registry = 'Bio::EnsEMBL::Registry';
 my $species  = 'homo_sapiens';
 my $html;
 #my $uniprot_file_default = 'UP000005640_9606_proteome.bed';
 my $havana_file_default  = 'hg38.bed';
 
-my $max_variants = 10;
+my $max_variants = 50;
 
 my $transcript_cars_file   = $data_file_dir.'/canonicals_hgnc.txt';
 my $transcript_data_info   = $data_file_dir.'/data_files_info.json';
@@ -112,7 +116,7 @@ if (-e $mane_file) {
 
 
 #$uniprot_file = "$data_file_dir/$uniprot_file";
-$hgmd_file    = "$data_file_dir/$hgmd_file";
+$hgmd_file = "$data_file_dir/$hgmd_file";
 
 #$registry->load_registry_from_db(
 #    -host => 'ensembldb.ensembl.org',
@@ -167,6 +171,7 @@ my %unique_exon;
 my %nm_data;
 my %compare_nm_data;
 my %pathogenic_variants;
+my %decipher_variants;
 my %havana2ensembl;
 #my %uniprot2ensembl;
 
@@ -329,10 +334,12 @@ foreach my $tr (@$ens_tr) {
       $evidence_count ++ if ($evidence->display_id !~ /^(N|X)(M|P)_/ && $evidence->analysis->logic_name !~ /^(est2genome_)|(human_est)/ );
     }
     my $pathogenic_variants = get_pathogenic_variants($gene_chr,$start,$end);
+    my $decipher_variants   = get_decipher_variants($gene_chr,$start,$end);
     
     $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'exon_obj'}   = $exon;
     $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'evidence'}   = $evidence_count;
     $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'pathogenic'} = $pathogenic_variants;
+    $ens_tr_exons_list{$tr_name}{'exon'}{$start}{$end}{'decipher'}   = $decipher_variants;
     
     my $exon_coding_start = $exon->coding_region_start($tr);
     my $exon_coding_end   = $exon->coding_region_end($tr);
@@ -349,7 +356,13 @@ foreach my $tr (@$ens_tr) {
     if (scalar(keys(%$pathogenic_variants)) != 0) {
       $ens_tr_exons_list{$tr_name}{'has_pathogenic'} += scalar(keys(%$pathogenic_variants));
     }
+    if (scalar(keys(%$decipher_variants)) != 0) {
+      foreach my $var (keys(%$decipher_variants)) {
+        $ens_tr_exons_list{$tr_name}{'decipher'}{$var} = 1;
+      }
+    }
   }
+  $ens_tr_exons_list{$tr_name}{'has_decipher'} = scalar(keys(%{$ens_tr_exons_list{$tr_name}{'decipher'}})); 
 }
 
 #-------------#
@@ -603,7 +616,7 @@ my $gene_coord = "chr$gene_chr:".$o_gene_start.'-'.$o_gene_end;
 my $gene_coord_strand = ($gene_strand == 1) ? ' [forward strand]' : ' [reverse strand]';
 
 
-my $html_pathogenic_label = get_pathogenic_html('#');
+my $html_variants_label = get_variants_html('#');
 $html .= qq{
 <html>
   <head>
@@ -630,8 +643,8 @@ $html .= qq{
       </button>
       
       <!--Show/Hide pathogenic variants -->
-      <button class="btn btn-lrg" id="btn_pathog_variants" onclick="showhide_elements('btn_pathog_variants','pathog_exon_tag')" title="Show/Hide the number of pathogenic variants by exon" data-toggle="tooltip" data-placement="right">
-        Hide pathogenic variant labels $html_pathogenic_label
+      <button class="btn btn-lrg" id="btn_pathog_variants" onclick="showhide_elements('btn_pathog_variants','pathog_exon_tag')" title="Show/Hide the number of pathogenic/DECIPHER variants by exon" data-toggle="tooltip" data-placement="right">
+        Hide pathogenic/DECIPHER variant labels $html_variants_label
       </button>
       
       <!--Export URL selection -->
@@ -739,12 +752,11 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
   my $mane_html      = get_mane_transcript($gene_name,$ens_tr_full_id);
   #my $uniprot_score_html = get_uniprot_score_html($ens_tr_exons_list{$ens_tr}{'object'},$column_class);
 
-  my $pathogenic_count = $ens_tr_exons_list{$ens_tr}{'has_pathogenic'};
-  my $pathogenic_html  = ($pathogenic_count) ? get_pathogenic_html($pathogenic_count) : '';
+  my $variants_html = get_variants_html($ens_tr_exons_list{$ens_tr}{'has_pathogenic'}, $ens_tr_exons_list{$ens_tr}{'has_decipher'});
   
   #my $pathogenic_td_class = ($pathogenic_count && $pathogenic_count > 99) ? 'lg_cell'  : 'md_cell';
   #my $canonical_td_class  = ($pathogenic_count && $pathogenic_count > 99) ? 'md_cell' : 'lg_cell';
-  my $pathogenic_td_class = 'lg_cell';
+  my $variants_td_class = 'lg_cell';
   my $canonical_td_class  = 'xlg_cell';
   
   my $biotype = get_biotype($tr_object->biotype);
@@ -778,7 +790,7 @@ foreach my $ens_tr (sort {$ens_tr_exons_list{$b}{'count'} <=> $ens_tr_exons_list
           <td class="md_cell">$tr_score_html</td>
           <td class="sm_cell">$appris_html</td>
           <td class="$canonical_td_class">$canonical_html$cars_html$uniprot_html$mane_html</td>
-          <td class="$pathogenic_td_class">$pathogenic_html</td>
+          <td class="$variants_td_class">$variants_html</td>
         </tr>
       </table>
     </td>
@@ -1558,15 +1570,35 @@ sub get_mane_transcript {
 #}
 
 
-sub get_pathogenic_html {
-  my $data = shift;
+sub get_variants_html {
+  my $pathogenic = shift;
+  my $decipher = shift;
+  return '' if (!$pathogenic && !$decipher);
+  
+  my $data = 0;
+  my $title = '';
+  if ($pathogenic) {
+   if ($pathogenic =~ /^\d+$/) {
+     $data += $pathogenic;
+     $title .= "$data pathogenic variants";
+   }
+   else {
+     $data = $pathogenic;
+     $title = "Number of pathogenic and/or DECIPHER variants";
+   }
+  }
+  
+  if ($decipher && $decipher =~ /^\d+$/) {
+     $data += $decipher;
+     $title .= " and " if ($title ne '');
+     $title .= "$decipher DECIPHER variants";
+  }
   my $data_label = $data;
   if ($data =~ /^(\d+)\d{3}$/) {
     $data_label = $1."<span>K</span>";
   }
-  return qq{<span class="flag pathog icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="$data pathogenic variants">$data_label
+  return qq{<span class="flag pathog icon-alert close-icon-2 smaller-icon" data-toggle="tooltip" data-placement="bottom" title="$title">$data_label
   </span>};
-  
 }
 
 
@@ -2023,6 +2055,15 @@ sub display_exon {
      $showhide_info_params .= "|$phase_start|$phase_end";  
      $showhide_info_params .=  ($e_tr_name && $e_tr_name ne '-') ? "|$e_tr_name" : '|';
   
+  my $info_params = {
+    'e_number' => $e_number,
+    'e_length' => $e_length,
+    'phase_s'  => "$phase_start",
+    'phase_e'  => "$phase_end"
+  };
+  $info_params->{'e_id'}  = $e_stable_id if ($e_stable_id);
+  $info_params->{'tr_id'} = $e_tr_name if ($e_tr_name && $e_tr_name ne '-');
+  
   # UTR info
   my ($coding_start, $coding_end);
   if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
@@ -2049,15 +2090,48 @@ sub display_exon {
   }
   $showhide_info_params .= ($coding_start) ? "|$coding_start" : '|';
   $showhide_info_params .= ($coding_end)   ? "|$coding_end"   : '|';
+  $info_params->{'cds_s'} = $coding_start if ($coding_start);
+  $info_params->{'cds_e'} = $coding_end if ($coding_end);
   
-
+  # Decipher
+  my $decipher_variants = '';
+  if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}) {
+    my @variants = keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}});
+    my $decipher = scalar(@variants);
+    if ($decipher) {
+      $decipher_variants = qq{<span>D</span> $decipher};
+      $showhide_info_params .= "|$decipher";
+      $info_params->{'decipher'} = $decipher;
+      if ($decipher <= $max_variants) {
+        my @variants_data;
+        foreach my $var (@variants) {
+          my $var_entry  = $var;
+          my $var_start  = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}{$var}{'start'};
+          my $var_end    = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}{$var}{'end'};
+          my $clin_sign  = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}{$var}{'clin_sign'};
+          my $phenotypes = $ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'decipher'}{$var}{'phen'};
+          
+          $clin_sign  ||= '';
+          $phenotypes ||= '';
+          
+          $var_entry .= '/'.$var_start.'/'.$var_end.'/'.$clin_sign.'/'.$phenotypes;
+          push @variants_data, $var_entry;
+        }
+        $showhide_info_params .= "|".join(':',@variants_data);
+        $info_params->{'decipher_list'} = \@variants_data;
+      }
+    }
+  }
+  
+  # Pathogenic
   my $pathogenic_variants = '';
   if ($ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}) {
     my @variants = keys(%{$ens_tr_exons_list{$e_tr}{'exon'}{$e_start}{$e_end}{'pathogenic'}});
     my $pathogenic = scalar(@variants);
     if ($pathogenic) {
-      $pathogenic_variants = qq{<div class="pathog_exon_tag icon-alert close-icon-2 smaller-icon" >$pathogenic</div>};
+      $pathogenic_variants = qq{<span>P</span> $pathogenic};
       $showhide_info_params .= "|$pathogenic";
+      $info_params->{'patho'} = $pathogenic;
       if ($pathogenic <= $max_variants) {
         my @variants_allele;
         foreach my $var (@variants) {
@@ -2069,10 +2143,19 @@ sub display_exon {
           push @variants_allele, $var_allele;
         }
         $showhide_info_params .= "|".join(':',@variants_allele);
+        $info_params->{'patho_list'} = \@variants_allele;
       }
     }
   }
-
+  my $variants_counts = '';
+     $variants_counts .= qq{<div>$decipher_variants</div>} if ($decipher_variants ne '');
+     if ($pathogenic_variants ne '') {
+       #$variants_counts .= ($variants_counts ne '') ? qq{<div style="margin-left:2px">} : qq{<div>};
+       $variants_counts .= qq{<div>$pathogenic_variants</div>};
+     }
+  $variants_counts = qq{<div class="pathog_exon_tag">$variants_counts</div>} if ($variants_counts ne '');
+ 
+ 
   # UTR display
   my $partial_display = '';
   if ($classes =~ /partial/ && ($left_utr_span || $right_utr_span)) {
@@ -2088,15 +2171,25 @@ sub display_exon {
   }
   $showhide_info_params =~ s/'//g;
   
-  my $clearfix_class = ($pathogenic_variants eq '') ? '' : ' clearfix';
+  my $clearfix_class = ($pathogenic_variants eq '' &&  $decipher_variants eq '') ? '' : ' clearfix';
 
+  
+  my $json = JSON->new;
+  my $json_string = $json->encode($info_params);
   return qq{
-    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" data-params="$showhide_info_params">
+    <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" data-params='$json_string'>
       <div class="e_label e_$source">$e_number$e_extra</div>
       $partial_display
     </div>
-    <div class="sub_exon$clearfix_class">$pathogenic_variants</div>
+    <div class="sub_exon$clearfix_class">$variants_counts</div>
   };
+  #return qq{
+  #  <div class="$classes" data-name="$e_start\_$e_end" data-toggle="tooltip" data-placement="bottom" data-params="$showhide_info_params">
+  #    <div class="e_label e_$source">$e_number$e_extra</div>
+  #    $partial_display
+  #  </div>
+  #  <div class="sub_exon$clearfix_class">$pathogenic_variants$decipher_variants</div>
+  #};
 }
 
 
@@ -2209,9 +2302,10 @@ sub get_pathogenic_variants {
   my $start = shift;
   my $end   = shift;
   
-  return $pathogenic_variants{"$start-$end"} if ($pathogenic_variants{"$start-$end"});
+  my $coords = "$start-$end";
+  return $pathogenic_variants{$coords} if ($pathogenic_variants{$coords});
   
-  $pathogenic_variants{"$start-$end"} = {};
+  $pathogenic_variants{$coords} = {};
   
   my $slice = $slice_a->fetch_by_region("chromosome",$chr,$start,$end);
   
@@ -2242,7 +2336,7 @@ sub get_pathogenic_variants {
     my $risk_allele = $pf->risk_allele;
     $risk_allele = substr($risk_allele,0,9).'...' if ($risk_allele && length($risk_allele) > 10);
 
-    $pathogenic_variants{"$start-$end"}{$pf->object_id} = {
+    $pathogenic_variants{$coords}{$pf->object_id} = {
        'chr'        => $gene_chr,
        'start'      => $pf_start,
        'end'        => $pf_end,
@@ -2253,8 +2347,42 @@ sub get_pathogenic_variants {
      };  
   }
   
-  return $pathogenic_variants{"$start-$end"};
+  return $pathogenic_variants{$coords};
 }
+
+sub get_decipher_variants {
+  my $chr   = shift;
+  my $start = shift;
+  my $end   = shift;
+  
+  my $coords = "$start-$end";
+  return $decipher_variants{$coords} if ($decipher_variants{$coords});
+  
+  $decipher_variants{$coords} = {};
+  
+  if ($decipher_file && -e $decipher_file) {
+    my $data_list = `tabix $decipher_file $chr:$start-$end`;
+    if ($data_list && $data_list ne '') {
+      my @entries = split("\n",$data_list);
+      foreach my $entry (@entries) {
+        my @row = split("\t",$entry);
+        my $dec_id = $row[3];
+        if ($dec_id =~ /DEC(\d+)_/) {
+          $dec_id = $1;
+        }
+        $decipher_variants{$coords}{$dec_id} = {
+         'chr'        => $gene_chr,
+         'start'      => $row[1],
+         'end'        => $row[2],
+         'clin_sign'  => $row[4],
+         'phen'       => $row[5]
+        };
+      }
+    }
+  }
+  return $decipher_variants{$coords};
+}
+
 
 
 sub bed2hash {

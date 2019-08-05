@@ -369,15 +369,33 @@ table.legend td.subheader {
 
 .pathog_exon_tag {
   float:right;
-  max-width:50px;
+  display:table-cell;
   font-size:8px;
-  padding:0px 2px;
-  background-color:#555;
+  /*padding:0px 2px;
+  background-color:#555;*/
   color:#FFF;
   position:relative;
   white-space: nowrap;
   z-index:10;
+  box-shadow: 2px 2px 1px #CCC;
 }
+.pathog_exon_tag div {
+  padding:0px 2px;
+  background-color:#555;
+  display:inline;
+}
+.pathog_exon_tag div:not(:first-child) {
+  margin-left:2px;
+}
+.pathog_exon_tag span {
+  font-weight:bold;
+}
+/*.pathog_tag_sep {
+  margin:0px 2px;
+  padding:0px 1px;
+  height:10px;
+  background-color:#CCC;
+}*/
 
 th.coord {
   font-size:0.6em;
@@ -636,6 +654,7 @@ th.coord {
 
 .sub_exon {
   height: 10px;
+  white-space:nowrap;
 }
 
 .separator {
