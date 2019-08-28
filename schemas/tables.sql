@@ -29,6 +29,7 @@ CREATE TABLE `gene` (
   `refseq` varchar(64) default NULL,
   `lrg_id` varchar(64) default NULL,
   `status` enum('stalled','pending','public') default NULL,
+  `superceded_by` varchar(64) DEFAULT NULL,
   PRIMARY KEY  (`gene_id`),
   UNIQUE KEY `symbol` (`symbol`),
   UNIQUE KEY `lrg_id` (`lrg_id`),
@@ -218,7 +219,7 @@ CREATE TABLE `lrg_mapping` (
   `chr_start` int(11) NOT NULL,
   `chr_end` int(11) NOT NULL,
   `chr_syn` varchar(255) default NULL,
-  `type` enum('main_assembly','other_assembly','patch','haplotype','transcript') default 'other_assembly',
+  `type` enum('main_assembly','other_assembly','patch','fix_patch','novel_patch','haplotype','transcript') default 'other_assembly',
   PRIMARY KEY  (`mapping_id`),
   UNIQUE KEY `gene_mapping_idx` (`gene_id`,`assembly`,`chr_name`,`chr_id`,`chr_start`)
 );
@@ -498,4 +499,4 @@ CREATE TABLE `requester_in_fixed` (
   PRIMARY KEY  (`gene_id`)
 );
 
-INSERT INTO meta (meta_key,meta_value) VALUES ('schema','1.9');
+INSERT INTO meta (meta_key,meta_value) VALUES ('schema','1.10');

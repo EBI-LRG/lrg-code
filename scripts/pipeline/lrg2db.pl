@@ -290,7 +290,11 @@ if (!defined($gene_id)) {
       $gene_id = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0][0];
     }
   }
-}  
+}
+
+# Superceded LRG
+my $sup_node = $fixed->findNodeSingle('superceded_by');
+my $superceded_by = ($sup_node) ? $sup_node->content : undef;
 
 # HGNC ID
 my $hgnc_id = $fixed->findNode('hgnc_id')->content;
@@ -316,8 +320,13 @@ if (!$only_updatable_data) {
   ## Check HGNC & RefSeqGene IDs ##
   if (defined($gene_id)) { 
 
-    $stmt = qq{ SELECT symbol,hgnc_id,status,refseq FROM gene WHERE gene_id=$gene_id };
-    my ($db_hgnc_id,$db_status,$db_refseq) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+    $stmt = qq{ SELECT symbol,hgnc_id,status,refseq,superceded_by FROM gene WHERE gene_id=$gene_id };
+    my ($db_hgnc_id,$db_status,$db_refseq,$db_superceded_by) = $db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0];
+
+    # Update superceded data
+    if (defined($superceded_by) && !defined($db_superceded_by)) {
+      $db_adaptor->dbc->do("UPDATE gene SET superceded_by='$superceded_by' WHERE gene_id=$gene_id;");
+    }
 
     # Update the HGNC ID
     if (defined($hgnc_id)) {
@@ -372,6 +381,11 @@ if (!$only_updatable_data) {
         )
       };
       $db_adaptor->dbc->do($stmt);
+      
+      # Add superceded data
+      if (defined($superceded_by)) {
+        $db_adaptor->dbc->do("UPDATE gene SET superceded_by='$superceded_by' WHERE gene_id=$gene_id;");
+      }
     }
     else {
       print "Error: No enough information could be found with " . (defined($hgnc_symbol) ? "HGNC symbol $hgnc_symbol" : "$lrg_id"). " to create a new entry in the gene table\n";

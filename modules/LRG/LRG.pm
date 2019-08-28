@@ -859,14 +859,15 @@ sub sort_nodes {
     
     'fixed_annotation' => {
       'id'            => 1,
-      'hgnc_id'       => 2,
-      'organism'      => 3,
-      'source'        => 4,
-      'mol_type'      => 5,
-      'creation_date' => 6,
-      'comment'       => 7,
-      'sequence'      => 8,
-      'transcript'    => 9
+      'superceded_by' => 2,
+      'hgnc_id'       => 3,
+      'organism'      => 4,
+      'source'        => 5,
+      'mol_type'      => 6,
+      'creation_date' => 7,
+      'comment'       => 8,
+      'sequence'      => 9,
+      'transcript'    => 10
     },
     
     'transcript' => { # Global (fixed + updatable)
@@ -1352,7 +1353,7 @@ sub nodeExists {
     return 0;
 }
 
-#ÊGet an array containing all the nodes in the xml tree (below this one)
+#\CAGet an array containing all the nodes in the xml tree (below this one)
 sub getAllNodes {
     my $self = shift;
     
@@ -1361,7 +1362,7 @@ sub getAllNodes {
     foreach my $child (@{$self->{'nodes'}}) {
 	push(@arr,@{$child->getAllNodes()});
     }
-    #ÊPush this node itself into the array and return it
+    #\CAPush this node itself into the array and return it
     push(@arr,$self);
     return \@arr;
 }

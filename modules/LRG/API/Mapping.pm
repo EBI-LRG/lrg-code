@@ -16,7 +16,7 @@ sub initialize {
     die ("Assembly must be specified in call to $self constructor");
   }
   unless (defined($type)) {
-    die ("A type of sequence aligned must be specified in call to $self constructor (e.g. main_assembly, other_assembly, patch, haplotype, transcript)");
+    die ("A type of sequence aligned must be specified in call to $self constructor (e.g. main_assembly, other_assembly, patch, fix_patch, novel_patch, haplotype, transcript)");
   }
   unless (defined($other_coordinates)) {
     die ("Genomic coordinates must be specified in call to $self constructor");

@@ -15,6 +15,7 @@ my $user;
 my $pass;
 my $dbname;
 my $verbose;
+my $superceded_by;
 my $hgnc_symbol;
 my $hgnc_id;
 my $lrg_id;
@@ -72,6 +73,7 @@ if (defined($lrg_id)) {
             gene_id,
             symbol,
             hgnc_id,
+            superceded_by,
             lrg_id
         FROM
             gene
@@ -80,7 +82,7 @@ if (defined($lrg_id)) {
     };
     $stmt .= qq{ AND symbol = '$hgnc_symbol'} if (defined($hgnc_symbol));
     $stmt .= qq{ LIMIT 1};
-    ($gene_id,$hgnc_symbol,$hgnc_id,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to LRG id $lrg_id" . (defined($hgnc_symbol) ? " and HGNC symbol $hgnc_symbol" : ""));
+    ($gene_id,$hgnc_symbol,$hgnc_id,$superceded_by,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to LRG id $lrg_id" . (defined($hgnc_symbol) ? " and HGNC symbol $hgnc_symbol" : ""));
 }
 else {
     $stmt = qq{
@@ -88,6 +90,7 @@ else {
             gene_id,
             symbol,
             hgnc_id,
+            superceded_by,
             lrg_id
         FROM
             gene
@@ -95,7 +98,7 @@ else {
             symbol = '$hgnc_symbol'
         LIMIT 1
     };
-    ($gene_id,$hgnc_symbol,$hgnc_id,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to HGNC symbol $hgnc_symbol");
+    ($gene_id,$hgnc_symbol,$hgnc_id,$superceded_by,$lrg_id) = @{$db_adaptor->dbc->db_handle->selectall_arrayref($stmt)->[0]} or die ("Could not find gene corresponding to HGNC symbol $hgnc_symbol");
 }
 
 # If a list of LSDBs were asked for, print that
@@ -202,6 +205,10 @@ my $fixed = $lrg->addNode('fixed_annotation');
 
 # Set the data
 $fixed->addNode('id')->content($lrg_id);
+
+if (defined($superceded_by)) {
+  $fixed->addNode('superceded_by')->content($superceded_by);
+}
 
 if (defined($hgnc_id)) {
   $fixed->addNode('hgnc_id')->content($hgnc_id);

@@ -1,6 +1,6 @@
 # Relax NG schema for LRG
-# Version $Revision: 1.9 $
-# Last modified: 2014-10-01
+# Version $Revision: 1.10 $
+# Last modified: 2019-08-24
 
 start = LRG
 LRG = element lrg { 
@@ -22,6 +22,11 @@ FIXED_ANNOTATION = element fixed_annotation {
          pattern = 'LRG_[0-9]+'
       }
    },
+   element superceded_by {
+      xsd:string {
+         pattern = 'LRG_[0-9]+'
+      }
+   }?,
    element hgnc_id {
      xsd:integer
    }?,
@@ -305,7 +310,7 @@ MAPPING = element mapping {
    attribute other_end { xsd:integer },
    
    # Attribute giving the information about the type of sequence aligned
-   attribute type { 'main_assembly' | 'other_assembly' | 'patch' | 'haplotype' | 'transcript' }?,
+   attribute type { 'main_assembly' | 'other_assembly' | 'patch' | 'fix_patch' | 'novel_patch' | 'haplotype' | 'transcript'}?,
    
    # a mapping span corresponds to a block of the LRG sequence that aligns with an assembly
    MAPPING_SPAN+
@@ -393,7 +398,7 @@ LONG_NAME = element long_name {
 }
 
 DB_XREF = element db_xref { 
-   attribute source { 'GeneID' | 'HGNC' | 'MIM' | 'GI' | 'RefSeq' | 'Ensembl' | 'CCDS' | 'UniProtKB' | 'RFAM' | 'miRBase' | 'pseudogene.org' },   
+   attribute source { 'GeneID' | 'HGNC' | 'MIM' | 'GI' | 'RefSeq' | 'Ensembl' | 'CCDS' | 'UniProtKB' | 'RFAM' | 'miRBase' | 'pseudogene.org' | 'MANE-select' | 'MANE-plus' },   
    FEATURE_ACCESSION,
    
    SYNONYM*
@@ -453,4 +458,5 @@ UP_PROTEIN_PRODUCT = element protein_product {
    COMMENT*,
    DB_XREF*
 }
+
 

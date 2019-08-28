@@ -451,6 +451,20 @@ sub xref {
     }
   }
   
+  # MANE attributes
+  my $attribs = $feature->get_all_Attributes();
+  foreach my $attrib (@$attribs) {
+    my $value = $attrib->value;
+    if ($value eq 'MANE_select') {
+      push(@xrefs,LRG::API::Xref->new('MANE-select',$value));
+      last;
+    }
+    elsif ($value eq 'MANE_plus') {
+      push(@xrefs,LRG::API::Xref->new('MANE-plus',$value));
+      last;
+    }
+  }
+  
   # Add the moved xref(s) to the translation object
   my $moved_xrefs = $self->get_trans_xref_to_protein_xref($stable_id);
   foreach my $moved_xref_source (keys(%{$moved_xrefs})) {
