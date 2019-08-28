@@ -456,11 +456,11 @@ sub xref {
   foreach my $attrib (@$attribs) {
     my $value = $attrib->value;
     if ($value eq 'MANE_select') {
-      push(@xrefs,LRG::API::Xref->new('MANE-select',$value));
+      push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
       last;
     }
     elsif ($value eq 'MANE_plus') {
-      push(@xrefs,LRG::API::Xref->new('MANE-plus',$value));
+      push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id));
       last;
     }
   }
