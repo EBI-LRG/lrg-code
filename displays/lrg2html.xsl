@@ -11,6 +11,7 @@
 <xsl:variable name="lrg_gene_name" select="/lrg/updatable_annotation/annotation_set/lrg_locus"/>
 <xsl:variable name="lrg_id" select="/lrg/fixed_annotation/id"/>
 <xsl:variable name="lrg_number" select="substring-after($lrg_id, '_')" />
+<xsl:variable name="superceded_by" select="/lrg/fixed_annotation/superceded_by"/>
 <xsl:variable name="lrg_status" select="0"/>
 <xsl:variable name="lrg_year" select="2019"/>
 
@@ -77,6 +78,13 @@
 <xsl:variable name="max_g_sequence_to_display">1000000</xsl:variable>
 <xsl:variable name="max_sequence_to_display">500000</xsl:variable>
 <xsl:variable name="max_allele_to_display">10</xsl:variable>
+
+<!-- MANE -->
+<xsl:variable name="mane_select">MANE Select</xsl:variable>
+<xsl:variable name="mane_select_xml">MANE-select</xsl:variable>
+<xsl:variable name="mane_plus">MANE Plus</xsl:variable>
+<xsl:variable name="mane_plus_xml">MANE-plus</xsl:variable>
+<xsl:variable name="mane_url">http://www.ensembl.info/2019/03/12/coming-soon-mane-select-v0-5/</xsl:variable>
 
 <xsl:decimal-format name="thousands" grouping-separator=","/>
 
@@ -400,6 +408,16 @@
  <div class="data_container container-extra" style="padding-top:0px;margin-top:155px">
 
   <div class="menu clearfix">  
+    
+    <xsl:if test="$superceded_by">
+      <div class="superceded_banner">
+        This LRG has been superceded by the LRG record 
+        <a>
+          <xsl:attribute name="href">./<xsl:value-of select="$superceded_by"/>.xml</xsl:attribute>
+          <xsl:value-of select="$superceded_by"/>
+        </a>
+      </div>
+    </xsl:if>
     
     <div class="left_side clearfix">
     
@@ -1353,32 +1371,7 @@
             <xsl:variable name="ref_transcript" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]" />
             <xsl:variable name="ref_transcript_acc" select="$ref_transcript/@accession" />
             <xsl:variable name="has_ens_identical_tr" select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $transname]/@accession" />
-            <xsl:variable name="translation_exception" select="/*/fixed_annotation/transcript[@name = $transname]/coding_region/translation_exception" />
-            
-
-            <xsl:variable name="tr_mane_select">
-            
-              <xsl:variable name="refseq_mane" select="/*/updatable_annotation/annotation_set[source[1]/name = $ncbi_source_name]/features/gene/transcript[@fixed_id = $transname]/annotation[@type='MANE Select']"/>
-              <xsl:if test="$refseq_mane">
-                <xsl:value-of select="$ref_transcript_acc"/>
-              </xsl:if>
-              
-              <xsl:if test="$has_ens_identical_tr">
-                <xsl:variable name="enst_mane" select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $transname]/annotation[@type='MANE Select']"/>
-                <xsl:if test="$enst_mane">
-                  <xsl:if test="$refseq_mane">, </xsl:if>
-                  <xsl:value-of select="$has_ens_identical_tr"/>
-                </xsl:if>
-              </xsl:if>
-            </xsl:variable>
-            
-            <xsl:if test="$tr_mane_select">
-              <tr>
-                <td class="bold_font">MANE Select:</td>
-                <td class="external_link"><xsl:value-of select="$tr_mane_select"/></td>
-              </tr>
-            </xsl:if>
-            
+            <xsl:variable name="translation_exception" select="/*/fixed_annotation/transcript[@name = $transname]/coding_region/translation_exception" /> 
             
             <xsl:if test="$ref_transcript or $transcript_comment or $has_ens_identical_tr or $translation_exception or $creation_date">
               <tr>
@@ -1432,6 +1425,10 @@
                           </td>
                         </tr>
                       </xsl:if>
+                      <xsl:call-template name="comment_mane_not_lrg_tr">
+                        <xsl:with-param name="transname"><xsl:value-of select="$ref_transcript_acc"/></xsl:with-param>
+                        <xsl:with-param name="set_name"><xsl:value-of select="$ncbi_set_name"/></xsl:with-param>
+                      </xsl:call-template>
                     </xsl:if>
                     
                     <!-- Comments from the database (e.g. ENST, genome assembly) or from the NCBI (e.g. polyA) -->
@@ -1557,6 +1554,10 @@
                             </td>
                           </tr>
                         </xsl:if>
+                        <xsl:call-template name="comment_mane_not_lrg_tr">
+                          <xsl:with-param name="transname"><xsl:value-of select="$enstname"/></xsl:with-param>
+                          <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
+                        </xsl:call-template>
                       </xsl:for-each>
                       
                     </xsl:if>
@@ -6475,7 +6476,7 @@
         <xsl:variable name="mane_track">
           <xsl:if test="contains($assembly_name,$current_assembly)">
           Genoverse.Track.File.LRGBED.extend({
-            name      : 'MANE Select',
+            name      : '<xsl:value-of select="$mane_select"/>',
             url       : '<xsl:value-of select="$lrg_mane_select_url"/>',
             resizable : 'auto',
             info      : 'MANE v0.6 (Matched Annotation from the NCBI and EMBL-EBI)'
@@ -7242,8 +7243,8 @@
     <xsl:for-each select="/*/updatable_annotation/annotation_set[@type = $set_name]/features/gene/transcript[@accession = $transname]/db_xref">
       <xsl:variable name="xref_source" select="@source"/>
       <xsl:choose>
-        <xsl:when test="$xref_source = 'MANE-select'">MANE Select</xsl:when>
-        <xsl:when test="$xref_source = 'MANE-plus'">MANE plus</xsl:when>
+        <xsl:when test="$xref_source = $mane_select_xml"><xsl:value-of select="$mane_select"/></xsl:when>
+        <xsl:when test="$xref_source = $mane_plus_xml"><xsl:value-of select="$mane_plus"/></xsl:when>
       </xsl:choose>
     </xsl:for-each>
   </xsl:variable>
@@ -7259,10 +7260,13 @@
       </xsl:variable>
       
       <xsl:variable name="mane_label">
-        <span>
-          <xsl:attribute name="class">label <xsl:value-of select="$mane_colour"/></xsl:attribute>
-          <xsl:value-of select="$mane_type"/>
-        </span>
+        <a target="_blank" title="Click to get more information about MANE">
+          <xsl:attribute name="href"><xsl:value-of select="$mane_url"/></xsl:attribute>
+          <span>
+            <xsl:attribute name="class">label <xsl:value-of select="$mane_colour"/></xsl:attribute>
+            <xsl:value-of select="$mane_type"/>
+          </span>
+        </a>
       </xsl:variable>
       <xsl:choose>
         <xsl:when test="$as_table_cell"><td style="text-align:right"><xsl:copy-of select="$mane_label" /></td></xsl:when>
@@ -7279,6 +7283,24 @@
   </xsl:choose>
 </xsl:template>
 
+<!-- Highlight when the LRG transcript is not the MANE transcript -->
+<xsl:template name="comment_mane_not_lrg_tr">
+  <xsl:param name="transname" />
+  <xsl:param name="set_name" />
+  
+  <xsl:variable name="aset_tr_node" select="/*/updatable_annotation/annotation_set[@type = $set_name]/features/gene/transcript[@accession = $transname]"/>
+  <xsl:if test="not(/*/updatable_annotation/annotation_set[@type = $set_name]/features/gene/transcript[@accession = $transname]/db_xref[@source = $mane_select_xml])">
+    <xsl:variable name="aset_gene_node" select="$aset_tr_node/.."/>
+    <xsl:if test="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]">
+      <tr>
+        <td style="padding-right:0px"><span class="icon-alert close-icon-0 warning_colour"></span></td>
+        <td colspan="2"><xsl:value-of select="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]/@accession"/> is the MANE Select transcript for the gene <xsl:value-of select="$lrg_gene_name"/>
+        </td>
+      </tr>
+    </xsl:if>
+    
+  </xsl:if>
+</xsl:template>
 
 <xsl:template name="fasta_dl_button">
   <xsl:variable name="fasta_file_name"><xsl:value-of select="$lrg_id" />.fasta</xsl:variable>

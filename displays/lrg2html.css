@@ -307,6 +307,24 @@ div.menu {
   min-width:1024px;
 }
 
+div.superceded_banner {
+  text-align:center;
+  padding: 8px;
+  margin-bottom: 10px;
+  font-size: 18px;
+  background-color: #A00;
+  color: #FFF;
+}
+div.superceded_banner a {
+  color: #FFF;
+  font-weight:bold;
+  text-decoration:underline;
+}
+div.superceded_banner a:hover, div.superceded_banner a:active {
+  color: #9051A0;
+}
+
+
 div.left_side {
   float:left;
   margin-left:5px;
