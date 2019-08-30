@@ -39,6 +39,9 @@ my %SOURCE_DBS = (
 );
 my %XREFS_MOVE_TR2PR = ('CCDS' => 1);
 
+# MANE data file needs to be updated manually for each new MANE release
+my $MANE_DATA_FILE = '/nfs/production/panda/production/vertebrate-genomics/lrg/data_files/MANE.GRCh38.summary.txt';
+
 sub new {
   my $class = shift;
   my $slice = shift;
@@ -176,7 +179,7 @@ sub transcript {
     push(@{$meta},@{$self->long_name($transcript) || []});
     
     # DB xrefs
-    my $xrefs = $self->xref($transcript);
+    my $xrefs = $self->xref($transcript,$gene);
     
     # Exons
     my $exon = $self->exon($slice,$transcript);
@@ -415,6 +418,7 @@ sub partial {
 sub xref {
   my $self = shift;
   my $feature = shift;
+  my $gene = shift;
   
   my @xrefs;
   my @xrefs_list;
@@ -452,16 +456,32 @@ sub xref {
   }
   
   # MANE attributes
-  my $attribs = $feature->get_all_Attributes();
-  foreach my $attrib (@$attribs) {
-    my $value = $attrib->value;
-    if ($value eq 'MANE_select') {
-      push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
-      last;
+  if ($gene) {
+    my $attribs = $feature->get_all_Attributes();
+    my $has_mane = 0;
+    foreach my $attrib (@$attribs) {
+      my $value = $attrib->value;
+      if ($value eq 'MANE_select') {
+        push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
+        $has_mane = 1;
+        last;
+      }
+      elsif ($value eq 'MANE_plus') {
+        push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id));
+        $has_mane = 1;
+        last;
+      }
     }
-    elsif ($value eq 'MANE_plus') {
-      push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id));
-      last;
+    # Lookup in the MANE data file to get more up to date information if it's not in the Ensembl DB
+    if ($has_mane == 0) {
+      if (-e $MANE_DATA_FILE) {
+        my $version = $feature->version();
+        my $symbol  = $gene->external_name();
+        my $line = `grep '$stable_id\\.$version' $MANE_DATA_FILE`;
+        if ($line =~ /\t$symbol\t/i) {
+          push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
+        }
+      }
     }
   }
   
