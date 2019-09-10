@@ -77,9 +77,9 @@ sub default_options {
         run_extract_xml_files   => 1,
         run_sub_pipeline        => 0, # Run the full pipeline by default
         
-        small_lsf_options   => '-qproduction-rh7 -R"select[mem>500]   rusage[mem=500]" -M500',
-        default_lsf_options => '-qproduction-rh7 -R"select[mem>2000]  rusage[mem=2000]" -M2000',
-        highmem_lsf_options => '-qproduction-rh7 -R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
+        small_lsf_options   => '-qproduction-rh74 -R"select[mem>500]   rusage[mem=500]" -M500',
+        default_lsf_options => '-qproduction-rh74 -R"select[mem>2000]  rusage[mem=2000]" -M2000',
+        highmem_lsf_options => '-qproduction-rh74 -R"select[mem>15000] rusage[mem=15000]" -M15000', # this is EBI LSF speak for "give me 15GB of memory"
 
         pipeline_db => {
             -host   => $self->o('hive_db_host'),
