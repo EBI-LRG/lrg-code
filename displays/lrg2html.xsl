@@ -1425,10 +1425,6 @@
                           </td>
                         </tr>
                       </xsl:if>
-                      <xsl:call-template name="comment_mane_not_lrg_tr">
-                        <xsl:with-param name="transname"><xsl:value-of select="$ref_transcript_acc"/></xsl:with-param>
-                        <xsl:with-param name="set_name"><xsl:value-of select="$ncbi_set_name"/></xsl:with-param>
-                      </xsl:call-template>
                     </xsl:if>
                     
                     <!-- Comments from the database (e.g. ENST, genome assembly) or from the NCBI (e.g. polyA) -->
@@ -1554,14 +1550,27 @@
                             </td>
                           </tr>
                         </xsl:if>
-                        <xsl:call-template name="comment_mane_not_lrg_tr">
-                          <xsl:with-param name="transname"><xsl:value-of select="$enstname"/></xsl:with-param>
-                          <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
-                        </xsl:call-template>
                       </xsl:for-each>
                       
                     </xsl:if>
-
+                    
+                    <!-- Different MANE transcripts -->
+                    <xsl:if test="$ref_transcript">
+                      <xsl:call-template name="comment_mane_not_lrg_tr">
+                        <xsl:with-param name="transname"><xsl:value-of select="$ref_transcript_acc"/></xsl:with-param>
+                        <xsl:with-param name="set_name"><xsl:value-of select="$ncbi_set_name"/></xsl:with-param>
+                      </xsl:call-template>
+                    </xsl:if>
+                    <xsl:if test="$has_ens_identical_tr">
+                      <xsl:for-each select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $transname]">
+                        <xsl:variable name="enstname" select="@accession"/>
+                        <xsl:call-template name="comment_mane_not_lrg_tr">
+                          <xsl:with-param name="transname"><xsl:value-of select="@accession"/></xsl:with-param>
+                          <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
+                        </xsl:call-template>
+                      </xsl:for-each>
+                    </xsl:if>   
+                    
                     <!-- Updatable annotation -->
                     <xsl:if test="$ref_transcript"> 
                       <xsl:if test="$ref_transcript/comment">
@@ -5612,14 +5621,8 @@
   <xsl:param name="gene_idx" />
   <xsl:param name="transcript_idx" />
 
-
-  <xsl:variable name="lrg_start_a" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-  <xsl:variable name="lrg_end_a"   select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-  <xsl:variable name="lrg_start_b" select="coordinates[@coord_system = $lrg_set_name]/@start" />
-  <xsl:variable name="lrg_end_b"   select="coordinates[@coord_system = $lrg_set_name]/@end" />
-  
-  <xsl:variable name="lrg_start"><xsl:value-of select="$lrg_start_a"/><xsl:value-of select="$lrg_start_b"/></xsl:variable>
-  <xsl:variable name="lrg_end"><xsl:value-of select="$lrg_end_a"/><xsl:value-of select="$lrg_end_b"/></xsl:variable>
+  <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+  <xsl:variable name="lrg_end"   select="coordinates[@coord_system = $lrg_coord_system]/@end" />
   
   <xsl:variable name="lrg_tr_name" select="@fixed_id"/>
 
@@ -5683,11 +5686,17 @@
       <strong>Comment: </strong><span class="external_link"><xsl:value-of select="."/></span><br/>
     </xsl:if>
   </xsl:for-each>
-  <xsl:if test="@fixed_id">
-     <strong>Comment: </strong>This transcript is identical to 
+  <xsl:if test="$lrg_tr_name">
+     <xsl:variable name="lrg_tr_start" select="/*/fixed_annotation/transcript[@name=$lrg_tr_name]/coordinates/@start"/>
+     <xsl:variable name="lrg_tr_end"   select="/*/fixed_annotation/transcript[@name=$lrg_tr_name]/coordinates/@end"/>
+     <strong>Comment: </strong>
+     <xsl:choose>
+       <xsl:when test="$lrg_tr_start=$lrg_start and $lrg_tr_end=$lrg_end"> This transcript is identical to </xsl:when>
+       <xsl:otherwise> The coding sequence of this transcript is identical to </xsl:otherwise>
+     </xsl:choose>
      <a>
-       <xsl:attribute name="href">#transcript_<xsl:value-of select="@fixed_id"/></xsl:attribute>
-       LRG transcript <xsl:value-of select="@fixed_id"/>
+       <xsl:attribute name="href">#transcript_<xsl:value-of select="$lrg_tr_name"/></xsl:attribute>
+       LRG transcript <xsl:value-of select="$lrg_tr_name"/>
      </a>
      <br/>
   </xsl:if>
@@ -7252,21 +7261,10 @@
   <xsl:choose>
     <!-- MANE data found -->
     <xsl:when test="$mane_type != ''">
-      <xsl:variable name="mane_colour">
-        <xsl:choose>
-          <xsl:when test="$mane_type = 'MANE Plus'">label-info</xsl:when>
-          <xsl:otherwise>label-primary</xsl:otherwise>
-        </xsl:choose>
-      </xsl:variable>
-      
       <xsl:variable name="mane_label">
-        <a target="_blank" title="Click to get more information about MANE">
-          <xsl:attribute name="href"><xsl:value-of select="$mane_url"/></xsl:attribute>
-          <span>
-            <xsl:attribute name="class">label <xsl:value-of select="$mane_colour"/></xsl:attribute>
-            <xsl:value-of select="$mane_type"/>
-          </span>
-        </a>
+        <xsl:call-template name="mane_html_label">
+          <xsl:with-param name="mane_type" select="$mane_type"/>
+        </xsl:call-template>
       </xsl:variable>
       <xsl:choose>
         <xsl:when test="$as_table_cell"><td style="text-align:right"><xsl:copy-of select="$mane_label" /></td></xsl:when>
@@ -7283,6 +7281,28 @@
   </xsl:choose>
 </xsl:template>
 
+
+<!-- MANE HTML label -->
+<xsl:template name="mane_html_label">
+  <xsl:param name="mane_type" />
+  
+  <xsl:variable name="mane_colour">
+    <xsl:choose>
+      <xsl:when test="$mane_type = 'MANE Plus'">label-info</xsl:when>
+      <xsl:otherwise>label-primary</xsl:otherwise>
+    </xsl:choose>
+  </xsl:variable>
+  
+  <a target="_blank" title="Click to get more information about MANE">
+    <xsl:attribute name="href"><xsl:value-of select="$mane_url"/></xsl:attribute>
+    <span>
+      <xsl:attribute name="class">label <xsl:value-of select="$mane_colour"/></xsl:attribute>
+      <xsl:value-of select="$mane_type"/>
+    </span>
+  </a>
+</xsl:template>
+
+
 <!-- Highlight when the LRG transcript is not the MANE transcript -->
 <xsl:template name="comment_mane_not_lrg_tr">
   <xsl:param name="transname" />
@@ -7294,7 +7314,11 @@
     <xsl:if test="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]">
       <tr>
         <td style="padding-right:0px"><span class="icon-alert close-icon-0 warning_colour"></span></td>
-        <td colspan="2"><xsl:value-of select="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]/@accession"/> is the MANE Select transcript for the gene <xsl:value-of select="$lrg_gene_name"/>
+        <td colspan="2">The 
+          <xsl:call-template name="mane_html_label">
+            <xsl:with-param name="mane_type">MANE Select</xsl:with-param>
+          </xsl:call-template> 
+          transcript for the gene <xsl:value-of select="$lrg_gene_name"/> is <xsl:value-of select="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]/@accession"/>.
         </td>
       </tr>
     </xsl:if>
