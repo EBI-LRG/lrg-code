@@ -160,14 +160,15 @@ function end_of_script {
 
 function move_file_to_directory {
   xmlfile=$1
-  err_log_file=$2
   # Do not import public LRG with different fixed annotations
   if [[ ${status} == 'public' && ${fixed_section_diff} == 1 ]] ; then
     cp ${xmlfile} "${new_dir}/failed/${xml_file}"
     if [ -n "${report_file}" ] ; then
       echo -e "${lrg_id}\tfailed\t\t" >> ${report_file}
     fi
-    echo -e "ERROR: the fixed section of this LRG is different from the LRG XML file on the public FTP site" >> ${err_log_file}
+    msg="ERROR: the fixed section of this LRG is different from the LRG XML file on the public FTP site"
+    echo -e "${msg}" >> ${log_file}
+    echo -e "fixed_section FAILED!\n${msg}" >> ${error_log}
     echo_stderr "Failed!"
     exit 1 #exit shell script
   fi
@@ -305,7 +306,7 @@ fi
 # Public LRG with different fixed annotations: store the file in a separate directory and stop.
 # To be used before the step of storing the XML data in the LRG database.
 if [[ ${status} == 'public' && ${fixed_section_diff} == 1 && ! ${skip_hc} =~ 'fixed' ]] ; then
-  move_file_to_directory ${xml_dir}/${xml_file}.new ${error_log}
+  move_file_to_directory ${xml_dir}/${xml_file}.new
 fi
 
 ## STEP 4: Store the XML data into the LRG database

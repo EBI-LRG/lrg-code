@@ -22,8 +22,9 @@ GetOptions(
 $date ||= LRG::LRG::date();
 $ftp_dir ||= '/ebi/ftp/pub/databases/lrgex';
 
-my $ensg_url = 'http://www.ensembl.org/Homo_sapiens/Gene/Summary?g=';
-my $enst_url = 'http://www.ensembl.org/Homo_sapiens/Transcript/Summary?t=';
+my $ens_url  = 'https://www.ensembl.org/Homo_sapiens/';
+my $ensg_url = $ens_url.'Gene/Summary?g=';
+my $enst_url = $ens_url.'Transcript/Summary?t=';
 
 my $failed_jira_ticket = 'https://www.ebi.ac.uk/panda/jira/browse/LREF-2553';
 my $jira_button = qq {
@@ -80,8 +81,8 @@ my %main_error_types = ( 'partial_gene'         => 'Partial gene',
                          'other_exon_labels'    => 'Community exon labelling issue',
                          'requester'            => 'Missing requester',
                          'exons'                => 'Exon coordinates discrepancy',
-                         'gene_name'            => 'Gene symbol inconsistent'
-                         
+                         'gene_name'            => 'Gene symbol inconsistent',
+                         'fixed_section'        => 'Changed Fixed section',
                        );
 
 my $abs_xml_dir = abs_path("$xml_dir");
