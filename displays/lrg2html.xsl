@@ -1162,6 +1162,13 @@
       </xsl:call-template>
     </xsl:variable>
     
+    <!-- Protein length -->
+    <xsl:variable name="pep_length">
+      <xsl:if test="transcript[@name=$transname]/coding_region">
+        <xsl:value-of select="string-length(transcript[@name=$transname]/coding_region[position() = 1]/translation[position() = 1]/sequence)"/>
+      </xsl:if>
+    </xsl:variable>
+    
     <!-- Genomic sequence labelling -->
     <xsl:for-each select="transcript[@name=$transname]/exon">
       <xsl:variable name="exon_number" select="position()"/>
@@ -1203,8 +1210,11 @@
                   <xsl:with-param name="cds_end"><xsl:value-of select="$cds_end"/></xsl:with-param>
                   <xsl:with-param name="seq_start"><xsl:value-of select="$lrg_start"/></xsl:with-param>
                   <xsl:with-param name="seq_end"><xsl:value-of select="$lrg_end"/></xsl:with-param>
+                  <xsl:with-param name="tr_start"><xsl:value-of select="$cdna_start"/></xsl:with-param>
+                  <xsl:with-param name="tr_end"><xsl:value-of select="$cdna_end"/></xsl:with-param>
                   <xsl:with-param name="utr_class">genomic_utr</xsl:with-param>
                   <xsl:with-param name="transname"><xsl:value-of select="$transname"/></xsl:with-param>
+                  <xsl:with-param name="pep_length"><xsl:value-of select="$pep_length"/></xsl:with-param>
                 </xsl:call-template>
               </span>
               
@@ -1710,6 +1720,7 @@
                       <xsl:variable name="cstart" select="coding_region[position() = 1]/coordinates/@start"/>
                       <xsl:variable name="cend" select="coding_region[position() = 1]/coordinates/@end"/>
                       <xsl:variable name="pepname"><xsl:value-of select="coding_region[position() = 1]/translation[position() = 1]/@name"/></xsl:variable>
+                      <xsl:variable name="pep_length" select="string-length(coding_region[position() = 1]/translation[position() = 1]/sequence)"/>
                    
                       <xsl:for-each select="exon">
                         <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
@@ -1738,8 +1749,11 @@
                           <xsl:with-param name="cds_end"><xsl:value-of select="$cds_end"/></xsl:with-param>
                           <xsl:with-param name="seq_start"><xsl:value-of select="$cdna_start"/></xsl:with-param>
                           <xsl:with-param name="seq_end"><xsl:value-of select="$cdna_end"/></xsl:with-param>
+                          <xsl:with-param name="tr_start"><xsl:value-of select="$cdna_start"/></xsl:with-param>
+                          <xsl:with-param name="tr_end"><xsl:value-of select="$cdna_end"/></xsl:with-param>
                           <xsl:with-param name="utr_class">utr</xsl:with-param>
                           <xsl:with-param name="transname"><xsl:value-of select="$transname"/></xsl:with-param>
+                          <xsl:with-param name="pep_length"><xsl:value-of select="$pep_length"/></xsl:with-param>
                         </xsl:call-template>
                    
                       </span>
@@ -1847,6 +1861,7 @@
                       <xsl:variable name="cstart" select="coding_region[position() = 1]/coordinates/@start"/>
                       <xsl:variable name="cend" select="coding_region[position() = 1]/coordinates/@end"/>
                       <xsl:variable name="pepname"><xsl:value-of select="coding_region[position() = 1]/translation[position() = 1]/@name"/></xsl:variable>
+                      <xsl:variable name="pep_length" select="string-length(coding_region[position() = 1]/translation[position() = 1]/sequence)"/>
                    
                       <xsl:for-each select="exon">
                         <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
@@ -1874,9 +1889,12 @@
                           <xsl:with-param name="cds_end"><xsl:value-of select="$cds_end"/></xsl:with-param>
                           <xsl:with-param name="seq_start"><xsl:value-of select="$cdna_start"/></xsl:with-param>
                           <xsl:with-param name="seq_end"><xsl:value-of select="$cdna_end"/></xsl:with-param>
+                          <xsl:with-param name="tr_start"><xsl:value-of select="$cdna_start"/></xsl:with-param>
+                          <xsl:with-param name="tr_end"><xsl:value-of select="$cdna_end"/></xsl:with-param>
                           <xsl:with-param name="utr_class">utr</xsl:with-param>
                           <xsl:with-param name="transname"><xsl:value-of select="$transname"/></xsl:with-param>
                           <xsl:with-param name="hide_utr">1</xsl:with-param>
+                          <xsl:with-param name="pep_length"><xsl:value-of select="$pep_length"/></xsl:with-param>
                         </xsl:call-template>
                    
                       </span>
@@ -2151,20 +2169,37 @@
   <xsl:param name="cds_end" />
   <xsl:param name="seq_start" />
   <xsl:param name="seq_end" />
+  <xsl:param name="tr_start" />
+  <xsl:param name="tr_end" />
   <xsl:param name="utr_class" />
   <xsl:param name="transname" />
   <xsl:param name="hide_utr" />
+  <xsl:param name="pep_length" />
 
   <xsl:variable name="three_prime_utr_title">3'UTR of <xsl:value-of select="$transname"/></xsl:variable>
   <xsl:variable name="five_prime_utr_title">5'UTR of <xsl:value-of select="$transname"/></xsl:variable>
   <xsl:variable name="start_codon_title">Start codon of <xsl:value-of select="$transname"/></xsl:variable>
   <xsl:variable name="stop_codon_title">Stop codon of <xsl:value-of select="$transname"/></xsl:variable>
   
+  <xsl:variable name="cds_offset">
+    <xsl:call-template name="cds_offset">
+      <xsl:with-param name="transname" select="$transname"/>
+      <xsl:with-param name="cds_start" select="$cds_start"/>
+    </xsl:call-template>
+  </xsl:variable>
+  
+  <xsl:variable name="cds_lrg_end">
+    <xsl:if test="$pep_length != ''">
+      <xsl:value-of select="($pep_length*3)+3+($cds_offset)-1"/>
+    </xsl:if>
+  </xsl:variable>
+  
   <xsl:choose>
      <!-- Only coding sequence -->
     <xsl:when test="$hide_utr = 1">
       
       <xsl:choose>
+
         <!-- CDS START -->
         <xsl:when test="$cds_start &gt; $lrg_start and $cds_start &lt; $lrg_end">
           <span class="startcodon">
@@ -2198,6 +2233,25 @@
             <xsl:value-of select="substring($seq,($cds_end - $lrg_start) + $seq_start - 2,3)"/>
           </span>
         </xsl:when>
+        
+        <!-- Partial codon stop at the end of the exon (2nt in this exon) -->
+        <xsl:when test="$cds_lrg_end != '' and $tr_end = ($cds_lrg_end - 1)">
+          <xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start)-1)"/>
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_end - 1,3)"/>
+          </span>
+        </xsl:when>
+        <!-- Partial codon stop at the end of the exon (1nt in this exon) -->
+        <xsl:when test="$cds_lrg_end != '' and $tr_end = ($cds_lrg_end - 2)">
+          <xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start))"/>
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_end,2)"/>
+          </span>
+        </xsl:when>
+        <!-- Partial codon stop at the beginning of the exon -->
+        <xsl:when test="$cds_end = $lrg_start or $cds_end = $lrg_start + 1"></xsl:when>
        
         <!-- FULL CODING EXON -->
         <xsl:otherwise><xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start) + 1)"/></xsl:otherwise>
@@ -2275,6 +2329,49 @@
             <xsl:attribute name="class"><xsl:value-of select="$utr_class"/></xsl:attribute>
             <xsl:attribute name="title"><xsl:value-of select="$three_prime_utr_title"/></xsl:attribute>
             <xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start) + 1)"/>
+          </span>
+        </xsl:when>
+        
+        <!-- 3' UTR (complete with partial codon stop - last nt of the codon) -->
+        <xsl:when test="$cds_end = $lrg_start">
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_start,1)"/>
+          </span>
+          <span>
+            <xsl:attribute name="class"><xsl:value-of select="$utr_class"/></xsl:attribute>
+            <xsl:attribute name="title"><xsl:value-of select="$three_prime_utr_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_start+1,($seq_end - $seq_start) + 1)"/>
+          </span>
+        </xsl:when>
+        
+        <!-- 3' UTR (complete with partial codon stop - last 2 nt of the codon) -->
+        <xsl:when test="$cds_end = $lrg_start+1">
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_start,2)"/>
+          </span>
+          <span>
+            <xsl:attribute name="class"><xsl:value-of select="$utr_class"/></xsl:attribute>
+            <xsl:attribute name="title"><xsl:value-of select="$three_prime_utr_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_start+2,($seq_end - $seq_start) + 1)"/>
+          </span>
+        </xsl:when>
+        
+        <!-- Partial codon stop at the end of the exon (2nt in this exon) -->
+        <xsl:when test="$cds_lrg_end != '' and $tr_end = ($cds_lrg_end - 1)">
+          <xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start)-1)"/>
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_end - 1,2)"/>
+          </span>
+        </xsl:when>
+        <!-- Partial codon stop at the end of the exon (1nt in this exon) -->
+        <xsl:when test="$cds_lrg_end != '' and $tr_end = ($cds_lrg_end - 2)">
+          <xsl:value-of select="substring($seq,$seq_start,($seq_end - $seq_start))"/>
+          <span class="stopcodon">
+            <xsl:attribute name="title"><xsl:value-of select="$stop_codon_title"/></xsl:attribute>
+            <xsl:value-of select="substring($seq,$seq_end,1)"/>
           </span>
         </xsl:when>
                 
@@ -3323,14 +3420,10 @@
     
     <tbody>
       <xsl:variable name="cds_offset">
-        <xsl:for-each select="/*/fixed_annotation/transcript[@name = $transname]/exon">
-          <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-          <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-          <xsl:variable name="cdna_start" select="coordinates[@coord_system = $cdna_coord_system]/@start" />
-          <xsl:if test="($lrg_start &lt; $cds_start or $lrg_start = $cds_start) and ($lrg_end &gt; $cds_start or $lrg_end = $cds_start)">
-            <xsl:value-of select="$cdna_start + $cds_start - $lrg_start"/>
-          </xsl:if>
-        </xsl:for-each>
+        <xsl:call-template name="cds_offset">
+          <xsl:with-param name="transname" select="$transname"/>
+          <xsl:with-param name="cds_start" select="$cds_start"/>
+        </xsl:call-template>
       </xsl:variable>
       
       <xsl:variable name="five_prime_utr_length" select="$cds_offset"/>
@@ -3595,14 +3688,10 @@
     
     <tbody>
       <xsl:variable name="cds_offset">
-        <xsl:for-each select="/*/fixed_annotation/transcript[@name = $transname]/exon">
-          <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
-          <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
-          <xsl:if test="($lrg_start &lt; $cds_start or $lrg_start = $cds_start) and ($lrg_end &gt; $cds_start or $lrg_end = $cds_start)">
-            <xsl:variable name="cdna_start" select="coordinates[@coord_system = $cdna_coord_system]/@start" />
-            <xsl:value-of select="$cdna_start + $cds_start - $lrg_start"/>
-          </xsl:if>
-        </xsl:for-each>
+        <xsl:call-template name="cds_offset">
+          <xsl:with-param name="transname" select="$transname"/>
+          <xsl:with-param name="cds_start" select="$cds_start"/>
+        </xsl:call-template>
       </xsl:variable>
          
       <xsl:for-each select="/*/fixed_annotation/transcript[@name = $transname]/exon">
@@ -7220,28 +7309,25 @@
 </xsl:template>
 
 
-<!-- SEQUENCE FORMATTING DISPLAY -->
-<!--<xsl:template name="sequence_to_fasta">
-  <xsl:param name="i"/>
-  <xsl:param name="to"/>
-  <xsl:param name="type"/>
-  <xsl:param name="transname"/>
-  <xsl:param name="first_exon_start"/>
+<!-- Calculate the CDS offset from the beginning of the transcript sequence -->
+<xsl:template name="cds_offset">
+  <xsl:param name="transname" />
+  <xsl:param name="cds_start" />
   
-  <tr>
-    <td class="sequence"><xsl:value-of select="substring($type/sequence,$i,$fasta_row_length)"/></td>
-  </tr>
-  <xsl:if test="$i+$fasta_row_length &lt;= $to">
-    <xsl:call-template name="sequence_to_fasta">
-      <xsl:with-param name="i" select="$i + $fasta_row_length"/>
-      <xsl:with-param name="to" select="$to"/>
-      <xsl:with-param name="type" select="$type"/>
-      <xsl:with-param name="transname" select="$transname"/>
-      <xsl:with-param name="first_exon_start" select="$first_exon_start"/>
-    </xsl:call-template>
-  </xsl:if>
-</xsl:template>-->
+  <xsl:variable name="cdna_coord_system" select="concat($lrg_id,$transname)" />
+  
+  <xsl:for-each select="/*/fixed_annotation/transcript[@name = $transname]/exon">
+    <xsl:variable name="lrg_start" select="coordinates[@coord_system = $lrg_coord_system]/@start" />
+    <xsl:variable name="lrg_end" select="coordinates[@coord_system = $lrg_coord_system]/@end" />
+    <xsl:variable name="cdna_start" select="coordinates[@coord_system = $cdna_coord_system]/@start" />
+    <xsl:if test="($lrg_start &lt; $cds_start or $lrg_start = $cds_start) and ($lrg_end &gt; $cds_start or $lrg_end = $cds_start)">
+      <xsl:value-of select="$cdna_start + $cds_start - $lrg_start"/>
+    </xsl:if>
+   </xsl:for-each>
+</xsl:template>
 
+
+<!-- Display MANE tag -->
 <xsl:template name="mane_label">
   <xsl:param name="transname" />
   <xsl:param name="set_name" />
