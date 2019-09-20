@@ -3794,7 +3794,7 @@
         <td class="border_right"><xsl:value-of select="$exon_number"/></td>
         
         <xsl:choose>
-          <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt; $cds_end">
+          <xsl:when test="$lrg_end &gt; $cds_start and $lrg_start &lt;= $cds_end">
         
             <!-- Current genome assembly coordinates -->
             <td>
@@ -3935,14 +3935,24 @@
             
             <!-- LRG protein coordinates -->
             <td>
-              <xsl:call-template name="thousandify">
-                <xsl:with-param name="number" select="$peptide_start"/>
-              </xsl:call-template>
+              <xsl:choose>
+                <xsl:when test="$peptide_start">
+                  <xsl:call-template name="thousandify">
+                    <xsl:with-param name="number" select="$peptide_start"/>
+                  </xsl:call-template>
+                </xsl:when>
+                <xsl:otherwise>-</xsl:otherwise>
+              </xsl:choose>
             </td>
             <td>
-              <xsl:call-template name="thousandify">
-                <xsl:with-param name="number" select="$peptide_end"/>
-              </xsl:call-template>
+              <xsl:choose>
+                <xsl:when test="$peptide_end">
+                  <xsl:call-template name="thousandify">
+                    <xsl:with-param name="number" select="$peptide_end"/>
+                  </xsl:call-template>
+                </xsl:when>
+                <xsl:otherwise>-</xsl:otherwise>
+              </xsl:choose>
             </td>
           </xsl:when>
           
