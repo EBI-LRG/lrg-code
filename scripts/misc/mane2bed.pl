@@ -81,7 +81,7 @@ foreach my $chr (sort(keys(%data))) {
       
       foreach my $exon_start (sort(keys(%{$exons}))) {
         my $exon_end = $exons->{$exon_start};
-        my $exon_size = $exon_end - $exon_start + 1;
+        my $exon_size = $exon_end - $exon_start;
         my $relative_start = $exon_start - $tr_start; # 0 based
         push(@exons_size,$exon_size);
         push(@exons_start, $relative_start);
