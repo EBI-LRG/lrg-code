@@ -127,6 +127,12 @@ foreach my $file (@files) {
     }
   }
 
+  # Missing mapping
+  if (!$l_start || !$g_start || !$g_end || !$strand) {
+    print STDERR "$lrg_id - ERROR: Missing coordinates for the mapping to $assembly\n";
+    next;
+  }
+
   # Transcript
   my $transcripts = $lrg->findNodeArray('fixed_annotation/transcript');
   foreach my $transcript (@$transcripts) {
@@ -146,7 +152,7 @@ foreach my $file (@files) {
     my $exons = $transcript->findNodeArray('exon');
     foreach my $exon (@$exons) {
       foreach my $e_coords (@{$exon->findNodeArray('coordinates')}) {
-        next if ($e_coords->data->{coord_system} ne $lrg_id);  
+        next if ($e_coords->data->{coord_system} ne $lrg_id);
         my $e_start  = lrg2genomic($e_coords->data->{start},$l_start,$g_start,$g_end,\%diff,$strand);
         my $e_end    = lrg2genomic($e_coords->data->{end},$l_start,$g_start,$g_end,\%diff,$strand);
         if ($strand == -1) {
