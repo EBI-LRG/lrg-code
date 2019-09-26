@@ -1571,15 +1571,23 @@
                         <xsl:with-param name="set_name"><xsl:value-of select="$ncbi_set_name"/></xsl:with-param>
                       </xsl:call-template>
                     </xsl:if>
-                    <xsl:if test="$has_ens_identical_tr">
-                      <xsl:for-each select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $transname]">
-                        <xsl:variable name="enstname" select="@accession"/>
-                        <xsl:call-template name="comment_mane_not_lrg_tr">
-                          <xsl:with-param name="transname"><xsl:value-of select="@accession"/></xsl:with-param>
-                          <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
-                        </xsl:call-template>
-                      </xsl:for-each>
-                    </xsl:if>   
+                    <xsl:variable name="enst_mane_not_lrg_tr">
+                      <xsl:choose>
+                        <!-- LRG transcript has an identical ENST (i.e. fixed_id attrib) -->
+                        <xsl:when test="$has_ens_identical_tr">
+                          <xsl:value-of select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene/transcript[@fixed_id = $transname]/@accession"/>
+                        </xsl:when>
+                        <!-- LRG transcript hasn't an identical ENST (browse all the gene transcripts to see it there is a MANE Select) -->
+                        <xsl:otherwise>
+                          <xsl:value-of select="/*/updatable_annotation/annotation_set[source[1]/name = $ensembl_source_name]/features/gene[symbol/@name = $lrg_gene_name]/transcript[position() = 1]/@accession"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+                    </xsl:variable>
+                    <xsl:call-template name="comment_mane_not_lrg_tr">
+                      <xsl:with-param name="transname"><xsl:value-of select="$enst_mane_not_lrg_tr"/></xsl:with-param>
+                      <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
+                    </xsl:call-template>
+                     
                     
                     <!-- Updatable annotation -->
                     <xsl:if test="$ref_transcript"> 
@@ -7405,16 +7413,16 @@
   <xsl:param name="set_name" />
   
   <xsl:variable name="aset_tr_node" select="/*/updatable_annotation/annotation_set[@type = $set_name]/features/gene/transcript[@accession = $transname]"/>
-  <xsl:if test="not(/*/updatable_annotation/annotation_set[@type = $set_name]/features/gene/transcript[@accession = $transname]/db_xref[@source = $mane_select_xml])">
-    <xsl:variable name="aset_gene_node" select="$aset_tr_node/.."/>
-    <xsl:if test="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]">
+  <xsl:if test="not($aset_tr_node/db_xref[@source = $mane_select_xml])">
+    <xsl:variable name="aset_tr_nodes_list" select="$aset_tr_node/../transcript"/>
+    <xsl:if test="$aset_tr_nodes_list/db_xref[@source = $mane_select_xml]">
       <tr>
         <td style="padding-right:0px"><span class="icon-alert close-icon-0 warning_colour"></span></td>
         <td colspan="2">The 
           <xsl:call-template name="mane_html_label">
             <xsl:with-param name="mane_type">MANE Select</xsl:with-param>
           </xsl:call-template> 
-          transcript for the gene <xsl:value-of select="$lrg_gene_name"/> is <xsl:value-of select="$aset_gene_node/transcript/db_xref[@source = $mane_select_xml]/@accession"/>.
+          transcript for the gene <xsl:value-of select="$lrg_gene_name"/> is <xsl:value-of select="$aset_tr_nodes_list/db_xref[@source = $mane_select_xml]/@accession"/>.
         </td>
       </tr>
     </xsl:if>
