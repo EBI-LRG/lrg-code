@@ -56,9 +56,9 @@ my $lrg_step         = 'lrg_step';
 
 my @month_list = qw( January February March April May June July August September October November December );
 
-my $ftp       = 'https://ftp.ebi.ac.uk/pub/databases/lrgex/';
+my $ftp       = 'http://ftp.ebi.ac.uk/pub/databases/lrgex';
 my $xml_dir   = '/ebi/ftp/pub/databases/lrgex';
-my $hgnc_url  = 'https://www.genenames.org/data/hgnc_data.php?hgnc_id=';
+my $hgnc_url  = 'https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/HGNC:';
 my $lrg_url   = 'https://www.lrg-sequence.org/';
 my $json_file = 'step_index.json';
 
@@ -337,7 +337,6 @@ else {
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
     <script src="$lrg_url/js/lrg.js"></script>
-    <script src="$lrg_url/js/search_results.js"></script>
     <script src="$lrg_url/js/sorttable.js"></script>
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   </head>
@@ -592,7 +591,7 @@ foreach my $lrg_id (sort {$lrg_steps{$a}{'id'} <=> $lrg_steps{$b}{'id'}} (keys(%
   my $operator = ($is_private) ? '/' : 'out of';
   
   my $html_row = qq{
-      <td sorttable_customkey="$id"><a class="lrg_link bold_font" href="$lrg_link" target="_blank">$lrg_id</a></td>
+      <td sorttable_customkey="$id"><a class="icon-external-link bold_font" href="$lrg_link" target="_blank">$lrg_id</a></td>
       <td sorttable_customkey="$symbol">
         <a class="icon-external-link" href="$hgnc_url$symbol_id" target="_blank">$symbol</a>
       </td>
