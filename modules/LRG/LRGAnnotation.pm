@@ -460,13 +460,13 @@ sub xref {
     my $attribs = $feature->get_all_Attributes();
     my $has_mane = 0;
     foreach my $attrib (@$attribs) {
-      my $value = $attrib->value;
-      if ($value eq 'MANE_select') {
+      my $code = $attrib->code;
+      if ($code eq 'MANE_Select') {
         push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
         $has_mane = 1;
         last;
       }
-      elsif ($value eq 'MANE_plus') {
+      elsif ($code eq 'MANE_Plus') {
         push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id));
         $has_mane = 1;
         last;
