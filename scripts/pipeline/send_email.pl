@@ -154,7 +154,7 @@ sub send_lrg_email {
   }
   else {
     my $email_obj = LRG::LRGEmail->new($email,$subject,$message,$lrg_sender);
-       $email_obj->send;
+       $email_obj->send unless !defined ($email);
 
     # Copy of the email sent to the LRG internal mailing list
     unless ($no_lrg_email) {
