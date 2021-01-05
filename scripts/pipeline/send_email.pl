@@ -57,12 +57,9 @@ my %email_message = (
                                   '<p>'.
                                   'We have now created a pending LRG record for %s (%s).'.
                                   '<br /><br />'.
-                                  'We would be grateful if you could review the record and let us know if any changes are required. '.
-                                  'The record will be available for review in a few hours at <a href="%s">%s</a>.'.
+                                  'The record will be available for review in a few hours at <a href="%s">%s</a>. '.
+                                  'Please note that this is a "pending" record and is therefore, not yet finalised. It will now undergo final review by one of our curators and then publication.'.
                                   '<br /><br />'.
-                                  'Please note that this record is not finalised and will undergo manual curation in the near future. '.
-                                  'Curation will establish if the record contains the most suitable reference sequences for reporting variants at the %s locus. '.
-                                  'A member of the LRG team will contact you if any questions arise during the curation process.<br /><br />'.
                                   $lrg_contact.
                                   '</p>'.
                                   'Best regards,<br />'.
@@ -122,7 +119,7 @@ if ($has_contact == 0) {
   die("No requester found for the $lrg_id. We can't send a notification email.");
 }
 elsif ($has_email == 0) {
-  die("No valid email found amongst the requesters for the $lrg_id. We can't send a notification email.");
+  warn("No valid email found amongst the requesters for the $lrg_id. We can't send a notification email.");
 }
 
 
