@@ -77,10 +77,18 @@ sub run {
       $self->run_cmd("cp $sub_dir/$file $ftp_subdir/");
       # Copy FASTA to FTP site
       my $fasta_dir = ($type_dir eq 'stalled') ? "$ftp_subdir/fasta/" : "$ftp_dir/fasta/";
-      $self->run_cmd("cp $new_xml_dir/fasta/$lrg_id.fasta $fasta_dir");
+      if (-e "$new_xml_dir/fasta/$lrg_id.fasta" ) {
+        $self->run_cmd("cp $new_xml_dir/fasta/$lrg_id.fasta $fasta_dir") ;
+      } else {
+        warn "FASTA file missing: $new_xml_dir/fasta/$lrg_id.fasta \n";
+      }
       # Copy GFF to FTP site
       if (glob("$new_xml_dir/gff/$lrg_id\_*.gff")) { # Check if at least one file exists
-        $self->run_cmd("cp $new_xml_dir/gff/$lrg_id\_*.gff $ftp_dir/.ensembl_internal/");
+        if ( -e "$new_xml_dir/gff/$lrg_id\_*.gff" ) {
+          $self->run_cmd("cp $new_xml_dir/gff/$lrg_id\_*.gff $ftp_dir/.ensembl_internal/") ;
+        } else {
+          warn "GFF file missing: $new_xml_dir/gff/$lrg_id\_*.gff \n";
+        }
       }
     }
   }
