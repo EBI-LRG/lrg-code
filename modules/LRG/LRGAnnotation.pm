@@ -457,17 +457,18 @@ sub xref {
   
   # MANE attributes
   if ($gene) {
+    my $version = $feature->version();
     my $attribs = $feature->get_all_Attributes();
     my $has_mane = 0;
     foreach my $attrib (@$attribs) {
       my $code = $attrib->code;
       if ($code eq 'MANE_Select') {
-        push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
+        push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id.".".$version));
         $has_mane = 1;
         last;
       }
       elsif ($code eq 'MANE_Plus') {
-        push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id));
+        push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id.".".$version));
         $has_mane = 1;
         last;
       }
@@ -479,7 +480,7 @@ sub xref {
         my $symbol  = $gene->external_name();
         my $line = `grep '$stable_id\\.$version' $MANE_DATA_FILE`;
         if ($line =~ /\t$symbol\t/i) {
-          push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id));
+          push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id.".".$version));
         }
       }
     }
