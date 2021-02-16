@@ -167,7 +167,13 @@ foreach my $lrg (sort(keys(%changes))) {
   my $hgnc_label = '';
   if (-e "$xml_dir/$subdir$lrg.xml") {
     my $lrg_obj = LRG::LRG::newFromFile("$xml_dir/$subdir$lrg.xml") or die "ERROR: Could not load the LRG file $lrg.xml!";
-    $hgnc_label = $lrg_obj->findNode('lrg_locus')->content;
+    eval {
+      $hgnc_label = $lrg_obj->findNode('lrg_locus')->content;
+    };
+    if ($@) {
+      warn "EXCEPTION in fetch of lrg_locus ($xml_dir/$subdir$lrg.xml) error: $@";
+      next;
+    }
     $hgnc = "($hgnc_label)";
   }
   
