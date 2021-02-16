@@ -16,7 +16,7 @@ sub write_output {
   my $new_xml_dir      = $self->param('new_xml_dir');
   my $ftp_dir          = $self->param('ftp_dir');
   my $default_assembly = $self->param('index_assembly');
-  my $lrg_list         = $self->param('lrgs_in_ensembl');
+  my $lrg_list         = $self->param('lrg_in_ensembl');
   my $index_suffix     = $self->param('index_suffix');
 
   my @jobs;
