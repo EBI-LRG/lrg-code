@@ -479,7 +479,7 @@ sub xref {
         my $version = $feature->version();
         my $symbol  = $gene->external_name();
         my $line = `grep '$stable_id\\.$version' $MANE_DATA_FILE`;
-        if ($line =~ /\t$symbol\t/i) {
+        if ($line =~ /\t$symbol\t/i && $line =~ /\tMANE Select\t/i) {
           push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id.".".$version));
         }
       }
