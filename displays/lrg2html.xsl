@@ -6595,7 +6595,7 @@
             name      : '<xsl:value-of select="$mane_select"/>',
             url       : '<xsl:value-of select="$lrg_mane_select_url"/>',
             resizable : 'auto',
-            info      : 'MANE v0.6 (Matched Annotation from the NCBI and EMBL-EBI)'
+            info      : 'MANE v0.91 (Matched Annotation from the NCBI and EMBL-EBI)'
           }),
           </xsl:if>
         </xsl:variable>    
