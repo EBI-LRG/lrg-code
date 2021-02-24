@@ -467,8 +467,8 @@ sub xref {
         $has_mane = 1;
         last;
       }
-      elsif ($code eq 'MANE_Plus') {
-        push(@xrefs,LRG::API::Xref->new('MANE-plus',$stable_id.".".$version));
+      elsif ($code eq 'MANE_Plus_Clinical') {
+        push(@xrefs,LRG::API::Xref->new('MANE-plus-clinical',$stable_id.".".$version));
         $has_mane = 1;
         last;
       }
@@ -479,8 +479,12 @@ sub xref {
         my $version = $feature->version();
         my $symbol  = $gene->external_name();
         my $line = `grep '$stable_id\\.$version' $MANE_DATA_FILE`;
-        if ($line =~ /\t$symbol\t/i && $line =~ /\tMANE Select\t/i) {
-          push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id.".".$version));
+        if ($line =~ /\t$symbol\t/i )  {
+          if ($line =~ /\tMANE Select\t/i) {
+            push(@xrefs,LRG::API::Xref->new('MANE-select',$stable_id.".".$version));
+          } elsif ($line =~ /\tMANE Plus Clinical\t/i) {
+            push(@xrefs,LRG::API::Xref->new('MANE-plus-clinical',$stable_id.".".$version));
+          }
         }
       }
     }
