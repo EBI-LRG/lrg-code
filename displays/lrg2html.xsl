@@ -648,7 +648,7 @@
                               <xsl:if test="$lrg_tr_start= coordinates/@start and $lrg_tr_end = coordinates/@end">
                                 <xsl:variable name="mane_label">
                                   <xsl:call-template name="mane_label">
-                                    <xsl:with-param name="transname"><xsl:value-of select="$ens_transcript/@accession"/></xsl:with-param>
+                                    <xsl:with-param name="transname"><xsl:value-of select="@accession"/></xsl:with-param>
                                     <xsl:with-param name="set_name"><xsl:value-of select="$ensembl_set_name"/></xsl:with-param>
                                     <xsl:with-param name="display_empty_data">1</xsl:with-param>
                                   </xsl:call-template>
