@@ -341,16 +341,18 @@ do
     files_list="${files_list} ${fasta_dir}/${lrg_id}.fasta"
   done
   
-  zip -jq ${fasta_zip_path} ${files_list}
+  if [[ ! -z "$files_list" ]] ; then
+    zip -jq ${fasta_zip_path} ${files_list}
 
-  if [[ -e ${fasta_zip_path} && -s ${fasta_zip_path} ]] ; then
-    echo "# FASTA ${type} - ZIP file of the ${type} fasta files created"
-    chmod 664 ${fasta_zip_path}
-    mv ${fasta_zip_path} ${fasta_dir};
-    echo "# FASTA ${type} - ZIP file moved to ${fasta_dir}"
-  else 
-    echo ">> FASTA ${type} - Error while generating the ZIP file!"
-    exit 1
+    if [[ -e ${fasta_zip_path} && -s ${fasta_zip_path} ]] ; then
+      echo "# FASTA ${type} - ZIP file of the ${type} fasta files created"
+      chmod 664 ${fasta_zip_path}
+      mv ${fasta_zip_path} ${fasta_dir};
+      echo "# FASTA ${type} - ZIP file moved to ${fasta_dir}"
+    else 
+      echo ">> FASTA ${type} - Error while generating the ZIP file!"
+      exit 1
+    fi
   fi
   echo "# FASTA ${type} - Done"
   echo ""
@@ -374,16 +376,20 @@ do
     xml_file_dir="${pubpath}/${type}"
   fi
 
-  zip -jq ${xml_zip_path} ${xml_file_dir}/LRG_*.xml
+  files_list=`ls -a ${xml_file_dir}/LRG_*.xml`
 
-  if [[ -e ${xml_zip_path} && -s ${xml_zip_path} ]] ; then
-    echo "# XML ${type} - ZIP file of the ${type} xml files created"
-    chmod 664 ${xml_zip_path}
-    mv ${xml_zip_path} ${pubpath};
-    echo "# XML ${type} - ZIP file moved to ${pubpath}"
-  else 
-    echo ">> XML ${type} - Error while generating the ZIP file!"
-    exit 1
+  if [[ ! -z "$files_list" ]] ; then
+    zip -jq ${xml_zip_path} ${xml_file_dir}/LRG_*.xml
+
+    if [[ -e ${xml_zip_path} && -s ${xml_zip_path} ]] ; then
+      echo "# XML ${type} - ZIP file of the ${type} xml files created"
+      chmod 664 ${xml_zip_path}
+      mv ${xml_zip_path} ${pubpath};
+      echo "# XML ${type} - ZIP file moved to ${pubpath}"
+    else 
+      echo ">> XML ${type} - Error while generating the ZIP file!"
+      exit 1
+    fi
   fi
   echo "# XML ${type} - Done"
   echo ""
